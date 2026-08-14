@@ -1,83 +1,37 @@
-# Phase 7 — Subscription and Platform Commercial Management
+# Phase 5 - Point of Sale, Penjualan, HPP, Laba, dan Retur
 
 ## Goal
 
-Allow the SaaS operator to manage plans, trials, subscriptions, limits, payments, and store/user access.
-
-## Dependencies
-
-- Core store operation through Phase 6 complete.
+Menyediakan POS praktis yang mem-posting penjualan dan retur secara atomik sehingga stok, kas, HPP, serta laba kotor selalu dapat direkonsiliasi.
 
 ## Scope
 
-### Plans
+- Product search dan barcode-to-cart.
+- Cart dengan konversi satuan, diskon item, dan diskon transaksi.
+- Cash sale melalui satu financial account, paid amount, dan change.
+- Sale/item/payment snapshots, stock reduction, HPP, dan gross profit.
+- Histori, detail, serta printable receipt.
+- Partial atau full sale return dengan batas returnable quantity dan refund account.
+- Full return menjadi controlled cancellation/reversal; posted sale tidak diubah atau dihapus.
 
-- Name.
-- Price.
-- Billing period.
-- Trial days.
-- Maximum stores.
-- Maximum products per store.
-- Feature flags needed for Stage 1.
-- Active/inactive.
+## Out of Scope
 
-### Subscription
+- Customer credit, loyalty, customer master, split payment, cashier shift, dan offline POS.
+- Arbitrary sale cancellation tanpa return ledger.
+- Exchange workflow; pertukaran dicatat sebagai return lalu sale baru.
 
-- Trial.
-- Active.
-- Past due.
-- Expired.
-- Suspended.
-- Cancelled.
-- Start/end dates.
-- Manual extension.
-- Manual payment record.
-- Limit enforcement.
-- Grace-period decision.
+## Critical Rules
 
-### Platform management
+- Harga, totals, HPP, laba, dan change dihitung server.
+- Stock tidak boleh negatif.
+- HPP memakai inventory cost saat sale diposting dan disimpan sebagai snapshot.
+- Return harus mereferensikan sale item dan tidak boleh melebihi sisa quantity.
+- Refund dan stock restoration terjadi atomik memakai original revenue/COGS proportion.
+- Sale dan return immutable, idempotent, tenant-scoped, dan audited.
 
-- Dashboard metrics.
-- User detail.
-- Store detail.
-- Subscription detail.
-- Payment history.
-- Suspend/reactivate user or store.
-- Announcements.
-- System settings required by Stage 1.
-- Administrative audit.
+## Acceptance Criteria
 
-## Out of scope
-
-- Complex automated billing.
-- Multiple payment gateways unless explicitly selected.
-- Revenue recognition accounting.
-- Enterprise contract billing.
-- Unrestricted tenant impersonation.
-
-## Critical rules
-
-- Subscription payment is platform revenue, not store sales.
-- Suspension behavior must preserve data.
-- Expired users can access only explicitly allowed recovery/billing surfaces.
-- Limits are enforced server-side.
-- Admin actions are audited.
-
-## Required tests
-
-- Trial creation.
-- Store limit.
-- Product limit.
-- Active subscription access.
-- Expired/suspended behavior.
-- Manual extension.
-- Payment record.
-- Platform/customer authorization separation.
-- Admin audit.
-
-## Acceptance criteria
-
-- SaaS operator can onboard and manage paying users.
-- Limits are consistent and safe.
-- Store operational data remains preserved.
-- Tests and builds pass.
+- Sale, payment, stock, COGS, dan gross profit reconcile.
+- Partial/full return memulihkan stock dan membalik cash, COGS, serta profit secara terkendali.
+- Search/barcode, responsive cart, duplicate protection, dan printable receipt tersedia.
+- PHPUnit, PHPStan, Pint, ESLint, Prettier, TypeScript, migration, dan production build lulus.

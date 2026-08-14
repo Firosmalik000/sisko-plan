@@ -11,7 +11,20 @@ export type User = {
 };
 
 export type Auth = {
-    user: User;
+    user: User | null;
+};
+
+export type StoreSummary = {
+    public_id: string;
+    name: string;
+    role: 'owner' | 'admin' | 'cashier';
+};
+
+export type PlatformAdmin = {
+    id: number;
+    name: string;
+    email: string;
+    two_factor_enabled: boolean;
 };
 
 /* @chisel-passkeys */

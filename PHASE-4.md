@@ -1,110 +1,43 @@
-# Phase 5 — Point of Sale, Sales, COGS, and Returns
+# Phase 4 - Purchasing dan Utang Supplier
 
 ## Goal
 
-Deliver a practical Point of Sale that posts sales atomically and calculates COGS and gross profit correctly.
+Mencatat pembelian tunai, sebagian, atau kredit secara atomik sehingga stok, kas, dan utang supplier selalu dapat direkonsiliasi.
 
 ## Dependencies
 
-- Phase 4 purchasing and inventory cost complete.
+- Phase 1 identity dan multi-store.
+- Phase 2 products, product units, suppliers, dan financial accounts.
+- Phase 3 inventory, cash ledger, audit, idempotency, dan document sequence.
 
 ## Scope
 
-### POS UI
+- Purchase header dan immutable item snapshots.
+- Konversi satuan pembelian ke base quantity.
+- Alokasi diskon serta biaya tambahan sebagai landed inventory cost.
+- Cash, partial, dan credit purchase.
+- Supplier payable ledger dan lockable balance projection.
+- Pembayaran awal dan pembayaran lanjutan.
+- Histori pembelian, status outstanding, dan posisi utang supplier.
 
-- Product search.
-- Barcode input/scan.
-- Product results.
-- Cart.
-- Quantity changes.
-- Allowed item or transaction discount.
-- Stock availability.
-- Payment method.
-- Financial account.
-- Paid amount.
-- Change.
-- Submit protection.
-- Success screen and printable receipt.
+## Critical Rules
 
-### Sales domain
+- Total dan landed cost dihitung ulang oleh server.
+- Satu posting mengubah purchase, stock, payable, cash, dan audit secara atomik.
+- Pembayaran tidak dapat melebihi outstanding atau membuat saldo akun negatif.
+- Cross-store references ditolak.
+- Posted documents immutable dan idempotent.
+- Backdated ledger posting ditolak untuk menjaga projection tetap dapat direkonsiliasi.
 
-- Sale draft only if needed by UX.
-- Server-authoritative totals.
-- Sale item snapshots.
-- Stock reduction.
-- Stock movements.
-- COGS.
-- Gross profit.
-- Sale payments.
-- Cash transactions.
-- Document number.
-- Sale detail and history.
-- Controlled cancellation.
-- Sales return and refund.
-- Optional customer master only if required for the phase.
+## Out of Scope
 
-## Out of scope
+- Purchase order dan receiving terpisah.
+- Purchase return, cancellation, reversal, dan supplier credit note.
+- Supplier deposit, multi-currency, lampiran invoice, dan formal aging report.
 
-- Employee cashier accounts.
-- Cashier shifts.
-- Customer credit.
-- Loyalty.
-- Marketplace orders.
-- Offline POS.
+## Acceptance Criteria
 
-## Critical rules
-
-- Lock inventory balance during posting.
-- Reject insufficient stock.
-- Recalculate totals on server.
-- Store unit-cost snapshot.
-- Store COGS and gross profit.
-- Prevent duplicate posting.
-- Return references original sale and cannot exceed returnable quantity.
-- Refund affects the correct financial account.
-- Posted sale is immutable.
-
-## Suggested tables
-
-- customers if included
-- sales
-- sale_items
-- sale_payments
-- sale_returns
-- sale_return_items
-
-## Required tests
-
-- Barcode/product search authorization.
-- Successful cash sale.
-- Multiple-item sale.
-- Unit conversion sale.
-- Discount calculation.
-- Insufficient stock.
-- COGS snapshot.
-- Gross profit.
-- Payment and change.
-- Duplicate submission.
-- Cross-store product/account rejection.
-- Sale return.
-- Partial return.
-- Excess-return rejection.
-- Cancellation/reversal.
-- Transaction rollback.
-
-## Browser verification
-
-Where available, verify:
-
-- Barcode-to-cart flow.
-- Keyboard-friendly checkout.
-- Duplicate-click protection.
-- Printable receipt.
-- Mobile responsive layout.
-
-## Acceptance criteria
-
-- The store can operate a real basic POS.
-- Stock, cash, COGS, and gross profit reconcile.
-- Returns remain controlled and auditable.
-- Tests, browser checks, lint, and build pass.
+- Moving average memakai landed base-unit cost.
+- Stock, cash, purchase, dan supplier payable selalu reconcile.
+- Cash, partial, credit, conversion, rollback, idempotency, tenancy, dan authorization memiliki automated tests.
+- PHPUnit, PHPStan, Pint, ESLint, Prettier, TypeScript, migration, dan production build lulus.

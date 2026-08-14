@@ -30,6 +30,7 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertNotNull($user->refresh()->last_login_at);
     }
 
     public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()
@@ -51,6 +52,7 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('two-factor.login'));
         $response->assertSessionHas('login.id', $user->id);
         $this->assertGuest();
+        $this->assertNull($user->refresh()->last_login_at);
     }
 
     public function test_users_can_not_authenticate_with_invalid_password()

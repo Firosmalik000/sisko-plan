@@ -1,9 +1,19 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import {
+    Boxes,
+    ChartNoAxesCombined,
+    CircleDollarSign,
+    CreditCard,
+    LayoutGrid,
+    PackageSearch,
+    ShoppingCart,
+    Store,
+    Truck,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { StoreSwitcher } from '@/components/store-switcher';
 import {
     Sidebar,
     SidebarContent,
@@ -22,18 +32,45 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
-];
-
-const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
+        title: 'Toko & Anggota',
+        href: '/stores',
+        icon: Store,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        title: 'Master Data',
+        href: '/master-data/products',
+        icon: PackageSearch,
+    },
+    {
+        title: 'Stok, Kas & Modal',
+        href: '/operations/inventory',
+        icon: Boxes,
+    },
+    {
+        title: 'Pembelian & Utang',
+        href: '/purchasing',
+        icon: Truck,
+    },
+    {
+        title: 'Kasir / POS',
+        href: '/pos',
+        icon: ShoppingCart,
+    },
+    {
+        title: 'Biaya Toko',
+        href: '/expenses',
+        icon: CircleDollarSign,
+    },
+    {
+        title: 'Laporan',
+        href: '/reports',
+        icon: ChartNoAxesCombined,
+    },
+    {
+        title: 'Paket & Langganan',
+        href: '/subscription',
+        icon: CreditCard,
     },
 ];
 
@@ -50,6 +87,7 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
+                <StoreSwitcher />
             </SidebarHeader>
 
             <SidebarContent>
@@ -57,7 +95,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\MembershipStatus;
+use App\Enums\StoreStatus;
+use App\Enums\UserStatus;
+use App\Http\Requests\Stores\StoreMemberRequest;
+use App\Http\Requests\Stores\UpdateStoreMemberRequest;
+use App\Models\Store;
+use App\Models\User;
+use App\Services\Subscriptions\SubscriptionAccess;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+
+class StoreMemberController extends Controller
+{
+    public function store(StoreMemberRequest $request, Store $store, SubscriptionAccess $subscriptionAccess): RedirectResponse
+    {
+        $member = User::query()
+            ->where('email', $request->validated('email'))
+            ->where('status', UserStatus::Active->value)
+            ->first();
+
+        if ($member === null) {
+            throw ValidationException::withMessages([
+                'email' => 'Pengguna aktif dengan email tersebut tidak ditemukan.',
+            ]);
+        }
+
+        DB::transaction(function () use ($request, $store, $member, $subscriptionAccess): void {
+            $lockedStore = Store::query()->lockForUpdate()->findOrFail($store->id);
+            abort_unless($lockedStore->status === StoreStatus::Active, 403);
+
+            $membershipExists = DB::table('store_user')
+                ->where('store_id', $store->id)
+                ->where('user_id', $member->id)
+                ->exists();
+
+            if ($membershipExists) {
+                throw ValidationException::withMessages([
+                    'email' => 'Pengguna tersebut sudah menjadi anggota toko.',
+                ]);
+            }
+
+            $subscriptionAccess->assertMemberCapacity($lockedStore);
+
+            $lockedStore->users()->attach($member->id, [
+                'role' => $request->validated('role'),
+                'status' => MembershipStatus::Active->value,
+            ]);
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Anggota toko berhasil ditambahkan.']);
+
+        return back();
+    }
+
+    public function update(
+        UpdateStoreMemberRequest $request,
+        Store $store,
+        User $member,
+        SubscriptionAccess $subscriptionAccess,
+    ): RedirectResponse {
+        DB::transaction(function () use ($request, $store, $member, $subscriptionAccess): void {
+            $lockedStore = Store::query()->lockForUpdate()->findOrFail($store->id);
+            abort_unless($lockedStore->status === StoreStatus::Active, 403);
+
+            $membership = DB::table('store_user')
+                ->where('store_id', $store->id)
+                ->where('user_id', $member->id)
+                ->lockForUpdate()
+                ->first();
+
+            abort_unless($membership !== null, 404);
+
+            if ($member->id === $lockedStore->owner_user_id) {
+                throw ValidationException::withMessages([
+                    'status' => 'Pemilik utama toko tidak dapat dinonaktifkan atau diubah perannya.',
+                ]);
+            }
+
+            if ($membership->status !== MembershipStatus::Active->value && $request->validated('status') === MembershipStatus::Active->value) {
+                $subscriptionAccess->assertMemberCapacity($lockedStore);
+            }
+
+            DB::table('store_user')
+                ->where('id', $membership->id)
+                ->update([
+                    'role' => $request->validated('role'),
+                    'status' => $request->validated('status'),
+                    'updated_at' => now(),
+                ]);
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Akses anggota berhasil diperbarui.']);
+
+        return back();
+    }
+}

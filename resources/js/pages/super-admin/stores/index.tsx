@@ -1,0 +1,179 @@
+import { Form, Head } from '@inertiajs/react';
+import { Building2, Search } from 'lucide-react';
+import { Pagination } from '@/components/pagination';
+import type { PaginationLink } from '@/components/pagination';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
+type StoreItem = {
+    public_id: string;
+    name: string;
+    status: 'active' | 'suspended';
+    owner: { name: string; email: string };
+    active_members_count: number;
+    created_at: string;
+    subscription: { status: string; plan_name: string } | null;
+};
+type Paginated<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    links: PaginationLink[];
+};
+
+export default function AdminStores({
+    stores,
+    filters,
+}: {
+    stores: Paginated<StoreItem>;
+    filters: { search: string };
+}) {
+    return (
+        <>
+            <Head title="Kelola Toko" />
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+                <div>
+                    <p className="text-xs font-semibold tracking-[0.22em] text-[#8a681e] uppercase">
+                        Tenant control
+                    </p>
+                    <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+                        Toko terdaftar
+                    </h1>
+                    <p className="mt-2 text-sm text-slate-600">
+                        {stores.total} tenant, dengan data operasional yang
+                        tetap terisolasi.
+                    </p>
+                </div>
+                <Form
+                    action="/super-admin/stores"
+                    method="get"
+                    className="flex w-full max-w-sm gap-2"
+                >
+                    <Input
+                        name="search"
+                        defaultValue={filters.search}
+                        placeholder="Cari nama toko"
+                        className="bg-white/70"
+                    />
+                    <Button variant="outline">
+                        <Search /> Cari
+                    </Button>
+                </Form>
+            </div>
+            <div className="mt-7 overflow-hidden rounded-2xl border border-slate-900/10 bg-white/75">
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[800px] text-left text-sm">
+                        <thead className="border-b border-slate-900/10 bg-[#102b31] text-xs tracking-wider text-slate-300 uppercase">
+                            <tr>
+                                <th className="px-5 py-4">Toko</th>
+                                <th className="px-5 py-4">Pemilik</th>
+                                <th className="px-5 py-4">Anggota aktif</th>
+                                <th className="px-5 py-4">Status</th>
+                                <th className="px-5 py-4">Subscription</th>
+                                <th className="px-5 py-4 text-right">
+                                    Tindakan
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-900/8">
+                            {stores.data.map((store) => (
+                                <tr key={store.public_id}>
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <span className="flex size-9 items-center justify-center rounded-lg bg-[#d7a941]/20 text-[#725515]">
+                                                <Building2 className="size-4" />
+                                            </span>
+                                            <div>
+                                                <p className="font-medium">
+                                                    {store.name}
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    {store.created_at}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <p>{store.owner.name}</p>
+                                        <p className="text-xs text-slate-500">
+                                            {store.owner.email}
+                                        </p>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        {store.active_members_count}
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <Badge
+                                            variant={
+                                                store.status === 'active'
+                                                    ? 'secondary'
+                                                    : 'destructive'
+                                            }
+                                        >
+                                            {store.status === 'active'
+                                                ? 'Aktif'
+                                                : 'Ditangguhkan'}
+                                        </Badge>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        {store.subscription === null ? (
+                                            <span className="text-xs text-rose-700">
+                                                Belum ada
+                                            </span>
+                                        ) : (
+                                            <div>
+                                                <p className="font-medium">
+                                                    {
+                                                        store.subscription
+                                                            .plan_name
+                                                    }
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    {store.subscription.status}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-5 py-4 text-right">
+                                        <Form
+                                            action={`/super-admin/stores/${store.public_id}/status`}
+                                            method="patch"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="status"
+                                                value={
+                                                    store.status === 'active'
+                                                        ? 'suspended'
+                                                        : 'active'
+                                                }
+                                            />
+                                            <Button size="sm" variant="outline">
+                                                {store.status === 'active'
+                                                    ? 'Tangguhkan'
+                                                    : 'Aktifkan'}
+                                            </Button>
+                                        </Form>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                {stores.data.length === 0 && (
+                    <div className="py-14 text-center text-sm text-slate-500">
+                        Toko tidak ditemukan.
+                    </div>
+                )}
+                <div className="flex flex-col gap-3 border-t border-slate-900/8 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                        Halaman {stores.current_page} dari {stores.last_page}
+                    </span>
+                    <Pagination links={stores.links} />
+                </div>
+            </div>
+        </>
+    );
+}
