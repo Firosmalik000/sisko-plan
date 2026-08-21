@@ -2,12 +2,14 @@ import { Link, router, usePage } from '@inertiajs/react';
 import {
     BarChart3,
     Boxes,
+    Camera,
     CircleDollarSign,
     Check,
     ClipboardCheck,
     ChevronDown,
     ChevronRight,
     CreditCard,
+    ImagePlus,
     Home,
     LogOut,
     PackageSearch,
@@ -17,8 +19,10 @@ import {
     ShoppingCart,
     Store,
     Truck,
+    X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
@@ -569,6 +573,154 @@ function CashierMenu({
     disabled: boolean;
 }) {
     const [cashierMode, setCashierMode] = useState<'scan' | 'manual'>('scan');
+    const [scanTarget, setScanTarget] = useState<
+        (typeof cashierActions)[number] | null
+    >(null);
+    const [scanPhotos, setScanPhotos] = useState<
+        { dataUrl: string; name: string }[]
+    >([]);
+    const [scanError, setScanError] = useState('');
+    const [isCapturing, setIsCapturing] = useState(false);
+    const [isContinuing, setIsContinuing] = useState(false);
+    const scanInputRef = useRef<HTMLInputElement>(null);
+
+    const persistScanDraft = (
+        target: (typeof cashierActions)[number],
+        photos: { dataUrl: string; name: string }[],
+    ) => {
+        try {
+            sessionStorage.setItem(
+                'sisko.scan.photos',
+                JSON.stringify({
+                    version: 1,
+                    source: 'camera',
+                    target: target.title,
+                    targetHref: target.href,
+                    photos,
+                    capturedAt: new Date().toISOString(),
+                }),
+            );
+
+            return true;
+        } catch {
+            setScanError(
+                'Foto belum tersimpan. Periksa ruang penyimpanan browser, lalu coba lagi.',
+            );
+
+            return false;
+        }
+    };
+
+    const openCamera = (item: (typeof cashierActions)[number]) => {
+        setScanTarget(item);
+        setScanPhotos([]);
+        setScanError('');
+        setIsContinuing(false);
+        scanInputRef.current?.click();
+    };
+
+    const handlePhotoCapture = (event: ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files ?? []);
+        event.target.value = '';
+
+        if (files.length === 0) {
+            return;
+        }
+
+        const invalidFile = files.find(
+            (file) =>
+                !file.type.startsWith('image/') || file.size > 8 * 1024 * 1024,
+        );
+
+        if (invalidFile) {
+            setScanError('Gunakan foto gambar maksimal 8 MB.');
+
+            return;
+        }
+
+        setIsCapturing(true);
+        setScanError('');
+
+        Promise.all(
+            files.map(
+                (file) =>
+                    new Promise<{ dataUrl: string; name: string }>(
+                        (resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () =>
+                                resolve({
+                                    dataUrl: String(reader.result),
+                                    name: file.name,
+                                });
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        },
+                    ),
+            ),
+        )
+            .then((photos) => {
+                const nextPhotos = [...scanPhotos, ...photos];
+
+                setScanPhotos(nextPhotos);
+
+                if (scanTarget) {
+                    persistScanDraft(scanTarget, nextPhotos);
+                }
+            })
+            .catch(() =>
+                setScanError(
+                    'Foto tidak berhasil dibaca. Silakan ambil ulang.',
+                ),
+            )
+            .finally(() => setIsCapturing(false));
+    };
+
+    const continueWithPhotos = () => {
+        if (
+            !scanTarget ||
+            scanPhotos.length === 0 ||
+            isCapturing ||
+            isContinuing
+        ) {
+            return;
+        }
+
+        if (!persistScanDraft(scanTarget, scanPhotos)) {
+            return;
+        }
+
+        setIsContinuing(true);
+        router.visit(scanTarget.href, {
+            onError: () => {
+                setIsContinuing(false);
+                setScanError(
+                    'Halaman tujuan gagal dibuka. Foto tetap tersimpan sebagai draft.',
+                );
+            },
+        });
+    };
+
+    const removeScanPhoto = (index: number) => {
+        if (!scanTarget) {
+            return;
+        }
+
+        const nextPhotos = scanPhotos.filter(
+            (_, photoIndex) => photoIndex !== index,
+        );
+        setScanPhotos(nextPhotos);
+        setScanError('');
+
+        if (nextPhotos.length > 0) {
+            persistScanDraft(scanTarget, nextPhotos);
+        } else {
+            try {
+                sessionStorage.removeItem('sisko.scan.photos');
+            } catch {
+                // Ignore unavailable browser storage; the local draft is already cleared.
+            }
+        }
+    };
 
     return (
         <Sheet>
@@ -616,6 +768,15 @@ function CashierMenu({
                 </SheetHeader>
 
                 <div className="mx-auto w-full max-w-xl px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] sm:px-6">
+                    <input
+                        ref={scanInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="sr-only"
+                        onChange={handlePhotoCapture}
+                    />
+
                     <div
                         role="tablist"
                         aria-label="Mode kasir"
@@ -655,38 +816,179 @@ function CashierMenu({
                         </button>
                     </div>
 
-                    <div
-                        id="cashier-actions"
-                        role="tabpanel"
-                        aria-labelledby={
-                            cashierMode === 'scan'
-                                ? 'cashier-tab-scan'
-                                : 'cashier-tab-manual'
-                        }
-                        className="space-y-2"
-                    >
-                        {(cashierMode === 'scan'
-                            ? cashierActions
-                            : manualCashierActions
-                        ).map((item) => (
-                            <SheetClose asChild key={item.title}>
-                                <Link
-                                    href={item.href}
-                                    className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[#173c35]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[#2e705e]/20 hover:bg-[#fbfdfb] hover:shadow-md"
+                    {scanTarget && cashierMode === 'scan' ? (
+                        <div className="space-y-4 rounded-[1.25rem] border border-[#173c35]/10 bg-white p-4 shadow-sm">
+                            <div className="flex items-start gap-3">
+                                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#eaf2ee] text-[#285f50]">
+                                    <Camera className="size-5" />
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-base font-black text-[#173c35]">
+                                        Scan produk
+                                    </p>
+                                    <p className="mt-0.5 text-xs font-semibold text-[#71817c]">
+                                        {scanTarget.title}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="rounded-full p-2 text-[#71817c] hover:bg-[#f1f5f2] hover:text-[#173c35]"
+                                    onClick={() => {
+                                        setScanTarget(null);
+                                        setScanPhotos([]);
+                                        setScanError('');
+                                        setIsContinuing(false);
+                                    }}
+                                    aria-label="Kembali ke daftar scan"
                                 >
-                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[#eaf2ee] text-[#285f50]">
-                                        <item.icon className="size-[1.1rem]" />
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block text-sm font-black text-[#173c35]">
-                                            {item.title}
+                                    <ChevronDown className="size-4 rotate-90" />
+                                </button>
+                            </div>
+
+                            {scanPhotos.length > 0 ? (
+                                <div className="space-y-2">
+                                    <p className="text-xs font-black text-[#71817c]">
+                                        {scanPhotos.length} produk siap diproses
+                                    </p>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {scanPhotos.map((photo, index) => (
+                                            <div
+                                                key={`${photo.name}-${index}`}
+                                                className="relative aspect-square overflow-hidden rounded-xl bg-[#edf2ee]"
+                                            >
+                                                <img
+                                                    src={photo.dataUrl}
+                                                    alt={`Foto produk ${index + 1}`}
+                                                    className="size-full object-cover"
+                                                />
+                                                <span className="absolute bottom-1 left-1 rounded-md bg-[#173c35]/80 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                                    {index + 1}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeScanPhoto(index)
+                                                    }
+                                                    className="absolute top-1 right-1 flex size-7 items-center justify-center rounded-full bg-white/90 text-[#b84d36] shadow-sm"
+                                                    aria-label={`Hapus foto produk ${index + 1}`}
+                                                >
+                                                    <X className="size-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-dashed border-[#2e705e]/25 bg-[#f7faf7] px-4 text-center">
+                                    <Camera className="mb-2 size-7 text-[#2e705e]" />
+                                    <p className="text-sm font-black text-[#173c35]">
+                                        Ambil foto produk
+                                    </p>
+                                </div>
+                            )}
+
+                            {scanPhotos.length > 0 && (
+                                <div className="rounded-xl border border-[#2e705e]/15 bg-[#f7faf7] px-3 py-2.5">
+                                    <p className="text-sm font-black text-[#173c35]">
+                                        Foto tersimpan
+                                    </p>
+                                    <p className="mt-0.5 text-xs font-semibold text-[#71817c]">
+                                        Setelah identifikasi, pilih produk dan
+                                        varian sebelum masuk ke daftar.
+                                    </p>
+                                </div>
+                            )}
+
+                            {scanError && (
+                                <p
+                                    role="alert"
+                                    className="rounded-xl bg-[#fff1ee] px-3 py-2 text-xs font-bold text-[#b84d36]"
+                                >
+                                    {scanError}
+                                </p>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    disabled={isCapturing || isContinuing}
+                                    onClick={() =>
+                                        scanInputRef.current?.click()
+                                    }
+                                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#173c35]/12 px-3 text-sm font-black text-[#285f50] transition hover:bg-[#f1f5f2]"
+                                >
+                                    <ImagePlus className="size-4" />
+                                    {scanPhotos.length > 0
+                                        ? 'Scan produk lain'
+                                        : 'Buka kamera'}
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={
+                                        scanPhotos.length === 0 ||
+                                        isCapturing ||
+                                        isContinuing
+                                    }
+                                    onClick={continueWithPhotos}
+                                    className="min-h-11 rounded-xl bg-[#173c35] px-3 text-sm font-black text-white transition hover:bg-[#255d4e] disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    {isContinuing ? 'Membuka...' : 'Lanjutkan'}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div
+                            id="cashier-actions"
+                            role="tabpanel"
+                            aria-labelledby={
+                                cashierMode === 'scan'
+                                    ? 'cashier-tab-scan'
+                                    : 'cashier-tab-manual'
+                            }
+                            className="space-y-2"
+                        >
+                            {(cashierMode === 'scan'
+                                ? cashierActions
+                                : manualCashierActions
+                            ).map((item) =>
+                                cashierMode === 'scan' ? (
+                                    <button
+                                        type="button"
+                                        key={item.title}
+                                        onClick={() => openCamera(item)}
+                                        className="group flex min-h-14 w-full items-center gap-3 rounded-[1.05rem] border border-[#173c35]/8 bg-white px-3 py-2 text-left shadow-sm transition hover:border-[#2e705e]/20 hover:bg-[#fbfdfb] hover:shadow-md"
+                                    >
+                                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[#eaf2ee] text-[#285f50]">
+                                            <item.icon className="size-[1.1rem]" />
                                         </span>
-                                    </span>
-                                    <ChevronRight className="size-4 shrink-0 text-[#8b9b95] transition group-hover:translate-x-0.5" />
-                                </Link>
-                            </SheetClose>
-                        ))}
-                    </div>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-sm font-black text-[#173c35]">
+                                                {item.title}
+                                            </span>
+                                        </span>
+                                        <ChevronRight className="size-4 shrink-0 text-[#8b9b95] transition group-hover:translate-x-0.5" />
+                                    </button>
+                                ) : (
+                                    <SheetClose asChild key={item.title}>
+                                        <Link
+                                            href={item.href}
+                                            className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[#173c35]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[#2e705e]/20 hover:bg-[#fbfdfb] hover:shadow-md"
+                                        >
+                                            <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[#eaf2ee] text-[#285f50]">
+                                                <item.icon className="size-[1.1rem]" />
+                                            </span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block text-sm font-black text-[#173c35]">
+                                                    {item.title}
+                                                </span>
+                                            </span>
+                                            <ChevronRight className="size-4 shrink-0 text-[#8b9b95] transition group-hover:translate-x-0.5" />
+                                        </Link>
+                                    </SheetClose>
+                                ),
+                            )}
+                        </div>
+                    )}
                 </div>
             </SheetContent>
         </Sheet>
