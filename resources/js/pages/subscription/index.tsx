@@ -62,34 +62,30 @@ export default function StoreSubscriptionPage({
     return (
         <>
             <Head title="Paket & Langganan" />
-            <main className="min-h-full bg-[radial-gradient(circle_at_82%_3%,rgba(215,169,65,.2),transparent_30%),linear-gradient(145deg,#fffdf7,#eff7f3)] p-4 md:p-8">
-                <div className="mx-auto max-w-6xl space-y-6">
-                    <header className="overflow-hidden rounded-[2rem] bg-[#102b31] px-6 py-8 text-white shadow-xl md:px-10 md:py-10">
-                        <p className="text-xs font-bold tracking-[0.24em] text-amber-300 uppercase">
-                            Akun toko / Subscription
-                        </p>
-                        <div className="mt-3 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-                            <div>
-                                <h1 className="font-serif text-4xl md:text-6xl">
+            <main className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+                <div className="mx-auto max-w-6xl space-y-4">
+                    <header className="rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-bold tracking-[0.14em] text-[#6d817a] uppercase">
+                                    Paket aktif
+                                </p>
+                                <h1 className="mt-0.5 truncate text-2xl font-black tracking-[-0.04em] text-[#173c35]">
                                     {subscription.plan.name}
                                 </h1>
-                                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                                    {subscription.plan.description ??
-                                        'Paket operasional toko Anda.'}
-                                </p>
                             </div>
-                            <div className="rounded-2xl bg-white/10 px-5 py-4">
-                                <p className="text-xs tracking-wider text-slate-300 uppercase">
+                            <div className="shrink-0 rounded-xl bg-[#edf4f0] px-3 py-2 text-right">
+                                <p className="text-[10px] font-bold text-[#6d817a] uppercase">
                                     Harga per bulan
                                 </p>
-                                <p className="mt-1 font-serif text-3xl text-amber-300">
+                                <p className="mt-0.5 text-sm font-black text-[#173c35] sm:text-base">
                                     {money(subscription.plan.monthly_price)}
                                 </p>
                             </div>
                         </div>
                     </header>
 
-                    <section className="grid gap-4 md:grid-cols-3">
+                    <section className="grid gap-3 md:grid-cols-3">
                         <InfoCard
                             icon={CheckCircle2}
                             label="Status"
@@ -128,7 +124,7 @@ export default function StoreSubscriptionPage({
                         </section>
                     )}
 
-                    <section className="grid gap-6 lg:grid-cols-2">
+                    <section className="grid gap-4 lg:grid-cols-2">
                         <UsageCard
                             icon={Boxes}
                             title="Produk aktif"
@@ -145,11 +141,8 @@ export default function StoreSubscriptionPage({
                         />
                     </section>
 
-                    <section className="rounded-3xl border border-slate-900/10 bg-white/85 p-5 shadow-sm md:p-7">
-                        <p className="text-xs font-bold tracking-[0.2em] text-[#8a681e] uppercase">
-                            Billing history
-                        </p>
-                        <h2 className="mt-1 font-serif text-3xl">
+                    <section className="rounded-[1.35rem] border border-slate-900/10 bg-white p-4 shadow-sm sm:p-5">
+                        <h2 className="text-lg font-black tracking-[-0.025em]">
                             Riwayat pembayaran
                         </h2>
                         <div className="mt-5 overflow-x-auto">

@@ -1,14 +1,20 @@
-import { Head, useForm } from '@inertiajs/react';
-import type { FormEvent } from 'react';
+import { Head } from '@inertiajs/react';
 import {
-    buttonClass,
-    currentDateTime,
+    AlertTriangle,
+    ArrowDownRight,
+    ArrowUpRight,
+    Boxes,
+    Layers3,
+    Search,
+    Warehouse,
+} from 'lucide-react';
+import { useState } from 'react';
+import {
     fieldClass,
     LedgerCard,
     ledgerDateTime,
     money,
     OperationsShell,
-    postingToken,
     quantity,
 } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
@@ -18,410 +24,450 @@ type Product = {
     public_id: string;
     name: string;
     sku: string | null;
+    variant_name: string | null;
+    parent_public_id: string | null;
+    parent_name: string | null;
     unit: string;
     quantity: string;
     average_cost: string;
     inventory_value: string;
     minimum_quantity: string;
 };
+
+type ProductGroup = {
+    public_id: string;
+    name: string;
+    grouped: boolean;
+    products: Product[];
+};
+
 type Movement = {
     public_id: string;
     product_name: string;
+    unit: string;
     reason: string;
+    quantity_before: string | number;
     quantity_change: string;
-    unit_cost: string;
     quantity_after: string;
     occurred_at: string;
 };
 
 const reasons: Record<string, string> = {
     opening_stock: 'Saldo awal',
-    adjustment_in: 'Penyesuaian masuk',
-    adjustment_out: 'Penyesuaian keluar',
+    adjustment_in: 'Stok masuk',
+    adjustment_out: 'Stok keluar',
+    stock_opname_in: 'Stock opname masuk',
+    stock_opname_out: 'Stock opname keluar',
     damaged: 'Rusak',
     lost: 'Hilang',
     inventory_contribution: 'Setoran modal',
     inventory_withdrawal: 'Penarikan modal',
     sale: 'Penjualan',
     sale_return: 'Retur penjualan',
+    purchase: 'Pembelian',
+    product_stock_update: 'Pembaruan stok produk',
 };
 
 export default function InventoryPage({
     products,
     movements,
     timezone,
-    canManage,
 }: {
     products: Product[];
     movements: { data: Movement[]; links: PaginationLink[]; total: number };
     timezone: string;
-    canManage: boolean;
 }) {
-    const form = useForm({
-        type: 'opening',
-        occurred_at: currentDateTime(timezone),
-        notes: '',
-        idempotency_key: postingToken(),
-        items: [
-            {
-                product_id: products[0]?.public_id ?? '',
-                quantity: '',
-                unit_cost: '',
-            },
-        ],
-    });
-    const minimum = useForm({
-        product_id: products[0]?.public_id ?? '',
-        minimum_quantity: '',
-    });
-    const incoming =
-        form.data.type === 'opening' || form.data.type === 'increase';
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
-        form.post('/operations/inventory/adjustments', {
-            preserveScroll: true,
-            onSuccess: () => {
-                form.reset('notes', 'items');
-                form.setData('idempotency_key', postingToken());
-            },
-        });
-    };
-    const submitMinimum = (event: FormEvent) => {
-        event.preventDefault();
-        minimum.post('/operations/inventory/minimum-stock', {
-            preserveScroll: true,
-            onSuccess: () => minimum.reset('minimum_quantity'),
-        });
-    };
+    const [search, setSearch] = useState('');
+    const [stockStatus, setStockStatus] = useState('all');
+    const normalizedSearch = search.trim().toLocaleLowerCase('id-ID');
+    const groups = groupProducts(products);
+    const visibleGroups = groups
+        .map((group) => ({
+            ...group,
+            products: group.products.filter((product) => {
+                const matchesSearch =
+                    normalizedSearch === '' ||
+                    [
+                        group.name,
+                        product.name,
+                        product.variant_name,
+                        product.sku,
+                    ].some((value) =>
+                        value
+                            ?.toLocaleLowerCase('id-ID')
+                            .includes(normalizedSearch),
+                    );
+                const matchesStatus =
+                    stockStatus === 'all' ||
+                    (stockStatus === 'low' && isLowStock(product)) ||
+                    (stockStatus === 'safe' && !isLowStock(product));
+
+                return matchesSearch && matchesStatus;
+            }),
+        }))
+        .filter((group) => group.products.length > 0);
+    const totalValue = products.reduce(
+        (total, product) => total + Number(product.inventory_value),
+        0,
+    );
+    const lowStockCount = products.filter(isLowStock).length;
 
     return (
         <>
-            <Head title="Inventory ledger" />
+            <Head title="Persediaan" />
             <OperationsShell
                 active="/operations/inventory"
-                eyebrow="Buku 01 / Barang"
-                title="Setiap unit punya jejak."
-                description="Saldo inventory adalah proyeksi dari movement posted. Stok keluar selalu dinilai dengan moving average berjalan."
+                eyebrow="Barang"
+                title="Persediaan"
+                description=""
             >
-                {canManage && (
-                    <LedgerCard
-                        title="Posting pergerakan stok"
-                        description="Dokumen yang sudah diposting tidak dapat diedit."
-                    >
-                        <form
-                            onSubmit={submit}
-                            className="grid gap-4 md:grid-cols-2 xl:grid-cols-5"
-                        >
-                            <label className="space-y-1 text-sm font-semibold text-stone-700">
-                                Jenis
-                                <select
-                                    className={fieldClass}
-                                    value={form.data.type}
-                                    onChange={(event) =>
-                                        form.setData('type', event.target.value)
-                                    }
-                                >
-                                    <option value="opening">Saldo awal</option>
-                                    <option value="increase">
-                                        Penyesuaian masuk
-                                    </option>
-                                    <option value="decrease">
-                                        Penyesuaian keluar
-                                    </option>
-                                    <option value="damaged">
-                                        Barang rusak
-                                    </option>
-                                    <option value="lost">Barang hilang</option>
-                                </select>
-                            </label>
-                            <label className="space-y-1 text-sm font-semibold text-stone-700">
-                                Produk
-                                <select
-                                    className={fieldClass}
-                                    value={form.data.items[0].product_id}
-                                    onChange={(event) =>
-                                        form.setData('items', [
-                                            {
-                                                ...form.data.items[0],
-                                                product_id: event.target.value,
-                                            },
-                                        ])
-                                    }
-                                >
-                                    {products.map((product) => (
-                                        <option
-                                            key={product.public_id}
-                                            value={product.public_id}
-                                        >
-                                            {product.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                            <label className="space-y-1 text-sm font-semibold text-stone-700">
-                                Kuantitas
-                                <input
-                                    className={fieldClass}
-                                    type="number"
-                                    min="0.000001"
-                                    step="0.000001"
-                                    value={form.data.items[0].quantity}
-                                    onChange={(event) =>
-                                        form.setData('items', [
-                                            {
-                                                ...form.data.items[0],
-                                                quantity: event.target.value,
-                                            },
-                                        ])
-                                    }
-                                    required
-                                />
-                            </label>
-                            <label className="space-y-1 text-sm font-semibold text-stone-700">
-                                Biaya/unit {incoming ? '' : '(otomatis)'}
-                                <input
-                                    className={fieldClass}
-                                    type="number"
-                                    min="0"
-                                    step="0.0001"
-                                    value={form.data.items[0].unit_cost}
-                                    onChange={(event) =>
-                                        form.setData('items', [
-                                            {
-                                                ...form.data.items[0],
-                                                unit_cost: event.target.value,
-                                            },
-                                        ])
-                                    }
-                                    disabled={!incoming}
-                                    required={incoming}
-                                />
-                            </label>
-                            <div className="flex items-end">
-                                <button
-                                    className={`${buttonClass} w-full`}
-                                    disabled={
-                                        form.processing || products.length === 0
-                                    }
-                                >
-                                    Posting stok
-                                </button>
-                            </div>
-                            <label className="space-y-1 text-sm font-semibold text-stone-700 md:col-span-2">
-                                Waktu transaksi
-                                <input
-                                    className={fieldClass}
-                                    type="datetime-local"
-                                    value={form.data.occurred_at}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'occurred_at',
-                                            event.target.value,
-                                        )
-                                    }
-                                    required
-                                />
-                            </label>
-                            <label className="space-y-1 text-sm font-semibold text-stone-700 md:col-span-2 xl:col-span-3">
-                                Catatan
-                                <input
-                                    className={fieldClass}
-                                    value={form.data.notes}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'notes',
-                                            event.target.value,
-                                        )
-                                    }
-                                />
-                            </label>
-                            {Object.keys(form.errors).length > 0 && (
-                                <p className="text-sm font-medium text-red-700 md:col-span-full">
-                                    {Object.values(form.errors)[0]}
-                                </p>
-                            )}
-                        </form>
-                    </LedgerCard>
-                )}
-                {canManage && (
-                    <LedgerCard
-                        title="Batas stok minimum"
-                        description="Produk akan ditandai saat saldo menyentuh batas ini."
-                    >
-                        <form
-                            onSubmit={submitMinimum}
-                            className="grid gap-4 md:grid-cols-[1fr_1fr_auto]"
-                        >
-                            <label className="space-y-1 text-sm font-semibold text-stone-700">
-                                Produk
-                                <select
-                                    className={fieldClass}
-                                    value={minimum.data.product_id}
-                                    onChange={(event) =>
-                                        minimum.setData(
-                                            'product_id',
-                                            event.target.value,
-                                        )
-                                    }
-                                >
-                                    {products.map((product) => (
-                                        <option
-                                            key={product.public_id}
-                                            value={product.public_id}
-                                        >
-                                            {product.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                            <label className="space-y-1 text-sm font-semibold text-stone-700">
-                                Kuantitas minimum
-                                <input
-                                    className={fieldClass}
-                                    type="number"
-                                    min="0"
-                                    step="0.000001"
-                                    value={minimum.data.minimum_quantity}
-                                    onChange={(event) =>
-                                        minimum.setData(
-                                            'minimum_quantity',
-                                            event.target.value,
-                                        )
-                                    }
-                                    required
-                                />
-                            </label>
-                            <div className="flex items-end">
-                                <button
-                                    className={buttonClass}
-                                    disabled={minimum.processing}
-                                >
-                                    Simpan batas
-                                </button>
-                            </div>
-                            {Object.keys(minimum.errors).length > 0 && (
-                                <p className="text-sm font-medium text-red-700 md:col-span-full">
-                                    {Object.values(minimum.errors)[0]}
-                                </p>
-                            )}
-                        </form>
-                    </LedgerCard>
-                )}
+                <section className="grid grid-cols-3 divide-x divide-[#173c35]/8 rounded-[1.25rem] border border-[#173c35]/8 bg-white px-1 py-3 shadow-sm sm:px-3">
+                    <InventoryMetric
+                        icon={Boxes}
+                        label="Item stok"
+                        value={String(products.length)}
+                    />
+                    <InventoryMetric
+                        icon={AlertTriangle}
+                        label="Stok kritis"
+                        value={String(lowStockCount)}
+                        danger={lowStockCount > 0}
+                    />
+                    <InventoryMetric
+                        icon={Warehouse}
+                        label="Nilai persediaan"
+                        value={compactMoney(totalValue)}
+                    />
+                </section>
 
-                <LedgerCard
-                    title="Posisi inventory"
-                    description={`${products.length} produk tercatat pada toko aktif.`}
-                >
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {products.map((product) => {
-                            const low =
-                                Number(product.quantity) <=
-                                    Number(product.minimum_quantity) &&
-                                Number(product.minimum_quantity) > 0;
+                <LedgerCard title="Daftar Persediaan">
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+                        <label className="relative flex-1">
+                            <span className="sr-only">Cari persediaan</span>
+                            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
+                            <input
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                                className={`${fieldClass} pl-9`}
+                                placeholder="Cari produk, varian, atau SKU"
+                            />
+                        </label>
+                        <label>
+                            <span className="sr-only">Filter status stok</span>
+                            <select
+                                value={stockStatus}
+                                onChange={(event) =>
+                                    setStockStatus(event.target.value)
+                                }
+                                className={`${fieldClass} sm:w-40`}
+                            >
+                                <option value="all">Semua stok</option>
+                                <option value="low">Stok kritis</option>
+                                <option value="safe">Stok aman</option>
+                            </select>
+                        </label>
+                    </div>
 
-                            return (
-                                <article
-                                    key={product.public_id}
-                                    className="rounded-2xl border border-stone-200 bg-stone-50 p-4"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <h3 className="font-bold text-stone-900">
-                                                {product.name}
-                                            </h3>
-                                            <p className="text-xs text-stone-500">
-                                                {product.sku || 'Tanpa SKU'}
-                                            </p>
-                                        </div>
-                                        {low && (
-                                            <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-bold text-red-700">
-                                                Stok minimum
-                                            </span>
+                    <div className="overflow-hidden rounded-xl border border-stone-200">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[880px] text-left text-sm">
+                                <thead className="bg-[#f1f5f2] text-[10px] font-black tracking-[0.1em] text-[#64776f] uppercase">
+                                    <tr>
+                                        <th className="px-4 py-3">Produk</th>
+                                        <th className="px-3 py-3">SKU</th>
+                                        <th className="px-3 py-3 text-right">
+                                            Stok saat ini
+                                        </th>
+                                        <th className="px-3 py-3 text-right">
+                                            Batas minimum
+                                        </th>
+                                        <th className="px-3 py-3 text-right">
+                                            HPP rata-rata/unit
+                                        </th>
+                                        <th className="px-3 py-3 text-right">
+                                            Nilai persediaan
+                                        </th>
+                                        <th className="px-4 py-3 text-right">
+                                            Status
+                                        </th>
+                                    </tr>
+                                </thead>
+                                {visibleGroups.map((group) => (
+                                    <tbody
+                                        key={group.public_id}
+                                        className="divide-y divide-stone-100"
+                                    >
+                                        {group.grouped && (
+                                            <tr className="border-t border-[#d9e5de] bg-[#f8faf8] first:border-t-0">
+                                                <td
+                                                    colSpan={7}
+                                                    className="px-4 py-2.5"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="flex size-7 items-center justify-center rounded-lg bg-[#e2eee8] text-[#286451]">
+                                                            <Layers3 className="size-3.5" />
+                                                        </span>
+                                                        <span className="font-black text-[#173c35]">
+                                                            {group.name}
+                                                        </span>
+                                                        <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-[#657a72] ring-1 ring-[#173c35]/8">
+                                                            {
+                                                                group.products
+                                                                    .length
+                                                            }{' '}
+                                                            varian
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         )}
-                                    </div>
-                                    <p className="mt-5 font-serif text-3xl text-teal-800">
-                                        {quantity(product.quantity)}{' '}
-                                        <span className="text-base">
-                                            {product.unit}
-                                        </span>
-                                    </p>
-                                    <div className="mt-3 flex justify-between text-xs text-stone-500">
-                                        <span>
-                                            Avg {money(product.average_cost)}
-                                        </span>
-                                        <span>
-                                            Nilai{' '}
-                                            {money(product.inventory_value)}
-                                        </span>
-                                    </div>
-                                </article>
-                            );
-                        })}
+                                        {group.products.map((product) => {
+                                            const low = isLowStock(product);
+
+                                            return (
+                                                <tr
+                                                    key={product.public_id}
+                                                    className="bg-white transition hover:bg-[#fbfdfb]"
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        <div
+                                                            className={
+                                                                group.grouped
+                                                                    ? 'flex items-center gap-2 pl-4'
+                                                                    : ''
+                                                            }
+                                                        >
+                                                            {group.grouped && (
+                                                                <span className="h-px w-3 bg-[#aac0b5]" />
+                                                            )}
+                                                            <span className="font-bold text-stone-900">
+                                                                {product.variant_name ??
+                                                                    product.name}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-3 font-mono text-xs text-stone-500">
+                                                        {product.sku || '-'}
+                                                    </td>
+                                                    <td className="px-3 py-3 text-right font-black text-[#205f4e] tabular-nums">
+                                                        {quantity(
+                                                            product.quantity,
+                                                        )}{' '}
+                                                        <span className="text-[10px] font-bold text-stone-500">
+                                                            {product.unit}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-3 text-right text-stone-600 tabular-nums">
+                                                        {quantity(
+                                                            product.minimum_quantity,
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-3 text-right text-stone-600 tabular-nums">
+                                                        {money(
+                                                            product.average_cost,
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-3 text-right font-bold text-stone-800 tabular-nums">
+                                                        {money(
+                                                            product.inventory_value,
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        <StockBadge low={low} />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                ))}
+                            </table>
+                        </div>
+                        {visibleGroups.length === 0 && (
+                            <div className="flex min-h-32 flex-col items-center justify-center px-4 text-center">
+                                <Boxes className="size-5 text-stone-400" />
+                                <p className="mt-2 text-sm font-bold text-stone-600">
+                                    Persediaan tidak ditemukan
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </LedgerCard>
 
-                <LedgerCard title="Movement terbaru">
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[680px] text-left text-sm">
-                            <thead className="border-b border-stone-200 text-xs tracking-wider text-stone-500 uppercase">
-                                <tr>
-                                    <th className="pb-3">Produk</th>
-                                    <th className="pb-3">Alasan</th>
-                                    <th className="pb-3">Perubahan</th>
-                                    <th className="pb-3">Biaya</th>
-                                    <th className="pb-3">Saldo</th>
-                                    <th className="pb-3">Waktu</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {movements.data.map((movement) => (
-                                    <tr
-                                        key={movement.public_id}
-                                        className="border-b border-stone-100"
-                                    >
-                                        <td className="py-3 font-semibold">
-                                            {movement.product_name}
-                                        </td>
-                                        <td>
-                                            {reasons[movement.reason] ??
-                                                movement.reason}
-                                        </td>
-                                        <td
-                                            className={
-                                                Number(
-                                                    movement.quantity_change,
-                                                ) >= 0
-                                                    ? 'text-teal-700'
-                                                    : 'text-red-700'
-                                            }
-                                        >
-                                            {quantity(movement.quantity_change)}
-                                        </td>
-                                        <td>{money(movement.unit_cost)}</td>
-                                        <td>
-                                            {quantity(movement.quantity_after)}
-                                        </td>
-                                        <td>
-                                            {ledgerDateTime(
-                                                movement.occurred_at,
-                                                timezone,
-                                            )}
-                                        </td>
+                <LedgerCard title="Riwayat Stok">
+                    <div className="overflow-hidden rounded-xl border border-stone-200">
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[820px] text-left text-sm">
+                                <thead className="bg-[#f1f5f2] text-[10px] font-black tracking-[0.1em] text-[#64776f] uppercase">
+                                    <tr>
+                                        <th className="px-4 py-3">Produk</th>
+                                        <th className="px-3 py-3">Aktivitas</th>
+                                        <th className="px-3 py-3 text-right">
+                                            Stok sebelum
+                                        </th>
+                                        <th className="px-3 py-3 text-right">
+                                            Perubahan
+                                        </th>
+                                        <th className="px-3 py-3 text-right">
+                                            Stok akhir
+                                        </th>
+                                        <th className="px-4 py-3 text-right">
+                                            Waktu
+                                        </th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-stone-100">
+                                    {movements.data.map((movement) => {
+                                        const positive =
+                                            Number(movement.quantity_change) >=
+                                            0;
+
+                                        return (
+                                            <tr
+                                                key={movement.public_id}
+                                                className="bg-white hover:bg-[#fbfdfb]"
+                                            >
+                                                <td className="px-4 py-3 font-bold text-stone-900">
+                                                    {movement.product_name}
+                                                </td>
+                                                <td className="px-3 py-3 text-stone-600">
+                                                    {reasons[movement.reason] ??
+                                                        movement.reason}
+                                                </td>
+                                                <td className="px-3 py-3 text-right text-stone-600 tabular-nums">
+                                                    {quantity(
+                                                        movement.quantity_before,
+                                                    )}{' '}
+                                                    <span className="text-[10px] font-bold text-stone-500">
+                                                        {movement.unit}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-3 text-right">
+                                                    <span
+                                                        className={`inline-flex items-center gap-1 font-black tabular-nums ${positive ? 'text-[#27705b]' : 'text-[#aa5638]'}`}
+                                                    >
+                                                        {positive ? (
+                                                            <ArrowUpRight className="size-3.5" />
+                                                        ) : (
+                                                            <ArrowDownRight className="size-3.5" />
+                                                        )}
+                                                        {quantity(
+                                                            movement.quantity_change,
+                                                        )}{' '}
+                                                        <span className="text-[10px] font-bold">
+                                                            {movement.unit}
+                                                        </span>
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-3 text-right font-bold tabular-nums">
+                                                    {quantity(
+                                                        movement.quantity_after,
+                                                    )}{' '}
+                                                    <span className="text-[10px] font-bold text-stone-500">
+                                                        {movement.unit}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-xs whitespace-nowrap text-stone-500">
+                                                    {ledgerDateTime(
+                                                        movement.occurred_at,
+                                                        timezone,
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                         {movements.data.length === 0 && (
-                            <p className="py-8 text-center text-sm text-stone-500">
-                                Belum ada pergerakan stok.
+                            <p className="py-10 text-center text-sm font-bold text-stone-500">
+                                Belum ada riwayat stok
                             </p>
                         )}
-                        <div className="mt-5">
-                            <Pagination links={movements.links} />
-                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <Pagination links={movements.links} />
                     </div>
                 </LedgerCard>
             </OperationsShell>
         </>
     );
+}
+
+function InventoryMetric({
+    icon: Icon,
+    label,
+    value,
+    danger = false,
+}: {
+    icon: typeof Boxes;
+    label: string;
+    value: string;
+    danger?: boolean;
+}) {
+    return (
+        <div className="min-w-0 px-2 sm:flex sm:items-center sm:gap-3 sm:px-4">
+            <span
+                className={`hidden size-9 shrink-0 items-center justify-center rounded-xl sm:flex ${danger ? 'bg-[#f8e8df] text-[#aa5638]' : 'bg-[#e7f1ec] text-[#286451]'}`}
+            >
+                <Icon className="size-4" />
+            </span>
+            <div className="min-w-0 text-center sm:text-left">
+                <p className="truncate text-[9px] font-bold tracking-wide text-[#72837d] uppercase sm:text-[10px]">
+                    {label}
+                </p>
+                <p
+                    className={`mt-1 truncate text-sm font-black tabular-nums sm:text-lg ${danger ? 'text-[#9c4f34]' : 'text-[#173c35]'}`}
+                >
+                    {value}
+                </p>
+            </div>
+        </div>
+    );
+}
+
+function StockBadge({ low }: { low: boolean }) {
+    return (
+        <span
+            className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-black ${low ? 'bg-[#f8e8df] text-[#9c4f34]' : 'bg-[#e7f1ec] text-[#286451]'}`}
+        >
+            {low ? 'Kritis' : 'Aman'}
+        </span>
+    );
+}
+
+function groupProducts(products: Product[]): ProductGroup[] {
+    const groups = new Map<string, ProductGroup>();
+
+    products.forEach((product) => {
+        const publicId = product.parent_public_id ?? product.public_id;
+        const current = groups.get(publicId) ?? {
+            public_id: publicId,
+            name: product.parent_name ?? product.name,
+            grouped: product.parent_public_id !== null,
+            products: [],
+        };
+
+        current.products.push(product);
+        groups.set(publicId, current);
+    });
+
+    return Array.from(groups.values());
+}
+
+function isLowStock(product: Product) {
+    return (
+        Number(product.minimum_quantity) > 0 &&
+        Number(product.quantity) <= Number(product.minimum_quantity)
+    );
+}
+
+function compactMoney(value: string | number) {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+    }).format(Number(value));
 }

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property-read Collection<int, ProductUnit> $productUnits
  */
-#[Fillable(['store_id', 'creation_token', 'category_id', 'base_unit_id', 'name', 'sku', 'barcode', 'description', 'is_active'])]
+#[Fillable(['store_id', 'creation_token', 'category_id', 'base_unit_id', 'large_unit_id', 'variant_mode', 'name', 'sku', 'barcode', 'description', 'photo_path', 'is_active'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -36,6 +36,18 @@ class Product extends Model
     public function baseUnit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'base_unit_id');
+    }
+
+    /** @return BelongsTo<Unit, $this> */
+    public function largeUnit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class, 'large_unit_id');
+    }
+
+    /** @return HasMany<ProductVariant, $this> */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class);
     }
 
     /** @return HasMany<ProductUnit, $this> */

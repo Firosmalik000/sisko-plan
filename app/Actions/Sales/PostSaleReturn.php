@@ -9,6 +9,7 @@ use App\Actions\Ledgers\IdempotencyGuard;
 use App\Actions\Ledgers\LedgerTimestamp;
 use App\Actions\Ledgers\NextDocumentNumber;
 use App\Models\FinancialAccount;
+use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleReturn;
@@ -85,7 +86,7 @@ class PostSaleReturn
                         throw ValidationException::withMessages(["items.{$index}.quantity" => 'Hasil konversi kuantitas retur tidak valid.']);
                     }
                     $calculatedItems[] = [
-                        'sale_item_id' => $saleItem->id, 'product_id' => $saleItem->product_id,
+                        'sale_item_id' => $saleItem->id, 'product_id' => $saleItem->product_id, 'product_variant_id' => $saleItem->product_variant_id,
                         'quantity' => $item['quantity'], 'base_quantity' => $baseQuantity,
                         'refund_amount' => $refund, 'cogs_reversed' => $cogs,
                         'unit_cost_snapshot' => Decimal::divide($cogs, $baseQuantity, Decimal::MONEY_SCALE),
@@ -104,9 +105,12 @@ class PostSaleReturn
                     'occurred_at' => $date, 'notes' => $notes, 'created_by_user_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 foreach ($calculatedItems as $item) {
+                    $stockVariantId = Product::query()->whereKey($item['product_id'])->value('variant_mode') === 'separate'
+                        ? $item['product_variant_id']
+                        : null;
                     $this->stock->handle(
                         $store->id, (int) $item['product_id'], (string) $item['base_quantity'], (string) $item['unit_cost_snapshot'],
-                        'sale_return', $saleReturn, $date, $actor, $notes, false, (string) $item['cogs_reversed'],
+                        'sale_return', $saleReturn, $date, $actor, $notes, false, (string) $item['cogs_reversed'], $stockVariantId,
                     );
                     SaleReturnItem::create(['store_id' => $store->id, 'sale_return_id' => $saleReturn->id, ...$item]);
                 }

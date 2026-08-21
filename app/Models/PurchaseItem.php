@@ -6,7 +6,7 @@ use App\Models\Concerns\ImmutableLedgerRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['store_id', 'purchase_id', 'product_id', 'product_unit_id', 'product_name', 'sku', 'unit_name', 'unit_symbol', 'quantity', 'conversion_factor', 'base_quantity', 'unit_price', 'line_subtotal', 'allocated_discount', 'allocated_additional_cost', 'landed_total', 'base_unit_cost'])]
+#[Fillable(['store_id', 'purchase_id', 'product_id', 'product_variant_id', 'product_unit_id', 'product_name', 'sku', 'unit_name', 'unit_symbol', 'quantity', 'conversion_factor', 'base_quantity', 'unit_price', 'line_subtotal', 'allocated_discount', 'allocated_additional_cost', 'landed_total', 'base_unit_cost'])]
 class PurchaseItem extends Model
 {
     use ImmutableLedgerRecord;

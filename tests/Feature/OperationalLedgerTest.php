@@ -14,6 +14,7 @@ use App\Models\FinancialAccount;
 use App\Models\FinancialAccountBalance;
 use App\Models\InventoryBalance;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\StockAdjustment;
 use App\Models\StockMovement;
 use App\Models\Store;
@@ -70,6 +71,35 @@ class OperationalLedgerTest extends TestCase
         $this->assertEquals(25000, CapitalTransaction::query()->sole()->total_value);
         $this->assertDatabaseHas('cash_transactions', ['reason' => 'opening_balance', 'amount' => 50000]);
         $this->assertDatabaseHas('cash_transactions', ['reason' => 'cash_contribution', 'amount' => 25000]);
+    }
+
+    public function test_capital_http_validation_ignores_fields_from_the_inactive_asset_type(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $session = ['active_store_id' => $store->id];
+        $occurredAt = now()->toISOString();
+
+        $this->actingAs($owner)->withSession($session)->post(route('operations.capital.store'), [
+            'type' => 'cash_contribution',
+            'account_id' => $cash->public_id,
+            'amount' => '10000',
+            'items' => [['product_id' => $product->public_id, 'quantity' => '', 'unit_cost' => '']],
+            'occurred_at' => $occurredAt,
+            'idempotency_key' => (string) Str::uuid(),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAs($owner)->withSession($session)->post(route('operations.capital.store'), [
+            'type' => 'inventory_contribution',
+            'account_id' => $cash->public_id,
+            'amount' => '',
+            'items' => [['product_id' => $product->public_id, 'quantity' => '2', 'unit_cost' => '1500']],
+            'occurred_at' => $occurredAt,
+            'idempotency_key' => (string) Str::uuid(),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('capital_transactions', 2);
+        $this->assertSame('10000.0000', FinancialAccountBalance::query()->sole()->balance);
+        $this->assertSame('2.000000', InventoryBalance::query()->sole()->quantity);
     }
 
     public function test_cash_withdrawal_rejects_insufficient_balance(): void
@@ -314,6 +344,54 @@ class OperationalLedgerTest extends TestCase
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
             ->get(route('operations.inventory', ['page' => 2]))
             ->assertInertia(fn (Assert $page) => $page->has('movements.data', 1));
+    }
+
+    public function test_inventory_history_exposes_stock_before_after_and_unit(): void
+    {
+        [$owner, $store, $product] = $this->fixtures();
+        $stock = app(PostStockAdjustment::class);
+        $date = '2026-08-06T10:00:00Z';
+        $stock->handle($store, $owner, 'opening', [['product_id' => $product->id, 'quantity' => '10', 'unit_cost' => '1000']], $date, null, 'history-stock-1');
+        $stock->handle($store, $owner, 'decrease', [['product_id' => $product->id, 'quantity' => '3']], $date, null, 'history-stock-2');
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('operations.inventory'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('movements.data.0.quantity_before', 10)
+                ->where('movements.data.0.quantity_change', -3)
+                ->where('movements.data.0.quantity_after', 7)
+                ->where('movements.data.0.unit', $product->baseUnit->symbol));
+    }
+
+    public function test_separate_stock_variants_include_their_parent_for_inventory_grouping(): void
+    {
+        [$owner, $store, $product] = $this->fixtures();
+        $product->update(['variant_mode' => 'separate']);
+        $variant = ProductVariant::query()->create([
+            'store_id' => $store->id,
+            'product_id' => $product->id,
+            'name' => 'Besar',
+            'is_active' => true,
+        ]);
+        InventoryBalance::query()->create([
+            'store_id' => $store->id,
+            'product_id' => $product->id,
+            'product_variant_id' => $variant->id,
+            'stock_key' => "variant:{$variant->id}",
+            'quantity' => '7',
+            'average_cost' => '2500',
+            'inventory_value' => '17500',
+            'minimum_quantity' => '2',
+        ]);
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('operations.inventory'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('products', 1)
+                ->where('products.0.public_id', $variant->public_id)
+                ->where('products.0.parent_public_id', $product->public_id)
+                ->where('products.0.parent_name', $product->name)
+                ->where('products.0.variant_name', 'Besar'));
     }
 
     /** @return array{User, Store, Product, FinancialAccount, FinancialAccount} */

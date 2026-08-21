@@ -1,11 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import {
-    CircleDollarSign,
-    PackagePlus,
-    Plus,
-    Trash2,
-    Truck,
-} from 'lucide-react';
+import { CircleDollarSign, PackagePlus, Plus, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import {
     buttonClass,
@@ -68,7 +62,7 @@ type PayableTransaction = {
 type Page<T> = { data: T[]; links: PaginationLink[]; total: number };
 
 const cardClass =
-    'rounded-3xl border border-stone-200 bg-white/90 p-5 shadow-sm backdrop-blur md:p-7';
+    'rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-sm sm:p-5';
 const labelClass = 'space-y-1 text-sm font-semibold text-stone-700';
 const defaultItem = (product?: ProductOption) => ({
     product_id: product?.product_id ?? '',
@@ -203,35 +197,26 @@ export default function PurchasingPage({
     return (
         <>
             <Head title="Pembelian dan utang supplier" />
-            <div className="min-h-full bg-[radial-gradient(circle_at_12%_8%,rgba(234,179,8,0.16),transparent_28%),linear-gradient(145deg,#fffaf0_0%,#f5f7f4_52%,#e7f2f0_100%)] p-4 md:p-8">
-                <div className="mx-auto max-w-7xl space-y-6">
-                    <header className="relative overflow-hidden rounded-[2rem] bg-[#12332f] px-6 py-8 text-white shadow-xl shadow-teal-950/15 md:px-10">
-                        <Truck className="absolute -right-8 -bottom-10 size-52 rotate-[-8deg] text-white/5" />
-                        <p className="text-xs font-bold tracking-[0.24em] text-amber-300 uppercase">
-                            Buku 04 / Procurement
-                        </p>
-                        <h1 className="mt-3 max-w-3xl font-serif text-3xl tracking-tight md:text-5xl">
-                            Barang datang, biaya melekat, utang tercatat.
+            <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-4">
+                    <header className="flex flex-wrap items-center justify-between gap-4 rounded-[1.35rem] border border-[#173c35]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
+                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                            Pembelian
                         </h1>
-                        <p className="mt-4 max-w-2xl text-sm leading-6 text-teal-50/75 md:text-base">
-                            Satu posting memperbarui stok dengan moving average,
-                            membentuk utang supplier, lalu mengurangi kas dan
-                            utang sesuai pembayaran aktual.
-                        </p>
-                        <div className="mt-7 flex flex-wrap gap-3">
-                            <div className="rounded-2xl bg-white/10 px-4 py-3">
-                                <p className="text-xs text-teal-100/70">
+                        <div className="flex gap-2">
+                            <div className="rounded-xl bg-[#edf4f0] px-3 py-2">
+                                <p className="text-[10px] font-bold text-[#6d817a] uppercase">
                                     Total utang supplier
                                 </p>
-                                <p className="mt-1 text-xl font-bold text-amber-300">
+                                <p className="mt-0.5 text-sm font-black text-[#173c35]">
                                     {money(totalPayable)}
                                 </p>
                             </div>
-                            <div className="rounded-2xl bg-white/10 px-4 py-3">
-                                <p className="text-xs text-teal-100/70">
+                            <div className="rounded-xl bg-[#edf4f0] px-3 py-2">
+                                <p className="text-[10px] font-bold text-[#6d817a] uppercase">
                                     Dokumen pembelian
                                 </p>
-                                <p className="mt-1 text-xl font-bold">
+                                <p className="mt-0.5 text-sm font-black text-[#173c35]">
                                     {purchases.total}
                                 </p>
                             </div>
@@ -246,12 +231,6 @@ export default function PurchasingPage({
                                     <h2 className="font-serif text-2xl text-stone-900">
                                         Posting pembelian
                                     </h2>
-                                    <p className="text-sm text-stone-500">
-                                        Harga item adalah harga per satuan yang
-                                        dipilih. Diskon dan biaya tambahan
-                                        dialokasikan proporsional ke nilai
-                                        persediaan.
-                                    </p>
                                 </div>
                             </div>
                             <div className="mt-6 grid gap-4 md:grid-cols-3">

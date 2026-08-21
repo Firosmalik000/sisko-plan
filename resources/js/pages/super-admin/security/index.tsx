@@ -1,17 +1,19 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
 import {
     CheckCircle2,
     KeyRound,
     LockKeyhole,
     RefreshCw,
     ShieldAlert,
+    ShieldCheck,
+    UserRoundCheck,
 } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import SuperAdminLayout from '@/layouts/super-admin-layout';
+import type { PlatformAdmin } from '@/types';
 
 type Props = {
     twoFactorEnabled: boolean;
@@ -28,30 +30,47 @@ export default function PlatformSecurity({
     qrCodeSvg,
     recoveryCodes,
 }: Props) {
+    const { platformAdmin } = usePage<{ platformAdmin: PlatformAdmin }>().props;
+
     return (
-        <SuperAdminLayout>
+        <>
             <Head title="Keamanan Platform Admin" />
-            <div className="mx-auto max-w-4xl">
-                <div className="flex items-start gap-4">
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#d7a941] text-[#102b31]">
-                        <LockKeyhole className="size-6" />
-                    </span>
-                    <div>
-                        <p className="text-xs font-semibold tracking-[0.2em] text-[#8a681e] uppercase">
-                            Security hardening
-                        </p>
-                        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-                            Keamanan Platform Admin
-                        </h1>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">
-                            Lindungi kendali seluruh platform dengan kode TOTP
-                            yang berbeda dari kata sandi.
-                        </p>
-                    </div>
+            <div className="platform-enter mx-auto max-w-5xl">
+                <header>
+                    <p className="platform-kicker">Access protection</p>
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#0b292f]">
+                        Keamanan akun
+                    </h1>
+                    <p className="mt-2 text-sm text-slate-600">
+                        Kontrol autentikasi dan pemulihan akses Platform Admin.
+                    </p>
+                </header>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <SecurityStat
+                        icon={UserRoundCheck}
+                        label="Status akun"
+                        value="Aktif"
+                    />
+                    <SecurityStat
+                        icon={ShieldCheck}
+                        label="Role akses"
+                        value={
+                            platformAdmin.role === 'super_admin'
+                                ? 'Super Admin'
+                                : 'Admin Platform'
+                        }
+                    />
+                    <SecurityStat
+                        icon={LockKeyhole}
+                        label="Autentikasi 2FA"
+                        value={twoFactorEnabled ? 'Terlindungi' : 'Belum aktif'}
+                        warning={!twoFactorEnabled}
+                    />
                 </div>
 
-                <section className="mt-8 overflow-hidden rounded-3xl border border-slate-900/10 bg-white shadow-sm">
-                    <div className="flex items-center justify-between gap-4 border-b border-slate-900/8 p-6">
+                <section className="platform-panel mt-5 overflow-hidden">
+                    <div className="flex items-center justify-between gap-4 border-b border-slate-900/8 p-5">
                         <div>
                             <h2 className="font-semibold">
                                 Autentikasi dua langkah
@@ -207,7 +226,7 @@ export default function PlatformSecurity({
                 </section>
 
                 {recoveryCodes.length > 0 && (
-                    <section className="mt-6 rounded-3xl bg-[#102b31] p-6 text-white sm:p-8">
+                    <section className="mt-6 rounded-2xl bg-[#0b292f] p-6 text-white shadow-lg shadow-[#0b292f]/10 sm:p-8">
                         <p className="text-xs font-semibold tracking-[0.2em] text-[#d7a941] uppercase">
                             Tampilkan satu kali
                         </p>
@@ -232,7 +251,39 @@ export default function PlatformSecurity({
                     </section>
                 )}
             </div>
-        </SuperAdminLayout>
+        </>
+    );
+}
+
+function SecurityStat({
+    icon: Icon,
+    label,
+    value,
+    warning = false,
+}: {
+    icon: typeof ShieldCheck;
+    label: string;
+    value: string;
+    warning?: boolean;
+}) {
+    return (
+        <article
+            className={`platform-panel flex items-center gap-3 p-4 ${warning ? 'border-amber-300 bg-amber-50/80' : ''}`}
+        >
+            <span
+                className={`flex size-10 items-center justify-center rounded-xl ${warning ? 'bg-amber-200 text-amber-900' : 'bg-[#0b292f] text-white'}`}
+            >
+                <Icon className="size-4" />
+            </span>
+            <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase">
+                    {label}
+                </p>
+                <p className="mt-1 text-sm font-black text-[#0b292f]">
+                    {value}
+                </p>
+            </div>
+        </article>
     );
 }
 

@@ -19,6 +19,7 @@ use App\Models\FinancialAccount;
 use App\Models\FinancialAccountBalance;
 use App\Models\InventoryBalance;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Support\CurrentStore;
@@ -38,23 +39,39 @@ class LedgerController extends Controller
         $store = $currentStore->get();
         $timezone = $store->settings()->value('timezone') ?? 'Asia/Jakarta';
         Gate::authorize('viewOperations', $store);
-        $products = Product::query()->where('products.store_id', $store->id)
+        $products = InventoryBalance::query()->where('inventory_balances.store_id', $store->id)
+            ->join('products', 'products.id', '=', 'inventory_balances.product_id')
+            ->leftJoin('product_variants', 'product_variants.id', '=', 'inventory_balances.product_variant_id')
             ->join('units', 'units.id', '=', 'products.base_unit_id')
-            ->leftJoin('inventory_balances', fn ($join) => $join->on('inventory_balances.product_id', '=', 'products.id')->where('inventory_balances.store_id', $store->id))
-            ->orderBy('products.name')->get([
-                'products.public_id', 'products.name', 'products.sku', 'units.symbol as unit',
+            ->where('products.is_active', true)
+            ->where(fn ($query) => $query->whereNull('inventory_balances.product_variant_id')->orWhere('product_variants.is_active', true))
+            ->orderBy('products.name')->orderBy('product_variants.name')
+            ->get([
+                DB::raw('COALESCE(product_variants.public_id, products.public_id) as public_id'), 'products.name', 'products.sku',
+                'product_variants.name as variant_name', 'units.symbol as unit',
+                DB::raw('CASE WHEN product_variants.id IS NULL THEN NULL ELSE products.public_id END as parent_public_id'),
+                DB::raw('CASE WHEN product_variants.id IS NULL THEN NULL ELSE products.name END as parent_name'),
                 'inventory_balances.quantity', 'inventory_balances.average_cost', 'inventory_balances.inventory_value', 'inventory_balances.minimum_quantity',
-            ])->map(fn (Product $product): array => [
+            ])->map(fn (InventoryBalance $product): array => [
                 ...$product->toArray(),
                 'quantity' => $product->quantity ?? '0.000000', 'average_cost' => $product->average_cost ?? '0.0000',
                 'inventory_value' => $product->inventory_value ?? '0.0000', 'minimum_quantity' => $product->minimum_quantity ?? '0.000000',
             ]);
         $movements = StockMovement::query()->where('stock_movements.store_id', $store->id)
             ->join('products', 'products.id', '=', 'stock_movements.product_id')
-            ->latest('stock_movements.id')->paginate(25, [
-                'stock_movements.public_id', 'stock_movements.reason', 'stock_movements.quantity_change', 'stock_movements.unit_cost',
-                'stock_movements.value_change', 'stock_movements.quantity_after', 'stock_movements.occurred_at', 'products.name as product_name',
-            ])->withQueryString();
+            ->leftJoin('product_variants', 'product_variants.id', '=', 'stock_movements.product_variant_id')
+            ->join('units', 'units.id', '=', 'products.base_unit_id')
+            ->latest('stock_movements.id')->select([
+                'stock_movements.public_id', 'stock_movements.reason', 'stock_movements.quantity_change',
+                'stock_movements.quantity_after', 'stock_movements.occurred_at', 'products.name as product_name', 'product_variants.name as variant_name',
+                'units.symbol as unit',
+            ])->selectRaw('(stock_movements.quantity_after - stock_movements.quantity_change) as quantity_before')
+            ->paginate(25)->withQueryString()->through(function (StockMovement $movement): array {
+                $productName = (string) $movement->getAttribute('product_name');
+                $variantName = $movement->getAttribute('variant_name');
+
+                return [...$movement->toArray(), 'product_name' => $variantName === null ? $productName : "{$productName} - {$variantName}"];
+            });
 
         return Inertia::render('operations/inventory', ['products' => $products, 'movements' => $movements, 'timezone' => $timezone, 'canManage' => Gate::allows('manageOperations', $store)]);
     }
@@ -94,10 +111,32 @@ class LedgerController extends Controller
         $withdrawals = (string) CapitalTransaction::query()->where('store_id', $store->id)
             ->whereIn('type', ['cash_withdrawal', 'inventory_withdrawal'])->sum('total_value');
         $balance = Decimal::subtract($contributions, $withdrawals, Decimal::MONEY_SCALE);
-        $products = Product::query()->where('store_id', $store->id)->where('is_active', true)->orderBy('name')->get(['id', 'public_id', 'name']);
-        $accounts = FinancialAccount::query()->where('store_id', $store->id)->where('is_active', true)->orderBy('name')->get(['id', 'public_id', 'name']);
+        $products = InventoryBalance::query()->where('inventory_balances.store_id', $store->id)
+            ->join('products', 'products.id', '=', 'inventory_balances.product_id')
+            ->leftJoin('product_variants', 'product_variants.id', '=', 'inventory_balances.product_variant_id')
+            ->where('products.is_active', true)
+            ->where(fn ($query) => $query->whereNull('inventory_balances.product_variant_id')->orWhere('product_variants.is_active', true))
+            ->orderBy('products.name')->orderBy('product_variants.name')
+            ->get([DB::raw('COALESCE(product_variants.public_id, products.public_id) as public_id'), 'products.name', 'product_variants.name as variant_name', 'inventory_balances.quantity', 'inventory_balances.average_cost'])
+            ->map(fn (InventoryBalance $product): array => [
+                ...$product->toArray(),
+                'name' => $product->getAttribute('variant_name') === null
+                    ? (string) $product->getAttribute('name')
+                    : $product->getAttribute('name').' - '.$product->getAttribute('variant_name'),
+                'quantity' => $product->quantity ?? '0.000000', 'average_cost' => $product->average_cost ?? '0.0000',
+            ]);
+        $accounts = FinancialAccount::query()->where('financial_accounts.store_id', $store->id)
+            ->where('financial_accounts.is_active', true)
+            ->leftJoin('financial_account_balances', fn ($join) => $join->on('financial_account_balances.financial_account_id', '=', 'financial_accounts.id')->where('financial_account_balances.store_id', $store->id))
+            ->orderBy('financial_accounts.name')->get(['financial_accounts.public_id', 'financial_accounts.name', 'financial_account_balances.balance'])
+            ->map(fn (FinancialAccount $account): array => [...$account->toArray(), 'balance' => $account->balance ?? '0.0000']);
 
-        return Inertia::render('operations/capital', ['transactions' => $transactions, 'capitalBalance' => $balance, 'products' => $products, 'accounts' => $accounts, 'timezone' => $timezone, 'canManage' => Gate::allows('manageOperations', $store)]);
+        return Inertia::render('operations/capital', [
+            'transactions' => $transactions, 'capitalBalance' => $balance,
+            'contributionTotal' => $contributions, 'withdrawalTotal' => $withdrawals,
+            'products' => $products, 'accounts' => $accounts, 'timezone' => $timezone,
+            'canManage' => Gate::allows('manageOperations', $store),
+        ]);
     }
 
     public function stockAdjustment(StockAdjustmentRequest $request, CurrentStore $currentStore, PostStockAdjustment $action): RedirectResponse
@@ -113,14 +152,15 @@ class LedgerController extends Controller
     public function minimumStock(MinimumStockRequest $request, CurrentStore $currentStore): RedirectResponse
     {
         $data = $request->validated();
-        $productId = Product::query()->where(['store_id' => $currentStore->id(), 'public_id' => $data['product_id']])->valueOrFail('id');
-        DB::transaction(function () use ($currentStore, $productId, $data): void {
+        $identity = $this->resolveStockIdentity($currentStore->id(), $data['product_id']);
+        DB::transaction(function () use ($currentStore, $identity, $data): void {
             DB::table('inventory_balances')->insertOrIgnore([
-                'store_id' => $currentStore->id(), 'product_id' => $productId, 'quantity' => 0,
-                'average_cost' => 0, 'inventory_value' => 0, 'minimum_quantity' => 0,
+                'store_id' => $currentStore->id(), 'product_id' => $identity['product_id'],
+                'product_variant_id' => $identity['product_variant_id'], 'stock_key' => $identity['stock_key'],
+                'quantity' => 0, 'average_cost' => 0, 'inventory_value' => 0, 'minimum_quantity' => 0,
                 'created_at' => now(), 'updated_at' => now(),
             ]);
-            InventoryBalance::query()->where(['store_id' => $currentStore->id(), 'product_id' => $productId])
+            InventoryBalance::query()->where(['store_id' => $currentStore->id(), 'stock_key' => $identity['stock_key']])
                 ->lockForUpdate()->update(['minimum_quantity' => $data['minimum_quantity']]);
         });
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Batas stok minimum berhasil diperbarui.']);
@@ -169,7 +209,7 @@ class LedgerController extends Controller
         return $user;
     }
 
-    /** @return array<int, array{product_id:int, quantity:string, unit_cost?:string|null}> */
+    /** @return array<int, array{product_id:int, product_variant_id:?int, quantity:string, unit_cost?:string|null}> */
     private function resolveItems(LedgerRequest $request, CurrentStore $currentStore): array
     {
         $input = $request->validated('items', []);
@@ -185,13 +225,36 @@ class LedgerController extends Controller
             if ($unitCost !== null && ! is_string($unitCost)) {
                 throw new LogicException('Validated unit cost must be a decimal string.');
             }
+            $identity = $this->resolveStockIdentity($currentStore->id(), $item['product_id']);
             $items[] = [
-                'product_id' => Product::query()->where(['store_id' => $currentStore->id(), 'public_id' => $item['product_id']])->valueOrFail('id'),
+                'product_id' => $identity['product_id'],
+                'product_variant_id' => $identity['product_variant_id'],
                 'quantity' => $item['quantity'],
                 'unit_cost' => $unitCost,
             ];
         }
 
         return $items;
+    }
+
+    /** @return array{product_id:int, product_variant_id:?int, stock_key:string} */
+    private function resolveStockIdentity(int $storeId, string $publicId): array
+    {
+        $product = Product::query()->where(['store_id' => $storeId, 'public_id' => $publicId])
+            ->where('variant_mode', '!=', 'separate')->first(['id']);
+        if ($product !== null) {
+            return ['product_id' => $product->id, 'product_variant_id' => null, 'stock_key' => "product:{$product->id}"];
+        }
+
+        $variant = ProductVariant::query()->where(['product_variants.store_id' => $storeId, 'product_variants.public_id' => $publicId])
+            ->join('products', 'products.id', '=', 'product_variants.product_id')
+            ->where('products.variant_mode', 'separate')
+            ->firstOrFail(['product_variants.id', 'product_variants.product_id']);
+
+        return [
+            'product_id' => (int) $variant->product_id,
+            'product_variant_id' => (int) $variant->id,
+            'stock_key' => "variant:{$variant->id}",
+        ];
     }
 }

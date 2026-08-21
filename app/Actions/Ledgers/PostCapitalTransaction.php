@@ -7,6 +7,7 @@ use App\Models\CapitalTransaction;
 use App\Models\CapitalTransactionItem;
 use App\Models\FinancialAccount;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\User;
 use App\Support\Decimal;
@@ -18,7 +19,7 @@ class PostCapitalTransaction
 {
     public function __construct(private NextDocumentNumber $numbers, private ApplyCashTransaction $cash, private ApplyStockMovement $stock, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
-    /** @param array<int, array{product_id:int, quantity:string, unit_cost?:string|null}> $items */
+    /** @param array<int, array{product_id:int, product_variant_id?:int|null, quantity:string, unit_cost?:string|null}> $items */
     public function handle(Store $store, User $actor, string $type, ?int $accountId, ?string $amount, array $items, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): CapitalTransaction
     {
         $date = $this->timestamps->parse($store, $occurredAt);
@@ -60,11 +61,19 @@ class PostCapitalTransaction
                             throw ValidationException::withMessages(['items' => 'Kuantitas harus lebih besar dari nol.']);
                         }
                         Product::query()->where(['id' => $item['product_id'], 'store_id' => $store->id])->firstOrFail();
+                        if (isset($item['product_variant_id'])) {
+                            ProductVariant::query()->where([
+                                'id' => $item['product_variant_id'],
+                                'store_id' => $store->id,
+                                'product_id' => $item['product_id'],
+                            ])->firstOrFail();
+                        }
                         $quantityChange = $incoming ? $item['quantity'] : Decimal::subtract('0', $item['quantity'], Decimal::QUANTITY_SCALE);
-                        $movement = $this->stock->handle($store->id, $item['product_id'], $quantityChange, $incoming ? ($item['unit_cost'] ?? null) : null, $type, $capital, $date, $actor, $notes);
+                        $variantId = $item['product_variant_id'] ?? null;
+                        $movement = $this->stock->handle($store->id, $item['product_id'], $quantityChange, $incoming ? ($item['unit_cost'] ?? null) : null, $type, $capital, $date, $actor, $notes, false, null, $variantId);
                         $itemValue = Decimal::absolute($movement->value_change, Decimal::MONEY_SCALE);
                         CapitalTransactionItem::create([
-                            'store_id' => $store->id, 'capital_transaction_id' => $capital->id, 'product_id' => $item['product_id'],
+                            'store_id' => $store->id, 'capital_transaction_id' => $capital->id, 'product_id' => $item['product_id'], 'product_variant_id' => $variantId,
                             'quantity' => $item['quantity'], 'unit_cost' => $movement->unit_cost, 'total_value' => $itemValue,
                         ]);
                         $total = Decimal::add($total, $itemValue, Decimal::MONEY_SCALE);

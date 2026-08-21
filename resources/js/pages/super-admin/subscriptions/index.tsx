@@ -1,8 +1,14 @@
-import { Head, router, useForm } from '@inertiajs/react';
-import { CreditCard, Plus, ReceiptText, Search, Settings2 } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import {
+    CreditCard,
+    FlaskConical,
+    Plus,
+    ReceiptText,
+    Search,
+    Settings2,
+} from 'lucide-react';
 import type { FormEvent } from 'react';
 import { postingToken } from '@/components/operations-shell';
-import { money } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 
@@ -34,17 +40,6 @@ type Subscription = {
     };
     plan: { public_id: string; name: string };
 };
-type Payment = {
-    public_id: string;
-    receipt_number: string;
-    amount: string;
-    period_start: string;
-    period_end: string;
-    payment_method: string;
-    external_reference: string | null;
-    paid_at: string;
-    store: { public_id: string; name: string };
-};
 type Paginated<T> = {
     data: T[];
     links: PaginationLink[];
@@ -59,12 +54,10 @@ const buttonClass =
 export default function AdminSubscriptions({
     plans,
     subscriptions,
-    payments,
     filters,
 }: {
     plans: Plan[];
     subscriptions: Paginated<Subscription>;
-    payments: Payment[];
     filters: { search: string; status: string };
 }) {
     const create = useForm({
@@ -95,35 +88,59 @@ export default function AdminSubscriptions({
 
     return (
         <>
-            <Head title="Subscription Platform" />
-            <header className="overflow-hidden rounded-3xl bg-[#102b31] px-6 py-8 text-white md:px-9">
-                <p className="text-xs font-bold tracking-[0.24em] text-[#e9c96f] uppercase">
-                    Commercial control
-                </p>
-                <h1 className="mt-3 max-w-3xl font-serif text-4xl tracking-tight md:text-5xl">
-                    Paket, akses, dan pembayaran dalam satu jejak.
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                    Kelola metadata komersial tanpa membuka data operasional
-                    tenant. Semua perubahan sensitif tercatat pada audit
-                    platform.
-                </p>
+            <Head title="Subscription & Paket" />
+            <header className="platform-enter flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <p className="platform-kicker">Commercial configuration</p>
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#0b292f]">
+                        Subscription & paket
+                    </h1>
+                    <p className="mt-2 text-sm text-slate-600">
+                        Spesifikasi paket, limit penggunaan, dan lifecycle
+                        subscription tenant.
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-black text-amber-900">
+                        <FlaskConical className="size-3.5" />
+                        Internal preview
+                    </span>
+                    <span className="rounded-full border border-[#0b292f]/10 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600">
+                        {subscriptions.total} tenant
+                    </span>
+                </div>
             </header>
 
-            <section className="mt-7 grid gap-6 xl:grid-cols-[.7fr_1.3fr]">
+            <div className="platform-panel mt-5 flex flex-col gap-3 border-l-4 border-l-[#e3b84f] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p className="text-sm font-black text-[#0b292f]">
+                        Belum menjadi self-service tenant
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                        Seluruh konfigurasi dan posting pembayaran masih
+                        dikelola internal oleh Platform Admin.
+                    </p>
+                </div>
+                <Link
+                    href="/super-admin/payments"
+                    className="inline-flex items-center gap-2 text-xs font-black text-[#8a681e] hover:underline"
+                >
+                    <ReceiptText className="size-4" />
+                    Buka riwayat pembayaran
+                </Link>
+            </div>
+
+            <section className="mt-5 grid gap-5 xl:grid-cols-[.7fr_1.3fr]">
                 <form
                     onSubmit={submitCreate}
-                    className="rounded-3xl border border-slate-900/10 bg-white/75 p-5 md:p-6"
+                    className="platform-panel p-5 md:p-6"
                 >
                     <div className="flex items-center gap-3">
                         <span className="rounded-xl bg-[#d7a941]/20 p-3 text-[#725515]">
                             <Plus className="size-5" />
                         </span>
                         <div>
-                            <h2 className="font-serif text-2xl">Paket baru</h2>
-                            <p className="text-xs text-slate-500">
-                                Nilai 0 pada limit berarti tak terbatas.
-                            </p>
+                            <h2 className="text-lg font-bold">Paket baru</h2>
                         </div>
                     </div>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -231,11 +248,11 @@ export default function AdminSubscriptions({
                     </button>
                 </form>
 
-                <div className="rounded-3xl border border-slate-900/10 bg-white/75 p-5 md:p-6">
+                <div className="platform-panel p-5 md:p-6">
                     <div className="flex items-center gap-3">
                         <Settings2 className="size-5 text-[#8a681e]" />
                         <div>
-                            <h2 className="font-serif text-2xl">
+                            <h2 className="text-xl font-black text-[#0b292f]">
                                 Katalog paket
                             </h2>
                             <p className="text-xs text-slate-500">
@@ -251,13 +268,13 @@ export default function AdminSubscriptions({
                 </div>
             </section>
 
-            <section className="mt-7 rounded-3xl border border-slate-900/10 bg-white/75 p-5 md:p-7">
+            <section className="platform-panel mt-5 p-5 md:p-7">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                         <p className="text-xs font-bold tracking-[.2em] text-[#8a681e] uppercase">
                             Tenant billing
                         </p>
-                        <h2 className="mt-1 font-serif text-3xl">
+                        <h2 className="mt-1 text-2xl font-black text-[#0b292f]">
                             Subscription toko
                         </h2>
                         <p className="text-sm text-slate-500">
@@ -313,60 +330,6 @@ export default function AdminSubscriptions({
                     <Pagination links={subscriptions.links} />
                 </div>
             </section>
-
-            <section className="mt-7 rounded-3xl border border-slate-900/10 bg-white/75 p-5 md:p-7">
-                <div className="flex items-center gap-3">
-                    <ReceiptText className="size-5 text-[#8a681e]" />
-                    <div>
-                        <h2 className="font-serif text-3xl">
-                            Pembayaran terbaru
-                        </h2>
-                        <p className="text-sm text-slate-500">
-                            20 receipt terakhir lintas tenant.
-                        </p>
-                    </div>
-                </div>
-                <div className="mt-5 overflow-x-auto">
-                    <table className="w-full min-w-[760px] text-left text-sm">
-                        <thead className="border-b text-xs text-slate-500 uppercase">
-                            <tr>
-                                <th className="px-3 py-3">Receipt</th>
-                                <th className="px-3 py-3">Toko</th>
-                                <th className="px-3 py-3">Periode</th>
-                                <th className="px-3 py-3">Metode</th>
-                                <th className="px-3 py-3 text-right">
-                                    Nominal
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-900/8">
-                            {payments.map((payment) => (
-                                <tr key={payment.public_id}>
-                                    <td className="px-3 py-4 font-mono font-semibold">
-                                        {payment.receipt_number}
-                                    </td>
-                                    <td className="px-3 py-4">
-                                        {payment.store.name}
-                                    </td>
-                                    <td className="px-3 py-4">
-                                        {shortDate(payment.period_start)} -{' '}
-                                        {shortDate(payment.period_end)}
-                                    </td>
-                                    <td className="px-3 py-4">
-                                        {payment.payment_method.replaceAll(
-                                            '_',
-                                            ' ',
-                                        )}
-                                    </td>
-                                    <td className="px-3 py-4 text-right font-bold">
-                                        {money(payment.amount)}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
         </>
     );
 }
@@ -396,7 +359,9 @@ function PlanEditor({ plan }: { plan: Plan }) {
         >
             <div className="flex items-start justify-between gap-2">
                 <div>
-                    <p className="font-serif text-xl">{plan.name}</p>
+                    <p className="text-xl font-black text-[#0b292f]">
+                        {plan.name}
+                    </p>
                     <p className="font-mono text-xs text-slate-500">
                         {plan.code} · {plan.subscriptions_count} toko
                     </p>
@@ -544,7 +509,7 @@ function SubscriptionEditor({
         <article className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h3 className="font-serif text-xl">
+                    <h3 className="text-xl font-black text-[#0b292f]">
                         {subscription.store.name}
                     </h3>
                     <p className="text-xs text-slate-500">
@@ -756,9 +721,4 @@ function Error({ errors }: { errors: Partial<Record<string, string>> }) {
 }
 function dateInput(value: string | null) {
     return value?.slice(0, 10) ?? '';
-}
-function shortDate(value: string) {
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium' }).format(
-        new Date(value),
-    );
 }

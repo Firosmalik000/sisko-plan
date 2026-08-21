@@ -9,7 +9,6 @@ use App\Enums\SubscriptionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\Subscription;
-use App\Models\SubscriptionPayment;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,11 +33,9 @@ class SubscriptionController extends Controller
                 'store' => ['public_id' => $subscription->store->public_id, 'name' => $subscription->store->name, 'owner_name' => $subscription->store->owner->name, 'owner_email' => $subscription->store->owner->email],
                 'plan' => $subscription->plan->only(['public_id', 'name']),
             ]);
-        $payments = SubscriptionPayment::query()->with('store:id,public_id,name')->latest('id')->limit(20)->get()
-            ->map(fn (SubscriptionPayment $payment): array => [...$payment->only(['public_id', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'paid_at']), 'store' => $payment->store->only(['public_id', 'name'])]);
 
         return Inertia::render('super-admin/subscriptions/index', [
-            'plans' => $plans, 'subscriptions' => $subscriptions, 'payments' => $payments,
+            'plans' => $plans, 'subscriptions' => $subscriptions,
             'filters' => ['search' => $search, 'status' => $status],
         ]);
     }

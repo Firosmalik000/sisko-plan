@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
@@ -10,13 +10,16 @@ import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
-import type { User } from '@/types';
+import type { Impersonation, User } from '@/types';
 
 type Props = {
     user: User;
 };
 
 export function UserMenuContent({ user }: Props) {
+    const { impersonation } = usePage<{
+        impersonation: Impersonation | null;
+    }>().props;
     const cleanup = useMobileNavigation();
 
     const handleLogout = () => {
@@ -49,13 +52,14 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuItem asChild>
                 <Link
                     className="block w-full cursor-pointer"
-                    href={logout()}
+                    href={impersonation ? '/impersonation/leave' : logout()}
+                    method={impersonation ? 'post' : undefined}
                     as="button"
                     onClick={handleLogout}
                     data-test="logout-button"
                 >
                     <LogOut className="mr-2" />
-                    Log out
+                    {impersonation ? 'Kembali ke Super Admin' : 'Log out'}
                 </Link>
             </DropdownMenuItem>
         </>

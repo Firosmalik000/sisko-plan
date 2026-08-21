@@ -7,7 +7,7 @@ use App\Models\Concerns\ImmutableLedgerRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['store_id', 'sale_id', 'financial_account_id', 'amount', 'tendered_amount', 'change_amount', 'occurred_at', 'created_by_user_id'])]
+#[Fillable(['store_id', 'sale_id', 'financial_account_id', 'payment_method', 'amount', 'tendered_amount', 'change_amount', 'occurred_at', 'created_by_user_id'])]
 class SalePayment extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;

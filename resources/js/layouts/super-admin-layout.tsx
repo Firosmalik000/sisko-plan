@@ -5,24 +5,63 @@ import {
     Gauge,
     LogOut,
     LockKeyhole,
+    ReceiptText,
     ShieldCheck,
+    UserCog,
     Users,
 } from 'lucide-react';
+import type { ComponentType } from 'react';
 import type { PlatformAdmin } from '@/types';
 
-const navigation = [
-    { label: 'Ringkasan', href: '/super-admin', icon: Gauge },
-    { label: 'Pengguna', href: '/super-admin/users', icon: Users },
-    { label: 'Toko', href: '/super-admin/stores', icon: Building2 },
+type NavigationItem = {
+    label: string;
+    href: string;
+    icon: ComponentType<{ className?: string }>;
+    superAdminOnly?: boolean;
+};
+
+const navigation: Array<{ label: string; items: NavigationItem[] }> = [
     {
-        label: 'Subscription',
-        href: '/super-admin/subscriptions',
-        icon: CreditCard,
+        label: 'Ringkasan',
+        items: [{ label: 'Dashboard', href: '/super-admin', icon: Gauge }],
     },
     {
-        label: 'Keamanan',
-        href: '/super-admin/security',
-        icon: LockKeyhole,
+        label: 'Tenant',
+        items: [
+            { label: 'Pengguna', href: '/super-admin/users', icon: Users },
+            { label: 'Toko', href: '/super-admin/stores', icon: Building2 },
+        ],
+    },
+    {
+        label: 'Komersial',
+        items: [
+            {
+                label: 'Subscription & paket',
+                href: '/super-admin/subscriptions',
+                icon: CreditCard,
+            },
+            {
+                label: 'Riwayat pembayaran',
+                href: '/super-admin/payments',
+                icon: ReceiptText,
+            },
+        ],
+    },
+    {
+        label: 'Platform',
+        items: [
+            {
+                label: 'Admin platform',
+                href: '/super-admin/platform-admins',
+                icon: UserCog,
+                superAdminOnly: true,
+            },
+            {
+                label: 'Keamanan akun',
+                href: '/super-admin/security',
+                icon: LockKeyhole,
+            },
+        ],
     },
 ];
 
@@ -35,65 +74,112 @@ export default function SuperAdminLayout({
     const path = window.location.pathname;
 
     return (
-        <div className="min-h-screen bg-[#f3f0e8] text-slate-950">
-            <header className="border-b border-slate-900/10 bg-[#102b31] text-white">
-                <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between md:px-8">
+        <div className="platform-shell min-h-screen text-slate-950 md:flex">
+            <aside className="border-b border-white/10 bg-[#0b292f] text-white shadow-2xl shadow-[#0b292f]/10 md:sticky md:top-0 md:flex md:h-screen md:w-72 md:shrink-0 md:flex-col md:border-r md:border-b-0">
+                <div className="flex items-center justify-between px-4 py-4 md:px-5 md:py-5">
                     <Link
                         href="/super-admin"
                         className="flex items-center gap-3"
                     >
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-[#d7a941] text-[#102b31]">
+                        <span className="flex size-9 items-center justify-center rounded-lg bg-[#d7a941] text-[#102b31]">
                             <ShieldCheck className="size-5" />
                         </span>
                         <span>
-                            <span className="block text-sm font-semibold tracking-wide">
+                            <span className="block text-sm font-black tracking-[0.12em]">
                                 SISKO CONTROL
                             </span>
-                            <span className="block text-xs text-slate-300">
-                                Platform administration
+                            <span className="block text-[11px] text-slate-400">
+                                SaaS administration
                             </span>
                         </span>
                     </Link>
-                    <nav className="flex gap-1 overflow-x-auto">
-                        {navigation.map((item) => {
-                            const active =
-                                item.href === '/super-admin'
-                                    ? path === item.href
-                                    : path.startsWith(item.href);
+                    <Link
+                        href="/super-admin/logout"
+                        method="post"
+                        as="button"
+                        className="flex size-9 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white md:hidden"
+                        aria-label="Keluar"
+                    >
+                        <LogOut className="size-4" />
+                    </Link>
+                </div>
 
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${active ? 'bg-white/12 text-white' : 'text-slate-300 hover:bg-white/8 hover:text-white'}`}
-                                >
-                                    <item.icon className="size-4" />
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
-                    </nav>
-                    <div className="flex items-center gap-3 text-sm">
-                        <div className="hidden text-right sm:block">
-                            <p className="font-medium">{platformAdmin.name}</p>
-                            <p className="text-xs text-slate-400">
-                                {platformAdmin.email}
+                <nav className="flex [scrollbar-width:none] gap-1 overflow-x-auto px-3 pb-3 md:block md:flex-1 md:space-y-5 md:overflow-visible md:px-3 md:pb-0 [&::-webkit-scrollbar]:hidden">
+                    {navigation.map((group) => {
+                        const items = group.items.filter(
+                            (item) =>
+                                !item.superAdminOnly ||
+                                platformAdmin.role === 'super_admin',
+                        );
+
+                        if (items.length === 0) {
+                            return null;
+                        }
+
+                        return (
+                            <section
+                                key={group.label}
+                                className="contents md:block"
+                            >
+                                <p className="mb-1 hidden px-2 text-[10px] font-bold tracking-[0.16em] text-slate-500 uppercase md:block">
+                                    {group.label}
+                                </p>
+                                <div className="flex shrink-0 gap-1 md:block md:space-y-1">
+                                    {items.map((item) => {
+                                        const active =
+                                            item.href === '/super-admin'
+                                                ? path === item.href
+                                                : path.startsWith(item.href);
+
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition ${active ? 'bg-[#e3b84f] text-[#0b292f] shadow-lg shadow-black/10' : 'text-slate-300 hover:bg-white/8 hover:text-white'}`}
+                                            >
+                                                <item.icon className="size-4" />
+                                                {item.label}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        );
+                    })}
+                </nav>
+
+                <div className="hidden border-t border-white/10 p-3 md:block">
+                    <div className="flex items-center gap-3 rounded-lg px-2 py-2">
+                        <span className="flex size-8 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-[#e9c96f]">
+                            {platformAdmin.name.slice(0, 2).toUpperCase()}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-semibold">
+                                {platformAdmin.name}
+                            </p>
+                            <p className="truncate text-[10px] text-slate-400">
+                                {platformAdmin.role === 'super_admin'
+                                    ? 'Super Admin'
+                                    : 'Admin Platform'}
                             </p>
                         </div>
                         <Link
                             href="/super-admin/logout"
                             method="post"
                             as="button"
-                            className="flex size-9 items-center justify-center rounded-lg border border-white/15 text-slate-300 hover:bg-white/10 hover:text-white"
+                            className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white"
                             aria-label="Keluar"
                         >
                             <LogOut className="size-4" />
                         </Link>
                     </div>
                 </div>
-            </header>
-            <main className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">
-                {children}
+            </aside>
+
+            <main className="min-w-0 flex-1">
+                <div className="relative mx-auto max-w-[1500px] px-4 py-5 sm:px-6 md:px-8 md:py-8 xl:px-10">
+                    {children}
+                </div>
             </main>
         </div>
     );

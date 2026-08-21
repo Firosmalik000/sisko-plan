@@ -1,0 +1,341 @@
+{
+    "schemaVersion": 2,
+    "generatedAt": "2026-08-21T04:38:35.7976714Z",
+    "title": "Design System: Sisko Plan Public Landing",
+    "extensions": {
+        "colorMeta": {
+            "primary-action": {
+                "role": "primary",
+                "displayName": "Action Orange",
+                "canonical": "#f05a16",
+                "tonalRamp": [
+                    "#4a1704",
+                    "#752507",
+                    "#a7350a",
+                    "#db4909",
+                    "#f05a16",
+                    "#f58a52",
+                    "#fac3a2",
+                    "#fff0e7"
+                ]
+            },
+            "primary-action-hover": {
+                "role": "primary",
+                "displayName": "Pressed Orange",
+                "canonical": "#db4909",
+                "tonalRamp": [
+                    "#421300",
+                    "#6a1e00",
+                    "#962c02",
+                    "#c23d06",
+                    "#db4909",
+                    "#ed7d43",
+                    "#f7b994",
+                    "#fdece2"
+                ]
+            },
+            "forest-ink": {
+                "role": "secondary",
+                "displayName": "Forest Ink",
+                "canonical": "#063f35",
+                "tonalRamp": [
+                    "#011d18",
+                    "#063f35",
+                    "#075b4c",
+                    "#08705d",
+                    "#3f897b",
+                    "#75a99f",
+                    "#b8d1ca",
+                    "#edf6f2"
+                ]
+            },
+            "forest-ink-deep": {
+                "role": "secondary",
+                "displayName": "Deep Forest Ink",
+                "canonical": "#022e27",
+                "tonalRamp": [
+                    "#011814",
+                    "#022e27",
+                    "#064b3f",
+                    "#0b6757",
+                    "#468a7e",
+                    "#7cafa5",
+                    "#bad1cc",
+                    "#edf5f2"
+                ]
+            },
+            "ivory-paper": {
+                "role": "neutral",
+                "displayName": "Ivory Paper",
+                "canonical": "#fbf8ef",
+                "tonalRamp": [
+                    "#302b20",
+                    "#514938",
+                    "#756b54",
+                    "#9c9076",
+                    "#c3b9a3",
+                    "#ded7c6",
+                    "#eee8db",
+                    "#fbf8ef"
+                ]
+            },
+            "ivory-paper-strong": {
+                "role": "neutral",
+                "displayName": "Strong Ivory Paper",
+                "canonical": "#f2ecdc",
+                "tonalRamp": [
+                    "#30291b",
+                    "#514732",
+                    "#74674b",
+                    "#998b6b",
+                    "#beb294",
+                    "#d8cfb8",
+                    "#e7dfcd",
+                    "#f2ecdc"
+                ]
+            },
+            "ruled-line": {
+                "role": "neutral",
+                "displayName": "Ruled Line",
+                "canonical": "#d8cebb",
+                "tonalRamp": [
+                    "#2c2923",
+                    "#4b463d",
+                    "#6b6458",
+                    "#8c8374",
+                    "#aea494",
+                    "#c7bdab",
+                    "#d8cebb",
+                    "#f4efe5"
+                ]
+            },
+            "muted-copy": {
+                "role": "neutral",
+                "displayName": "Muted Copy",
+                "canonical": "#5e6964",
+                "tonalRamp": [
+                    "#202523",
+                    "#39413d",
+                    "#5e6964",
+                    "#7b8882",
+                    "#99a59f",
+                    "#b9c2be",
+                    "#d9dedb",
+                    "#f1f3f2"
+                ]
+            },
+            "mint-status": {
+                "role": "neutral",
+                "displayName": "Mint Status",
+                "canonical": "#e8f1d3",
+                "tonalRamp": [
+                    "#29301d",
+                    "#465234",
+                    "#66764c",
+                    "#899b68",
+                    "#afc38a",
+                    "#ceddaa",
+                    "#e0eac2",
+                    "#f3f8e7"
+                ]
+            }
+        },
+        "typographyMeta": {
+            "display": {
+                "displayName": "Display",
+                "purpose": "First-view editorial promise only."
+            },
+            "headline": {
+                "displayName": "Headline",
+                "purpose": "Large persuasive section statements."
+            },
+            "title": {
+                "displayName": "Title",
+                "purpose": "Service, step, and operational group names."
+            },
+            "body": {
+                "displayName": "Body",
+                "purpose": "Direct Indonesian explanations and supporting copy."
+            },
+            "label": {
+                "displayName": "Label",
+                "purpose": "Synthetic-data disclosures, status, and compact metadata."
+            }
+        },
+        "shadows": [
+            {
+                "name": "board-lift",
+                "value": "0 34px 70px -46px rgb(30 53 45 / 65%)",
+                "purpose": "Separates the signature operations board from the ivory hero."
+            },
+            {
+                "name": "action-orange",
+                "value": "0 18px 34px -20px rgb(240 90 22 / 90%)",
+                "purpose": "Supports the orange primary action without creating a floating card."
+            },
+            {
+                "name": "action-forest",
+                "value": "0 14px 28px -20px rgb(6 63 53 / 70%)",
+                "purpose": "Supports dark account and dashboard actions."
+            },
+            {
+                "name": "mobile-popover",
+                "value": "0 22px 48px -30px rgb(2 46 39 / 70%)",
+                "purpose": "Marks mobile navigation as a temporary layer."
+            },
+            {
+                "name": "summary-lift",
+                "value": "18px 24px 50px -28px rgb(6 63 53 / 48%)",
+                "purpose": "Gives the dark operational summary controlled physical weight."
+            }
+        ],
+        "motion": [
+            {
+                "name": "state-fast",
+                "value": "180ms ease",
+                "purpose": "Hover color, lift, underline, icon, and row transitions."
+            },
+            {
+                "name": "reveal-copy",
+                "value": "700ms cubic-bezier(0.16, 1, 0.3, 1)",
+                "purpose": "Initial upward reveal for the hero copy."
+            },
+            {
+                "name": "reveal-board",
+                "value": "800ms 120ms cubic-bezier(0.16, 1, 0.3, 1)",
+                "purpose": "Delayed initial reveal for the proof board."
+            },
+            {
+                "name": "reduced-motion",
+                "value": "none",
+                "purpose": "Disables hero reveals and smooth scrolling when reduced motion is requested."
+            }
+        ],
+        "breakpoints": [
+            { "name": "board-tighten", "value": "1279px" },
+            { "name": "single-column", "value": "1023px" },
+            { "name": "mobile", "value": "767px" },
+            { "name": "smallest-mobile", "value": "374px" }
+        ]
+    },
+    "components": [
+        {
+            "name": "Primary Action Button",
+            "kind": "button",
+            "refersTo": "button-primary",
+            "description": "The sole high-energy call to action for account creation or dashboard entry.",
+            "html": "<button class=\"ds-btn-primary\">Mulai sekarang <span aria-hidden=\"true\">→</span></button>",
+            "css": ".ds-btn-primary { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: .65rem; border: 0; border-radius: .45rem; padding: .75rem 1.35rem; background: #f05a16; box-shadow: 0 18px 34px -20px rgb(240 90 22 / 90%); color: #fff; font: 700 .875rem Bahnschrift, 'Trebuchet MS', sans-serif; transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; } .ds-btn-primary span { transition: transform 180ms ease; } .ds-btn-primary:hover { background: #db4909; transform: translateY(-2px); } .ds-btn-primary:hover span { transform: translateX(3px); } .ds-btn-primary:focus-visible { outline: 3px solid rgb(240 90 22 / 45%); outline-offset: 4px; } .ds-btn-primary:active { transform: translateY(0); }"
+        },
+        {
+            "name": "Dark Header Button",
+            "kind": "button",
+            "refersTo": "button-dark",
+            "description": "The compact account or dashboard action used against ivory navigation.",
+            "html": "<button class=\"ds-btn-dark\">Buat akun</button>",
+            "css": ".ds-btn-dark { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; border: 0; border-radius: .45rem; padding: .75rem 1.35rem; background: #063f35; box-shadow: 0 14px 28px -20px rgb(6 63 53 / 70%); color: #fff; font: 700 .875rem Bahnschrift, 'Trebuchet MS', sans-serif; transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; } .ds-btn-dark:hover { background: #075b4c; box-shadow: 0 18px 34px -19px rgb(6 63 53 / 80%); transform: translateY(-2px); } .ds-btn-dark:focus-visible { outline: 3px solid rgb(240 90 22 / 45%); outline-offset: 4px; } .ds-btn-dark:active { transform: translateY(0); }"
+        },
+        {
+            "name": "Directional Text Link",
+            "kind": "custom",
+            "description": "A lower-emphasis route to supporting landing-page content.",
+            "html": "<a class=\"ds-text-link\" href=\"#fitur\">Lihat fiturnya <span aria-hidden=\"true\">↘</span></a>",
+            "css": ".ds-text-link { display: inline-flex; align-items: center; gap: .5rem; border-bottom: 1px solid rgb(6 63 53 / 35%); color: #063f35; font: 700 .875rem Bahnschrift, 'Trebuchet MS', sans-serif; text-decoration: none; transition: transform 180ms ease, color 180ms ease; } .ds-text-link span { transition: transform 180ms ease; } .ds-text-link:hover { color: #f05a16; transform: translateY(-2px); } .ds-text-link:hover span { transform: translateX(3px); } .ds-text-link:focus-visible { border-radius: .35rem; outline: 3px solid rgb(240 90 22 / 45%); outline-offset: 4px; }"
+        },
+        {
+            "name": "Public Navigation",
+            "kind": "nav",
+            "description": "Ivory navigation with an uppercase brand, restrained section links, and one dark account action.",
+            "html": "<nav class=\"ds-nav\" aria-label=\"Navigasi utama\"><a class=\"ds-brand\" href=\"#\"><span>S</span>Sisko Plan</a><div class=\"ds-nav-links\"><a href=\"#fitur\">Fitur</a><a href=\"#cara\">Cara kerja</a><a href=\"#tentang\">Tentang</a></div><button>Buat akun</button></nav>",
+            "css": ".ds-nav { display: flex; min-height: 76px; align-items: center; justify-content: space-between; gap: 2rem; border-bottom: 1px solid rgb(6 63 53 / 24%); padding: 0 1rem; background: #fbf8ef; font-family: Bahnschrift, 'Trebuchet MS', sans-serif; } .ds-brand { display: inline-flex; align-items: center; gap: .75rem; color: #022e27; font-size: 1.1rem; font-weight: 750; letter-spacing: .035em; text-decoration: none; text-transform: uppercase; } .ds-brand span { display: grid; width: 2.4rem; height: 2.4rem; place-items: center; border-radius: .45rem; background: #063f35; color: #fff; } .ds-nav-links { display: flex; gap: 2rem; } .ds-nav-links a { color: #214b43; font-size: .875rem; font-weight: 650; text-decoration: none; } .ds-nav-links a:hover { color: #f05a16; } .ds-nav button { min-height: 46px; border: 0; border-radius: .45rem; padding: .75rem 1.35rem; background: #063f35; color: #fff; font-family: inherit; font-size: .875rem; font-weight: 700; } .ds-nav a:focus-visible, .ds-nav button:focus-visible { outline: 3px solid rgb(240 90 22 / 45%); outline-offset: 4px; }"
+        },
+        {
+            "name": "Live Status Label",
+            "kind": "chip",
+            "refersTo": "status-live",
+            "description": "A compact, text-bearing marker for live operational data.",
+            "html": "<span class=\"ds-status-live\">Live</span>",
+            "css": ".ds-status-live { display: inline-flex; border-radius: .3rem; padding: .22rem .4rem; background: #e8f1d3; color: #063f35; font: 750 .52rem Bahnschrift, 'Trebuchet MS', sans-serif; text-transform: uppercase; }"
+        },
+        {
+            "name": "Ruled Feature Row",
+            "kind": "custom",
+            "description": "A compact feature explanation that replaces a generic card gallery.",
+            "html": "<article class=\"ds-feature-row\"><span class=\"ds-feature-icon\" aria-hidden=\"true\">□</span><h3>Stok &amp; produk</h3><p>Pantau stok per varian, batas minimum, dan riwayat pergerakan.</p><span class=\"ds-feature-arrow\" aria-hidden=\"true\">→</span></article>",
+            "css": ".ds-feature-row { display: grid; min-height: 112px; grid-template-columns: 3rem minmax(160px, .6fr) minmax(260px, 1fr) 2rem; align-items: center; gap: 1.5rem; border-bottom: 1px solid #d8cebb; padding: 0; color: #022e27; font-family: Bahnschrift, 'Trebuchet MS', sans-serif; transition: background 180ms ease, padding 180ms ease; } .ds-feature-row:hover { padding-inline: .75rem; background: #f6f2e6; } .ds-feature-icon { display: grid; width: 2.6rem; height: 2.6rem; place-items: center; border: 1px solid rgb(6 63 53 / 24%); border-radius: 50%; color: #063f35; } .ds-feature-row h3 { margin: 0; font-size: 1.25rem; letter-spacing: -.03em; } .ds-feature-row p { max-width: 560px; margin: 0; color: #5e6964; font-size: .88rem; line-height: 1.55; } .ds-feature-arrow { color: #f05a16; font-size: 1.1rem; }"
+        },
+        {
+            "name": "Operations Board",
+            "kind": "card",
+            "refersTo": "operations-board",
+            "description": "The signature ruled proof surface connecting workflow stages with compact example records.",
+            "html": "<section class=\"ds-board-wrap\" aria-label=\"Contoh tampilan Sisko Plan\"><span class=\"ds-board-label\">Data contoh</span><div class=\"ds-board\"><div class=\"ds-workflow\"><strong>Kasir</strong><strong>Stok</strong><strong>Kas</strong><strong>Laporan</strong></div><div class=\"ds-board-grid\"><div><b>Transaksi terbaru</b><p><time>09:42</time><span>Kopi Kapal Api 165g</span><strong>Rp7.500</strong></p><p><time>09:41</time><span>Gula Pasir 1kg</span><strong>Rp14.000</strong></p></div><div><b>Stok menipis</b><p><span>Minyak Goreng 2L</span><strong>sisa 2</strong></p><p><span>Tepung Terigu 1kg</span><strong>sisa 2</strong></p></div></div></div></section>",
+            "css": ".ds-board-wrap { position: relative; padding-top: 1.5rem; color: #022e27; font-family: Bahnschrift, 'Trebuchet MS', sans-serif; } .ds-board-label { position: absolute; top: 0; right: 0; color: #586a64; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; } .ds-board { overflow: hidden; border: 1px solid #cfc4ad; border-radius: .35rem; background: #fbf8ef; box-shadow: 0 34px 70px -46px rgb(30 53 45 / 65%); } .ds-workflow { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid #cfc4ad; } .ds-workflow strong { min-height: 64px; padding: 1rem; border-right: 1px solid #cfc4ad; font-size: .85rem; } .ds-workflow strong:first-child { box-shadow: inset 0 -4px #063f35; } .ds-workflow strong:last-child { border-right: 0; } .ds-board-grid { display: grid; grid-template-columns: 1fr 1fr; } .ds-board-grid > div { min-width: 0; padding: 1rem; border-right: 1px solid #d8cebb; } .ds-board-grid > div:last-child { border-right: 0; } .ds-board-grid > div > b { font-size: .72rem; } .ds-board-grid p { display: flex; min-height: 36px; align-items: center; gap: .5rem; margin: 0; border-bottom: 1px solid #e0d8c8; font-size: .61rem; } .ds-board-grid p time { flex: 0 0 2.1rem; } .ds-board-grid p span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-board-grid p strong { margin-left: auto; white-space: nowrap; }"
+        }
+    ],
+    "narrative": {
+        "northStar": "The Calm Retail Ledger",
+        "overview": "The public landing page feels like an orderly worktable for a real Indonesian shop: warm ivory paper, dark forest ink, fine ruled divisions, receipts, and dense but legible operational figures. Its confidence comes from visible system behavior rather than generic SaaS decoration. Kasir, stok, kas, and laporan appear as one connected record in the first viewport.\n\nThe world is professional, compact, and direct. Large editorial headings create persuasion while small tables, totals, status labels, and chart marks supply believable operational texture. Orange is reserved for decisive action and small points of attention; the rest of the interface stays calm and readable. The public experience is light-only.",
+        "keyCharacteristics": [
+            "Warm ivory paper rather than pure-white software chrome.",
+            "Forest ink carries brand, structure, and high-contrast content.",
+            "Ruled rows and columns organize information before cards or decoration.",
+            "Compact example data is always identified as synthetic proof.",
+            "Direct Indonesian labels and actions avoid marketing filler.",
+            "Responsive simplification preserves the primary action and operational story."
+        ],
+        "rules": [
+            {
+                "name": "The One Orange Action Rule",
+                "body": "Orange identifies the primary action or a compact point of operational attention; it never becomes a broad decorative wash.",
+                "section": "colors"
+            },
+            {
+                "name": "The Paper, Not Chrome Rule",
+                "body": "Prefer warm ivory surfaces and visible ruled structure over pure-white glass panels or generic gray application chrome.",
+                "section": "colors"
+            },
+            {
+                "name": "The One Voice Rule",
+                "body": "Do not introduce a display serif or a second expressive family; hierarchy comes from scale, weight, tracking, and density within Bahnschrift.",
+                "section": "typography"
+            },
+            {
+                "name": "The Direct Indonesian Rule",
+                "body": "Use concise, familiar store language and action-led labels; avoid decorative explanation, repeated instruction, and unverified claims.",
+                "section": "typography"
+            },
+            {
+                "name": "The Story Survives Compression Rule",
+                "body": "Responsive layouts may remove secondary board columns and decorative icons, but must preserve the promise, primary action, Kasir-to-Laporan flow, and clearly labeled example data.",
+                "section": "layout"
+            },
+            {
+                "name": "The Ruled Before Raised Rule",
+                "body": "Use a border, divider, tonal shift, or dark reversal before adding shadow; most surfaces remain flat at rest.",
+                "section": "elevation"
+            },
+            {
+                "name": "The Compact Corner Rule",
+                "body": "Do not turn ledger surfaces into large soft cards; broad radii would weaken the paper-and-record character.",
+                "section": "shapes"
+            }
+        ],
+        "dos": [
+            "Do use warm ivory paper, forest ink, and fine ruled divisions as the default visual grammar.",
+            "Do reserve orange for primary action, focus, direction, and small operational highlights.",
+            "Do use compact, explicitly labeled example data to demonstrate the product flow.",
+            "Do keep Indonesian copy direct, concise, and grounded in real store work.",
+            "Do preserve visible keyboard focus, comfortable touch targets, reduced-motion behavior, and light color scheme at the document root.",
+            "Do simplify responsively rather than compressing every desktop detail onto a phone."
+        ],
+        "donts": [
+            "Don't add dark mode to the public surface; the root contract and landing implementation are light-only.",
+            "Don't fabricate testimonials, adoption figures, pricing, awards, customer logos, or formal audit claims.",
+            "Don't replace ruled operational structure with a generic rounded-card grid, glassmorphism, or broad decorative gradients.",
+            "Don't use orange as a large background field or introduce competing accent hues.",
+            "Don't add helper text, marketing paragraphs, or repeated instructions when a clear label or direct action is enough.",
+            "Don't hide the primary action, Data contoh disclosure, or Kasir-to-Laporan story at any supported viewport."
+        ]
+    }
+}

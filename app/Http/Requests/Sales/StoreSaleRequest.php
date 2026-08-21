@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Sales;
 
+use App\Rules\CatalogProductSelection;
 use App\Support\CurrentStore;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +20,7 @@ class StoreSaleRequest extends SaleRequest
             'transaction_discount_amount' => ['required', ...$money],
             'paid_amount' => ['required', ...$money],
             'items' => ['required', 'array', 'min:1', 'max:100'],
-            'items.*.product_id' => ['required', Rule::exists('products', 'public_id')->where(fn ($query) => $query->where('store_id', $storeId)->where('is_active', true))],
+            'items.*.product_id' => ['required', new CatalogProductSelection($storeId)],
             'items.*.unit_id' => ['required', Rule::exists('units', 'public_id')->where(fn ($query) => $query->where('store_id', $storeId)->where('is_active', true))],
             'items.*.quantity' => ['required', 'decimal:0,6', 'gt:0', 'lte:999999999999.999999'],
             'items.*.discount_amount' => ['required', ...$money],

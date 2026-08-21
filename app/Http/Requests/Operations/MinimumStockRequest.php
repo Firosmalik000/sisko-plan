@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Operations;
 
+use App\Rules\StockIdentity;
 use App\Support\CurrentStore;
-use Illuminate\Validation\Rule;
 
 class MinimumStockRequest extends LedgerRequest
 {
@@ -11,7 +11,7 @@ class MinimumStockRequest extends LedgerRequest
     public function rules(): array
     {
         return [
-            'product_id' => ['required', Rule::exists('products', 'public_id')->where('store_id', app(CurrentStore::class)->id())],
+            'product_id' => ['required', new StockIdentity(app(CurrentStore::class)->id())],
             'minimum_quantity' => ['required', 'decimal:0,6', 'gte:0'],
         ];
     }

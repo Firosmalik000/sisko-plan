@@ -2,13 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Stores\SeedStoreStarterData;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
 use App\Enums\StoreStatus;
+use App\Enums\UnitType;
 use App\Enums\UserStatus;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class StoreTenancyTest extends TestCase
@@ -34,6 +37,24 @@ class StoreTenancyTest extends TestCase
             'status' => MembershipStatus::Active->value,
         ]);
         $this->assertDatabaseHas('store_settings', ['store_id' => $store->id]);
+        $this->assertSame(8, $store->categories()->count());
+        $this->assertSame(19, $store->units()->count());
+        $this->assertSame(10, $store->units()->where('unit_type', UnitType::Large)->count());
+        $this->assertSame(9, $store->units()->where('unit_type', UnitType::Retail)->count());
+        $this->assertDatabaseHas('categories', [
+            'store_id' => $store->id,
+            'name' => 'Minuman',
+        ]);
+        $this->assertDatabaseHas('units', [
+            'store_id' => $store->id,
+            'name' => 'Dus',
+            'unit_type' => UnitType::Large->value,
+        ]);
+        $this->assertDatabaseHas('units', [
+            'store_id' => $store->id,
+            'name' => 'Botol',
+            'unit_type' => UnitType::Retail->value,
+        ]);
         $this->assertDatabaseHas('audit_logs', [
             'store_id' => $store->id,
             'actor_type' => $user->getMorphClass(),
@@ -41,6 +62,35 @@ class StoreTenancyTest extends TestCase
             'action' => 'store.created',
             'subject_type' => $store->getMorphClass(),
             'subject_id' => $store->id,
+        ]);
+    }
+
+    public function test_starter_data_is_idempotent_and_owned_by_each_store(): void
+    {
+        $firstStore = Store::factory()->create();
+        $secondStore = Store::factory()->create();
+        $starterData = app(SeedStoreStarterData::class);
+
+        $starterData->handle($firstStore);
+        $starterData->handle($firstStore);
+        $starterData->handle($secondStore);
+
+        $this->assertSame(8, $firstStore->categories()->count());
+        $this->assertSame(19, $firstStore->units()->count());
+        $this->assertSame(8, $secondStore->categories()->count());
+        $this->assertSame(19, $secondStore->units()->count());
+
+        $firstStore->categories()->where('name', 'Minuman')->sole()->update([
+            'name' => 'Minuman Dingin',
+        ]);
+
+        $this->assertDatabaseHas('categories', [
+            'store_id' => $firstStore->id,
+            'name' => 'Minuman Dingin',
+        ]);
+        $this->assertDatabaseHas('categories', [
+            'store_id' => $secondStore->id,
+            'name' => 'Minuman',
         ]);
     }
 
@@ -126,6 +176,79 @@ class StoreTenancyTest extends TestCase
             'user_id' => $member->id,
             'role' => MembershipRole::Admin->value,
             'status' => MembershipStatus::Suspended->value,
+        ]);
+    }
+
+    public function test_owner_can_create_a_worker_account_and_membership_together(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+
+        $this->actingAs($owner)->post(route('stores.members.store', $store), [
+            'mode' => 'create',
+            'name' => 'Kasir Baru',
+            'email' => 'kasir.baru@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'role' => MembershipRole::Cashier->value,
+        ])->assertRedirect();
+
+        $worker = User::query()->where('email', 'kasir.baru@example.com')->sole();
+
+        $this->assertSame('Kasir Baru', $worker->name);
+        $this->assertTrue(Hash::check('Password123!', $worker->password));
+        $this->assertDatabaseHas('store_user', [
+            'store_id' => $store->id,
+            'user_id' => $worker->id,
+            'role' => MembershipRole::Cashier->value,
+            'status' => MembershipStatus::Active->value,
+        ]);
+    }
+
+    public function test_worker_account_is_not_created_when_password_is_invalid(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+
+        $this->actingAs($owner)->post(route('stores.members.store', $store), [
+            'mode' => 'create',
+            'name' => 'Kasir Baru',
+            'email' => 'kasir.baru@example.com',
+            'password' => 'pendek',
+            'password_confirmation' => 'berbeda',
+            'role' => MembershipRole::Cashier->value,
+        ])->assertSessionHasErrors('password');
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'kasir.baru@example.com',
+        ]);
+    }
+
+    public function test_create_worker_mode_cannot_replace_an_existing_account(): void
+    {
+        $owner = User::factory()->create();
+        $existingUser = User::factory()->create([
+            'email' => 'pekerja@example.com',
+            'password' => 'PasswordLama123!',
+        ]);
+        $store = Store::factory()->for($owner, 'owner')->create();
+
+        $this->actingAs($owner)->post(route('stores.members.store', $store), [
+            'mode' => 'create',
+            'name' => 'Nama Pengganti',
+            'email' => $existingUser->email,
+            'password' => 'PasswordBaru123!',
+            'password_confirmation' => 'PasswordBaru123!',
+            'role' => MembershipRole::Cashier->value,
+        ])->assertSessionHasErrors('email');
+
+        $existingUser->refresh();
+
+        $this->assertNotSame('Nama Pengganti', $existingUser->name);
+        $this->assertTrue(Hash::check('PasswordLama123!', $existingUser->password));
+        $this->assertDatabaseMissing('store_user', [
+            'store_id' => $store->id,
+            'user_id' => $existingUser->id,
         ]);
     }
 

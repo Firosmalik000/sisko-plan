@@ -4,13 +4,19 @@ namespace Tests\Feature;
 
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Enums\UnitType;
 use App\Models\AuditLog;
 use App\Models\Category;
+use App\Models\InventoryBalance;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -18,6 +24,17 @@ use Tests\TestCase;
 class MasterDataTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_product_variants_use_a_dedicated_normalized_schema(): void
+    {
+        $this->assertTrue(Schema::hasTable('product_variants'));
+        $this->assertTrue(Schema::hasColumns('product_variants', ['public_id', 'store_id', 'product_id', 'name', 'is_active']));
+        $this->assertTrue(Schema::hasColumns('inventory_balances', ['product_id', 'product_variant_id', 'stock_key']));
+        $this->assertFalse(Schema::hasColumn('products', 'parent_product_id'));
+        $this->assertFalse(Schema::hasColumn('products', 'stock_product_id'));
+        $this->assertFalse(Schema::hasColumn('products', 'variant_name'));
+        $this->assertFalse(Schema::hasColumn('products', 'is_inventory_item'));
+    }
 
     public function test_owner_can_manage_operational_reference_data(): void
     {
@@ -29,7 +46,11 @@ class MasterDataTest extends TestCase
                 'description' => 'Produk siap minum',
             ])->assertRedirect();
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
-            ->post(route('master-data.units.store'), ['name' => 'Pieces', 'symbol' => 'pcs'])
+            ->post(route('master-data.units.store'), [
+                'name' => 'Pieces',
+                'symbol' => 'pcs',
+                'unit_type' => UnitType::Retail->value,
+            ])
             ->assertRedirect();
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
             ->post(route('master-data.suppliers.store'), [
@@ -281,6 +302,7 @@ class MasterDataTest extends TestCase
             ->patch(route('master-data.units.update', $unit->public_id), [
                 'name' => $unit->name,
                 'symbol' => $unit->symbol,
+                'unit_type' => $unit->unit_type->value,
                 'is_active' => false,
             ])->assertRedirect();
 
@@ -319,6 +341,130 @@ class MasterDataTest extends TestCase
             ]);
 
         $this->assertDatabaseCount('products', 0);
+    }
+
+    public function test_product_with_separate_variants_has_independent_inventory(): void
+    {
+        [$owner, $store] = $this->ownerAndStore();
+        $category = Category::factory()->for($store)->create();
+        $retail = Unit::factory()->for($store)->create(['unit_type' => UnitType::Retail]);
+        $large = Unit::factory()->for($store)->create(['unit_type' => UnitType::Large]);
+        $payload = $this->modernProductPayload($category, $retail, $large, 'separate');
+        $payload['variants'] = [
+            ['name' => 'Cokelat', 'purchase_price' => '3000', 'selling_price' => '5000', 'current_stock' => '12', 'minimum_stock' => '3'],
+            ['name' => 'Vanila', 'purchase_price' => '3200', 'selling_price' => '5200', 'current_stock' => '8', 'minimum_stock' => '2'],
+        ];
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.store'), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+
+        $parent = Product::query()->sole();
+        $variants = ProductVariant::query()->where('product_id', $parent->id)->orderBy('name')->get();
+        $this->assertSame('separate', $parent->variant_mode);
+        $this->assertCount(2, $variants);
+        $this->assertSame('12.000000', InventoryBalance::query()->where('product_variant_id', $variants[0]->id)->value('quantity'));
+        $this->assertSame('8.000000', InventoryBalance::query()->where('product_variant_id', $variants[1]->id)->value('quantity'));
+    }
+
+    public function test_wholesale_variants_share_retail_inventory_and_conversion(): void
+    {
+        [$owner, $store] = $this->ownerAndStore();
+        $category = Category::factory()->for($store)->create();
+        $retail = Unit::factory()->for($store)->create(['unit_type' => UnitType::Retail]);
+        $large = Unit::factory()->for($store)->create(['unit_type' => UnitType::Large]);
+        $payload = $this->modernProductPayload($category, $retail, $large, 'shared');
+        $payload['current_stock'] = '120';
+        $payload['minimum_stock'] = '24';
+        $payload['variants'] = [
+            ['name' => 'Dus 24', 'purchase_price' => '72000', 'selling_price' => '96000', 'conversion_factor' => '24'],
+            ['name' => 'Pack 6', 'purchase_price' => '18000', 'selling_price' => '25000', 'conversion_factor' => '6'],
+        ];
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.store'), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+
+        $parent = Product::query()->sole();
+        $variants = ProductVariant::query()->where('product_id', $parent->id)->with('productUnits')->orderBy('name')->get();
+        $this->assertEqualsCanonicalizing(['24.000000', '6.000000'], $variants->map(fn (ProductVariant $variant) => $variant->productUnits->sole()->conversion_factor)->all());
+        $this->assertSame('120.000000', InventoryBalance::query()->where('product_id', $parent->id)->whereNull('product_variant_id')->value('quantity'));
+        $this->assertSame('24.000000', InventoryBalance::query()->where('product_id', $parent->id)->whereNull('product_variant_id')->value('minimum_quantity'));
+    }
+
+    public function test_product_edit_sets_stock_target_and_photo_is_tenant_protected(): void
+    {
+        Storage::fake('local');
+        [$owner, $store] = $this->ownerAndStore();
+        $category = Category::factory()->for($store)->create();
+        $retail = Unit::factory()->for($store)->create(['unit_type' => UnitType::Retail]);
+        $large = Unit::factory()->for($store)->create(['unit_type' => UnitType::Large]);
+        $payload = $this->modernProductPayload($category, $retail, $large);
+        $payload['current_stock'] = '10';
+        $payload['photo'] = UploadedFile::fake()->image('kopi.jpg', 300, 300);
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.store'), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+        $product = Product::query()->sole();
+        $this->assertNotNull($product->photo_path);
+        Storage::disk('local')->assertExists($product->photo_path);
+
+        $payload = $this->modernProductPayload($category, $retail, $large);
+        $payload['current_stock'] = '16';
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->patch(route('master-data.products.update', $product->public_id), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->patch(route('master-data.products.update', $product->public_id), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+
+        $this->assertSame('16.000000', InventoryBalance::query()->where('product_id', $product->id)->value('quantity'));
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('master-data.products.photo', $product->public_id))->assertOk();
+
+        [, $otherStore] = $this->ownerAndStore();
+        $otherStore->users()->attach($owner, [
+            'role' => MembershipRole::Admin->value,
+            'status' => MembershipStatus::Active->value,
+        ]);
+        $this->actingAs($owner)->withSession(['active_store_id' => $otherStore->id])
+            ->get(route('master-data.products.photo', $product->public_id))->assertNotFound();
+    }
+
+    public function test_changing_variant_mode_does_not_leave_hidden_stock(): void
+    {
+        [$owner, $store] = $this->ownerAndStore();
+        $category = Category::factory()->for($store)->create();
+        $retail = Unit::factory()->for($store)->create(['unit_type' => UnitType::Retail]);
+        $large = Unit::factory()->for($store)->create(['unit_type' => UnitType::Large]);
+        $payload = $this->modernProductPayload($category, $retail, $large, 'separate');
+        $payload['variants'] = [
+            ['name' => 'Original', 'purchase_price' => '3000', 'selling_price' => '5000', 'current_stock' => '9', 'minimum_stock' => '2'],
+        ];
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.store'), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+        $parent = Product::query()->sole();
+        $oldVariant = ProductVariant::query()->where('product_id', $parent->id)->sole();
+
+        $payload = $this->modernProductPayload($category, $retail, $large, 'shared');
+        $payload['current_stock'] = '24';
+        $payload['minimum_stock'] = '6';
+        $payload['variants'] = [
+            ['name' => 'Dus', 'purchase_price' => '72000', 'selling_price' => '90000', 'conversion_factor' => '24'],
+        ];
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->patch(route('master-data.products.update', $parent->public_id), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+
+        $this->assertSame('0.000000', InventoryBalance::query()->where('product_variant_id', $oldVariant->id)->value('quantity'));
+        $this->assertSame('24.000000', InventoryBalance::query()->where('product_id', $parent->id)->whereNull('product_variant_id')->value('quantity'));
+        $this->assertFalse($oldVariant->fresh()->is_active);
+
+        $payload = $this->modernProductPayload($category, $retail, $large, 'separate');
+        $payload['variants'] = [
+            ['name' => 'Original', 'purchase_price' => '3000', 'selling_price' => '5000', 'current_stock' => '5', 'minimum_stock' => '1'],
+        ];
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->patch(route('master-data.products.update', $parent->public_id), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+
+        $this->assertTrue($oldVariant->fresh()->is_active);
+        $this->assertSame('5.000000', InventoryBalance::query()->where('product_variant_id', $oldVariant->id)->value('quantity'));
+        $this->assertSame(2, ProductVariant::query()->where('product_id', $parent->id)->count());
     }
 
     public function test_category_list_supports_search_status_filter_and_pagination(): void
@@ -386,6 +532,25 @@ class MasterDataTest extends TestCase
             'base_unit_public_id' => $baseUnit->public_id,
             'is_active' => true,
             'units' => $units,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function modernProductPayload(Category $category, Unit $retail, Unit $large, string $mode = 'none'): array
+    {
+        return [
+            'idempotency_key' => (string) Str::uuid(),
+            'name' => 'Kopi Susu',
+            'category_public_id' => $category->public_id,
+            'retail_unit_public_id' => $retail->public_id,
+            'large_unit_public_id' => $large->public_id,
+            'variant_mode' => $mode,
+            'purchase_price' => '3000',
+            'selling_price' => '5000',
+            'current_stock' => '0',
+            'minimum_stock' => '0',
+            'variants' => [],
+            'is_active' => true,
         ];
     }
 }

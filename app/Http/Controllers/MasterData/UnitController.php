@@ -23,8 +23,12 @@ class UnitController extends Controller
         $units = Unit::query()->where('store_id', $currentStore->id())
             ->when($search !== '', fn ($query) => $query->where(fn ($nested) => $nested->where('name', 'like', "%{$search}%")->orWhere('symbol', 'like', "%{$search}%")))
             ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('is_active', $status === 'active'))
-            ->orderBy('name')->paginate(12)->withQueryString()
-            ->through(fn (Unit $unit) => $unit->only(['public_id', 'name', 'symbol', 'is_active']));
+            ->orderBy('unit_type')->orderBy('name')->paginate(20)->withQueryString()
+            ->through(fn (Unit $unit) => [
+                ...$unit->only(['public_id', 'name', 'symbol', 'is_active']),
+                'unit_type' => $unit->unit_type->value,
+                'unit_type_label' => $unit->unit_type->label(),
+            ]);
 
         return Inertia::render('master-data/units/index', compact('units', 'search', 'status', 'canManage'));
     }

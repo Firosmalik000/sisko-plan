@@ -59,7 +59,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return Limit::perMinute((int) config('security.platform_writes_per_minute'))->by(
-                ($request->user('platform_admin')?->getAuthIdentifier() ?? $request->ip()).'|platform',
+                ($request->user()?->getAuthIdentifier() ?? $request->ip()).'|platform',
             );
         });
 

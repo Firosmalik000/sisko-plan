@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Printer, RotateCcw } from 'lucide-react';
+import { useEffect } from 'react';
 import type { FormEvent } from 'react';
 import {
     currentDateTime,
@@ -62,6 +63,16 @@ type ReturnForm = {
     idempotency_key: string;
     items: { sale_item_id: string; quantity: string }[];
 };
+type ReceiptSettings = {
+    store_name: string;
+    address: string | null;
+    header: string;
+    footer: string;
+    paper_size: '58mm' | '80mm';
+    show_address: boolean;
+    show_cashier: boolean;
+    auto_print: boolean;
+};
 const fieldClass =
     'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15';
 
@@ -74,6 +85,8 @@ export default function SaleShow({
     canReturn,
     canViewProfit,
     timezone,
+    receipt,
+    showReturnForm = false,
 }: {
     sale: Sale;
     items: Item[];
@@ -83,6 +96,8 @@ export default function SaleShow({
     canReturn: boolean;
     canViewProfit: boolean;
     timezone: string;
+    receipt: ReceiptSettings;
+    showReturnForm?: boolean;
 }) {
     const returnableItems = items.filter(
         (item) => Number(item.returnable_quantity) > 0,
@@ -130,10 +145,24 @@ export default function SaleShow({
         0,
     );
 
+    useEffect(() => {
+        if (receipt.auto_print) {
+            window.print();
+        }
+    }, [receipt.auto_print]);
+
+    const paperWidth = receipt.paper_size === '80mm' ? '80mm' : '58mm';
+
     return (
         <>
-            <Head title={`Struk ${sale.document_number}`} />
-            <style>{`@media print { body * { visibility: hidden !important; } .print-receipt, .print-receipt * { visibility: visible !important; } .print-receipt { position: absolute; inset: 0; width: 100%; box-shadow: none !important; border: 0 !important; } }`}</style>
+            <Head
+                title={
+                    showReturnForm
+                        ? `Retur ${sale.document_number}`
+                        : `Struk ${sale.document_number}`
+                }
+            />
+            <style>{`@page { size: ${paperWidth} auto; margin: 3mm; } @media print { body * { visibility: hidden !important; } .print-receipt, .print-receipt * { visibility: visible !important; } .print-receipt { position: absolute; inset: 0; width: ${paperWidth}; max-width: ${paperWidth}; padding: 2mm !important; box-shadow: none !important; border: 0 !important; font-size: 10px !important; } }`}</style>
             <div className="min-h-full bg-[linear-gradient(145deg,#edf5f2,#fff8ef)] p-4 md:p-8">
                 <div className="mx-auto grid max-w-6xl gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
                     <div className="space-y-5">
@@ -143,7 +172,7 @@ export default function SaleShow({
                                 className="inline-flex items-center gap-2 text-sm font-bold text-slate-700"
                             >
                                 <ArrowLeft className="size-4" />
-                                Riwayat penjualan
+                                Daftar transaksi
                             </Link>
                             <button
                                 type="button"
@@ -156,15 +185,24 @@ export default function SaleShow({
                         </div>
                         <section className="print-receipt rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/8 md:p-9">
                             <header className="border-b-2 border-dashed border-slate-200 pb-6 text-center">
+                                <p className="font-black tracking-wide text-slate-900 uppercase">
+                                    {receipt.store_name}
+                                </p>
+                                {receipt.show_address && receipt.address && (
+                                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">
+                                        {receipt.address}
+                                    </p>
+                                )}
                                 <p className="text-xs font-bold tracking-[0.24em] text-orange-600 uppercase">
-                                    Bukti penjualan
+                                    {receipt.header}
                                 </p>
                                 <h1 className="mt-2 font-serif text-3xl text-slate-900">
                                     {sale.document_number}
                                 </h1>
                                 <p className="mt-2 text-sm text-slate-500">
-                                    {ledgerDateTime(sale.occurred_at, timezone)}{' '}
-                                    · Kasir {sale.cashier_name}
+                                    {ledgerDateTime(sale.occurred_at, timezone)}
+                                    {receipt.show_cashier &&
+                                        ` · Kasir ${sale.cashier_name}`}
                                 </p>
                             </header>
                             <div className="divide-y divide-slate-100">
@@ -237,8 +275,7 @@ export default function SaleShow({
                                 </p>
                             )}
                             <p className="mt-7 text-center text-xs text-slate-400">
-                                Terima kasih. Simpan struk ini untuk referensi
-                                retur.
+                                {receipt.footer}
                             </p>
                         </section>
                         {canViewProfit && (
@@ -293,7 +330,7 @@ export default function SaleShow({
                             </section>
                         )}
                     </div>
-                    {canReturn && (
+                    {showReturnForm && canReturn && (
                         <form
                             onSubmit={submitReturn}
                             className="h-fit rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-5 print:hidden"

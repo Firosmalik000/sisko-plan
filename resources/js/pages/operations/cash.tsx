@@ -103,7 +103,7 @@ export default function CashPage({
             <OperationsShell
                 active="/operations/cash"
                 eyebrow="Buku 02 / Uang"
-                title="Kas bukan modal. Modal bukan omzet."
+                title="Kas & Bank"
                 description="Setiap rupiah bergerak melalui cash transaction. Transfer memindahkan posisi antar-akun tanpa mengubah total kas toko."
             >
                 <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">

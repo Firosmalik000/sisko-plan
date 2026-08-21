@@ -4,10 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\MembershipStatus;
+use App\Enums\PlatformAdminRole;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -30,6 +32,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property UserStatus $status
+ * @property PlatformAdminRole|null $platform_role
  * @property Carbon|null $last_login_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -38,17 +41,43 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read Collection<int, Store> $stores
  * @property-read Collection<int, Store> $ownedStores
  */
-#[Fillable(['name', 'email', 'password', 'status', 'last_login_at'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Fillable(['name', 'email', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at'])]
+#[Hidden(['avatar_path', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
+    protected $appends = ['avatar'];
+
+    /** @return Attribute<string|null, never> */
+    protected function avatar(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->avatar_path === null
+            ? null
+            : route('profile.photo', ['v' => $this->updated_at?->timestamp]));
+    }
+
     /** @return HasMany<Store, $this> */
     public function ownedStores(): HasMany
     {
         return $this->hasMany(Store::class, 'owner_user_id');
+    }
+
+    /** @return HasMany<AdminAuditLog, $this> */
+    public function adminAuditLogs(): HasMany
+    {
+        return $this->hasMany(AdminAuditLog::class);
+    }
+
+    public function isPlatformAdmin(): bool
+    {
+        return $this->platform_role !== null;
+    }
+
+    public function canBeImpersonated(): bool
+    {
+        return $this->status === UserStatus::Active && $this->platform_role === null;
     }
 
     /** @return BelongsToMany<Store, $this, StoreMembership, 'pivot'> */
@@ -78,6 +107,7 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'status' => UserStatus::class,
+            'platform_role' => PlatformAdminRole::class,
             'last_login_at' => 'datetime',
         ];
     }

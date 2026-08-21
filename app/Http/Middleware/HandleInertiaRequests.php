@@ -8,6 +8,7 @@ use App\Models\Store;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use App\Support\Authentication\AuthenticatedUser;
+use App\Support\Authentication\Impersonation;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -64,6 +65,7 @@ class HandleInertiaRequests extends Middleware
                 'public_id' => $activeStoreModel->public_id,
                 'name' => $activeStoreModel->name,
                 'role' => $activeStoreModel->pivot->role,
+                'theme_color' => $activeStoreModel->settings()->value('theme_color') ?? '#1f6653',
             ];
             if ($activeStoreModel !== null) {
                 $subscription = app(SubscriptionAccess::class)->summary($activeStoreModel);
@@ -78,8 +80,10 @@ class HandleInertiaRequests extends Middleware
             ],
             'platformAdmin' => ($platformAdmin = AuthenticatedPlatformAdmin::optional($request)) === null ? null : [
                 ...$platformAdmin->only(['id', 'name', 'email']),
+                'role' => $platformAdmin->platform_role?->value,
                 'two_factor_enabled' => $platformAdmin->hasEnabledTwoFactorAuthentication(),
             ],
+            'impersonation' => Impersonation::current($request),
             'stores' => $stores,
             'activeStore' => $activeStore,
             'subscriptionState' => $subscription,

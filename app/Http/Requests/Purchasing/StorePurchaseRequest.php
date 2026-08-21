@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Purchasing;
 
 use App\Models\Supplier;
+use App\Rules\CatalogProductSelection;
 use App\Support\CurrentStore;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,7 @@ class StorePurchaseRequest extends PurchasingRequest
             'paid_amount' => ['required', ...$money],
             'account_id' => ['nullable', Rule::exists('financial_accounts', 'public_id')->where(fn ($query) => $query->where('store_id', $storeId)->where('is_active', true))],
             'items' => ['required', 'array', 'min:1', 'max:100'],
-            'items.*.product_id' => ['required', Rule::exists('products', 'public_id')->where(fn ($query) => $query->where('store_id', $storeId)->where('is_active', true))],
+            'items.*.product_id' => ['required', new CatalogProductSelection($storeId)],
             'items.*.unit_id' => ['required', Rule::exists('units', 'public_id')->where(fn ($query) => $query->where('store_id', $storeId)->where('is_active', true))],
             'items.*.quantity' => ['required', 'decimal:0,6', 'gt:0', 'lte:999999999999.999999'],
             'items.*.unit_price' => ['required', ...$money],

@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\PlatformAdmin;
 use App\Models\User;
 
 return [
@@ -43,10 +42,6 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'platform_admin' => [
-            'driver' => 'session',
-            'provider' => 'platform_admins',
-        ],
     ],
 
     /*
@@ -71,11 +66,6 @@ return [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
         ],
-        'platform_admins' => [
-            'driver' => 'eloquent',
-            'model' => PlatformAdmin::class,
-        ],
-
         // 'users' => [
         //     'driver' => 'database',
         //     'table' => 'users',

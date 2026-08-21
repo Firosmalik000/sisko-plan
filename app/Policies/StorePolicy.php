@@ -60,6 +60,16 @@ class StorePolicy
         return $this->manageMasterData($user, $store);
     }
 
+    public function countStock(User $user, Store $store): bool
+    {
+        return $this->viewOperations($user, $store);
+    }
+
+    public function manageStockCounts(User $user, Store $store): bool
+    {
+        return $this->manageOperations($user, $store);
+    }
+
     public function viewPurchasing(User $user, Store $store): bool
     {
         return $this->viewOperations($user, $store);

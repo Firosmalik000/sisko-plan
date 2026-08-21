@@ -4,7 +4,7 @@ namespace App\Actions\Subscriptions;
 
 use App\Actions\Platform\RecordAdminAudit;
 use App\Models\Plan;
-use App\Models\PlatformAdmin;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -13,7 +13,7 @@ class SavePlan
     public function __construct(private RecordAdminAudit $audit) {}
 
     /** @param array{code:string,name:string,description:?string,monthly_price:string,max_products:int,max_members:int,is_default:bool,is_active:bool} $data */
-    public function handle(PlatformAdmin $admin, array $data, ?Plan $plan, ?string $ipAddress): Plan
+    public function handle(User $admin, array $data, ?Plan $plan, ?string $ipAddress): Plan
     {
         return DB::transaction(function () use ($admin, $data, $plan, $ipAddress): Plan {
             $locked = $plan === null ? null : Plan::query()->lockForUpdate()->findOrFail($plan->id);

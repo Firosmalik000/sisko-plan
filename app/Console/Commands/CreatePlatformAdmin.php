@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\PlatformAdmin;
+use App\Enums\PlatformAdminRole;
+use App\Enums\UserStatus;
+use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -21,7 +23,7 @@ class CreatePlatformAdmin extends Command
 
         $validator = Validator::make(compact('name', 'email', 'password'), [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:platform_admins,email'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', Password::min(12)->mixedCase()->numbers()->symbols()],
         ]);
 
@@ -33,11 +35,12 @@ class CreatePlatformAdmin extends Command
             return self::FAILURE;
         }
 
-        PlatformAdmin::create([
+        User::create([
             'name' => $name,
             'email' => $email,
             'password' => $password,
-            'is_active' => true,
+            'platform_role' => PlatformAdminRole::SuperAdmin,
+            'status' => UserStatus::Active,
         ]);
 
         $this->info('Super Admin berhasil dibuat.');

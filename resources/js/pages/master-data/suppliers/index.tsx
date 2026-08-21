@@ -23,8 +23,6 @@ export default function SuppliersIndex({
     return (
         <ReferenceDataPage
             title="Supplier"
-            eyebrow="Operasional / Mitra pasok"
-            description="Simpan kontak pemasok agar pembelian dan utang supplier pada fase berikutnya siap digunakan."
             endpoint="/master-data/suppliers"
             singular="Supplier"
             items={suppliers}

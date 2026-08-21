@@ -15,8 +15,6 @@ createInertiaApp({
         switch (true) {
             case name === 'welcome':
                 return null;
-            case name === 'super-admin/auth/login':
-                return null;
             case name.startsWith('super-admin/'):
                 return SuperAdminLayout;
             case name.startsWith('auth/'):
@@ -37,9 +35,9 @@ createInertiaApp({
         );
     },
     progress: {
-        color: '#4B5563',
+        color: '#2f6f5e',
     },
 });
 
-// This will set light / dark mode on load...
+// Keep one visual mode while the product design is being standardized.
 initializeTheme();

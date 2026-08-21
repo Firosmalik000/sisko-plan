@@ -50,15 +50,14 @@ export const postingToken = () =>
 
 const tabs = [
     { label: 'Inventory', href: '/operations/inventory' },
+    { label: 'Stock opname', href: '/operations/stock-opnames' },
     { label: 'Kas & akun', href: '/operations/cash' },
     { label: 'Modal pemilik', href: '/operations/capital' },
 ];
 
 export function OperationsShell({
     active,
-    eyebrow,
     title,
-    description,
     children,
 }: {
     active: string;
@@ -68,35 +67,29 @@ export function OperationsShell({
     children: ReactNode;
 }) {
     return (
-        <div className="min-h-full bg-[radial-gradient(circle_at_top_right,rgba(13,148,136,0.12),transparent_32%),linear-gradient(135deg,#fffdf7_0%,#f8faf7_48%,#f0fdfa_100%)] p-4 md:p-8">
-            <div className="mx-auto max-w-7xl space-y-6">
-                <header className="overflow-hidden rounded-3xl border border-stone-200/80 bg-stone-950 px-6 py-7 text-stone-50 shadow-xl shadow-stone-950/10 md:px-9">
-                    <p className="text-xs font-bold tracking-[0.24em] text-amber-400 uppercase">
-                        {eyebrow}
-                    </p>
-                    <div className="mt-3 max-w-3xl">
-                        <h1 className="font-serif text-3xl tracking-tight md:text-5xl">
+        <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 sm:py-5 lg:px-8">
+            <div className="mx-auto max-w-7xl space-y-4">
+                <header className="rounded-[1.35rem] border border-[#173c35]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
                             {title}
                         </h1>
-                        <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-300 md:text-base">
-                            {description}
-                        </p>
+                        <nav className="flex max-w-full gap-1.5 overflow-x-auto pb-0.5">
+                            {tabs.map((tab) => (
+                                <Link
+                                    key={tab.href}
+                                    href={tab.href}
+                                    className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition ${
+                                        active === tab.href
+                                            ? 'bg-[#173f35] text-white'
+                                            : 'bg-[#eef3ef] text-[#5f746d] hover:bg-[#e3ece7]'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </Link>
+                            ))}
+                        </nav>
                     </div>
-                    <nav className="mt-7 flex flex-wrap gap-2">
-                        {tabs.map((tab) => (
-                            <Link
-                                key={tab.href}
-                                href={tab.href}
-                                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                                    active === tab.href
-                                        ? 'bg-amber-400 text-stone-950'
-                                        : 'bg-white/10 text-stone-200 hover:bg-white/15'
-                                }`}
-                            >
-                                {tab.label}
-                            </Link>
-                        ))}
-                    </nav>
                 </header>
                 {children}
             </div>
@@ -106,7 +99,6 @@ export function OperationsShell({
 
 export function LedgerCard({
     title,
-    description,
     children,
 }: {
     title: string;
@@ -114,17 +106,16 @@ export function LedgerCard({
     children: ReactNode;
 }) {
     return (
-        <section className="rounded-3xl border border-stone-200 bg-white/90 p-5 shadow-sm backdrop-blur md:p-7">
-            <h2 className="font-serif text-2xl text-stone-900">{title}</h2>
-            {description && (
-                <p className="mt-1 text-sm text-stone-500">{description}</p>
-            )}
-            <div className="mt-5">{children}</div>
+        <section className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+            <h2 className="text-lg font-black tracking-[-0.025em] text-stone-900">
+                {title}
+            </h2>
+            <div className="mt-4">{children}</div>
         </section>
     );
 }
 
 export const fieldClass =
-    'h-11 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-stone-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15';
+    'h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-stone-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15';
 export const buttonClass =
-    'h-11 rounded-xl bg-teal-700 px-5 text-sm font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50';
+    'h-10 rounded-xl bg-teal-700 px-4 text-sm font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50';

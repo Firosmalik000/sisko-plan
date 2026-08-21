@@ -44,14 +44,15 @@ class PostSale
                 }
                 $resolvedItems = [];
                 foreach ($items as $item) {
-                    $productUnit = ProductUnit::query()->with(['product', 'unit'])
+                    $productUnit = ProductUnit::query()->with(['product', 'productVariant', 'unit'])
                         ->where(['id' => $item['product_unit_id'], 'store_id' => $store->id, 'is_active' => true])->firstOrFail();
                     if (! $productUnit->product->is_active || ! $productUnit->unit->is_active) {
                         throw ValidationException::withMessages(['items' => 'Produk dan satuan harus aktif.']);
                     }
                     $resolvedItems[] = [
-                        'product_id' => $productUnit->product_id, 'product_unit_id' => $productUnit->id,
-                        'product_name' => $productUnit->product->name, 'sku' => $productUnit->product->sku, 'barcode' => $productUnit->product->barcode,
+                        'product_id' => $productUnit->product_id, 'product_variant_id' => $productUnit->product_variant_id, 'product_unit_id' => $productUnit->id,
+                        'stock_variant_id' => $productUnit->product->variant_mode === 'separate' ? $productUnit->product_variant_id : null,
+                        'product_name' => $productUnit->productVariant === null ? $productUnit->product->name : "{$productUnit->product->name} - {$productUnit->productVariant->name}", 'sku' => $productUnit->product->sku, 'barcode' => $productUnit->product->barcode,
                         'unit_name' => $productUnit->unit->name, 'unit_symbol' => $productUnit->unit->symbol,
                         'quantity' => $item['quantity'], 'conversion_factor' => (string) $productUnit->conversion_factor,
                         'unit_price' => (string) $productUnit->selling_price, 'item_discount' => $item['item_discount'],
@@ -75,14 +76,15 @@ class PostSale
                     'created_by_user_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 foreach ($calculation['items'] as $item) {
+                    $stockVariantId = $item['stock_variant_id'] === null ? null : (int) $item['stock_variant_id'];
                     $movement = $this->stock->handle(
                         $store->id, (int) $item['product_id'], Decimal::subtract('0', (string) $item['base_quantity'], Decimal::QUANTITY_SCALE),
-                        null, 'sale', $sale, $date, $actor, $notes,
+                        null, 'sale', $sale, $date, $actor, $notes, false, null, $stockVariantId,
                     );
                     $cogs = Decimal::absolute($movement->value_change, Decimal::MONEY_SCALE);
                     SaleItem::create([
                         'store_id' => $store->id, 'sale_id' => $sale->id,
-                        'product_id' => $item['product_id'], 'product_unit_id' => $item['product_unit_id'],
+                        'product_id' => $item['product_id'], 'product_variant_id' => $item['product_variant_id'], 'product_unit_id' => $item['product_unit_id'],
                         'product_name' => $item['product_name'], 'sku' => $item['sku'], 'barcode' => $item['barcode'],
                         'unit_name' => $item['unit_name'], 'unit_symbol' => $item['unit_symbol'],
                         'quantity' => $item['quantity'], 'conversion_factor' => $item['conversion_factor'], 'base_quantity' => $item['base_quantity'],
@@ -94,6 +96,7 @@ class PostSale
                 }
                 $payment = SalePayment::create([
                     'store_id' => $store->id, 'sale_id' => $sale->id, 'financial_account_id' => $accountId,
+                    'payment_method' => $account->type === FinancialAccountType::Cash ? 'cash' : 'qris',
                     'amount' => $calculation['total'], 'tendered_amount' => $paidAmount, 'change_amount' => $change,
                     'occurred_at' => $date, 'created_by_user_id' => $actor->id,
                 ]);

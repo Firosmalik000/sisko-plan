@@ -2,7 +2,11 @@ import type { PaginationLink } from '@/components/pagination';
 import { ReferenceDataPage } from '@/components/reference-data-page';
 import type { ReferenceRecord } from '@/components/reference-data-page';
 
-type Unit = ReferenceRecord & { symbol: string };
+type Unit = ReferenceRecord & {
+    symbol: string;
+    unit_type: 'large' | 'retail';
+    unit_type_label: string;
+};
 
 export default function UnitsIndex({
     units,
@@ -18,28 +22,38 @@ export default function UnitsIndex({
     return (
         <ReferenceDataPage
             title="Satuan barang"
-            eyebrow="Katalog / Ukuran"
-            description="Definisikan satuan dasar dan satuan jual seperti pcs, dus, kilogram, atau liter."
             endpoint="/master-data/units"
             singular="Satuan"
             items={units}
             search={search}
             status={status}
             canManage={canManage}
-            initialValues={{ name: '', symbol: '' }}
+            initialValues={{ name: '', symbol: '', unit_type: 'retail' }}
             fields={[
                 {
                     name: 'name',
                     label: 'Nama satuan',
-                    placeholder: 'Contoh: Pieces',
+                    placeholder: 'Botol',
                 },
                 {
                     name: 'symbol',
                     label: 'Singkatan',
-                    placeholder: 'Contoh: pcs',
+                    placeholder: 'btl',
+                },
+                {
+                    name: 'unit_type',
+                    label: 'Kelompok',
+                    type: 'select',
+                    options: [
+                        { value: 'retail', label: 'Ecer' },
+                        { value: 'large', label: 'Besar' },
+                    ],
                 },
             ]}
-            details={[{ key: 'symbol', label: 'Singkatan' }]}
+            details={[
+                { key: 'symbol', label: 'Singkatan' },
+                { key: 'unit_type_label', label: 'Kelompok' },
+            ]}
         />
     );
 }

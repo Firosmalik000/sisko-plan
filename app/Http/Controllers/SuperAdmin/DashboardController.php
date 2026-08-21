@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Enums\PlatformAdminRole;
 use App\Enums\StoreStatus;
 use App\Enums\SubscriptionStatus;
 use App\Enums\UserStatus;
@@ -30,6 +31,22 @@ class DashboardController extends Controller
                 });
             });
 
+        $paymentTrend = collect(range(5, 0))->map(function (int $monthsAgo): array {
+            $month = now()->startOfMonth()->subMonths($monthsAgo);
+
+            return [
+                'label' => $month->translatedFormat('M'),
+                'amount' => SubscriptionPayment::query()
+                    ->whereBetween('paid_at', [$month, $month->endOfMonth()])
+                    ->sum('amount'),
+            ];
+        });
+        $subscriptionBreakdown = collect(SubscriptionStatus::cases())->mapWithKeys(
+            fn (SubscriptionStatus $status): array => [
+                $status->value => Subscription::query()->where('status', $status)->count(),
+            ],
+        );
+
         return Inertia::render('super-admin/dashboard', [
             'metrics' => [
                 'users' => User::query()->count(),
@@ -39,16 +56,37 @@ class DashboardController extends Controller
                 'operational_subscriptions' => (clone $operationalSubscriptions)->count(),
                 'monthly_recurring_revenue' => (clone $operationalSubscriptions)->where('status', SubscriptionStatus::Active->value)->join('plans', 'plans.id', '=', 'subscriptions.plan_id')->sum('plans.monthly_price'),
                 'payments_this_month' => SubscriptionPayment::query()->whereBetween('paid_at', [now()->startOfMonth(), now()->endOfMonth()])->sum('amount'),
+                'new_users_this_month' => User::query()->where('created_at', '>=', now()->startOfMonth())->count(),
+                'new_stores_this_month' => Store::query()->where('created_at', '>=', now()->startOfMonth())->count(),
             ],
+            'subscription_breakdown' => $subscriptionBreakdown,
+            'payment_trend' => $paymentTrend,
+            'security' => [
+                'platform_admins' => User::query()->whereNotNull('platform_role')->count(),
+                'super_admins' => User::query()->where('platform_role', PlatformAdminRole::SuperAdmin)->count(),
+                'two_factor_enabled' => User::query()->whereNotNull('platform_role')->whereNotNull('two_factor_confirmed_at')->count(),
+            ],
+            'recent_payments' => SubscriptionPayment::query()
+                ->with('store:id,name')
+                ->latest('paid_at')
+                ->limit(5)
+                ->get()
+                ->map(fn (SubscriptionPayment $payment): array => [
+                    'public_id' => $payment->public_id,
+                    'receipt_number' => $payment->receipt_number,
+                    'store' => $payment->store->name,
+                    'amount' => $payment->amount,
+                    'paid_at' => $payment->paid_at->toIso8601String(),
+                ]),
             'recent_activity' => AdminAuditLog::query()
-                ->with('platformAdmin:id,name')
+                ->with('user:id,name')
                 ->latest('id')
                 ->limit(8)
                 ->get()
                 ->map(fn (AdminAuditLog $log) => [
                     'id' => $log->id,
                     'action' => $log->action,
-                    'admin' => $log->platformAdmin->name,
+                    'admin' => $log->user->name,
                     'created_at' => $log->created_at->toIso8601String(),
                 ]),
         ]);

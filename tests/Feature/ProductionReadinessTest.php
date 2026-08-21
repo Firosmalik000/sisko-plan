@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Actions\Platform\RecordAdminAudit;
-use App\Models\PlatformAdmin;
 use App\Models\User;
 use App\Services\Operations\ProductionReadiness;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,20 +24,20 @@ class ProductionReadinessTest extends TestCase
     {
         [$admin, $secret] = $this->adminWithTwoFactor();
 
-        $this->post(route('super-admin.login.store'), [
+        $this->post(route('login.store'), [
             'email' => $admin->email,
             'password' => 'password',
-        ])->assertRedirect(route('super-admin.two-factor.login'));
+        ])->assertRedirect(route('two-factor.login'));
 
-        $this->assertGuest('platform_admin');
-        $this->get(route('super-admin.two-factor.login'))->assertOk();
-        $this->post(route('super-admin.two-factor.store'), [
+        $this->assertGuest();
+        $this->get(route('two-factor.login'))->assertOk();
+        $this->post(route('two-factor.login.store'), [
             'code' => app(Google2FA::class)->getCurrentOtp($secret),
         ])->assertRedirect(route('super-admin.dashboard'));
 
-        $this->assertAuthenticatedAs($admin, 'platform_admin');
+        $this->assertAuthenticatedAs($admin);
         $this->assertDatabaseHas('admin_audit_logs', [
-            'platform_admin_id' => $admin->id,
+            'user_id' => $admin->id,
             'action' => 'admin.login',
         ]);
     }
@@ -46,72 +45,72 @@ class ProductionReadinessTest extends TestCase
     public function test_platform_admin_recovery_code_is_single_use(): void
     {
         [$admin] = $this->adminWithTwoFactor(['recover-once']);
-        $this->post(route('super-admin.login.store'), ['email' => $admin->email, 'password' => 'password']);
-        $this->post(route('super-admin.two-factor.store'), ['recovery_code' => 'recover-once'])
+        $this->post(route('login.store'), ['email' => $admin->email, 'password' => 'password']);
+        $this->post(route('two-factor.login.store'), ['recovery_code' => 'recover-once'])
             ->assertRedirect(route('super-admin.dashboard'));
         $this->assertNotContains('recover-once', $admin->fresh()->recoveryCodes());
 
         $this->post(route('super-admin.logout'));
-        $this->post(route('super-admin.login.store'), ['email' => $admin->email, 'password' => 'password']);
-        $this->post(route('super-admin.two-factor.store'), ['recovery_code' => 'recover-once'])
-            ->assertSessionHasErrors('code');
-        $this->assertGuest('platform_admin');
+        $this->post(route('login.store'), ['email' => $admin->email, 'password' => 'password']);
+        $this->post(route('two-factor.login.store'), ['recovery_code' => 'recover-once'])
+            ->assertSessionHasErrors('recovery_code');
+        $this->assertGuest();
     }
 
     public function test_required_platform_admin_two_factor_blocks_direct_navigation_but_allows_setup(): void
     {
         config(['security.platform_admin_2fa_required' => true]);
-        $admin = PlatformAdmin::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
 
-        $this->actingAs($admin, 'platform_admin')->get(route('super-admin.dashboard'))
+        $this->actingAs($admin)->get(route('super-admin.dashboard'))
             ->assertRedirect(route('super-admin.security.index'));
-        $this->actingAs($admin, 'platform_admin')->get(route('super-admin.security.index'))->assertOk();
+        $this->actingAs($admin)->get(route('super-admin.security.index'))->assertOk();
     }
 
     public function test_platform_admin_can_enroll_confirm_and_cannot_disable_required_two_factor(): void
     {
         config(['security.platform_admin_2fa_required' => true]);
-        $admin = PlatformAdmin::factory()->create();
-        $this->actingAs($admin, 'platform_admin')->post(route('super-admin.security.two-factor.enable'), [
+        $admin = User::factory()->superAdmin()->create();
+        $this->actingAs($admin)->post(route('super-admin.security.two-factor.enable'), [
             'current_password' => 'password',
         ])->assertRedirect();
         $admin->refresh();
         $secret = Fortify::currentEncrypter()->decrypt($admin->two_factor_secret);
 
-        $this->actingAs($admin, 'platform_admin')->post(route('super-admin.security.two-factor.confirm'), [
+        $this->actingAs($admin)->post(route('super-admin.security.two-factor.confirm'), [
             'code' => app(Google2FA::class)->getCurrentOtp($secret),
         ])->assertRedirect();
 
         $this->assertTrue($admin->fresh()->hasEnabledTwoFactorAuthentication());
-        $this->assertDatabaseHas('admin_audit_logs', ['platform_admin_id' => $admin->id, 'action' => 'admin.2fa_enabled']);
-        $this->actingAs($admin, 'platform_admin')->delete(route('super-admin.security.two-factor.disable'), [
+        $this->assertDatabaseHas('admin_audit_logs', ['user_id' => $admin->id, 'action' => 'admin.2fa_enabled']);
+        $this->actingAs($admin)->delete(route('super-admin.security.two-factor.disable'), [
             'current_password' => 'password',
         ])->assertSessionHasErrors('two_factor');
         $this->assertTrue($admin->fresh()->hasEnabledTwoFactorAuthentication());
 
         config(['security.platform_admin_2fa_required' => false]);
-        $this->actingAs($admin, 'platform_admin')->delete(route('super-admin.security.two-factor.disable'), [
+        $this->actingAs($admin)->delete(route('super-admin.security.two-factor.disable'), [
             'current_password' => 'password',
         ])->assertRedirect();
         $this->assertFalse($admin->fresh()->hasEnabledTwoFactorAuthentication());
-        $this->assertDatabaseHas('admin_audit_logs', ['platform_admin_id' => $admin->id, 'action' => 'admin.2fa_disabled']);
+        $this->assertDatabaseHas('admin_audit_logs', ['user_id' => $admin->id, 'action' => 'admin.2fa_disabled']);
     }
 
     public function test_two_factor_mutation_rolls_back_when_security_audit_fails(): void
     {
-        $admin = PlatformAdmin::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
         $this->mock(RecordAdminAudit::class)
             ->shouldReceive('handle')
             ->once()
             ->andThrow(new RuntimeException('Injected 2FA audit failure'));
 
-        $this->actingAs($admin, 'platform_admin')->post(route('super-admin.security.two-factor.enable'), [
+        $this->actingAs($admin)->post(route('super-admin.security.two-factor.enable'), [
             'current_password' => 'password',
         ])->assertServerError();
 
         $this->assertNull($admin->fresh()?->two_factor_secret);
         $this->assertDatabaseMissing('admin_audit_logs', [
-            'platform_admin_id' => $admin->id,
+            'user_id' => $admin->id,
             'action' => 'admin.2fa_setup_started',
         ]);
     }
@@ -256,12 +255,12 @@ class ProductionReadinessTest extends TestCase
     }
 
     /** @param list<string> $recoveryCodes
-     * @return array{PlatformAdmin, string}
+     * @return array{User, string}
      */
     private function adminWithTwoFactor(array $recoveryCodes = ['recovery-code']): array
     {
         $secret = app(TwoFactorAuthenticationProvider::class)->generateSecretKey();
-        $admin = PlatformAdmin::factory()->create([
+        $admin = User::factory()->superAdmin()->create([
             'two_factor_secret' => Fortify::currentEncrypter()->encrypt($secret),
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode($recoveryCodes, JSON_THROW_ON_ERROR)),
             'two_factor_confirmed_at' => now(),

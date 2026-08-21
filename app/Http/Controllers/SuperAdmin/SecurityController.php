@@ -4,7 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Actions\Platform\RecordAdminAudit;
 use App\Http\Controllers\Controller;
-use App\Models\PlatformAdmin;
+use App\Models\User;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,7 +87,7 @@ class SecurityController extends Controller
         return back();
     }
 
-    private function adminAfterPasswordValidation(Request $request): PlatformAdmin
+    private function adminAfterPasswordValidation(Request $request): User
     {
         $validated = $request->validate(['current_password' => ['required', 'string']]);
         $admin = AuthenticatedPlatformAdmin::get($request);

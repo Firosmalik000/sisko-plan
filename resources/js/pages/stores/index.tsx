@@ -22,20 +22,11 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
     return (
         <>
             <Head title="Toko & Anggota" />
-            <div className="flex flex-1 flex-col gap-8 p-4 md:p-8">
-                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-                    <div>
-                        <p className="mb-2 text-xs font-semibold tracking-[0.2em] text-emerald-700 uppercase">
-                            Ruang kerja
-                        </p>
-                        <h1 className="text-3xl font-semibold tracking-tight">
-                            Toko & Anggota
-                        </h1>
-                        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                            Pilih toko untuk bekerja atau kelola akses anggota
-                            tanpa mencampur data antar toko.
-                        </p>
-                    </div>
+            <div className="flex flex-1 flex-col gap-4 bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+                <div className="flex flex-row items-center justify-between gap-3 rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+                    <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                        Toko & Anggota
+                    </h1>
                     <Button
                         asChild
                         className="bg-emerald-700 hover:bg-emerald-800"
@@ -64,13 +55,13 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
                         </Button>
                     </div>
                 ) : (
-                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {stores.map((store) => (
                             <Card
                                 key={store.public_id}
-                                className="overflow-hidden border-border/70 transition-shadow hover:shadow-md"
+                                className="gap-3 overflow-hidden rounded-[1.25rem] border-border/70 py-4 transition-shadow hover:shadow-md"
                             >
-                                <CardHeader className="border-b bg-muted/20">
+                                <CardHeader className="border-b bg-muted/20 px-4">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex size-11 items-center justify-center rounded-2xl bg-emerald-700 text-white">
                                             <Building2 className="size-5" />
@@ -90,11 +81,11 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
                                                 : 'Nonaktif'}
                                         </Badge>
                                     </div>
-                                    <CardTitle className="mt-4 text-xl">
+                                    <CardTitle className="mt-2 text-lg">
                                         {store.name}
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="grid grid-cols-2 gap-3 text-sm">
+                                <CardContent className="grid grid-cols-2 gap-3 px-4 text-sm">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <ShieldCheck className="size-4" />
                                         <span className="capitalize">
@@ -106,7 +97,7 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
                                         Akses anggota
                                     </div>
                                 </CardContent>
-                                <CardFooter className="justify-between border-t pt-5">
+                                <CardFooter className="justify-between border-t px-4 pt-3">
                                     {store.role === 'owner' ? (
                                         <Button variant="ghost" asChild>
                                             <Link

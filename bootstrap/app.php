@@ -3,9 +3,10 @@
 use App\Http\Controllers\ReadinessController;
 use App\Http\Middleware\AddRequestId;
 use App\Http\Middleware\EnsurePlatformAdminHasTwoFactor;
-use App\Http\Middleware\EnsurePlatformAdminIsActive;
+use App\Http\Middleware\EnsurePlatformAdminIsSuperAdmin;
 use App\Http\Middleware\EnsureSubscriptionAllowsWrites;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsPlatformAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
@@ -34,10 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->trustHosts();
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
-        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('super-admin*')
-            ? route('super-admin.login')
-            : route('login'));
-        $middleware->redirectUsersTo(fn (Request $request) => $request->is('super-admin*')
+        $middleware->redirectGuestsTo(fn () => route('login'));
+        $middleware->redirectUsersTo(fn (Request $request) => $request->user()?->isPlatformAdmin()
             ? route('super-admin.dashboard')
             : route('dashboard'));
 
@@ -50,8 +49,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'active.store' => SetActiveStore::class,
-            'active.platform-admin' => EnsurePlatformAdminIsActive::class,
+            'platform-admin' => EnsureUserIsPlatformAdmin::class,
             'platform-admin.2fa' => EnsurePlatformAdminHasTwoFactor::class,
+            'platform-admin.super' => EnsurePlatformAdminIsSuperAdmin::class,
             'subscription.access' => EnsureSubscriptionAllowsWrites::class,
         ]);
     })

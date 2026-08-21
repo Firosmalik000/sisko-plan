@@ -61,6 +61,7 @@ Examples:
 - categories
 - units
 - products
+- product_variants
 - product_units
 
 ### Inventory

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PlatformAdminRole;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -32,6 +33,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'status' => UserStatus::Active,
+            'platform_role' => null,
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
@@ -57,6 +59,20 @@ class UserFactory extends Factory
             'two_factor_secret' => encrypt('secret'),
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
+        ]);
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->state(fn (): array => [
+            'platform_role' => PlatformAdminRole::SuperAdmin,
+        ]);
+    }
+
+    public function platformAdmin(): static
+    {
+        return $this->state(fn (): array => [
+            'platform_role' => PlatformAdminRole::Admin,
         ]);
     }
 }

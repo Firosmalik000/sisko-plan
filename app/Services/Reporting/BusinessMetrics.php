@@ -52,17 +52,70 @@ class BusinessMetrics
         ];
     }
 
+    public function transactionCount(int $storeId, CarbonImmutable $start, CarbonImmutable $end): int
+    {
+        return DB::table('sales')
+            ->where('store_id', $storeId)
+            ->whereBetween('occurred_at', [$start, $end])
+            ->count();
+    }
+
+    /** @return list<array{category_name:string,net_revenue:string,quantity_sold:string}> */
+    public function categories(int $storeId, CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        $categoryName = "COALESCE(categories.name, 'Tanpa Kategori')";
+        $sold = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('products', 'products.id', '=', 'sale_items.product_id')
+            ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
+            ->where('sale_items.store_id', $storeId)
+            ->whereBetween('sales.occurred_at', [$start, $end])
+            ->groupByRaw($categoryName)
+            ->get([
+                DB::raw("{$categoryName} as category_name"),
+                DB::raw('SUM(sale_items.net_total) as revenue'),
+                DB::raw('SUM(sale_items.quantity) as quantity_sold'),
+            ])->keyBy('category_name');
+        $returned = DB::table('sale_return_items')
+            ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
+            ->join('products', 'products.id', '=', 'sale_return_items.product_id')
+            ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
+            ->where('sale_return_items.store_id', $storeId)
+            ->whereBetween('sale_returns.occurred_at', [$start, $end])
+            ->groupByRaw($categoryName)
+            ->get([
+                DB::raw("{$categoryName} as category_name"),
+                DB::raw('SUM(sale_return_items.refund_amount) as refund'),
+                DB::raw('SUM(sale_return_items.quantity) as quantity_returned'),
+            ])->keyBy('category_name');
+
+        $categories = $sold->keys()->merge($returned->keys())->unique()->map(function (string $name) use ($sold, $returned): array {
+            $sale = $sold->get($name);
+            $return = $returned->get($name);
+
+            return [
+                'category_name' => $name,
+                'net_revenue' => Decimal::subtract((string) ($sale->revenue ?? '0'), (string) ($return->refund ?? '0'), Decimal::MONEY_SCALE),
+                'quantity_sold' => Decimal::subtract((string) ($sale->quantity_sold ?? '0'), (string) ($return->quantity_returned ?? '0'), Decimal::QUANTITY_SCALE),
+            ];
+        })->sort(fn (array $left, array $right): int => Decimal::compare($right['net_revenue'], $left['net_revenue'], Decimal::MONEY_SCALE))->all();
+
+        return array_values($categories);
+    }
+
     /** @return list<array{product_name:string,unit_symbol:string,quantity:string,minimum_quantity:string}> */
     public function lowStock(int $storeId, int $limit = 6): array
     {
         $rows = DB::table('inventory_balances')->join('products', 'products.id', '=', 'inventory_balances.product_id')
+            ->leftJoin('product_variants', 'product_variants.id', '=', 'inventory_balances.product_variant_id')
             ->join('units', 'units.id', '=', 'products.base_unit_id')
             ->where('inventory_balances.store_id', $storeId)->where('inventory_balances.minimum_quantity', '>', 0)
             ->whereColumn('inventory_balances.quantity', '<=', 'inventory_balances.minimum_quantity')
             ->orderBy('inventory_balances.quantity')->limit($limit)
-            ->get(['products.name as product_name', 'units.symbol as unit_symbol', 'inventory_balances.quantity', 'inventory_balances.minimum_quantity'])
+            ->get(['products.name as product_name', 'product_variants.name as variant_name', 'units.symbol as unit_symbol', 'inventory_balances.quantity', 'inventory_balances.minimum_quantity'])
             ->map(fn (object $row): array => [
-                'product_name' => (string) $row->product_name, 'unit_symbol' => (string) $row->unit_symbol,
+                'product_name' => $row->variant_name === null ? (string) $row->product_name : "{$row->product_name} - {$row->variant_name}",
+                'unit_symbol' => (string) $row->unit_symbol,
                 'quantity' => (string) $row->quantity, 'minimum_quantity' => (string) $row->minimum_quantity,
             ])->all();
 
@@ -114,19 +167,23 @@ class BusinessMetrics
     public function products(int $storeId, CarbonImmutable $start, CarbonImmutable $end): array
     {
         $sold = DB::table('sale_items')->join('sales', 'sales.id', '=', 'sale_items.sale_id')
-            ->where('sale_items.store_id', $storeId)->whereBetween('sales.occurred_at', [$start, $end])->groupBy('sale_items.product_id')
-            ->get(['sale_items.product_id', DB::raw('MAX(sale_items.id) as snapshot_sale_item_id'), DB::raw('SUM(sale_items.quantity) as quantity_sold'), DB::raw('SUM(sale_items.net_total) as revenue'), DB::raw('SUM(sale_items.cogs_amount) as cogs')])->keyBy('product_id');
+            ->where('sale_items.store_id', $storeId)->whereBetween('sales.occurred_at', [$start, $end])
+            ->groupBy('sale_items.product_id', 'sale_items.product_variant_id')
+            ->get(['sale_items.product_id', 'sale_items.product_variant_id', DB::raw('MAX(sale_items.id) as snapshot_sale_item_id'), DB::raw('SUM(sale_items.quantity) as quantity_sold'), DB::raw('SUM(sale_items.net_total) as revenue'), DB::raw('SUM(sale_items.cogs_amount) as cogs')])
+            ->keyBy(fn (object $row): string => $row->product_id.':'.($row->product_variant_id ?? 0));
         $returned = DB::table('sale_return_items')->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
-            ->where('sale_return_items.store_id', $storeId)->whereBetween('sale_returns.occurred_at', [$start, $end])->groupBy('sale_return_items.product_id')
-            ->get(['sale_return_items.product_id', DB::raw('MAX(sale_return_items.sale_item_id) as snapshot_sale_item_id'), DB::raw('SUM(sale_return_items.quantity) as quantity_returned'), DB::raw('SUM(sale_return_items.refund_amount) as refund'), DB::raw('SUM(sale_return_items.cogs_reversed) as cogs_reversed')])->keyBy('product_id');
+            ->where('sale_return_items.store_id', $storeId)->whereBetween('sale_returns.occurred_at', [$start, $end])
+            ->groupBy('sale_return_items.product_id', 'sale_return_items.product_variant_id')
+            ->get(['sale_return_items.product_id', 'sale_return_items.product_variant_id', DB::raw('MAX(sale_return_items.sale_item_id) as snapshot_sale_item_id'), DB::raw('SUM(sale_return_items.quantity) as quantity_returned'), DB::raw('SUM(sale_return_items.refund_amount) as refund'), DB::raw('SUM(sale_return_items.cogs_reversed) as cogs_reversed')])
+            ->keyBy(fn (object $row): string => $row->product_id.':'.($row->product_variant_id ?? 0));
 
         $snapshotNames = DB::table('sale_items')
             ->whereIn('id', $sold->pluck('snapshot_sale_item_id')->merge($returned->pluck('snapshot_sale_item_id'))->filter()->unique())
             ->pluck('product_name', 'id');
 
-        $products = $sold->keys()->merge($returned->keys())->unique()->map(function (int|string $productId) use ($sold, $returned, $snapshotNames): array {
-            $sale = $sold->get($productId);
-            $return = $returned->get($productId);
+        $products = $sold->keys()->merge($returned->keys())->unique()->map(function (string $stockIdentity) use ($sold, $returned, $snapshotNames): array {
+            $sale = $sold->get($stockIdentity);
+            $return = $returned->get($stockIdentity);
             $snapshotId = $sale->snapshot_sale_item_id ?? $return->snapshot_sale_item_id;
             $netRevenue = Decimal::subtract((string) ($sale->revenue ?? '0'), (string) ($return->refund ?? '0'), Decimal::MONEY_SCALE);
             $netCogs = Decimal::subtract((string) ($sale->cogs ?? '0'), (string) ($return->cogs_reversed ?? '0'), Decimal::MONEY_SCALE);

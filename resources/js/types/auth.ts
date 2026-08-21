@@ -18,13 +18,23 @@ export type StoreSummary = {
     public_id: string;
     name: string;
     role: 'owner' | 'admin' | 'cashier';
+    theme_color?: string;
 };
 
 export type PlatformAdmin = {
     id: number;
     name: string;
     email: string;
+    role: 'super_admin' | 'admin';
     two_factor_enabled: boolean;
+};
+
+export type Impersonation = {
+    admin_id: number;
+    admin_name: string;
+    admin_email: string;
+    active_store_id: number | null;
+    started_at: string;
 };
 
 /* @chisel-passkeys */

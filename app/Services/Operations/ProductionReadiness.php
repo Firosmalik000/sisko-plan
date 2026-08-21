@@ -2,7 +2,8 @@
 
 namespace App\Services\Operations;
 
-use App\Models\PlatformAdmin;
+use App\Enums\UserStatus;
+use App\Models\User;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
@@ -48,13 +49,14 @@ class ProductionReadiness
         try {
             DB::select('select 1');
             $database = $this->check('database_connection', 'Koneksi database', true, true, 'Database tidak dapat dihubungi.');
-            $activeAdmins = PlatformAdmin::query()->where('is_active', true)->count();
-            $adminsWithoutTwoFactor = PlatformAdmin::query()
-                ->where('is_active', true)
+            $activeAdmins = User::query()->whereNotNull('platform_role')->where('status', UserStatus::Active)->count();
+            $adminsWithoutTwoFactor = User::query()
+                ->whereNotNull('platform_role')
+                ->where('status', UserStatus::Active)
                 ->where(fn ($query) => $query->whereNull('two_factor_secret')->orWhereNull('two_factor_confirmed_at'))
                 ->count();
             $admins = $this->check(
-                'platform_admins',
+                'platform_users',
                 'Platform Admin aktif terlindungi 2FA',
                 $activeAdmins > 0 && $adminsWithoutTwoFactor === 0,
                 true,

@@ -1,0 +1,140 @@
+{
+  "title": "Pilih arah landing Sisko Plan",
+  "question": "Arah mana yang paling tepat untuk memperkenalkan sistem operasional toko ini?",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Papan Operasional Toko",
+      "kicker": "THE ROLL",
+      "lineage": "papan shift, clipboard stok, dan signage kasir modern",
+      "thesis": "Landing menjadi pusat kendali satu hari toko: jelas, aktif, dan dapat dipercaya.",
+      "palette": ["#F7F4EC", "#153F36", "#E46F35", "#F2BD43", "#DDEBE4"],
+      "materials": ["ivory paper", "enamel green", "receipt stock", "fine rules"],
+      "viewport": "Navigasi tipis di atas, pernyataan besar di kiri, dan papan alur operasional nyata memenuhi sisi kanan hingga tepi bawah.",
+      "risk": "Dapat terasa terlalu utilitarian jika skala tipografi dan ruang tenangnya tidak berani.",
+      "raised": [
+        {
+          "from": "Variable Font Specimen",
+          "raise": "Kontras skala dibuat ekstrem: judul besar, label kecil, angka operasional presisi."
+        },
+        {
+          "from": "Darkroom Safelight",
+          "raise": "Setiap tahap operasional memiliki status dan konsekuensi yang terbaca jelas."
+        },
+        {
+          "from": "Racing League",
+          "raise": "Arah gerak horizontal menghubungkan kasir, stok, kas, dan laporan sebagai satu alur."
+        }
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.png"
+    },
+    {
+      "id": "model-pick",
+      "label": "Buku Besar Toko",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "buku kas, ledger ritel, dan laporan dagang editorial",
+      "thesis": "Sisko Plan terasa seperti buku besar yang hidup, rapi saat dibaca dan otomatis saat bekerja.",
+      "palette": ["#F4EFE3", "#1B4037", "#B9562C", "#D9C79F", "#FFFFFF"],
+      "materials": ["ledger paper", "ruled columns", "ink stamps", "linen cover"],
+      "viewport": "Judul editorial besar berdampingan dengan lembar ledger interaktif yang berubah dari transaksi menjadi laporan.",
+      "risk": "Arah paling familiar untuk pesan ketertiban dan dapat terasa terlalu tenang bila demonstrasi produknya lemah.",
+      "comp": ".impeccable/mocks/decision/model-pick.png"
+    },
+    {
+      "id": "challenger-variable",
+      "label": "Variable Font Specimen",
+      "verdict": "declined",
+      "lineage": "interactive type specimen",
+      "thesis": "Data toko dibaca sebagai spesimen numerik yang berubah mengikuti kondisi usaha.",
+      "palette": ["#FAF9F5", "#17241F", "#D8672F"],
+      "materials": ["paper field", "typographic axes"],
+      "viewport": "Satu angka usaha raksasa memimpin grid data dan kontrol periode.",
+      "case": "Kejelasan skala kuat, tetapi pemilik toko tidak langsung mengenali konteks operasionalnya.",
+      "risk": "Mudah terasa seperti eksperimen tipografi, bukan produk yang siap dipakai.",
+      "kept": "Kontras skala antara angka utama dan label pendukung."
+    },
+    {
+      "id": "challenger-darkroom",
+      "label": "Darkroom Safelight",
+      "verdict": "declined",
+      "lineage": "printing darkroom under amber safelight",
+      "thesis": "Transaksi bergerak melalui tahap tetap hingga menjadi laporan yang tidak dapat diubah sembarangan.",
+      "palette": ["#271713", "#D88932", "#E9DFCF"],
+      "materials": ["enamel tray", "wet print", "timer digits"],
+      "viewport": "Alur transaksi hadir sebagai stasiun proses dari pencatatan hingga posting.",
+      "case": "Mekanisme tahap dan konsekuensi cocok, tetapi dunia gelap bertentangan dengan komitmen tema publik terang.",
+      "risk": "Atmosfer dramatis dapat mengalahkan kesederhanaan produk.",
+      "kept": "Status proses dan titik keputusan harus terasa eksplisit."
+    },
+    {
+      "id": "challenger-racing",
+      "label": "Racing League",
+      "verdict": "declined",
+      "lineage": "geometric racing identity",
+      "thesis": "Kasir, stok, dan laporan bergerak cepat sepanjang satu lintasan operasional.",
+      "palette": ["#343B38", "#F0BC38", "#E86535", "#F7F4EC"],
+      "materials": ["matte signage", "sharp decals"],
+      "viewport": "Alur produk melaju dari transaksi menuju stok, kas, dan laba dalam satu sumbu horizontal.",
+      "case": "Kecepatan POS terbaca, tetapi bahasa balap terlalu agresif untuk keseluruhan pekerjaan pemilik toko.",
+      "risk": "Bisa terlihat seperti kampanye olahraga, bukan SaaS operasional.",
+      "kept": "Gerak dan hubungan modul mengikuti satu sumbu yang jelas."
+    },
+    {
+      "id": "challenger-club",
+      "label": "Flash Scrawl Sleeve",
+      "verdict": "declined",
+      "lineage": "club sleeve and marker scrawl",
+      "thesis": "Aktivitas toko meninggalkan jejak visual seperti catatan cepat di atas permukaan kerja.",
+      "palette": ["#F4F0E8", "#163D35", "#FF5B45"],
+      "materials": ["flash print", "marker stroke", "sticker stock"],
+      "viewport": "Foto suasana toko dilapisi catatan operasional berenergi tinggi.",
+      "case": "Berkarakter, tetapi tidak cukup tenang atau presisi untuk membangun kepercayaan terhadap data usaha.",
+      "risk": "Kesengajaan yang kasar dapat dibaca sebagai produk belum matang.",
+      "kept": "Satu gestur visual khas harus membuat halaman mudah diingat."
+    },
+    {
+      "id": "challenger-plankton",
+      "label": "Bioluminescent Wake",
+      "verdict": "declined",
+      "lineage": "nocturnal plankton wake",
+      "thesis": "Setiap transaksi menyalakan jejak yang menjelaskan dampaknya terhadap toko.",
+      "palette": ["#081816", "#38D5C0", "#B9FFF4"],
+      "materials": ["night water", "luminous trails"],
+      "viewport": "Jejak transaksi bercahaya menghubungkan penjualan, stok, kas, dan laba.",
+      "case": "Hubungan sebab-akibat kuat, tetapi tema gelap dan efek GPU tidak sesuai kebutuhan landing terang yang efisien.",
+      "risk": "Spektakel dapat menyamarkan produk dan membebani perangkat kecil.",
+      "kept": "Dampak satu tindakan ke modul lain harus diperlihatkan, bukan hanya dijelaskan."
+    },
+    {
+      "id": "challenger-accretion",
+      "label": "Accretion Threshold",
+      "verdict": "declined",
+      "lineage": "black-hole accretion disk",
+      "thesis": "Posting transaksi digambarkan sebagai ambang yang mengubah keadaan sistem secara permanen.",
+      "palette": ["#070B0A", "#F4BD54", "#D85B3C"],
+      "materials": ["void field", "photon arcs"],
+      "viewport": "Satu alur transaksi mengorbit lalu melewati ambang posting menuju ledger.",
+      "case": "Konsep irreversibilitas relevan, tetapi metafora terlalu jauh dari keseharian toko.",
+      "risk": "Pengunjung mengingat efeknya tetapi tidak memahami aplikasinya.",
+      "kept": "Primary action harus memiliki konsekuensi dan status yang tegas."
+    }
+  ],
+  "reroll": {
+    "registers": ["safer", "bolder"]
+  },
+  "buildPath": {
+    "value": "comp",
+    "toggle": true
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "Standar SaaS profesional",
+    "thesis": "Landing kategori kasir yang familiar, bersih, dan dieksekusi dengan sangat rapi.",
+    "palette": ["#FFFFFF", "#153F36", "#E8F1EC", "#E6783D"],
+    "materials": ["clean grid", "dashboard mockup", "soft paper"],
+    "viewport": "Navbar, hero dua kolom, dashboard preview, fitur, bukti produk, lalu CTA.",
+    "risk": "Mudah dipahami tetapi sengaja lebih sulit dibedakan dari kompetitor.",
+    "comp": ".impeccable/mocks/decision/canon.png"
+  },
+  "steer": true
+}

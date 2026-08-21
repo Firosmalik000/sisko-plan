@@ -152,7 +152,32 @@ class ExpensesReportsTest extends TestCase
                 ->where('position.inventory_value', '3500.0000')
                 ->where('position.supplier_payable', '700.0000')
                 ->where('position.low_stock_count', 1)
+                ->where('transactions', 1)
+                ->where('storeCount', 1)
+                ->where('period.key', 'month')
+                ->where('comparison.previous_net_revenue', '0.0000')
+                ->has('salesTrend', 8)
+                ->has('storePerformance', 1)
+                ->where('storePerformance.0.public_id', $store->public_id)
+                ->where('storePerformance.0.net_revenue', '3000.0000')
+                ->where('storePerformance.0.estimated_profit', '1200.0000')
+                ->where('storePerformance.0.transactions', 1)
+                ->has('topProducts', 1)
+                ->where('topProducts.0.product_name', $soldProductName)
+                ->where('topProducts.0.net_revenue', '3000.0000')
+                ->has('categorySales', 1)
+                ->where('categorySales.0.category_name', 'Tanpa Kategori')
+                ->where('categorySales.0.net_revenue', '3000.0000')
                 ->has('lowStock', 1));
+
+        $this->actingAs($owner)->withSession($session)->get(route('dashboard', ['period' => 'day']))
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard')
+                ->where('period.key', 'day')
+                ->where('performance.net_revenue', '0.0000')
+                ->where('transactions', 0)
+                ->has('salesTrend', 1)
+                ->has('topProducts', 0)
+                ->has('categorySales', 0));
 
         $this->actingAs($owner)->withSession($session)->get(route('reports.index', ['start_date' => '2026-08-07', 'end_date' => '2026-08-07']))
             ->assertInertia(fn (Assert $page) => $page->component('reports/index')
@@ -210,6 +235,38 @@ class ExpensesReportsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->component('expenses/index')->has('expenses.data', 20)->where('expenses.total', 21)->has('expenses.links'));
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('expenses.index', ['page' => 2]))
             ->assertInertia(fn (Assert $page) => $page->has('expenses.data', 1));
+    }
+
+    public function test_expense_summary_uses_the_same_tenant_scoped_filters_as_the_history(): void
+    {
+        [$owner, $store, , $cash, , $category] = $this->fixtures();
+        [$foreignOwner, $foreignStore, , $foreignCash, , $foreignCategory] = $this->fixtures();
+        $marketing = ExpenseCategory::create(['store_id' => $store->id, 'name' => 'Marketing', 'is_active' => true]);
+        $this->openCash($store, $owner, $cash, '2000');
+        $this->openCash($foreignStore, $foreignOwner, $foreignCash, '2000');
+        app(PostExpense::class)->handle($store, $owner, $category->id, $cash->id, '100', '2026-08-07T10:00:00Z', 'Listrik', 'summary-operational');
+        app(PostExpense::class)->handle($store, $owner, $marketing->id, $cash->id, '250', '2026-08-08T10:00:00Z', 'Iklan', 'summary-marketing');
+        app(PostExpense::class)->handle($foreignStore, $foreignOwner, $foreignCategory->id, $foreignCash->id, '900', '2026-08-08T10:00:00Z', 'Asing', 'summary-foreign');
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('expenses.index', [
+                'category' => $marketing->public_id,
+                'start_date' => '2026-08-08',
+                'end_date' => '2026-08-08',
+            ]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('expenses/index')
+                ->where('filters.category', $marketing->public_id)
+                ->where('filters.start_date', '2026-08-08')
+                ->where('filters.end_date', '2026-08-08')
+                ->where('summary.total', '250.0000')
+                ->where('summary.count', 1)
+                ->where('summary.largest_category.name', 'Marketing')
+                ->where('summary.largest_category.total', '250.0000')
+                ->where('summary.account_balance', '1650.0000')
+                ->has('accounts', 2)
+                ->has('expenses.data', 1)
+                ->where('expenses.data.0.category_name', 'Marketing'));
     }
 
     /** @return array{User, Store, Product, FinancialAccount, FinancialAccount, ExpenseCategory} */

@@ -7,7 +7,7 @@ use App\Models\Concerns\ImmutableLedgerRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['store_id', 'document_number', 'type', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_user_id', 'posted_at'])]
+#[Fillable(['store_id', 'stock_count_id', 'document_number', 'type', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_user_id', 'posted_at'])]
 class StockAdjustment extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;

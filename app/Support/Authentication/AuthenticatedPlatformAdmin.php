@@ -2,23 +2,23 @@
 
 namespace App\Support\Authentication;
 
-use App\Models\PlatformAdmin;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 final class AuthenticatedPlatformAdmin
 {
-    public static function get(Request $request): PlatformAdmin
+    public static function get(Request $request): User
     {
-        $admin = $request->user('platform_admin');
-        abort_unless($admin instanceof PlatformAdmin, 401);
+        $admin = $request->user();
+        abort_unless($admin instanceof User && $admin->isPlatformAdmin(), 401);
 
         return $admin;
     }
 
-    public static function optional(Request $request): ?PlatformAdmin
+    public static function optional(Request $request): ?User
     {
-        $admin = $request->user('platform_admin');
+        $admin = $request->user();
 
-        return $admin instanceof PlatformAdmin ? $admin : null;
+        return $admin instanceof User && $admin->isPlatformAdmin() ? $admin : null;
     }
 }

@@ -15,6 +15,7 @@ use App\Models\FinancialAccountBalance;
 use App\Models\InventoryBalance;
 use App\Models\Product;
 use App\Models\ProductUnit;
+use App\Models\ProductVariant;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleReturn;
@@ -50,7 +51,7 @@ class SalesPosTest extends TestCase
         $this->assertSame('8.000000', InventoryBalance::query()->sole()->quantity);
         $this->assertSame('4800.0000', InventoryBalance::query()->sole()->inventory_value);
         $this->assertSame('1800.0000', FinancialAccountBalance::query()->sole()->balance);
-        $this->assertDatabaseHas('sale_payments', ['amount' => 1800, 'tendered_amount' => 2000, 'change_amount' => 200]);
+        $this->assertDatabaseHas('sale_payments', ['payment_method' => 'cash', 'amount' => 1800, 'tendered_amount' => 2000, 'change_amount' => 200]);
         $this->assertDatabaseHas('cash_transactions', ['direction' => 'in', 'reason' => 'sale_payment', 'amount' => 1800]);
     }
 
@@ -313,6 +314,95 @@ class SalesPosTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_pos_projects_one_catalog_identity_and_simple_cash_or_qris_methods(): void
+    {
+        [$owner, $store, $product, $cash, $bank] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('pos/index')
+                ->has('products', 1)
+                ->where('products.0.catalog_product_id', $product->public_id)
+                ->where('products.0.catalog_product_name', $product->name)
+                ->where('products.0.variant_name', null)
+                ->has('paymentMethods', 2)
+                ->where('paymentMethods.0.method', 'cash')
+                ->where('paymentMethods.0.label', 'Cash')
+                ->where('paymentMethods.0.account_id', $cash->public_id)
+                ->where('paymentMethods.1.method', 'qris')
+                ->where('paymentMethods.1.label', 'QRIS')
+                ->where('paymentMethods.1.account_id', $bank->public_id));
+    }
+
+    public function test_pos_bootstraps_cash_and_qris_accounts_when_store_has_none(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+        $product = Product::factory()->for($store)->create();
+        $product->productUnits()->sole()->update(['selling_price' => '1000']);
+        $this->openStock($store, $owner, $product, '5', '500');
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('pos/index')
+                ->has('paymentMethods', 2)
+                ->where('paymentMethods.0.method', 'cash')
+                ->where('paymentMethods.0.label', 'Cash')
+                ->where('paymentMethods.1.method', 'qris')
+                ->where('paymentMethods.1.label', 'QRIS'));
+
+        $this->assertDatabaseCount('financial_accounts', 2);
+        $this->assertDatabaseHas('financial_accounts', ['store_id' => $store->id, 'name' => 'Kas', 'type' => FinancialAccountType::Cash->value, 'is_active' => true]);
+        $this->assertDatabaseHas('financial_accounts', ['store_id' => $store->id, 'name' => 'QRIS', 'type' => FinancialAccountType::EWallet->value, 'is_active' => true]);
+    }
+
+    public function test_pos_variant_rows_share_their_parent_catalog_identity(): void
+    {
+        [$owner, $store, $product] = $this->fixtures();
+        $product->productUnits()->update(['is_active' => false]);
+        $product->update(['variant_mode' => 'separate']);
+
+        foreach (['Setengah dus', 'Seperempat dus'] as $variantName) {
+            $variant = ProductVariant::query()->create([
+                'store_id' => $store->id,
+                'product_id' => $product->id,
+                'name' => $variantName,
+                'is_active' => true,
+            ]);
+            $variant->productUnits()->create([
+                'store_id' => $store->id, 'product_id' => $product->id, 'unit_id' => $product->base_unit_id,
+                'conversion_factor' => 1, 'purchase_price' => '5000', 'selling_price' => '10000', 'is_active' => true,
+            ]);
+            $this->openStock($store, $owner, $variant, '5', '5000');
+        }
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('pos/index')
+                ->has('products', 2)
+                ->where('products.0.catalog_product_id', $product->public_id)
+                ->where('products.1.catalog_product_id', $product->public_id)
+                ->where('products.0.catalog_product_name', $product->name)
+                ->where('products.1.catalog_product_name', $product->name)
+                ->where('products.0.variant_name', 'Seperempat dus')
+                ->where('products.1.variant_name', 'Setengah dus'));
+    }
+
+    public function test_non_cash_sale_is_stored_as_qris_payment_method(): void
+    {
+        [$owner, $store, $product, , $bank] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+
+        $sale = $this->postSale($store, $owner, $product, $bank, key: 'qris-sale');
+
+        $this->assertDatabaseHas('sale_payments', [
+            'sale_id' => $sale->id,
+            'financial_account_id' => $bank->id,
+            'payment_method' => 'qris',
+        ]);
+    }
+
     public function test_owner_http_sale_redirects_to_printable_receipt_and_can_return(): void
     {
         [$owner, $store, $product, $cash] = $this->fixtures();
@@ -324,8 +414,26 @@ class SalesPosTest extends TestCase
             'items' => [['product_id' => $product->public_id, 'unit_id' => $product->baseUnit->public_id, 'quantity' => '1', 'discount_amount' => '0']],
         ])->assertRedirect(route('sales.show', Sale::query()->sole()));
         $sale = Sale::query()->sole();
+        $store->settings()->update([
+            'address' => 'Jl. Melati No. 10',
+            'receipt_header' => 'Struk Toko Senja',
+            'receipt_footer' => 'Terima kasih sudah datang.',
+            'receipt_paper_size' => '80mm',
+            'receipt_show_address' => true,
+            'receipt_show_cashier' => false,
+            'auto_print_receipt' => true,
+        ]);
         $this->actingAs($owner)->withSession($session)->get(route('sales.show', $sale))
-            ->assertInertia(fn (Assert $page) => $page->component('sales/show')->where('canReturn', true)->where('canViewProfit', true)->has('items', 1));
+            ->assertInertia(fn (Assert $page) => $page->component('sales/show')
+                ->where('canReturn', true)
+                ->where('canViewProfit', true)
+                ->where('receipt.address', 'Jl. Melati No. 10')
+                ->where('receipt.header', 'Struk Toko Senja')
+                ->where('receipt.footer', 'Terima kasih sudah datang.')
+                ->where('receipt.paper_size', '80mm')
+                ->where('receipt.show_cashier', false)
+                ->where('receipt.auto_print', true)
+                ->has('items', 1));
         $this->actingAs($owner)->withSession($session)->post(route('sales.returns.store', $sale), [
             'account_id' => $cash->public_id, 'occurred_at' => '2026-08-07T17:00', 'idempotency_key' => (string) Str::uuid(),
             'items' => [['sale_item_id' => SaleItem::query()->sole()->public_id, 'quantity' => '1']],
@@ -385,9 +493,15 @@ class SalesPosTest extends TestCase
         return [$owner, $store, $product, $cash, $bank];
     }
 
-    private function openStock(Store $store, User $owner, Product $product, string $quantity, string $cost): void
+    private function openStock(Store $store, User $owner, Product|ProductVariant $product, string $quantity, string $cost): void
     {
-        app(PostStockAdjustment::class)->handle($store, $owner, 'opening', [['product_id' => $product->id, 'quantity' => $quantity, 'unit_cost' => $cost]], '2026-08-07T08:00:00Z', null, 'sale-stock-'.$product->id);
+        $parent = $product instanceof ProductVariant ? $product->product : $product;
+        app(PostStockAdjustment::class)->handle($store, $owner, 'opening', [[
+            'product_id' => $parent->id,
+            'product_variant_id' => $product instanceof ProductVariant ? $product->id : null,
+            'quantity' => $quantity,
+            'unit_cost' => $cost,
+        ]], '2026-08-07T08:00:00Z', null, 'sale-stock-'.class_basename($product).'-'.$product->id);
     }
 
     private function postSale(Store $store, User $owner, Product $product, FinancialAccount $account, string $quantity = '1', string $itemDiscount = '0', string $transactionDiscount = '0', ?string $paid = null, string $key = 'sale-key', string $occurredAt = '2026-08-07T09:00:00Z'): Sale

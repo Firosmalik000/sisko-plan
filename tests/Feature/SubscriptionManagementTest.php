@@ -11,7 +11,6 @@ use App\Enums\SubscriptionStatus;
 use App\Models\Category;
 use App\Models\FinancialAccount;
 use App\Models\Plan;
-use App\Models\PlatformAdmin;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Subscription;
@@ -45,16 +44,16 @@ class SubscriptionManagementTest extends TestCase
 
     public function test_platform_admin_can_create_plan_and_change_subscription_with_audit(): void
     {
-        $admin = PlatformAdmin::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
         $store = Store::factory()->create();
 
-        $this->actingAs($admin, 'platform_admin')->post(route('super-admin.plans.store'), [
+        $this->actingAs($admin)->post(route('super-admin.plans.store'), [
             'code' => 'growth', 'name' => 'Growth', 'description' => 'Paket bertumbuh', 'monthly_price' => '250000',
             'max_products' => 500, 'max_members' => 10, 'is_default' => false, 'is_active' => true,
         ])->assertRedirect();
         $plan = Plan::query()->where('code', 'growth')->sole();
         $subscription = $store->subscription()->sole();
-        $this->actingAs($admin, 'platform_admin')->patch(route('super-admin.subscriptions.update', $subscription), [
+        $this->actingAs($admin)->patch(route('super-admin.subscriptions.update', $subscription), [
             'plan_id' => $plan->public_id, 'status' => SubscriptionStatus::Trialing->value,
             'starts_at' => '2026-08-08', 'trial_ends_at' => '2026-08-22',
             'current_period_start' => null, 'current_period_end' => null, 'notes' => 'Trial Growth',
@@ -63,13 +62,13 @@ class SubscriptionManagementTest extends TestCase
         $subscription->refresh();
         $this->assertSame($plan->id, $subscription->plan_id);
         $this->assertSame(SubscriptionStatus::Trialing, $subscription->status);
-        $this->assertDatabaseHas('admin_audit_logs', ['platform_admin_id' => $admin->id, 'action' => 'plan.created', 'subject_id' => $plan->id]);
-        $this->assertDatabaseHas('admin_audit_logs', ['platform_admin_id' => $admin->id, 'action' => 'subscription.updated', 'subject_id' => $subscription->id]);
+        $this->assertDatabaseHas('admin_audit_logs', ['user_id' => $admin->id, 'action' => 'plan.created', 'subject_id' => $plan->id]);
+        $this->assertDatabaseHas('admin_audit_logs', ['user_id' => $admin->id, 'action' => 'subscription.updated', 'subject_id' => $subscription->id]);
     }
 
     public function test_subscription_payment_is_idempotent_immutable_and_renews_subscription(): void
     {
-        $admin = PlatformAdmin::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
         $store = Store::factory()->create();
         $subscription = $store->subscription()->sole();
         $subscription->update(['status' => SubscriptionStatus::PastDue]);
@@ -97,7 +96,7 @@ class SubscriptionManagementTest extends TestCase
 
     public function test_payment_audit_failure_rolls_back_payment_sequence_and_renewal(): void
     {
-        $admin = PlatformAdmin::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
         $subscription = Store::factory()->create()->subscription()->sole();
         $subscription->update(['status' => SubscriptionStatus::PastDue]);
         $this->mock(RecordAdminAudit::class)->shouldReceive('handle')->andThrow(new RuntimeException('Injected platform audit failure'));
@@ -114,7 +113,7 @@ class SubscriptionManagementTest extends TestCase
 
     public function test_historical_payment_does_not_shorten_an_active_subscription(): void
     {
-        $admin = PlatformAdmin::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
         $subscription = Store::factory()->create()->subscription()->sole();
         $subscription->update([
             'status' => SubscriptionStatus::Active,
@@ -138,7 +137,7 @@ class SubscriptionManagementTest extends TestCase
 
     public function test_payment_does_not_override_suspended_or_cancelled_status(): void
     {
-        $admin = PlatformAdmin::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
 
         foreach ([SubscriptionStatus::Suspended, SubscriptionStatus::Cancelled] as $status) {
             $subscription = Store::factory()->create()->subscription()->sole();
@@ -200,14 +199,19 @@ class SubscriptionManagementTest extends TestCase
             'is_active' => true, 'units' => [['unit_public_id' => $unit->public_id, 'conversion_factor' => '1', 'purchase_price' => '10', 'selling_price' => '20']],
         ])->assertSessionHasErrors('name');
         $this->actingAs($owner)->post(route('stores.members.store', $store), ['email' => $member->email, 'role' => MembershipRole::Cashier->value])->assertSessionHasErrors('email');
+        $this->actingAs($owner)->post(route('stores.members.store', $store), [
+            'mode' => 'create', 'name' => 'Kasir Melebihi Batas', 'email' => 'limit.member@example.com',
+            'password' => 'Password123!', 'password_confirmation' => 'Password123!', 'role' => MembershipRole::Cashier->value,
+        ])->assertSessionHasErrors('email');
         $this->assertSame(1, Product::query()->where('store_id', $store->id)->count());
         $this->assertDatabaseMissing('store_user', ['store_id' => $store->id, 'user_id' => $member->id, 'status' => MembershipStatus::Active->value]);
+        $this->assertDatabaseMissing('users', ['email' => 'limit.member@example.com']);
         $this->assertSame($product->id, Product::query()->sole()->id);
     }
 
     public function test_commercial_surfaces_are_guarded_and_platform_metrics_reconcile(): void
     {
-        $admin = PlatformAdmin::factory()->create();
+        $admin = User::factory()->superAdmin()->create();
         $owner = User::factory()->create();
         $store = Store::factory()->for($owner, 'owner')->create();
         $plan = Plan::create(['code' => 'paid', 'name' => 'Paid', 'monthly_price' => '200000', 'max_products' => 0, 'max_members' => 0, 'is_active' => true, 'is_default' => false]);
@@ -221,12 +225,14 @@ class SubscriptionManagementTest extends TestCase
             'current_period_end' => now()->subDay(),
         ]);
 
-        $this->actingAs($owner)->get(route('super-admin.subscriptions.index'))->assertRedirect(route('super-admin.login'));
-        $this->actingAs($admin, 'platform_admin')->get(route('super-admin.subscriptions.index'))
-            ->assertInertia(fn (Assert $page) => $page->component('super-admin/subscriptions/index')->has('plans', 2)->has('subscriptions.data', 2)->has('payments', 1));
-        $this->actingAs($admin, 'platform_admin')->get(route('super-admin.dashboard'))
+        $this->actingAs($owner)->get(route('super-admin.subscriptions.index'))->assertForbidden();
+        $this->actingAs($admin)->get(route('super-admin.subscriptions.index'))
+            ->assertInertia(fn (Assert $page) => $page->component('super-admin/subscriptions/index')->has('plans', 2)->has('subscriptions.data', 2));
+        $this->actingAs($admin)->get(route('super-admin.payments.index'))
+            ->assertInertia(fn (Assert $page) => $page->component('super-admin/payments/index')->has('payments.data', 1)->where('summary.transactions', 1)->where('summary.amount', 200000));
+        $this->actingAs($admin)->get(route('super-admin.dashboard'))
             ->assertInertia(fn (Assert $page) => $page->where('metrics.operational_subscriptions', 1)->where('metrics.monthly_recurring_revenue', 200000)->where('metrics.payments_this_month', 200000));
-        $this->actingAs($admin, 'platform_admin')->get(route('super-admin.stores.index'))
+        $this->actingAs($admin)->get(route('super-admin.stores.index'))
             ->assertInertia(fn (Assert $page) => $page->where('stores.data.0.subscription.status', SubscriptionStatus::Active->value)->where('stores.data.0.subscription.plan_name', 'Paid'));
     }
 }

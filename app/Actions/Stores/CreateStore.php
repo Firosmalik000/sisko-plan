@@ -12,7 +12,11 @@ use Illuminate\Support\Facades\DB;
 
 class CreateStore
 {
-    public function __construct(private RecordAudit $recordAudit, private StartDefaultSubscription $subscriptions) {}
+    public function __construct(
+        private RecordAudit $recordAudit,
+        private StartDefaultSubscription $subscriptions,
+        private SeedStoreStarterData $starterData,
+    ) {}
 
     public function handle(User $owner, string $name, ?string $ipAddress = null): Store
     {
@@ -27,6 +31,7 @@ class CreateStore
                 'status' => MembershipStatus::Active->value,
             ]);
             $store->settings()->create();
+            $this->starterData->handle($store);
             $this->subscriptions->handle($store);
             $this->recordAudit->handle($owner, 'store.created', $store, $store, $ipAddress);
 

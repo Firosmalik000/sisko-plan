@@ -36,8 +36,6 @@ export default function FinancialAccountsIndex({
     return (
         <ReferenceDataPage
             title="Kas & rekening"
-            eyebrow="Operasional / Tempat uang"
-            description="Daftarkan tempat menerima dan membayar uang. Saldo baru akan dicatat melalui ledger pada Phase 3."
             endpoint="/master-data/financial-accounts"
             singular="Akun"
             items={mapped}

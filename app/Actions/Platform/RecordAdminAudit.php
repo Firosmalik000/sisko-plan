@@ -3,7 +3,7 @@
 namespace App\Actions\Platform;
 
 use App\Models\AdminAuditLog;
-use App\Models\PlatformAdmin;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class RecordAdminAudit
@@ -12,14 +12,14 @@ class RecordAdminAudit
      * @param  array<string, mixed>  $metadata
      */
     public function handle(
-        PlatformAdmin $admin,
+        User $admin,
         string $action,
         ?Model $subject,
         ?string $ipAddress,
         array $metadata = [],
     ): AdminAuditLog {
         return AdminAuditLog::create([
-            'platform_admin_id' => $admin->id,
+            'user_id' => $admin->id,
             'action' => $action,
             'subject_type' => $subject?->getMorphClass(),
             'subject_id' => $subject?->getKey(),

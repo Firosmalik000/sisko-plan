@@ -10,22 +10,22 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int $platform_admin_id
+ * @property int $user_id
  * @property string $action
  * @property array<string, mixed>|null $metadata
  * @property Carbon $created_at
- * @property-read PlatformAdmin $platformAdmin
+ * @property-read User $user
  * @property-read Model|null $subject
  */
-#[Fillable(['platform_admin_id', 'action', 'subject_type', 'subject_id', 'metadata', 'ip_address'])]
+#[Fillable(['user_id', 'action', 'subject_type', 'subject_id', 'metadata', 'ip_address'])]
 class AdminAuditLog extends Model
 {
     public const UPDATED_AT = null;
 
-    /** @return BelongsTo<PlatformAdmin, $this> */
-    public function platformAdmin(): BelongsTo
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(PlatformAdmin::class);
+        return $this->belongsTo(User::class);
     }
 
     /** @return MorphTo<Model, $this> */

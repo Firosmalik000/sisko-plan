@@ -8,6 +8,7 @@ use App\Http\Controllers\MasterData\ProductController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\UnitController;
 use App\Http\Controllers\Operations\LedgerController;
+use App\Http\Controllers\Operations\StockCountController;
 use App\Http\Controllers\Purchasing\PurchasingController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Sales\PosController;
@@ -15,9 +16,14 @@ use App\Http\Controllers\Sales\SalesController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\StoreMemberController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+
+Route::middleware(['auth', 'throttle:store-writes'])->group(function () {
+    Route::post('impersonation/leave', [ImpersonationController::class, 'destroy'])->name('impersonation.leave');
+});
 
 Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function () {
     Route::get('stores', [StoreController::class, 'index'])->name('stores.index');
@@ -43,6 +49,7 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::get('master-data/products', [ProductController::class, 'index'])->name('master-data.products.index');
         Route::post('master-data/products', [ProductController::class, 'store'])->name('master-data.products.store');
         Route::patch('master-data/products/{product}', [ProductController::class, 'update'])->name('master-data.products.update');
+        Route::get('master-data/products/{product}/photo', [ProductController::class, 'photo'])->name('master-data.products.photo');
 
         Route::get('master-data/suppliers', [SupplierController::class, 'index'])->name('master-data.suppliers.index');
         Route::post('master-data/suppliers', [SupplierController::class, 'store'])->name('master-data.suppliers.store');
@@ -55,6 +62,14 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::get('operations/inventory', [LedgerController::class, 'inventory'])->name('operations.inventory');
         Route::post('operations/inventory/adjustments', [LedgerController::class, 'stockAdjustment'])->name('operations.inventory.adjustments.store');
         Route::post('operations/inventory/minimum-stock', [LedgerController::class, 'minimumStock'])->name('operations.inventory.minimum-stock.store');
+        Route::get('operations/stock-opnames', [StockCountController::class, 'index'])->name('operations.stock-opnames.index');
+        Route::post('operations/stock-opnames', [StockCountController::class, 'store'])->name('operations.stock-opnames.store');
+        Route::get('operations/stock-opnames/{stockCount}', [StockCountController::class, 'show'])->name('operations.stock-opnames.show');
+        Route::patch('operations/stock-opnames/{stockCount}', [StockCountController::class, 'update'])->name('operations.stock-opnames.update');
+        Route::post('operations/stock-opnames/{stockCount}/complete', [StockCountController::class, 'complete'])->name('operations.stock-opnames.complete');
+        Route::post('operations/stock-opnames/{stockCount}/reopen', [StockCountController::class, 'reopen'])->name('operations.stock-opnames.reopen');
+        Route::post('operations/stock-opnames/{stockCount}/post', [StockCountController::class, 'post'])->name('operations.stock-opnames.post');
+        Route::post('operations/stock-opnames/{stockCount}/cancel', [StockCountController::class, 'cancel'])->name('operations.stock-opnames.cancel');
         Route::get('operations/cash', [LedgerController::class, 'cash'])->name('operations.cash');
         Route::post('operations/cash/opening', [LedgerController::class, 'openingCash'])->name('operations.cash.opening.store');
         Route::post('operations/cash/transfers', [LedgerController::class, 'transfer'])->name('operations.cash.transfers.store');
@@ -69,6 +84,7 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::post('pos/sales', [PosController::class, 'store'])->name('pos.sales.store');
         Route::get('sales', [SalesController::class, 'index'])->name('sales.index');
         Route::get('sales/{sale}', [SalesController::class, 'show'])->name('sales.show');
+        Route::get('sales/{sale}/returns/create', [SalesController::class, 'createReturn'])->name('sales.returns.create');
         Route::post('sales/{sale}/returns', [SalesController::class, 'storeReturn'])->name('sales.returns.store');
 
         Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');

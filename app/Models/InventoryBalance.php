@@ -9,8 +9,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $quantity
  * @property string $average_cost
  * @property string $inventory_value
+ * @property int $product_id
+ * @property int|null $product_variant_id
+ * @property string $stock_key
  */
-#[Fillable(['store_id', 'product_id', 'quantity', 'average_cost', 'inventory_value', 'minimum_quantity'])]
+#[Fillable(['store_id', 'product_id', 'product_variant_id', 'stock_key', 'quantity', 'average_cost', 'inventory_value', 'minimum_quantity'])]
 class InventoryBalance extends Model
 {
     protected function casts(): array

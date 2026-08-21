@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UnitType;
 use App\Models\Concerns\HasPublicId;
 use Database\Factories\UnitFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -10,7 +11,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['store_id', 'name', 'symbol', 'is_active'])]
+/**
+ * @property UnitType $unit_type
+ */
+#[Fillable(['store_id', 'name', 'symbol', 'unit_type', 'is_active'])]
 class Unit extends Model
 {
     /** @use HasFactory<UnitFactory> */
@@ -36,6 +40,9 @@ class Unit extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'unit_type' => UnitType::class,
+            'is_active' => 'boolean',
+        ];
     }
 }

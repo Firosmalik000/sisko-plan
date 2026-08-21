@@ -1,11 +1,11 @@
 import { Head, router } from '@inertiajs/react';
 import {
-    ArrowDownRight,
-    ArrowUpRight,
     Boxes,
+    CalendarDays,
     CircleDollarSign,
     HandCoins,
     LineChart,
+    PackageSearch,
 } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
@@ -40,6 +40,22 @@ type Product = {
     gross_profit: string;
 };
 
+const compactMoney = (value: string | number) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+    }).format(Number(value));
+
+const dateLabel = (date: string, includeYear = false) =>
+    new Intl.DateTimeFormat('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: includeYear ? 'numeric' : undefined,
+        timeZone: 'UTC',
+    }).format(new Date(`${date}T00:00:00Z`));
+
 export default function ReportsPage({
     period,
     performance,
@@ -56,15 +72,6 @@ export default function ReportsPage({
 }) {
     const [startDate, setStartDate] = useState(period.start_date);
     const [endDate, setEndDate] = useState(period.end_date);
-    const maxBar = Math.max(
-        1,
-        ...daily.map((item) =>
-            Math.max(
-                Math.abs(Number(item.net_revenue)),
-                Math.abs(Number(item.estimated_profit)),
-            ),
-        ),
-    );
     const submit = (event: FormEvent) => {
         event.preventDefault();
         router.get(
@@ -73,61 +80,58 @@ export default function ReportsPage({
             { preserveState: true, replace: true },
         );
     };
+    const selectedPeriod = `${dateLabel(period.start_date)} – ${dateLabel(period.end_date, true)}`;
 
     return (
         <>
             <Head title="Laporan Usaha" />
-            <main className="min-h-full bg-[linear-gradient(145deg,#f7f4ea_0%,#f8faf7_46%,#eaf6f2_100%)] p-4 md:p-8">
-                <div className="mx-auto max-w-7xl space-y-6">
-                    <header className="rounded-[2rem] border border-stone-800 bg-stone-950 px-6 py-8 text-stone-50 shadow-xl md:px-10 md:py-10">
-                        <div className="grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
-                            <div>
-                                <p className="text-xs font-bold tracking-[0.24em] text-amber-400 uppercase">
-                                    Laporan operasional
-                                </p>
-                                <h1 className="mt-3 max-w-3xl font-serif text-4xl tracking-tight md:text-6xl">
-                                    Angka yang membantu mengambil keputusan.
+            <main className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 text-[#173c35] sm:px-5 sm:py-5 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-4">
+                    <header className="rounded-[1.35rem] border border-[#173c35]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div className="min-w-0">
+                                <h1 className="text-2xl font-black tracking-[-0.04em]">
+                                    Laporan Usaha
                                 </h1>
-                                <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-400">
-                                    Penjualan, HPP, retur, dan biaya dihitung
-                                    dari dokumen posted. Ini estimasi usaha,
-                                    bukan laporan keuangan audited.
-                                </p>
+                                <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6a7f77]">
+                                    <CalendarDays className="size-3.5" />
+                                    <span>{selectedPeriod}</span>
+                                </div>
                             </div>
                             <form
                                 onSubmit={submit}
-                                className="grid gap-3 rounded-2xl bg-white/5 p-4 sm:grid-cols-[1fr_1fr_auto]"
+                                className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
                             >
-                                <label className="space-y-1 text-xs font-bold text-stone-300">
+                                <label className="space-y-1 text-xs font-bold text-[#5f746d]">
                                     Mulai
                                     <input
                                         type="date"
-                                        className={`${fieldClass} border-white/15 bg-white text-stone-950`}
+                                        className={fieldClass}
                                         value={startDate}
                                         onChange={(event) =>
                                             setStartDate(event.target.value)
                                         }
                                     />
                                 </label>
-                                <label className="space-y-1 text-xs font-bold text-stone-300">
+                                <label className="space-y-1 text-xs font-bold text-[#5f746d]">
                                     Sampai
                                     <input
                                         type="date"
-                                        className={`${fieldClass} border-white/15 bg-white text-stone-950`}
+                                        className={fieldClass}
                                         value={endDate}
                                         onChange={(event) =>
                                             setEndDate(event.target.value)
                                         }
                                     />
                                 </label>
-                                <button className="h-11 self-end rounded-xl bg-amber-400 px-5 text-sm font-bold text-stone-950 hover:bg-amber-300">
+                                <button className="h-10 self-end rounded-xl bg-[#173f35] px-4 text-sm font-bold text-white transition hover:bg-[#245c4f]">
                                     Tampilkan
                                 </button>
                             </form>
                         </div>
                     </header>
 
-                    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                    <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-5">
                         <SummaryCard
                             label="Penjualan Bersih"
                             value={performance.net_revenue}
@@ -135,7 +139,7 @@ export default function ReportsPage({
                         <SummaryCard
                             label="HPP Bersih"
                             value={performance.net_cogs}
-                            negative
+                            tone="expense"
                         />
                         <SummaryCard
                             label="Laba Kotor"
@@ -144,7 +148,7 @@ export default function ReportsPage({
                         <SummaryCard
                             label="Biaya Toko"
                             value={performance.expenses}
-                            negative
+                            tone="expense"
                         />
                         <SummaryCard
                             label="Estimasi Laba Usaha"
@@ -153,10 +157,10 @@ export default function ReportsPage({
                         />
                     </section>
 
-                    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
                         <PositionCard
                             icon={CircleDollarSign}
-                            label="Saldo Kas dan Bank"
+                            label="Kas & Bank"
                             value={money(position.cash_balance)}
                         />
                         <PositionCard
@@ -176,141 +180,8 @@ export default function ReportsPage({
                         />
                     </section>
 
-                    <section className="rounded-3xl border border-stone-200 bg-white/90 p-5 shadow-sm md:p-7">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-                            <div>
-                                <p className="text-xs font-bold tracking-[0.2em] text-teal-700 uppercase">
-                                    Tren harian
-                                </p>
-                                <h2 className="mt-1 font-serif text-3xl">
-                                    Ritme omzet dan laba
-                                </h2>
-                            </div>
-                            <p className="text-xs text-stone-500">
-                                Bar hijau: penjualan bersih · garis angka:
-                                estimasi laba
-                            </p>
-                        </div>
-                        <div className="mt-6 space-y-3">
-                            {daily.map((item) => {
-                                const width = Math.max(
-                                    1,
-                                    (Math.abs(Number(item.net_revenue)) /
-                                        maxBar) *
-                                        100,
-                                );
-                                const profitPositive =
-                                    Number(item.estimated_profit) >= 0;
-
-                                return (
-                                    <div
-                                        key={item.date}
-                                        className="grid gap-2 rounded-2xl bg-stone-50 p-3 sm:grid-cols-[100px_1fr_160px] sm:items-center"
-                                    >
-                                        <span className="font-mono text-xs font-bold text-stone-600">
-                                            {new Intl.DateTimeFormat('id-ID', {
-                                                day: '2-digit',
-                                                month: 'short',
-                                                timeZone: 'UTC',
-                                            }).format(
-                                                new Date(
-                                                    `${item.date}T00:00:00Z`,
-                                                ),
-                                            )}
-                                        </span>
-                                        <div className="h-3 overflow-hidden rounded-full bg-stone-200">
-                                            <div
-                                                className="h-full rounded-full bg-teal-600"
-                                                style={{ width: `${width}%` }}
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm font-bold sm:justify-end">
-                                            {profitPositive ? (
-                                                <ArrowUpRight className="size-4 text-emerald-700" />
-                                            ) : (
-                                                <ArrowDownRight className="size-4 text-rose-700" />
-                                            )}
-                                            <span
-                                                className={
-                                                    profitPositive
-                                                        ? 'text-emerald-800'
-                                                        : 'text-rose-800'
-                                                }
-                                            >
-                                                {money(item.estimated_profit)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </section>
-
-                    <section className="rounded-3xl border border-stone-200 bg-white/90 p-5 shadow-sm md:p-7">
-                        <div>
-                            <p className="text-xs font-bold tracking-[0.2em] text-amber-700 uppercase">
-                                Maksimal 20 produk
-                            </p>
-                            <h2 className="mt-1 font-serif text-3xl">
-                                Performa produk
-                            </h2>
-                        </div>
-                        <div className="mt-5 overflow-x-auto">
-                            <table className="w-full min-w-[820px] text-left text-sm">
-                                <thead className="border-b text-xs tracking-wide text-stone-500 uppercase">
-                                    <tr>
-                                        <th className="px-3 py-3">Produk</th>
-                                        <th className="px-3 py-3 text-right">
-                                            Terjual
-                                        </th>
-                                        <th className="px-3 py-3 text-right">
-                                            Diretur
-                                        </th>
-                                        <th className="px-3 py-3 text-right">
-                                            Penjualan bersih
-                                        </th>
-                                        <th className="px-3 py-3 text-right">
-                                            HPP
-                                        </th>
-                                        <th className="px-3 py-3 text-right">
-                                            Laba kotor
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-stone-100">
-                                    {products.map((item) => (
-                                        <tr key={item.product_name}>
-                                            <td className="px-3 py-4 font-semibold">
-                                                {item.product_name}
-                                            </td>
-                                            <td className="px-3 py-4 text-right">
-                                                {quantity(item.quantity_sold)}
-                                            </td>
-                                            <td className="px-3 py-4 text-right text-rose-700">
-                                                {quantity(
-                                                    item.quantity_returned,
-                                                )}
-                                            </td>
-                                            <td className="px-3 py-4 text-right">
-                                                {money(item.net_revenue)}
-                                            </td>
-                                            <td className="px-3 py-4 text-right">
-                                                {money(item.net_cogs)}
-                                            </td>
-                                            <td className="px-3 py-4 text-right font-bold text-teal-800">
-                                                {money(item.gross_profit)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {products.length === 0 && (
-                                <p className="py-12 text-center text-sm text-stone-500">
-                                    Belum ada aktivitas produk pada periode ini.
-                                </p>
-                            )}
-                        </div>
-                    </section>
+                    <TrendChart data={daily} period={selectedPeriod} />
+                    <ProductPerformance products={products} />
                 </div>
             </main>
         </>
@@ -320,30 +191,33 @@ export default function ReportsPage({
 function SummaryCard({
     label,
     value,
-    negative = false,
+    tone = 'default',
     featured = false,
 }: {
     label: string;
     value: string;
-    negative?: boolean;
+    tone?: 'default' | 'expense';
     featured?: boolean;
 }) {
+    const negative = Number(value) < 0;
+
     return (
-        <div
-            className={`rounded-3xl border p-5 shadow-sm ${featured ? 'border-teal-900 bg-teal-950 text-white' : 'border-stone-200 bg-white/90'}`}
+        <article
+            className={`min-w-0 rounded-[1.15rem] border p-3 shadow-sm sm:p-4 ${featured ? 'col-span-2 border-[#173f35] bg-[#173f35] text-white lg:col-span-1' : 'border-[#173c35]/8 bg-white'}`}
         >
             <p
-                className={`text-xs font-bold tracking-wide uppercase ${featured ? 'text-teal-200' : 'text-stone-500'}`}
+                className={`truncate text-[10px] font-black tracking-wide uppercase ${featured ? 'text-[#b9d4c8]' : 'text-[#71827c]'}`}
+                title={label}
             >
                 {label}
             </p>
             <p
-                className={`mt-3 font-serif text-2xl ${negative && !featured ? 'text-rose-700' : ''}`}
+                className={`mt-1.5 truncate text-base font-black tracking-[-0.035em] sm:text-xl ${!featured && (tone === 'expense' || negative) ? 'text-[#a5533b]' : ''}`}
+                title={money(value)}
             >
-                {negative ? '- ' : ''}
                 {money(value)}
             </p>
-        </div>
+        </article>
     );
 }
 
@@ -357,14 +231,305 @@ function PositionCard({
     value: string;
 }) {
     return (
-        <div className="flex items-center gap-4 rounded-2xl border border-stone-200 bg-white/70 p-4">
-            <div className="rounded-xl bg-amber-100 p-3 text-amber-800">
-                <Icon className="size-5" />
+        <article className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[#173c35]/8 bg-white p-3 shadow-sm">
+            <div className="shrink-0 rounded-lg bg-[#e8f1ec] p-2 text-[#286653]">
+                <Icon className="size-4" />
             </div>
-            <div>
-                <p className="text-xs text-stone-500">{label}</p>
-                <p className="font-bold text-stone-900">{value}</p>
+            <div className="min-w-0">
+                <p className="truncate text-[10px] font-bold text-[#71827c] sm:text-xs">
+                    {label}
+                </p>
+                <p
+                    className="truncate text-xs font-black text-[#203f37] sm:text-sm"
+                    title={value}
+                >
+                    {value}
+                </p>
             </div>
+        </article>
+    );
+}
+
+function TrendChart({ data, period }: { data: Daily[]; period: string }) {
+    const values = data.flatMap((item) => [
+        Number(item.net_revenue),
+        Number(item.estimated_profit),
+    ]);
+    const hasActivity = values.some((value) => value !== 0);
+    const chartWidth = 900;
+    const top = 18;
+    const bottom = 182;
+    const minimum = Math.min(0, ...values);
+    const maximum = Math.max(1, ...values);
+    const range = Math.max(1, maximum - minimum);
+    const y = (value: number) =>
+        bottom - ((value - minimum) / range) * (bottom - top);
+    const points = (key: 'net_revenue' | 'estimated_profit') =>
+        data.map((item, index) => ({
+            ...item,
+            x: data.length > 1 ? (index / (data.length - 1)) * chartWidth : 0,
+            y: y(Number(item[key])),
+        }));
+    const revenuePoints = points('net_revenue');
+    const profitPoints = points('estimated_profit');
+    const path = (items: ReturnType<typeof points>) =>
+        items
+            .map(
+                (item, index) =>
+                    `${index === 0 ? 'M' : 'L'} ${item.x.toFixed(2)} ${item.y.toFixed(2)}`,
+            )
+            .join(' ');
+
+    return (
+        <article className="overflow-hidden rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p className="text-[10px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                        Tren Kinerja
+                    </p>
+                    <h2 className="mt-1 text-lg font-black tracking-[-0.03em] sm:text-xl">
+                        Penjualan dan estimasi laba
+                    </h2>
+                    <p className="mt-0.5 text-[11px] font-semibold text-[#7b8c86]">
+                        {period}
+                    </p>
+                </div>
+                <div className="flex items-center gap-4 text-[10px] font-bold text-[#61746d] sm:text-xs">
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-[#2c705c]" />
+                        Penjualan
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-[#c1714d]" />
+                        Estimasi laba
+                    </span>
+                </div>
+            </div>
+
+            {hasActivity ? (
+                <>
+                    <div className="mt-4 h-48 w-full sm:h-56">
+                        <svg
+                            viewBox={`0 0 ${chartWidth} 210`}
+                            preserveAspectRatio="none"
+                            className="h-full w-full overflow-visible"
+                            role="img"
+                            aria-label="Grafik penjualan bersih dan estimasi laba"
+                        >
+                            {[top, (top + bottom) / 2, bottom].map((lineY) => (
+                                <line
+                                    key={lineY}
+                                    x1="0"
+                                    x2={chartWidth}
+                                    y1={lineY}
+                                    y2={lineY}
+                                    stroke="#dfe9e3"
+                                    strokeDasharray="5 8"
+                                />
+                            ))}
+                            {minimum < 0 && (
+                                <line
+                                    x1="0"
+                                    x2={chartWidth}
+                                    y1={y(0)}
+                                    y2={y(0)}
+                                    stroke="#a7b8b0"
+                                    strokeWidth="1.5"
+                                />
+                            )}
+                            <path
+                                d={path(revenuePoints)}
+                                fill="none"
+                                stroke="#2c705c"
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                vectorEffect="non-scaling-stroke"
+                            />
+                            <path
+                                d={path(profitPoints)}
+                                fill="none"
+                                stroke="#c1714d"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                vectorEffect="non-scaling-stroke"
+                            />
+                            {data.length <= 31 &&
+                                revenuePoints.map((point) => (
+                                    <circle
+                                        key={point.date}
+                                        cx={point.x}
+                                        cy={point.y}
+                                        r="3.5"
+                                        fill="#fff"
+                                        stroke="#2c705c"
+                                        strokeWidth="2.5"
+                                        vectorEffect="non-scaling-stroke"
+                                    >
+                                        <title>{`${dateLabel(point.date)}: penjualan ${money(point.net_revenue)}, estimasi laba ${money(point.estimated_profit)}`}</title>
+                                    </circle>
+                                ))}
+                        </svg>
+                    </div>
+                    <div className="mt-[-0.5rem] flex justify-between text-[10px] font-bold text-[#809089] sm:text-[11px]">
+                        <span>{data[0] ? dateLabel(data[0].date) : '-'}</span>
+                        <span>
+                            {data.length
+                                ? dateLabel(
+                                      data[Math.floor(data.length / 2)].date,
+                                  )
+                                : '-'}
+                        </span>
+                        <span>
+                            {data.at(-1) ? dateLabel(data.at(-1)!.date) : '-'}
+                        </span>
+                    </div>
+                </>
+            ) : (
+                <div className="mt-4 flex min-h-40 flex-col items-center justify-center rounded-xl bg-[#f5f7f4] px-4 text-center">
+                    <LineChart className="size-6 text-[#7d9189]" />
+                    <p className="mt-2 text-sm font-bold text-[#50675f]">
+                        Belum ada transaksi pada periode ini
+                    </p>
+                </div>
+            )}
+        </article>
+    );
+}
+
+function ProductPerformance({ products }: { products: Product[] }) {
+    return (
+        <article className="overflow-hidden rounded-[1.35rem] border border-[#173c35]/8 bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b border-[#173c35]/8 px-4 py-4 sm:px-5">
+                <div>
+                    <p className="text-[10px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                        Performa Produk
+                    </p>
+                    <h2 className="mt-1 text-lg font-black tracking-[-0.03em] sm:text-xl">
+                        Produk terlaris
+                    </h2>
+                </div>
+                <span className="rounded-lg bg-[#eef3ef] px-2.5 py-1.5 text-[10px] font-black text-[#61746d]">
+                    Maks. 20
+                </span>
+            </div>
+
+            {products.length > 0 ? (
+                <>
+                    <div className="divide-y divide-[#173c35]/6 md:hidden">
+                        {products.map((item) => (
+                            <div key={item.product_name} className="p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                    <p className="min-w-0 truncate text-sm font-black text-[#203f37]">
+                                        {item.product_name}
+                                    </p>
+                                    <p className="shrink-0 text-sm font-black text-[#286653]">
+                                        {money(item.gross_profit)}
+                                    </p>
+                                </div>
+                                <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                    <ProductStat
+                                        label="Terjual"
+                                        value={quantity(item.quantity_sold)}
+                                    />
+                                    <ProductStat
+                                        label="Retur"
+                                        value={quantity(item.quantity_returned)}
+                                        danger
+                                    />
+                                    <ProductStat
+                                        label="Penjualan"
+                                        value={compactMoney(item.net_revenue)}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="hidden overflow-x-auto md:block">
+                        <table className="w-full min-w-[760px] text-left text-sm">
+                            <thead className="bg-[#f7f9f7] text-[10px] tracking-wide text-[#71827c] uppercase">
+                                <tr>
+                                    <th className="px-5 py-3">Produk</th>
+                                    <th className="px-3 py-3 text-right">
+                                        Terjual
+                                    </th>
+                                    <th className="px-3 py-3 text-right">
+                                        Retur
+                                    </th>
+                                    <th className="px-3 py-3 text-right">
+                                        Penjualan Bersih
+                                    </th>
+                                    <th className="px-3 py-3 text-right">
+                                        HPP
+                                    </th>
+                                    <th className="px-5 py-3 text-right">
+                                        Laba Kotor
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#173c35]/6">
+                                {products.map((item) => (
+                                    <tr
+                                        key={item.product_name}
+                                        className="hover:bg-[#fafcfb]"
+                                    >
+                                        <td className="px-5 py-3 font-bold text-[#203f37]">
+                                            {item.product_name}
+                                        </td>
+                                        <td className="px-3 py-3 text-right font-semibold">
+                                            {quantity(item.quantity_sold)}
+                                        </td>
+                                        <td className="px-3 py-3 text-right font-semibold text-[#a5533b]">
+                                            {quantity(item.quantity_returned)}
+                                        </td>
+                                        <td className="px-3 py-3 text-right">
+                                            {money(item.net_revenue)}
+                                        </td>
+                                        <td className="px-3 py-3 text-right text-[#6f7f79]">
+                                            {money(item.net_cogs)}
+                                        </td>
+                                        <td className="px-5 py-3 text-right font-black text-[#286653]">
+                                            {money(item.gross_profit)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            ) : (
+                <div className="flex min-h-36 flex-col items-center justify-center px-4 text-center">
+                    <PackageSearch className="size-6 text-[#7d9189]" />
+                    <p className="mt-2 text-sm font-bold text-[#50675f]">
+                        Belum ada produk terjual pada periode ini
+                    </p>
+                </div>
+            )}
+        </article>
+    );
+}
+
+function ProductStat({
+    label,
+    value,
+    danger = false,
+}: {
+    label: string;
+    value: string;
+    danger?: boolean;
+}) {
+    return (
+        <div className="min-w-0 rounded-lg bg-[#f5f7f4] px-2.5 py-2">
+            <p className="truncate text-[9px] font-bold tracking-wide text-[#71827c] uppercase">
+                {label}
+            </p>
+            <p
+                className={`mt-0.5 truncate font-black ${danger ? 'text-[#a5533b]' : 'text-[#29483f]'}`}
+                title={value}
+            >
+                {value}
+            </p>
         </div>
     );
 }

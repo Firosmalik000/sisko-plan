@@ -3,6 +3,7 @@
 namespace App\Actions\Ledgers;
 
 use App\Models\InventoryBalance;
+use App\Models\ProductVariant;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Support\Decimal;
@@ -18,18 +19,27 @@ class ApplyStockMovement
 
     private const MAX_QUANTITY = '999999999999.999999';
 
-    public function handle(int $storeId, int $productId, string $quantityChange, ?string $incomingUnitCost, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes, bool $requireEmptyProduct = false, ?string $incomingValue = null): StockMovement
+    public function handle(int $storeId, int $productId, string $quantityChange, ?string $incomingUnitCost, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes, bool $requireEmptyProduct = false, ?string $incomingValue = null, ?int $productVariantId = null): StockMovement
     {
         if (Decimal::compare($quantityChange, '0', Decimal::QUANTITY_SCALE) === 0) {
             throw ValidationException::withMessages(['items' => 'Perubahan stok tidak boleh nol.']);
         }
+        if ($productVariantId !== null) {
+            ProductVariant::query()->where([
+                'id' => $productVariantId,
+                'store_id' => $storeId,
+                'product_id' => $productId,
+            ])->firstOrFail();
+        }
+        $stockKey = $productVariantId === null ? "product:{$productId}" : "variant:{$productVariantId}";
         DB::table('inventory_balances')->insertOrIgnore([
-            'store_id' => $storeId, 'product_id' => $productId, 'quantity' => 0,
+            'store_id' => $storeId, 'product_id' => $productId, 'product_variant_id' => $productVariantId, 'stock_key' => $stockKey, 'quantity' => 0,
             'average_cost' => 0, 'inventory_value' => 0, 'minimum_quantity' => 0,
             'created_at' => now(), 'updated_at' => now(),
         ]);
-        $balance = InventoryBalance::query()->where(['store_id' => $storeId, 'product_id' => $productId])->lockForUpdate()->firstOrFail();
+        $balance = InventoryBalance::query()->where(['store_id' => $storeId, 'stock_key' => $stockKey])->lockForUpdate()->firstOrFail();
         $latestMovement = StockMovement::query()->where(['store_id' => $storeId, 'product_id' => $productId])
+            ->where('product_variant_id', $productVariantId)
             ->latest('occurred_at')->latest('id')->lockForUpdate()->first(['occurred_at']);
         if ($requireEmptyProduct && $latestMovement !== null) {
             throw ValidationException::withMessages(['items' => 'Saldo awal hanya dapat diposting sebelum produk memiliki pergerakan stok.']);
@@ -73,7 +83,7 @@ class ApplyStockMovement
         $balance->update(['quantity' => $newQuantity, 'average_cost' => $newAverage, 'inventory_value' => $newValue]);
 
         return StockMovement::create([
-            'store_id' => $storeId, 'product_id' => $productId, 'reason' => $reason,
+            'store_id' => $storeId, 'product_id' => $productId, 'product_variant_id' => $productVariantId, 'reason' => $reason,
             'quantity_change' => $quantityChange, 'unit_cost' => $unitCost, 'value_change' => $valueChange,
             'quantity_after' => $newQuantity, 'average_cost_after' => $newAverage, 'inventory_value_after' => $newValue,
             'reference_type' => $reference->getMorphClass(), 'reference_id' => $reference->getKey(),

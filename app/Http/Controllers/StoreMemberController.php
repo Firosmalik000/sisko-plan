@@ -19,20 +19,34 @@ class StoreMemberController extends Controller
 {
     public function store(StoreMemberRequest $request, Store $store, SubscriptionAccess $subscriptionAccess): RedirectResponse
     {
-        $member = User::query()
-            ->where('email', $request->validated('email'))
-            ->where('status', UserStatus::Active->value)
-            ->first();
+        $created = false;
 
-        if ($member === null) {
-            throw ValidationException::withMessages([
-                'email' => 'Pengguna aktif dengan email tersebut tidak ditemukan.',
-            ]);
-        }
-
-        DB::transaction(function () use ($request, $store, $member, $subscriptionAccess): void {
+        DB::transaction(function () use ($request, $store, $subscriptionAccess, &$created): void {
             $lockedStore = Store::query()->lockForUpdate()->findOrFail($store->id);
             abort_unless($lockedStore->status === StoreStatus::Active, 403);
+
+            $subscriptionAccess->assertMemberCapacity($lockedStore);
+
+            if ($request->validated('mode') === 'create') {
+                $member = User::create([
+                    'name' => $request->validated('name'),
+                    'email' => $request->validated('email'),
+                    'password' => $request->validated('password'),
+                    'status' => UserStatus::Active->value,
+                ]);
+                $created = true;
+            } else {
+                $member = User::query()
+                    ->where('email', $request->validated('email'))
+                    ->where('status', UserStatus::Active->value)
+                    ->first();
+
+                if ($member === null) {
+                    throw ValidationException::withMessages([
+                        'email' => 'Akun aktif dengan email tersebut tidak ditemukan.',
+                    ]);
+                }
+            }
 
             $membershipExists = DB::table('store_user')
                 ->where('store_id', $store->id)
@@ -45,15 +59,16 @@ class StoreMemberController extends Controller
                 ]);
             }
 
-            $subscriptionAccess->assertMemberCapacity($lockedStore);
-
             $lockedStore->users()->attach($member->id, [
                 'role' => $request->validated('role'),
                 'status' => MembershipStatus::Active->value,
             ]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Anggota toko berhasil ditambahkan.']);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $created ? 'Akun pekerja berhasil dibuat.' : 'Akun berhasil dihubungkan ke toko.',
+        ]);
 
         return back();
     }

@@ -10,6 +10,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('settings/profile/photo', [ProfileController::class, 'updatePhoto'])
+        ->middleware('throttle:6,1')
+        ->name('profile.photo.update');
+    Route::get('settings/profile/photo', [ProfileController::class, 'photo'])->name('profile.photo');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -24,6 +28,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('user-password.update');
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+
+    Route::patch('settings/store', [ProfileController::class, 'updateStore'])
+        ->middleware(['active.store', 'throttle:store-writes'])
+        ->name('settings.store.update');
 });
 
 Route::get('.well-known/passkey-endpoints', function () {

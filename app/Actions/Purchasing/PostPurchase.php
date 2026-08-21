@@ -43,11 +43,12 @@ class PostPurchase
                 }
                 $resolvedItems = [];
                 foreach ($items as $item) {
-                    $productUnit = ProductUnit::query()->with(['product', 'unit'])
+                    $productUnit = ProductUnit::query()->with(['product', 'productVariant', 'unit'])
                         ->where(['id' => $item['product_unit_id'], 'store_id' => $store->id, 'is_active' => true])->firstOrFail();
                     $resolvedItems[] = [
-                        'product_id' => $productUnit->product_id, 'product_unit_id' => $productUnit->id,
-                        'product_name' => $productUnit->product->name, 'sku' => $productUnit->product->sku,
+                        'product_id' => $productUnit->product_id, 'product_variant_id' => $productUnit->product_variant_id, 'product_unit_id' => $productUnit->id,
+                        'stock_variant_id' => $productUnit->product->variant_mode === 'separate' ? $productUnit->product_variant_id : null,
+                        'product_name' => $productUnit->productVariant === null ? $productUnit->product->name : "{$productUnit->product->name} - {$productUnit->productVariant->name}", 'sku' => $productUnit->product->sku,
                         'unit_name' => $productUnit->unit->name, 'unit_symbol' => $productUnit->unit->symbol,
                         'quantity' => $item['quantity'], 'conversion_factor' => (string) $productUnit->conversion_factor,
                         'unit_price' => $item['unit_price'],
@@ -74,7 +75,8 @@ class PostPurchase
                 ]);
                 foreach ($calculation['items'] as $item) {
                     PurchaseItem::create(['store_id' => $store->id, 'purchase_id' => $purchase->id, ...$item]);
-                    $this->stock->handle($store->id, (int) $item['product_id'], (string) $item['base_quantity'], (string) $item['base_unit_cost'], 'purchase', $purchase, $date, $actor, $notes, false, (string) $item['landed_total']);
+                    $stockVariantId = $item['stock_variant_id'] === null ? null : (int) $item['stock_variant_id'];
+                    $this->stock->handle($store->id, (int) $item['product_id'], (string) $item['base_quantity'], (string) $item['base_unit_cost'], 'purchase', $purchase, $date, $actor, $notes, false, (string) $item['landed_total'], $stockVariantId);
                 }
                 $this->payable->handle($store->id, $supplierId, 'increase', $calculation['total'], 'purchase', $purchase, $date, $actor, $notes);
                 if (Decimal::compare($paidAmount, '0', Decimal::MONEY_SCALE) > 0) {

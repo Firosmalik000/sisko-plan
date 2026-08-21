@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { Search, Users } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
@@ -11,8 +11,10 @@ type UserItem = {
     name: string;
     email: string;
     status: 'active' | 'suspended';
+    platform_role: 'super_admin' | 'admin' | null;
     stores_count: number;
     created_at: string;
+    can_impersonate: boolean;
 };
 type Paginated<T> = {
     data: T[];
@@ -32,16 +34,14 @@ export default function AdminUsers({
     return (
         <>
             <Head title="Kelola Pengguna" />
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div className="platform-enter flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
-                    <p className="text-xs font-semibold tracking-[0.22em] text-[#8a681e] uppercase">
-                        Identity control
-                    </p>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+                    <p className="platform-kicker">Identity management</p>
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#0b292f]">
                         Pengguna platform
                     </h1>
-                    <p className="mt-2 text-sm text-slate-600">
-                        {users.total} akun terdaftar di seluruh toko.
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                        {users.total} akun
                     </p>
                 </div>
                 <Form
@@ -60,12 +60,13 @@ export default function AdminUsers({
                     </Button>
                 </Form>
             </div>
-            <div className="mt-7 overflow-hidden rounded-2xl border border-slate-900/10 bg-white/75">
+            <div className="platform-panel mt-5 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[760px] text-left text-sm">
-                        <thead className="border-b border-slate-900/10 bg-[#102b31] text-xs tracking-wider text-slate-300 uppercase">
+                    <table className="w-full min-w-[840px] text-left text-sm">
+                        <thead className="platform-table-head">
                             <tr>
                                 <th className="px-5 py-4">Pengguna</th>
+                                <th className="px-5 py-4">Role</th>
                                 <th className="px-5 py-4">Toko</th>
                                 <th className="px-5 py-4">Terdaftar</th>
                                 <th className="px-5 py-4">Status</th>
@@ -84,6 +85,16 @@ export default function AdminUsers({
                                         <p className="text-xs text-slate-500">
                                             {user.email}
                                         </p>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <Badge variant="outline">
+                                            {user.platform_role ===
+                                            'super_admin'
+                                                ? 'Super Admin'
+                                                : user.platform_role === 'admin'
+                                                  ? 'Admin Platform'
+                                                  : 'Pengguna Toko'}
+                                        </Badge>
                                     </td>
                                     <td className="px-5 py-4">
                                         <span className="inline-flex items-center gap-2">
@@ -108,25 +119,45 @@ export default function AdminUsers({
                                         </Badge>
                                     </td>
                                     <td className="px-5 py-4 text-right">
-                                        <Form
-                                            action={`/super-admin/users/${user.id}/status`}
-                                            method="patch"
-                                        >
-                                            <input
-                                                type="hidden"
-                                                name="status"
-                                                value={
-                                                    user.status === 'active'
-                                                        ? 'suspended'
-                                                        : 'active'
-                                                }
-                                            />
-                                            <Button size="sm" variant="outline">
-                                                {user.status === 'active'
-                                                    ? 'Tangguhkan'
-                                                    : 'Aktifkan'}
-                                            </Button>
-                                        </Form>
+                                        <div className="flex justify-end gap-2">
+                                            {user.can_impersonate && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    asChild
+                                                >
+                                                    <Link
+                                                        href={`/super-admin/users/${user.id}/impersonate`}
+                                                        method="post"
+                                                        as="button"
+                                                    >
+                                                        Impersonate
+                                                    </Link>
+                                                </Button>
+                                            )}
+                                            <Form
+                                                action={`/super-admin/users/${user.id}/status`}
+                                                method="patch"
+                                            >
+                                                <input
+                                                    type="hidden"
+                                                    name="status"
+                                                    value={
+                                                        user.status === 'active'
+                                                            ? 'suspended'
+                                                            : 'active'
+                                                    }
+                                                />
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    {user.status === 'active'
+                                                        ? 'Tangguhkan'
+                                                        : 'Aktifkan'}
+                                                </Button>
+                                            </Form>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

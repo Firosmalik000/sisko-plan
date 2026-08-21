@@ -61,12 +61,21 @@ class PurchasingController extends Controller
         $products = ProductUnit::query()->where('product_units.store_id', $store->id)
             ->where('product_units.is_active', true)->where('products.is_active', true)->where('units.is_active', true)
             ->join('products', 'products.id', '=', 'product_units.product_id')
+            ->leftJoin('product_variants', 'product_variants.id', '=', 'product_units.product_variant_id')
             ->join('units', 'units.id', '=', 'product_units.unit_id')
-            ->orderBy('products.name')->orderBy('units.name')->get([
-                'products.public_id as product_id', 'products.name as product_name', 'products.sku',
+            ->orderBy('products.name')->orderBy('product_variants.name')->orderBy('units.name')->get([
+                DB::raw('COALESCE(product_variants.public_id, products.public_id) as product_id'),
+                'products.name as product_name', 'product_variants.name as variant_name', 'products.sku',
                 'units.public_id as unit_id', 'units.name as unit_name', 'units.symbol as unit_symbol',
                 'product_units.conversion_factor', 'product_units.purchase_price',
-            ]);
+            ])->map(function (ProductUnit $product): array {
+                $data = $product->toArray();
+                $variantName = $product->getAttribute('variant_name');
+                $productName = (string) $product->getAttribute('product_name');
+                $data['product_name'] = $variantName === null ? $productName : "{$productName} - {$variantName}";
+
+                return $data;
+            });
         $accounts = FinancialAccount::query()->where(['store_id' => $store->id, 'is_active' => true])->orderBy('name')->get(['public_id', 'name']);
         $payableTransactions = SupplierPayableTransaction::query()->where('supplier_payable_transactions.store_id', $store->id)
             ->join('suppliers', 'suppliers.id', '=', 'supplier_payable_transactions.supplier_id')
@@ -94,8 +103,10 @@ class PurchasingController extends Controller
         foreach ($data['items'] as $item) {
             $productUnitId = ProductUnit::query()->where('product_units.store_id', $storeId)
                 ->join('products', 'products.id', '=', 'product_units.product_id')
+                ->leftJoin('product_variants', 'product_variants.id', '=', 'product_units.product_variant_id')
                 ->join('units', 'units.id', '=', 'product_units.unit_id')
-                ->where(['products.public_id' => $item['product_id'], 'units.public_id' => $item['unit_id'], 'product_units.is_active' => true])
+                ->where(fn ($query) => $query->where('products.public_id', $item['product_id'])->whereNull('product_units.product_variant_id')->orWhere('product_variants.public_id', $item['product_id']))
+                ->where(['units.public_id' => $item['unit_id'], 'product_units.is_active' => true])
                 ->valueOrFail('product_units.id');
             $items[] = ['product_unit_id' => $productUnitId, 'quantity' => $item['quantity'], 'unit_price' => $item['unit_price']];
         }

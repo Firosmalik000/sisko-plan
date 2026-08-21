@@ -33,17 +33,14 @@ export default function AdminStores({
     return (
         <>
             <Head title="Kelola Toko" />
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div className="platform-enter flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
-                    <p className="text-xs font-semibold tracking-[0.22em] text-[#8a681e] uppercase">
-                        Tenant control
-                    </p>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+                    <p className="platform-kicker">Tenant management</p>
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#0b292f]">
                         Toko terdaftar
                     </h1>
-                    <p className="mt-2 text-sm text-slate-600">
-                        {stores.total} tenant, dengan data operasional yang
-                        tetap terisolasi.
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                        {stores.total} tenant
                     </p>
                 </div>
                 <Form
@@ -62,10 +59,10 @@ export default function AdminStores({
                     </Button>
                 </Form>
             </div>
-            <div className="mt-7 overflow-hidden rounded-2xl border border-slate-900/10 bg-white/75">
+            <div className="platform-panel mt-5 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[800px] text-left text-sm">
-                        <thead className="border-b border-slate-900/10 bg-[#102b31] text-xs tracking-wider text-slate-300 uppercase">
+                        <thead className="platform-table-head">
                             <tr>
                                 <th className="px-5 py-4">Toko</th>
                                 <th className="px-5 py-4">Pemilik</th>

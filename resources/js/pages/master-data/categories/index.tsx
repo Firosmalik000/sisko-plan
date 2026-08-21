@@ -2,7 +2,7 @@ import type { PaginationLink } from '@/components/pagination';
 import { ReferenceDataPage } from '@/components/reference-data-page';
 import type { ReferenceRecord } from '@/components/reference-data-page';
 
-type Category = ReferenceRecord & { description: string | null };
+type Category = ReferenceRecord;
 
 export default function CategoriesIndex({
     categories,
@@ -18,29 +18,21 @@ export default function CategoriesIndex({
     return (
         <ReferenceDataPage
             title="Kategori produk"
-            eyebrow="Katalog / Pengelompokan"
-            description="Susun produk ke kelompok yang mudah dipahami kasir dan pemilik toko."
             endpoint="/master-data/categories"
             singular="Kategori"
             items={categories}
             search={search}
             status={status}
             canManage={canManage}
-            initialValues={{ name: '', description: '' }}
+            initialValues={{ name: '' }}
             fields={[
                 {
                     name: 'name',
                     label: 'Nama kategori',
-                    placeholder: 'Contoh: Minuman dingin',
-                },
-                {
-                    name: 'description',
-                    label: 'Keterangan',
-                    type: 'textarea',
-                    placeholder: 'Opsional',
+                    placeholder: 'Minuman dingin',
                 },
             ]}
-            details={[{ key: 'description', label: 'Keterangan' }]}
+            details={[]}
         />
     );
 }

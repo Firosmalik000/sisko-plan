@@ -5,9 +5,9 @@ namespace App\Actions\Subscriptions;
 use App\Actions\Ledgers\IdempotencyGuard;
 use App\Actions\Platform\RecordAdminAudit;
 use App\Enums\SubscriptionStatus;
-use App\Models\PlatformAdmin;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +16,7 @@ class PostSubscriptionPayment
 {
     public function __construct(private IdempotencyGuard $idempotency, private RecordAdminAudit $audit) {}
 
-    public function handle(PlatformAdmin $admin, Subscription $subscription, string $amount, string $periodStart, string $periodEnd, string $method, ?string $externalReference, string $paidAt, ?string $notes, string $idempotencyKey, ?string $ipAddress): SubscriptionPayment
+    public function handle(User $admin, Subscription $subscription, string $amount, string $periodStart, string $periodEnd, string $method, ?string $externalReference, string $paidAt, ?string $notes, string $idempotencyKey, ?string $ipAddress): SubscriptionPayment
     {
         $paidDate = CarbonImmutable::parse($paidAt)->utc();
         $requestHash = $this->idempotency->hash(compact('amount', 'periodStart', 'periodEnd', 'method', 'externalReference', 'notes') + ['subscription_id' => $subscription->id, 'paid_at' => $paidDate->toISOString()]);
@@ -38,7 +38,7 @@ class PostSubscriptionPayment
                     'receipt_number' => sprintf('SUBPAY-%s-%05d', $period, $number), 'amount' => $amount,
                     'period_start' => $periodStart, 'period_end' => $periodEnd, 'payment_method' => $method,
                     'external_reference' => $externalReference, 'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash,
-                    'paid_at' => $paidDate, 'notes' => $notes, 'created_by_platform_admin_id' => $admin->id,
+                    'paid_at' => $paidDate, 'notes' => $notes, 'created_by_user_id' => $admin->id,
                 ]);
                 $renewed = $this->renewWhenEligible($locked, $periodStart, $periodEnd);
                 $this->audit->handle($admin, 'subscription.payment_posted', $payment, $ipAddress, ['store_id' => $locked->store_id, 'subscription_id' => $locked->id, 'amount' => $amount, 'period_end' => $periodEnd, 'renewed' => $renewed]);

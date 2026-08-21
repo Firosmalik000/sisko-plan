@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\UnitType;
 use App\Models\Store;
 use App\Models\Unit;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -17,6 +18,7 @@ class UnitFactory extends Factory
             'store_id' => Store::factory(),
             'name' => fake()->unique()->words(2, true),
             'symbol' => fake()->unique()->lexify('???'),
+            'unit_type' => UnitType::Retail,
             'is_active' => true,
         ];
     }
