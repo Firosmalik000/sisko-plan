@@ -49,6 +49,11 @@ class Store extends Model
         return 'public_id';
     }
 
+    public function catalogNamespaceKey(): string
+    {
+        return "store:{$this->public_id}";
+    }
+
     /** @return BelongsTo<User, $this> */
     public function owner(): BelongsTo
     {

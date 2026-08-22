@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'catalog_intelligence' => [
+        'enabled' => (bool) env('CATALOG_INTELLIGENCE_ENABLED', false),
+        'url' => env('CATALOG_INTELLIGENCE_URL', 'http://localhost:8001'),
+        'token' => env('CATALOG_INTELLIGENCE_TOKEN'),
+        'application_key' => env('CATALOG_INTELLIGENCE_APPLICATION_KEY', 'sisko-plan'),
+        'connect_timeout' => (int) env('CATALOG_INTELLIGENCE_CONNECT_TIMEOUT', 1),
+        'timeout' => (int) env('CATALOG_INTELLIGENCE_TIMEOUT', 4),
+        'discovery_timeout' => (int) env('CATALOG_INTELLIGENCE_DISCOVERY_TIMEOUT', 35),
+        'max_images' => (int) env('CATALOG_INTELLIGENCE_MAX_IMAGES', 3),
+    ],
+
 ];

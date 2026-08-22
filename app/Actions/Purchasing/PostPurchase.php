@@ -45,10 +45,12 @@ class PostPurchase
                 foreach ($items as $item) {
                     $productUnit = ProductUnit::query()->with(['product', 'productVariant', 'unit'])
                         ->where(['id' => $item['product_unit_id'], 'store_id' => $store->id, 'is_active' => true])->firstOrFail();
+                    abort_if(! $productUnit->product->is_active || ! $productUnit->unit->is_active || $productUnit->productVariant?->is_active === false, 422);
                     $resolvedItems[] = [
                         'product_id' => $productUnit->product_id, 'product_variant_id' => $productUnit->product_variant_id, 'product_unit_id' => $productUnit->id,
                         'stock_variant_id' => $productUnit->product->variant_mode === 'separate' ? $productUnit->product_variant_id : null,
-                        'product_name' => $productUnit->productVariant === null ? $productUnit->product->name : "{$productUnit->product->name} - {$productUnit->productVariant->name}", 'sku' => $productUnit->product->sku,
+                        'product_name' => $productUnit->productVariant === null ? $productUnit->product->name : "{$productUnit->product->name} - {$productUnit->productVariant->name}",
+                        'sku' => $productUnit->sku,
                         'unit_name' => $productUnit->unit->name, 'unit_symbol' => $productUnit->unit->symbol,
                         'quantity' => $item['quantity'], 'conversion_factor' => (string) $productUnit->conversion_factor,
                         'unit_price' => $item['unit_price'],

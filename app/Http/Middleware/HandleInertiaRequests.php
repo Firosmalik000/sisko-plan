@@ -87,6 +87,13 @@ class HandleInertiaRequests extends Middleware
             'stores' => $stores,
             'activeStore' => $activeStore,
             'subscriptionState' => $subscription,
+            'scanner' => [
+                'max_images_per_request' => (int) config('services.catalog_intelligence.max_images'),
+                'auto_capture_enabled' => (bool) config('security.smart_scanner_auto_capture'),
+                'visual_recognition_enabled' => (bool) config('services.catalog_intelligence.enabled')
+                    && filled(config('services.catalog_intelligence.url'))
+                    && filled(config('services.catalog_intelligence.token')),
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

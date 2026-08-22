@@ -46,13 +46,15 @@ class PostSale
                 foreach ($items as $item) {
                     $productUnit = ProductUnit::query()->with(['product', 'productVariant', 'unit'])
                         ->where(['id' => $item['product_unit_id'], 'store_id' => $store->id, 'is_active' => true])->firstOrFail();
-                    if (! $productUnit->product->is_active || ! $productUnit->unit->is_active) {
+                    if (! $productUnit->product->is_active || ! $productUnit->unit->is_active || $productUnit->productVariant?->is_active === false) {
                         throw ValidationException::withMessages(['items' => 'Produk dan satuan harus aktif.']);
                     }
                     $resolvedItems[] = [
                         'product_id' => $productUnit->product_id, 'product_variant_id' => $productUnit->product_variant_id, 'product_unit_id' => $productUnit->id,
                         'stock_variant_id' => $productUnit->product->variant_mode === 'separate' ? $productUnit->product_variant_id : null,
-                        'product_name' => $productUnit->productVariant === null ? $productUnit->product->name : "{$productUnit->product->name} - {$productUnit->productVariant->name}", 'sku' => $productUnit->product->sku, 'barcode' => $productUnit->product->barcode,
+                        'product_name' => $productUnit->productVariant === null ? $productUnit->product->name : "{$productUnit->product->name} - {$productUnit->productVariant->name}",
+                        'sku' => $productUnit->sku,
+                        'barcode' => $productUnit->barcode,
                         'unit_name' => $productUnit->unit->name, 'unit_symbol' => $productUnit->unit->symbol,
                         'quantity' => $item['quantity'], 'conversion_factor' => (string) $productUnit->conversion_factor,
                         'unit_price' => (string) $productUnit->selling_price, 'item_discount' => $item['item_discount'],

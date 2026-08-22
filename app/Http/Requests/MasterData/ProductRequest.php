@@ -5,6 +5,7 @@ namespace App\Http\Requests\MasterData;
 use App\Enums\ProductVariantMode;
 use App\Enums\UnitType;
 use App\Models\Product;
+use App\Models\ProductUnit;
 use App\Models\Unit;
 use App\Support\CurrentStore;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -29,10 +30,13 @@ class ProductRequest extends MasterDataRequest
         return [
             'idempotency_key' => [Rule::requiredIf($this->isMethod('post') && $productId === null), 'nullable', 'uuid'],
             'name' => ['required', 'string', 'max:160'],
-            'category_public_id' => [Rule::requiredIf(! is_array($this->input('units'))), 'nullable', Rule::exists('categories', 'public_id')->where($categoryReference)],
-            'retail_unit_public_id' => ['required_without:base_unit_public_id', Rule::exists('units', 'public_id')->where($unitReference)],
+            'description' => ['nullable', 'string', 'max:500'],
+            'category_public_id' => ['required', Rule::exists('categories', 'public_id')->where($categoryReference)],
+            'retail_unit_public_id' => ['required', Rule::exists('units', 'public_id')->where($unitReference)],
             'large_unit_public_id' => ['required', Rule::exists('units', 'public_id')->where($unitReference)],
             'variant_mode' => ['required', Rule::enum(ProductVariantMode::class)],
+            'sku' => ['nullable', 'string', 'max:80'],
+            'barcode' => ['nullable', 'string', 'max:120'],
             'purchase_price' => ['required_if:variant_mode,none', 'nullable', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
             'selling_price' => ['required_if:variant_mode,none', 'nullable', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
             'current_stock' => ['required_unless:variant_mode,separate', 'nullable', 'decimal:0,6', 'min:0', 'max:999999999999.999999'],
@@ -40,6 +44,10 @@ class ProductRequest extends MasterDataRequest
             'variants' => ['exclude_if:variant_mode,none', 'required', 'array', 'min:1', 'max:50'],
             'variants.*.public_id' => ['nullable', 'string', 'size:26'],
             'variants.*.name' => ['required', 'string', 'max:120', 'distinct:ignore_case'],
+            'variants.*.sku' => ['nullable', 'string', 'max:80'],
+            'variants.*.barcode' => ['nullable', 'string', 'max:120'],
+            'variants.*.photo' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            'variants.*.remove_photo' => ['sometimes', 'boolean'],
             'variants.*.purchase_price' => ['required', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
             'variants.*.selling_price' => ['required', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
             'variants.*.current_stock' => ['required_if:variant_mode,separate', 'nullable', 'decimal:0,6', 'min:0', 'max:999999999999.999999'],
@@ -48,45 +56,15 @@ class ProductRequest extends MasterDataRequest
             'photo' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
             'remove_photo' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
-
-            // Kept for backwards compatibility with existing clients.
-            'base_unit_public_id' => ['nullable', Rule::exists('units', 'public_id')->where($unitReference)],
-            'sku' => ['nullable', 'string', 'max:80', Rule::unique('products')->where('store_id', $storeId)->ignore($productId)],
-            'barcode' => ['nullable', 'string', 'max:120', Rule::unique('products')->where('store_id', $storeId)->ignore($productId)],
-            'description' => ['nullable', 'string', 'max:500'],
-            'units' => ['nullable', 'array', 'min:1'],
-            'units.*.unit_public_id' => ['required_with:units', Rule::exists('units', 'public_id')->where($unitReference)],
-            'units.*.conversion_factor' => ['required_with:units', 'decimal:0,6', 'gt:0', 'max:999999999999.999999'],
-            'units.*.purchase_price' => ['required_with:units', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
-            'units.*.selling_price' => ['required_with:units', 'decimal:0,4', 'min:0', 'max:999999999999999.9999'],
         ];
-    }
-
-    protected function prepareForValidation(): void
-    {
-        if (! $this->has('variant_mode') && is_array($this->input('units'))) {
-            $units = $this->input('units');
-            $base = collect($units)->firstWhere('unit_public_id', $this->input('base_unit_public_id')) ?? $units[0] ?? [];
-            $large = collect($units)->first(fn ($unit) => ($unit['unit_public_id'] ?? null) !== ($base['unit_public_id'] ?? null));
-            $this->merge([
-                'variant_mode' => ProductVariantMode::None->value,
-                'retail_unit_public_id' => $base['unit_public_id'] ?? null,
-                'large_unit_public_id' => $large['unit_public_id'] ?? ($base['unit_public_id'] ?? null),
-                'purchase_price' => $base['purchase_price'] ?? '0',
-                'selling_price' => $base['selling_price'] ?? '0',
-                'current_stock' => '0',
-                'minimum_stock' => '0',
-            ]);
-        }
     }
 
     /** @return array<int, callable(Validator): void> */
     public function after(): array
     {
         return [function (Validator $validator): void {
-            if (is_array($this->input('units'))) {
-                return;
-            }
+            $this->validateCodes($validator);
+
             $types = Unit::query()->where('store_id', app(CurrentStore::class)->id())
                 ->whereIn('public_id', array_filter([$this->input('retail_unit_public_id'), $this->input('large_unit_public_id')]))
                 ->pluck('unit_type', 'public_id');
@@ -99,6 +77,51 @@ class ProductRequest extends MasterDataRequest
                 $validator->errors()->add('large_unit_public_id', 'Pilih satuan dari kelompok besar.');
             }
         }];
+    }
+
+    private function validateCodes(Validator $validator): void
+    {
+        $storeId = app(CurrentStore::class)->id();
+        $productId = $this->routeModelId('products', 'product');
+        $submitted = [
+            ['key' => 'sku', 'column' => 'sku', 'value' => $this->input('sku')],
+            ['key' => 'barcode', 'column' => 'barcode', 'value' => $this->input('barcode')],
+        ];
+
+        foreach ($this->input('variants', []) as $index => $variant) {
+            foreach (['sku', 'barcode'] as $column) {
+                $submitted[] = [
+                    'key' => "variants.{$index}.{$column}",
+                    'column' => $column,
+                    'value' => is_array($variant) ? ($variant[$column] ?? null) : null,
+                ];
+            }
+        }
+
+        $seen = [];
+        foreach ($submitted as $field) {
+            $value = trim((string) $field['value']);
+            if ($value === '') {
+                continue;
+            }
+
+            $duplicateKey = $field['column'].'|'.mb_strtolower($value);
+            if (isset($seen[$duplicateKey])) {
+                $validator->errors()->add($field['key'], 'Kode ini digunakan lebih dari sekali pada produk yang sama.');
+
+                continue;
+            }
+            $seen[$duplicateKey] = true;
+
+            $conflict = ProductUnit::query()
+                ->where('store_id', $storeId)
+                ->where($field['column'], $value)
+                ->when($productId !== null, fn ($query) => $query->where('product_id', '!=', $productId))
+                ->exists();
+            if ($conflict) {
+                $validator->errors()->add($field['key'], 'Kode ini sudah digunakan produk lain di toko ini.');
+            }
+        }
     }
 
     /** @return array<string, mixed> */

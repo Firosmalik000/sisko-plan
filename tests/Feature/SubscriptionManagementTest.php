@@ -195,8 +195,10 @@ class SubscriptionManagementTest extends TestCase
 
         $this->actingAs($owner)->withSession($session)->post(route('master-data.products.store'), [
             'idempotency_key' => (string) Str::uuid(), 'name' => 'Produk Kedua', 'sku' => 'LIMIT-2', 'barcode' => null,
-            'description' => null, 'category_public_id' => $category->public_id, 'base_unit_public_id' => $unit->public_id,
-            'is_active' => true, 'units' => [['unit_public_id' => $unit->public_id, 'conversion_factor' => '1', 'purchase_price' => '10', 'selling_price' => '20']],
+            'description' => null, 'category_public_id' => $category->public_id,
+            'retail_unit_public_id' => $unit->public_id, 'large_unit_public_id' => $unit->public_id, 'variant_mode' => 'none',
+            'purchase_price' => '10', 'selling_price' => '20', 'current_stock' => '0', 'minimum_stock' => '0',
+            'variants' => [], 'is_active' => true,
         ])->assertSessionHasErrors('name');
         $this->actingAs($owner)->post(route('stores.members.store', $store), ['email' => $member->email, 'role' => MembershipRole::Cashier->value])->assertSessionHasErrors('email');
         $this->actingAs($owner)->post(route('stores.members.store', $store), [

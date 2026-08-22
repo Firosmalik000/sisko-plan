@@ -68,13 +68,9 @@ return new class extends Migration
             $table->foreignId('category_id')->nullable()->constrained()->restrictOnDelete();
             $table->foreignId('base_unit_id')->constrained('units')->restrictOnDelete();
             $table->string('name', 160);
-            $table->string('sku', 80)->nullable();
-            $table->string('barcode', 120)->nullable();
             $table->string('description', 500)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            $table->unique(['store_id', 'sku']);
-            $table->unique(['store_id', 'barcode']);
             $table->index(['store_id', 'is_active', 'name']);
             $table->index(['store_id', 'category_id']);
         });
@@ -84,12 +80,16 @@ return new class extends Migration
             $table->foreignId('store_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('unit_id')->constrained()->restrictOnDelete();
+            $table->string('sku', 80)->nullable();
+            $table->string('barcode', 120)->nullable();
             $table->decimal('conversion_factor', 18, 6);
             $table->decimal('purchase_price', 19, 4)->default(0);
             $table->decimal('selling_price', 19, 4)->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->unique(['product_id', 'unit_id']);
+            $table->unique(['store_id', 'sku']);
+            $table->unique(['store_id', 'barcode']);
             $table->index(['store_id', 'unit_id', 'is_active']);
         });
     }

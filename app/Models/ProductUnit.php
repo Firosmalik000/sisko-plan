@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $product_id
  * @property int|null $product_variant_id
  */
-#[Fillable(['store_id', 'product_id', 'product_variant_id', 'unit_id', 'conversion_factor', 'purchase_price', 'selling_price', 'is_active'])]
+#[Fillable(['store_id', 'product_id', 'product_variant_id', 'unit_id', 'sku', 'barcode', 'conversion_factor', 'purchase_price', 'selling_price', 'is_active'])]
 class ProductUnit extends Model
 {
     /** @return BelongsTo<Store, $this> */

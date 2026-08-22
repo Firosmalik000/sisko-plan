@@ -9,6 +9,7 @@ use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\UnitController;
 use App\Http\Controllers\Operations\LedgerController;
 use App\Http\Controllers\Operations\StockCountController;
+use App\Http\Controllers\ProductScannerController;
 use App\Http\Controllers\Purchasing\PurchasingController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Sales\PosController;
@@ -38,6 +39,10 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
     Route::middleware(['active.store', 'subscription.access'])->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 
+        Route::post('scanner/catalog-item-lookups', [ProductScannerController::class, 'lookup'])->name('scanner.catalog-items.lookup');
+        Route::post('scanner/catalog-item-recognitions', [ProductScannerController::class, 'recognize'])->name('scanner.catalog-items.recognize');
+        Route::post('scanner/catalog-item-discoveries', [ProductScannerController::class, 'discover'])->name('scanner.catalog-items.discover');
+
         Route::get('master-data/categories', [CategoryController::class, 'index'])->name('master-data.categories.index');
         Route::post('master-data/categories', [CategoryController::class, 'store'])->name('master-data.categories.store');
         Route::patch('master-data/categories/{category}', [CategoryController::class, 'update'])->name('master-data.categories.update');
@@ -50,6 +55,7 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::post('master-data/products', [ProductController::class, 'store'])->name('master-data.products.store');
         Route::patch('master-data/products/{product}', [ProductController::class, 'update'])->name('master-data.products.update');
         Route::get('master-data/products/{product}/photo', [ProductController::class, 'photo'])->name('master-data.products.photo');
+        Route::get('master-data/products/{product}/variants/{variant}/photo', [ProductController::class, 'variantPhoto'])->name('master-data.products.variants.photo');
 
         Route::get('master-data/suppliers', [SupplierController::class, 'index'])->name('master-data.suppliers.index');
         Route::post('master-data/suppliers', [SupplierController::class, 'store'])->name('master-data.suppliers.store');

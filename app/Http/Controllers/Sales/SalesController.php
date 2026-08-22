@@ -14,6 +14,7 @@ use App\Support\CurrentStore;
 use App\Support\Decimal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -109,10 +110,10 @@ class SalesController extends Controller
     /**
      * @return array{
      *     sale: array<string, mixed>,
-     *     items: \Illuminate\Support\Collection<int, array<string, mixed>>,
+     *     items: Collection<int, array<string, mixed>>,
      *     payment: object|null,
-     *     returns: \Illuminate\Support\Collection<int, mixed>,
-     *     accounts: \Illuminate\Support\Collection<int, array<string, string>>,
+     *     returns: Collection<int, mixed>,
+     *     accounts: Collection<int, array<string, string>>,
      *     canReturn: bool,
      *     canViewProfit: bool,
      *     timezone: string,

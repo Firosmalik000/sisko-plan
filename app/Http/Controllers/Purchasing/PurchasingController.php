@@ -63,9 +63,10 @@ class PurchasingController extends Controller
             ->join('products', 'products.id', '=', 'product_units.product_id')
             ->leftJoin('product_variants', 'product_variants.id', '=', 'product_units.product_variant_id')
             ->join('units', 'units.id', '=', 'product_units.unit_id')
+            ->where(fn ($query) => $query->whereNull('product_units.product_variant_id')->orWhere('product_variants.is_active', true))
             ->orderBy('products.name')->orderBy('product_variants.name')->orderBy('units.name')->get([
                 DB::raw('COALESCE(product_variants.public_id, products.public_id) as product_id'),
-                'products.name as product_name', 'product_variants.name as variant_name', 'products.sku',
+                'products.name as product_name', 'product_variants.name as variant_name', 'product_units.sku',
                 'units.public_id as unit_id', 'units.name as unit_name', 'units.symbol as unit_symbol',
                 'product_units.conversion_factor', 'product_units.purchase_price',
             ])->map(function (ProductUnit $product): array {

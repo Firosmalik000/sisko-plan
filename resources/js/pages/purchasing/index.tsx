@@ -1,5 +1,12 @@
 import { Head, useForm } from '@inertiajs/react';
-import { CircleDollarSign, PackagePlus, Plus, Trash2 } from 'lucide-react';
+import {
+    Camera,
+    CircleDollarSign,
+    PackagePlus,
+    Plus,
+    Trash2,
+} from 'lucide-react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
     buttonClass,
@@ -12,6 +19,7 @@ import {
 } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import type { ScannerSelection } from '@/components/product-scanner/types';
 
 type Supplier = {
     public_id: string;
@@ -70,6 +78,9 @@ const defaultItem = (product?: ProductOption) => ({
     quantity: '1',
     unit_price: product?.purchase_price ?? '0',
 });
+const ProductScanner = lazy(
+    () => import('@/components/product-scanner/ProductScanner'),
+);
 
 export default function PurchasingPage({
     purchases,
@@ -90,6 +101,13 @@ export default function PurchasingPage({
     timezone: string;
     canManage: boolean;
 }) {
+    const [scannerOpen, setScannerOpen] = useState(
+        () =>
+            canManage &&
+            typeof window !== 'undefined' &&
+            new URL(window.location.href).searchParams.get('scan') === '1',
+    );
+    const [scannerSummary, setScannerSummary] = useState('');
     const activeSuppliers = suppliers.filter((supplier) => supplier.is_active);
     const purchase = useForm({
         supplier_id: activeSuppliers[0]?.public_id ?? '',
@@ -123,6 +141,69 @@ export default function PurchasingPage({
         subtotal -
         Number(purchase.data.discount_amount || 0) +
         Number(purchase.data.additional_cost || 0);
+
+    useEffect(() => {
+        const url = new URL(window.location.href);
+
+        if (!scannerOpen || url.searchParams.get('scan') !== '1') {
+            return;
+        }
+
+        url.searchParams.delete('scan');
+        window.history.replaceState({}, '', url);
+    }, [scannerOpen]);
+
+    const addScannerSelections = (selections: ScannerSelection[]) => {
+        let added = 0;
+        let skipped = 0;
+        purchase.setData((data) => {
+            const items = data.items.filter(
+                (item) => item.product_id !== '' && item.unit_id !== '',
+            );
+            selections.forEach((selection) => {
+                const option = products.find(
+                    (product) =>
+                        product.product_id === selection.productId &&
+                        product.unit_id === selection.unitId,
+                );
+
+                if (!option) {
+                    skipped++;
+
+                    return;
+                }
+
+                const index = items.findIndex(
+                    (item) =>
+                        item.product_id === option.product_id &&
+                        item.unit_id === option.unit_id,
+                );
+
+                if (index >= 0) {
+                    items[index] = {
+                        ...items[index],
+                        quantity: String(
+                            Number(items[index].quantity) + selection.quantity,
+                        ),
+                    };
+                } else {
+                    items.push({
+                        ...defaultItem(option),
+                        quantity: String(selection.quantity),
+                    });
+                }
+
+                added++;
+            });
+
+            return { ...data, items };
+        });
+        setScannerSummary(
+            skipped
+                ? `${added} produk ditambahkan, ${skipped} tidak tersedia di daftar pembelian.`
+                : `${added} produk ditambahkan. Periksa jumlah dan harga sebelum simpan.`,
+        );
+    };
 
     const chooseProduct = (index: number, composite: string) => {
         const [productId, unitId] = composite.split(':');
@@ -203,7 +284,16 @@ export default function PurchasingPage({
                         <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
                             Pembelian
                         </h1>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
+                            {canManage && (
+                                <button
+                                    type="button"
+                                    onClick={() => setScannerOpen(true)}
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#173c35] px-3 text-sm font-black text-white"
+                                >
+                                    <Camera className="size-4" /> Scan produk
+                                </button>
+                            )}
                             <div className="rounded-xl bg-[#edf4f0] px-3 py-2">
                                 <p className="text-[10px] font-bold text-[#6d817a] uppercase">
                                     Total utang supplier
@@ -222,6 +312,14 @@ export default function PurchasingPage({
                             </div>
                         </div>
                     </header>
+                    {scannerSummary && (
+                        <p
+                            role="status"
+                            className="rounded-xl bg-[#e8f1ec] px-4 py-3 text-sm font-bold text-[#245c4f]"
+                        >
+                            {scannerSummary}
+                        </p>
+                    )}
 
                     {canManage && (
                         <form onSubmit={submitPurchase} className={cardClass}>
@@ -832,6 +930,17 @@ export default function PurchasingPage({
                     </section>
                 </div>
             </div>
+            <Suspense fallback={null}>
+                {scannerOpen && (
+                    <ProductScanner
+                        purpose="purchase"
+                        title="Scan produk pembelian"
+                        open={scannerOpen}
+                        onOpenChange={setScannerOpen}
+                        onConfirm={addScannerSelections}
+                    />
+                )}
+            </Suspense>
         </>
     );
 }

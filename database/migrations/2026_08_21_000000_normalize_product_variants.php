@@ -28,6 +28,7 @@ return new class extends Migration
             $table->foreignId('store_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->string('name', 120);
+            $table->string('photo_path')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->unique(['product_id', 'name']);

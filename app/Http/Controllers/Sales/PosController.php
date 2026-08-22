@@ -31,6 +31,7 @@ class PosController extends Controller
             ->join('products', 'products.id', '=', 'product_units.product_id')
             ->leftJoin('product_variants', 'product_variants.id', '=', 'product_units.product_variant_id')
             ->join('units', 'units.id', '=', 'product_units.unit_id')
+            ->where(fn ($query) => $query->whereNull('product_units.product_variant_id')->orWhere('product_variants.is_active', true))
             ->leftJoin('inventory_balances', function ($join) use ($store): void {
                 $join->on('inventory_balances.product_id', '=', 'products.id')
                     ->where('inventory_balances.store_id', $store->id)
@@ -41,7 +42,7 @@ class PosController extends Controller
                 'products.photo_path as catalog_product_photo_path',
                 DB::raw('COALESCE(product_variants.public_id, products.public_id) as product_id'),
                 'products.name as product_name', 'product_variants.name as variant_name',
-                'products.sku', 'products.barcode',
+                'product_units.sku', 'product_units.barcode',
                 'units.public_id as unit_id', 'units.name as unit_name', 'units.symbol as unit_symbol',
                 'product_units.conversion_factor', 'product_units.selling_price',
                 DB::raw('CASE WHEN product_units.unit_id = products.base_unit_id THEN 1 ELSE 0 END as is_base_unit'),

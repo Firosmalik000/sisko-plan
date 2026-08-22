@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     ArrowLeft,
+    Camera,
     Check,
     ClipboardCheck,
     PackageCheck,
@@ -11,13 +12,14 @@ import {
     Send,
     X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
     ledgerDateTime,
     money,
     OperationsShell,
     quantity,
 } from '@/components/operations-shell';
+import type { ScannerSelection } from '@/components/product-scanner/types';
 import { decimalInput } from '@/lib/decimal-input';
 
 type Item = {
@@ -55,6 +57,9 @@ const statusLabels = {
     posted: 'Diposting',
     cancelled: 'Dibatalkan',
 };
+const ProductScanner = lazy(
+    () => import('@/components/product-scanner/ProductScanner'),
+);
 
 export default function StockOpnameShow({
     stockCount,
@@ -81,6 +86,14 @@ export default function StockOpnameShow({
         'all',
     );
     const [processing, setProcessing] = useState(false);
+    const [scannerOpen, setScannerOpen] = useState(
+        () =>
+            stockCount.status === 'draft' &&
+            canCount &&
+            typeof window !== 'undefined' &&
+            new URL(window.location.href).searchParams.get('scan') === '1',
+    );
+    const [scannerMessage, setScannerMessage] = useState('');
 
     const stats = useMemo(() => {
         let counted = 0;
@@ -139,6 +152,48 @@ export default function StockOpnameShow({
 
     const base = `/operations/stock-opnames/${stockCount.public_id}`;
     const editable = stockCount.status === 'draft' && canCount;
+
+    useEffect(() => {
+        const url = new URL(window.location.href);
+
+        if (!scannerOpen || url.searchParams.get('scan') !== '1') {
+            return;
+        }
+
+        url.searchParams.delete('scan');
+        window.history.replaceState({}, '', url);
+    }, [scannerOpen]);
+
+    const useScannerSelections = (selections: ScannerSelection[]) => {
+        let changed = 0;
+        let missing = 0;
+        const nextValues = { ...values };
+        const nextDirty = new Set(dirty);
+        selections.forEach((selection) => {
+            const item = stockCount.items.find(
+                (candidate) => candidate.product_id === selection.productId,
+            );
+
+            if (!item) {
+                missing++;
+
+                return;
+            }
+
+            nextValues[item.product_id] = String(
+                Number(nextValues[item.product_id] || 0) + selection.quantity,
+            );
+            nextDirty.add(item.product_id);
+            changed++;
+        });
+        setValues(nextValues);
+        setDirty(nextDirty);
+        setScannerMessage(
+            missing
+                ? `${changed} hitungan diperbarui. ${missing} produk tidak ada dalam sesi opname ini.`
+                : `${changed} hitungan diperbarui. Periksa lalu simpan saat siap.`,
+        );
+    };
 
     const save = () => {
         if (dirty.size === 0) {
@@ -253,7 +308,7 @@ export default function StockOpnameShow({
                 </section>
 
                 <section className="rounded-[1.2rem] border border-stone-200 bg-white p-2.5 shadow-sm sm:p-3">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <label className="relative flex-1">
                             <span className="sr-only">Cari produk</span>
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
@@ -278,7 +333,24 @@ export default function StockOpnameShow({
                             <option value="pending">Belum dihitung</option>
                             <option value="difference">Ada selisih</option>
                         </select>
+                        {editable && (
+                            <button
+                                type="button"
+                                onClick={() => setScannerOpen(true)}
+                                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#173c35] px-3 text-xs font-black text-white sm:text-sm"
+                            >
+                                <Camera className="size-4" /> Scan produk
+                            </button>
+                        )}
                     </div>
+                    {scannerMessage && (
+                        <p
+                            role="status"
+                            className="mt-2 rounded-xl bg-[#edf4f0] px-3 py-2 text-xs font-bold text-[#286451]"
+                        >
+                            {scannerMessage}
+                        </p>
+                    )}
 
                     <div className="mt-2 space-y-1.5">
                         {visibleItems.map((item) => {
@@ -509,6 +581,17 @@ export default function StockOpnameShow({
                     )}
                 </div>
             </OperationsShell>
+            <Suspense fallback={null}>
+                {scannerOpen && (
+                    <ProductScanner
+                        purpose="stock_count"
+                        title="Scan produk untuk opname"
+                        open={scannerOpen}
+                        onOpenChange={setScannerOpen}
+                        onConfirm={useScannerSelections}
+                    />
+                )}
+            </Suspense>
         </>
     );
 }
