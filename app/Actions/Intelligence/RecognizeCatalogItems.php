@@ -30,36 +30,53 @@ class RecognizeCatalogItems
             ->flatMap(fn ($image) => collect(is_array($image) ? ($image['items'] ?? []) : [])
                 ->flatMap(fn ($item) => collect(is_array($item) ? ($item['candidates'] ?? []) : [])->pluck('catalog_item_key')))
             ->filter(fn ($key) => is_string($key));
-        $productPublicIds = $keys->filter(fn (string $key) => str_starts_with($key, 'product:'))->map(fn (string $key) => substr($key, 8))->unique()->values();
-        $variantPublicIds = $keys->filter(fn (string $key) => str_starts_with($key, 'variant:'))->map(fn (string $key) => substr($key, 8))->unique()->values();
-
-        $products = Product::query()->where('store_id', $store->id)->where('is_active', true)
-            ->whereIn('public_id', $productPublicIds)
-            ->with(['productUnits' => fn ($query) => $query->whereNull('product_variant_id')->where('is_active', true)->with('unit')])
-            ->get()->keyBy(fn (Product $product) => "product:{$product->public_id}");
-        $variants = ProductVariant::query()->where('store_id', $store->id)->where('is_active', true)
-            ->whereIn('public_id', $variantPublicIds)->whereHas('product', fn ($query) => $query->where('is_active', true))
-            ->with(['product', 'productUnits' => fn ($query) => $query->where('is_active', true)->with('unit')])
-            ->get()->keyBy(fn (ProductVariant $variant) => "variant:{$variant->public_id}");
-
+        $productPublicIds = $keys->filter(fn (string $key) => str_starts_with($key, 'product:'))
+            ->map(fn (string $key) => substr($key, 8))->unique()->values();
+        $variantPublicIds = $keys->filter(fn (string $key) => str_starts_with($key, 'variant:'))
+            ->map(fn (string $key) => substr($key, 8))->unique()->values();
+        $candidateVariants = ProductVariant::query()
+            ->where('store_id', $store->id)
+            ->where('is_active', true)
+            ->whereIn('public_id', $variantPublicIds)
+            ->whereHas('product', fn ($query) => $query->where('is_active', true))
+            ->get(['id', 'product_id', 'public_id']);
+        $products = Product::query()
+            ->where('store_id', $store->id)
+            ->where('is_active', true)
+            ->where(fn ($query) => $query
+                ->whereIn('public_id', $productPublicIds)
+                ->orWhereIn('id', $candidateVariants->pluck('product_id')))
+            ->with([
+                'productUnits' => fn ($query) => $query->where('is_active', true)->with('unit'),
+                'variants' => fn ($query) => $query->where('is_active', true)->with([
+                    'productUnits' => fn ($units) => $units->where('is_active', true)->with('unit'),
+                ]),
+            ])
+            ->get();
+        $productsByPublicId = $products->keyBy('public_id');
+        $productsById = $products->keyBy('id');
         $resolved = collect();
-        foreach ($products as $key => $product) {
-            $unit = $product->productUnits->firstWhere('unit_id', $product->base_unit_id) ?? $product->productUnits->first();
-            if ($unit !== null) {
-                $resolved->put($key, [$product, null, $unit]);
+
+        foreach ($productPublicIds as $publicId) {
+            if ($productsByPublicId->has($publicId)) {
+                $resolved->put("product:{$publicId}", [$productsByPublicId->get($publicId), null]);
             }
         }
-        foreach ($variants as $key => $variant) {
-            $unit = $variant->productUnits->first();
-            if ($unit !== null) {
-                $resolved->put($key, [$variant->product, $variant, $unit]);
+        foreach ($candidateVariants as $candidateVariant) {
+            $product = $productsById->get($candidateVariant->product_id);
+            $variant = $product?->variants->firstWhere('public_id', $candidateVariant->public_id);
+            if ($product !== null && $variant !== null) {
+                $resolved->put("variant:{$variant->public_id}", [$product, $variant]);
             }
         }
 
-        $balances = InventoryBalance::query()->where('store_id', $store->id)
-            ->whereIn('product_id', $resolved->map(fn (array $target) => $target[0]->id)->unique())
-            ->get()->keyBy(fn (InventoryBalance $balance) => $this->balanceKey($balance->product_id, $balance->product_variant_id));
+        $balances = InventoryBalance::query()
+            ->where('store_id', $store->id)
+            ->whereIn('product_id', $products->pluck('id'))
+            ->get()
+            ->keyBy(fn (InventoryBalance $balance) => $this->balanceKey($balance->product_id, $balance->product_variant_id));
         $results = [];
+
         foreach ($upstreamImages as $fallbackImageIndex => $image) {
             if (! is_array($image)) {
                 continue;
@@ -70,30 +87,72 @@ class RecognizeCatalogItems
                     continue;
                 }
                 $itemIndex = is_int($item['item_index'] ?? null) ? $item['item_index'] : $fallbackItemIndex;
-                $candidates = collect($item['candidates'] ?? [])->map(function ($candidate) use ($resolved, $balances): ?array {
-                    if (! is_array($candidate) || ! is_string($candidate['catalog_item_key'] ?? null) || ! $resolved->has($candidate['catalog_item_key'])) {
-                        return null;
-                    }
-                    [$product, $variant, $unit] = $resolved->get($candidate['catalog_item_key']);
+                $grouped = collect();
 
-                    return $this->serializeTarget($product, $variant, $unit, $balances, [
-                        'confidence' => is_numeric($candidate['confidence'] ?? null) ? (float) $candidate['confidence'] : null,
-                        'methods' => $this->methods($candidate['methods'] ?? []),
-                    ]);
-                })->filter()->take(3)->values();
+                foreach (($item['candidates'] ?? []) as $candidate) {
+                    if (! is_array($candidate) || ! is_string($candidate['catalog_item_key'] ?? null) || ! $resolved->has($candidate['catalog_item_key'])) {
+                        continue;
+                    }
+                    [$product, $matchedVariant] = $resolved->get($candidate['catalog_item_key']);
+                    $confidence = is_numeric($candidate['confidence'] ?? null) ? (float) $candidate['confidence'] : null;
+                    $methods = $this->methods($candidate['methods'] ?? []);
+                    $existing = $grouped->get($product->public_id);
+
+                    if ($existing === null) {
+                        $grouped->put($product->public_id, [
+                            'product' => $product,
+                            'matchedVariantPublicId' => $matchedVariant?->public_id,
+                            'confidence' => $confidence,
+                            'methods' => $methods,
+                        ]);
+
+                        continue;
+                    }
+
+                    $confidences = array_filter([
+                        $existing['confidence'],
+                        $confidence,
+                    ], fn ($value) => $value !== null);
+                    $existing['confidence'] = $confidences === [] ? null : max($confidences);
+                    $existing['methods'] = array_values(array_unique([...$existing['methods'], ...$methods]));
+                    $grouped->put($product->public_id, $existing);
+                }
+
+                $ranked = $grouped->map(function (array $evidence) use ($balances): array {
+                    return [
+                        'candidate' => $this->serializeProductCandidate(
+                            $evidence['product'],
+                            $balances,
+                            $evidence['confidence'],
+                            $evidence['methods'],
+                        ),
+                        'matchedVariantPublicId' => $evidence['matchedVariantPublicId'],
+                    ];
+                })->filter(fn (array $entry) => $entry['candidate']['options'] !== [])->take(3)->values();
                 $upstreamStatus = $item['recognition_status'] ?? 'unknown';
-                $status = $candidates->isEmpty() ? 'unknown' : ($upstreamStatus === 'found' ? 'found' : 'uncertain');
-                $selected = $status === 'found' ? $candidates->first() : null;
+                $status = $ranked->isEmpty() ? 'unknown' : ($upstreamStatus === 'found' ? 'found' : 'uncertain');
+                $first = $ranked->first();
+                $match = $status === 'found' ? $first['candidate'] : null;
+                $selectedOption = null;
+
+                if ($match !== null) {
+                    $options = collect($match['options']);
+                    $matchedVariantOptions = $first['matchedVariantPublicId'] !== null
+                        ? $options->where('variantPublicId', $first['matchedVariantPublicId'])
+                        : collect();
+                    $selectedOption = $matchedVariantOptions->count() === 1
+                        ? $matchedVariantOptions->first()
+                        : ($first['matchedVariantPublicId'] === null && $options->count() === 1 ? $options->first() : null);
+                }
+
                 $results[] = [
                     'captureId' => $captureIds[$imageIndex] ?? (string) $imageIndex,
                     'imageIndex' => $imageIndex,
                     'itemIndex' => $itemIndex,
                     'status' => $status,
-                    ...$this->emptySelection(),
-                    ...($selected ?? []),
-                    'confidence' => $selected['confidence'] ?? null,
-                    'methods' => $selected['methods'] ?? [],
-                    'candidates' => $candidates->all(),
+                    'match' => $match,
+                    'selectedOption' => $selectedOption,
+                    'candidates' => $ranked->pluck('candidate')->all(),
                 ];
             }
         }
@@ -105,60 +164,77 @@ class RecognizeCatalogItems
     public function serializeProductUnit(ProductUnit $unit, string $identifierType, string $captureId = 'identifier'): array
     {
         $unit->loadMissing(['product', 'productVariant', 'unit']);
-        $balances = InventoryBalance::query()->where('store_id', $unit->store_id)
-            ->where('product_id', $unit->product_id)->get()
+        $unit->product->loadMissing([
+            'productUnits.unit',
+            'variants.productUnits.unit',
+        ]);
+        $balances = InventoryBalance::query()
+            ->where('store_id', $unit->store_id)
+            ->where('product_id', $unit->product_id)
+            ->get()
             ->keyBy(fn (InventoryBalance $balance) => $this->balanceKey($balance->product_id, $balance->product_variant_id));
+        $match = $this->serializeProductCandidate($unit->product, $balances, 1.0, [$identifierType]);
 
         return [
             'captureId' => $captureId,
             'imageIndex' => 0,
             'itemIndex' => 0,
             'status' => 'found',
-            ...$this->serializeTarget($unit->product, $unit->productVariant, $unit, $balances, [
-                'confidence' => 1.0,
-                'methods' => [$identifierType],
-            ]),
-            'candidates' => [],
+            'match' => $match,
+            'selectedOption' => $this->serializeSaleOption($unit->product, $unit->productVariant, $unit, $balances),
+            'candidates' => [$match],
         ];
     }
 
     /** @param Collection<string, InventoryBalance> $balances
-     * @param  array{confidence: float|null, methods: list<string>}  $match
+     * @param  list<string>  $methods
      * @return array<string, mixed>
      */
-    private function serializeTarget(Product $product, ?ProductVariant $variant, ProductUnit $unit, Collection $balances, array $match): array
+    private function serializeProductCandidate(Product $product, Collection $balances, ?float $confidence, array $methods): array
+    {
+        $options = $product->variant_mode === 'none'
+            ? $product->productUnits
+                ->whereNull('product_variant_id')
+                ->filter(fn (ProductUnit $unit) => $unit->is_active && $unit->unit?->is_active)
+                ->map(fn (ProductUnit $unit) => $this->serializeSaleOption($product, null, $unit, $balances))
+            : $product->variants
+                ->filter(fn (ProductVariant $variant) => $variant->is_active)
+                ->flatMap(fn (ProductVariant $variant) => $variant->productUnits
+                    ->filter(fn (ProductUnit $unit) => $unit->is_active && $unit->unit?->is_active)
+                    ->map(fn (ProductUnit $unit) => $this->serializeSaleOption($product, $variant, $unit, $balances)));
+
+        return [
+            'productPublicId' => $product->public_id,
+            'name' => $product->name,
+            'photoUrl' => $product->photo_path ? route('master-data.products.photo', $product->public_id) : null,
+            'confidence' => $confidence,
+            'methods' => $methods,
+            'options' => $options->values()->all(),
+        ];
+    }
+
+    /** @param Collection<string, InventoryBalance> $balances
+     * @return array<string, mixed>
+     */
+    private function serializeSaleOption(Product $product, ?ProductVariant $variant, ProductUnit $unit, Collection $balances): array
     {
         $balanceVariantId = $product->variant_mode === 'separate' ? $variant?->id : null;
         $balance = $balances->get($this->balanceKey($product->id, $balanceVariantId));
-        $photoUrl = $variant?->photo_path
-            ? route('master-data.products.variants.photo', [$product->public_id, $variant->public_id])
-            : ($variant === null && $product->photo_path ? route('master-data.products.photo', $product->public_id) : null);
+        $productId = $variant?->public_id ?? $product->public_id;
 
         return [
-            'productId' => $variant?->public_id ?? $product->public_id,
+            'id' => $productId.':'.$unit->unit->public_id,
+            'productId' => $productId,
             'productPublicId' => $product->public_id,
             'variantPublicId' => $variant?->public_id,
-            'unitId' => $unit->unit->public_id,
-            'name' => $product->name,
             'variantName' => $variant?->name,
+            'unitId' => $unit->unit->public_id,
             'unitName' => $unit->unit->name,
             'unitSymbol' => $unit->unit->symbol,
             'purchasePrice' => (string) $unit->purchase_price,
             'sellingPrice' => (string) $unit->selling_price,
             'stockQuantity' => (string) ($balance?->quantity ?? '0.000000'),
-            'photoUrl' => $photoUrl,
-            'confidence' => $match['confidence'],
-            'methods' => $match['methods'],
         ];
-    }
-
-    /** @return array<string, null> */
-    private function emptySelection(): array
-    {
-        return array_fill_keys([
-            'productId', 'productPublicId', 'variantPublicId', 'unitId', 'name', 'variantName',
-            'unitName', 'unitSymbol', 'purchasePrice', 'sellingPrice', 'stockQuantity', 'photoUrl',
-        ], null);
     }
 
     /** @return list<string> */

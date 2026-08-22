@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
-    ScannerCandidate,
     ScannerCapture,
     ScannerCatalogItem,
     ScannerConfig,
     ScannerErrorCode,
+    ScannerProductCandidate,
     ScannerPurpose,
+    ScannerSaleOption,
     ScannerSelection,
 } from './types';
 import { normalizeImage } from './use-camera';
@@ -123,9 +124,13 @@ export function useProductScanner(
                     throw new ScannerRequestError(payload.code);
                 }
 
-                const results = (payload.data ?? []).filter(
-                    (result) => result.captureId === capture.id,
-                );
+                const results = (payload.data ?? [])
+                    .filter((result) => result.captureId === capture.id)
+                    .map((result) => ({
+                        ...result,
+                        skipped: false,
+                        quantity: 1,
+                    }));
                 setCaptures((current) =>
                     current.map((item) =>
                         item.id === capture.id
@@ -223,12 +228,12 @@ export function useProductScanner(
                 {
                     id: result.captureId,
                     blob: new Blob(),
-                    previewUrl: result.photoUrl ?? '',
+                    previewUrl: result.match?.photoUrl ?? '',
                     status: 'recognized',
                     error: null,
                     errorCode: null,
                     retryable: true,
-                    results: [result],
+                    results: [{ ...result, skipped: false, quantity: 1 }],
                 },
             ]);
             navigator.vibrate?.(45);
@@ -272,8 +277,51 @@ export function useProductScanner(
         [config.visual_recognition_enabled],
     );
 
-    const selectCandidate = useCallback(
-        (captureId: string, itemIndex: number, candidate: ScannerCandidate) => {
+    const replaceBlob = useCallback(
+        async (id: string, blob: Blob, normalize = true) => {
+            const normalized = normalize ? await normalizeImage(blob) : blob;
+            const previewUrl = URL.createObjectURL(normalized);
+
+            controllersRef.current.get(id)?.abort();
+            controllersRef.current.delete(id);
+            setCaptures((current) =>
+                current.map((capture) => {
+                    if (capture.id !== id) {
+                        return capture;
+                    }
+
+                    if (capture.previewUrl.startsWith('blob:')) {
+                        URL.revokeObjectURL(capture.previewUrl);
+                    }
+
+                    return {
+                        ...capture,
+                        blob: normalized,
+                        previewUrl,
+                        status: config.visual_recognition_enabled
+                            ? 'queued'
+                            : 'failed',
+                        error: config.visual_recognition_enabled
+                            ? null
+                            : 'Layanan scanner belum terhubung. Hubungi administrator.',
+                        errorCode: config.visual_recognition_enabled
+                            ? null
+                            : 'SCANNER_DISABLED',
+                        retryable: config.visual_recognition_enabled,
+                        results: [],
+                    };
+                }),
+            );
+        },
+        [config.visual_recognition_enabled],
+    );
+
+    const selectProductCandidate = useCallback(
+        (
+            captureId: string,
+            itemIndex: number,
+            candidate: ScannerProductCandidate,
+        ) => {
             setCaptures((current) =>
                 current.map((capture) =>
                     capture.id !== captureId
@@ -285,9 +333,104 @@ export function useProductScanner(
                                       ? result
                                       : {
                                             ...result,
-                                            ...candidate,
-                                            status: 'found',
+                                            status: 'uncertain',
+                                            match: candidate,
+                                            skipped: false,
+                                            selectedOption:
+                                                candidate.options.length === 1
+                                                    ? candidate.options[0]
+                                                    : null,
                                         },
+                              ),
+                          },
+                ),
+            );
+        },
+        [],
+    );
+
+    const selectSaleOption = useCallback(
+        (captureId: string, itemIndex: number, option: ScannerSaleOption) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) =>
+                                  result.itemIndex !== itemIndex
+                                      ? result
+                                      : {
+                                            ...result,
+                                            skipped: false,
+                                            selectedOption: option,
+                                        },
+                              ),
+                          },
+                ),
+            );
+        },
+        [],
+    );
+
+    const clearProductSelection = useCallback(
+        (captureId: string, itemIndex: number) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) =>
+                                  result.itemIndex !== itemIndex
+                                      ? result
+                                      : {
+                                            ...result,
+                                            status: 'uncertain',
+                                            match: null,
+                                            selectedOption: null,
+                                            skipped: false,
+                                        },
+                              ),
+                          },
+                ),
+            );
+        },
+        [],
+    );
+
+    const setResultSkipped = useCallback(
+        (captureId: string, itemIndex: number, skipped: boolean) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) =>
+                                  result.itemIndex !== itemIndex
+                                      ? result
+                                      : { ...result, skipped },
+                              ),
+                          },
+                ),
+            );
+        },
+        [],
+    );
+
+    const setResultQuantity = useCallback(
+        (captureId: string, itemIndex: number, quantity: number) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) =>
+                                  result.itemIndex !== itemIndex
+                                      ? result
+                                      : { ...result, quantity },
                               ),
                           },
                 ),
@@ -299,20 +442,26 @@ export function useProductScanner(
     const selections = useMemo<ScannerSelection[]>(
         () =>
             captures.flatMap((capture) =>
-                capture.results
-                    .filter(
-                        (
-                            result,
-                        ): result is ScannerCatalogItem & ScannerCandidate =>
-                            result.status === 'found' &&
-                            result.productId !== null &&
-                            result.unitId !== null,
-                    )
-                    .map((result) => ({
-                        ...result,
-                        captureId: capture.id,
-                        quantity: 1,
-                    })),
+                capture.results.flatMap((result) => {
+                    if (
+                        result.skipped === true ||
+                        result.match === null ||
+                        result.selectedOption === null
+                    ) {
+                        return [];
+                    }
+
+                    return [
+                        {
+                            ...result.selectedOption,
+                            captureId: capture.id,
+                            itemIndex: result.itemIndex,
+                            name: result.match.name,
+                            photoUrl: result.match.photoUrl,
+                            quantity: result.quantity ?? 1,
+                        },
+                    ];
+                }),
             ),
         [captures],
     );
@@ -341,7 +490,12 @@ export function useProductScanner(
         lookupBarcode,
         removeCapture,
         retry,
-        selectCandidate,
+        replaceBlob,
+        selectProductCandidate,
+        selectSaleOption,
+        clearProductSelection,
+        setResultSkipped,
+        setResultQuantity,
         reset,
     };
 }
@@ -397,20 +551,10 @@ function unknownResult(captureId: string): ScannerCatalogItem {
         imageIndex: 0,
         itemIndex: 0,
         status: 'unknown',
-        productId: null,
-        productPublicId: null,
-        variantPublicId: null,
-        unitId: null,
-        name: null,
-        variantName: null,
-        unitName: null,
-        unitSymbol: null,
-        purchasePrice: null,
-        sellingPrice: null,
-        stockQuantity: null,
-        photoUrl: null,
-        confidence: null,
-        methods: [],
+        match: null,
+        selectedOption: null,
         candidates: [],
+        skipped: false,
+        quantity: 1,
     };
 }

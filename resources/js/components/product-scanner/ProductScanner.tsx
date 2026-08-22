@@ -4,7 +4,12 @@ import type { ChangeEvent } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { CameraViewport } from './CameraViewport';
 import { ScanReview } from './ScanReview';
-import type { ScannerConfig, ScannerPurpose, ScannerSelection } from './types';
+import type {
+    ScannerConfig,
+    ScannerProductCandidate,
+    ScannerPurpose,
+    ScannerSelection,
+} from './types';
 import { useCamera } from './use-camera';
 import { useProductScanner } from './use-product-scanner';
 
@@ -15,6 +20,7 @@ type ProductScannerProps = {
     onOpenChange: (open: boolean) => void;
     onConfirm: (selections: ScannerSelection[]) => void;
     onManualSearch?: () => void;
+    manualProducts?: ScannerProductCandidate[];
     onProductCaptures?: (photos: File[]) => void;
 };
 
@@ -25,11 +31,13 @@ export default function ProductScanner({
     onOpenChange,
     onConfirm,
     onManualSearch,
+    manualProducts = [],
     onProductCaptures,
 }: ProductScannerProps) {
     const { scanner: config } = usePage<{ scanner: ScannerConfig }>().props;
     const scanner = useProductScanner(open, purpose, config);
     const [autoPaused, setAutoPaused] = useState(!config.auto_capture_enabled);
+    const [retakeCaptureId, setRetakeCaptureId] = useState<string | null>(null);
     const stableRef = useRef({
         pixels: new Uint8ClampedArray(),
         count: 0,
@@ -46,8 +54,17 @@ export default function ProductScanner({
         }
 
         navigator.vibrate?.(30);
+
+        if (retakeCaptureId) {
+            await scanner.replaceBlob(retakeCaptureId, blob, false);
+            setRetakeCaptureId(null);
+            scanner.setReviewing(true);
+
+            return;
+        }
+
         await scanner.addBlobs([blob], false);
-    }, [camera, scanner]);
+    }, [camera, retakeCaptureId, scanner]);
 
     useEffect(() => {
         if (!open || autoPaused || scanner.reviewing || !camera.ready) {
@@ -132,6 +149,7 @@ export default function ProductScanner({
     ]);
 
     const close = () => {
+        setRetakeCaptureId(null);
         scanner.reset();
         onOpenChange(false);
     };
@@ -142,9 +160,20 @@ export default function ProductScanner({
         );
         event.target.value = '';
 
-        if (files.length > 0) {
-            void scanner.addBlobs(files);
+        if (files.length === 0) {
+            return;
         }
+
+        if (retakeCaptureId) {
+            void scanner.replaceBlob(retakeCaptureId, files[0]).then(() => {
+                setRetakeCaptureId(null);
+                scanner.setReviewing(true);
+            });
+
+            return;
+        }
+
+        void scanner.addBlobs(files);
     };
 
     return (
@@ -162,8 +191,16 @@ export default function ProductScanner({
                         onBack={() => scanner.setReviewing(false)}
                         onRemove={scanner.removeCapture}
                         onRetry={scanner.retry}
-                        onSelectCandidate={scanner.selectCandidate}
-                        onManualSearch={onManualSearch}
+                        onRetake={(captureId) => {
+                            setRetakeCaptureId(captureId);
+                            scanner.setReviewing(false);
+                        }}
+                        onSelectProduct={scanner.selectProductCandidate}
+                        onSelectOption={scanner.selectSaleOption}
+                        onClearProduct={scanner.clearProductSelection}
+                        onSetSkipped={scanner.setResultSkipped}
+                        onQuantityChange={scanner.setResultQuantity}
+                        manualProducts={manualProducts}
                         onConfirm={(selections) => {
                             onConfirm(selections);
                             close();
@@ -183,6 +220,8 @@ export default function ProductScanner({
                         onGallery={gallery}
                         onRemove={scanner.removeCapture}
                         onFinish={() => {
+                            setRetakeCaptureId(null);
+
                             if (purpose === 'product' && onProductCaptures) {
                                 onProductCaptures(
                                     scanner.captures
@@ -207,7 +246,11 @@ export default function ProductScanner({
                         }}
                         onToggleAuto={() => setAutoPaused((value) => !value)}
                         onToggleTorch={() => void camera.toggleTorch()}
-                        onManualSearch={onManualSearch}
+                        onManualSearch={
+                            scanner.captures.length === 0
+                                ? onManualSearch
+                                : undefined
+                        }
                         manualActionLabel={
                             purpose === 'product'
                                 ? 'Isi tanpa foto'

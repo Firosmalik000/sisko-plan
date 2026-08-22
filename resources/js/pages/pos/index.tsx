@@ -21,7 +21,10 @@ import {
     postingToken,
     quantity,
 } from '@/components/operations-shell';
-import type { ScannerSelection } from '@/components/product-scanner/types';
+import type {
+    ScannerProductCandidate,
+    ScannerSelection,
+} from '@/components/product-scanner/types';
 import {
     Dialog,
     DialogContent,
@@ -163,6 +166,36 @@ export default function PosPage({
     );
     const available = (product: ProductOption) =>
         Number(product.stock_quantity) / Number(product.conversion_factor);
+    const scannerProducts = useMemo<ScannerProductCandidate[]>(
+        () =>
+            catalog.map((product) => ({
+                productPublicId: product.id,
+                name: product.name,
+                photoUrl: product.photo_url,
+                confidence: null,
+                methods: [],
+                options: product.options.map((option) => ({
+                    id: `${option.product_id}:${option.unit_id}`,
+                    productId: option.product_id,
+                    productPublicId: product.id,
+                    variantPublicId:
+                        option.product_id === product.id
+                            ? null
+                            : option.product_id,
+                    variantName: option.variant_name,
+                    unitId: option.unit_id,
+                    unitName: option.unit_name,
+                    unitSymbol: option.unit_symbol,
+                    purchasePrice: '0',
+                    sellingPrice: option.selling_price,
+                    stockQuantity: String(
+                        Number(option.stock_quantity) /
+                            Number(option.conversion_factor),
+                    ),
+                })),
+            })),
+        [catalog],
+    );
     const subtotal = sale.data.items.reduce(
         (sum, item) => sum + Number(item.quantity) * Number(item.selling_price),
         0,
@@ -974,6 +1007,7 @@ export default function PosPage({
                         open={scannerOpen}
                         onOpenChange={setScannerOpen}
                         onConfirm={addScannerSelections}
+                        manualProducts={scannerProducts}
                         onManualSearch={() => {
                             setScannerOpen(false);
                             selectEntryMode('input');
