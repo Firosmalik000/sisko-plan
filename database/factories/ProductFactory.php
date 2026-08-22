@@ -20,6 +20,8 @@ class ProductFactory extends Factory
                 ['unit_id' => $product->base_unit_id],
                 [
                     'store_id' => $product->store_id,
+                    'sku' => fake()->unique()->bothify('SKU-####'),
+                    'barcode' => fake()->unique()->ean13(),
                     'conversion_factor' => 1,
                     'purchase_price' => 0,
                     'selling_price' => 0,
@@ -39,8 +41,6 @@ class ProductFactory extends Factory
                 'store_id' => $attributes['store_id'],
             ])->id,
             'name' => fake()->words(3, true),
-            'sku' => fake()->unique()->bothify('SKU-####'),
-            'barcode' => fake()->unique()->ean13(),
             'description' => fake()->optional()->sentence(),
             'is_active' => true,
         ];

@@ -78,15 +78,14 @@ class MasterDataTest extends TestCase
         $this->assertDatabaseHas('financial_accounts', ['store_id' => $store->id, 'name' => 'Kas Toko', 'type' => 'cash']);
     }
 
-    public function test_product_is_created_atomically_with_base_and_conversion_units(): void
+    public function test_product_is_created_atomically_with_codes_on_its_sellable_unit(): void
     {
         [$owner, $store] = $this->ownerAndStore();
         $category = Category::factory()->for($store)->create();
         $piece = Unit::factory()->for($store)->create(['name' => 'Pieces', 'symbol' => 'pcs']);
-        $box = Unit::factory()->for($store)->create(['name' => 'Box', 'symbol' => 'box']);
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
-            ->post(route('master-data.products.store'), $this->productPayload($category, $piece, $box))
+            ->post(route('master-data.products.store'), $this->productPayload($category, $piece))
             ->assertRedirect();
 
         $product = Product::query()->sole();
@@ -98,12 +97,8 @@ class MasterDataTest extends TestCase
             'conversion_factor' => 1,
             'purchase_price' => 2500,
             'selling_price' => 4000,
-        ]);
-        $this->assertDatabaseHas('product_units', [
-            'product_id' => $product->id,
-            'unit_id' => $box->id,
-            'conversion_factor' => 12,
-            'selling_price' => 45000,
+            'sku' => 'SKU-TEH-001',
+            'barcode' => '8990000000001',
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'store_id' => $store->id,
@@ -118,7 +113,6 @@ class MasterDataTest extends TestCase
         [$owner, $store] = $this->ownerAndStore();
         $piece = Unit::factory()->for($store)->create();
         $payload = $this->productPayload(null, $piece);
-        $payload['units'][0]['conversion_factor'] = '99';
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
             ->post(route('master-data.products.store'), $payload)
@@ -146,7 +140,7 @@ class MasterDataTest extends TestCase
             'is_active' => true,
         ]);
         $payload = $this->productPayload(null, $piece);
-        $payload['units'][0]['selling_price'] = '5000';
+        $payload['selling_price'] = '5000';
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
             ->patch(route('master-data.products.update', $product->public_id), $payload)
@@ -174,7 +168,7 @@ class MasterDataTest extends TestCase
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
             ->post(route('master-data.products.store'), $this->productPayload($otherCategory, $otherUnit))
-            ->assertSessionHasErrors(['category_public_id', 'base_unit_public_id', 'units.0.unit_public_id']);
+            ->assertSessionHasErrors(['category_public_id', 'retail_unit_public_id', 'large_unit_public_id']);
 
         $this->assertDatabaseMissing('categories', ['id' => $otherCategory->id, 'name' => 'Dicuri']);
         $this->assertDatabaseCount('products', 0);
@@ -225,10 +219,9 @@ class MasterDataTest extends TestCase
     {
         [$owner, $store] = $this->ownerAndStore();
         $unit = Unit::factory()->for($store)->create();
-        Product::factory()->for($store)->for($unit, 'baseUnit')->create([
-            'sku' => 'SKU-SAMA',
-            'barcode' => '899000000001',
-        ]);
+        $product = Product::factory()->for($store)->for($unit, 'baseUnit')->create();
+        $productUnit = $product->productUnits()->sole();
+        $productUnit->update(['sku' => 'SKU-SAMA', 'barcode' => '899000000001']);
         $payload = $this->productPayload(null, $unit);
         $payload['sku'] = 'SKU-SAMA';
         $payload['barcode'] = '899000000001';
@@ -245,16 +238,14 @@ class MasterDataTest extends TestCase
         [$owner, $store] = $this->ownerAndStore();
         $unit = Unit::factory()->for($store)->create();
         $payload = $this->productPayload(null, $unit);
-        $payload['units'][0]['conversion_factor'] = '1000000000000';
-        $payload['units'][0]['purchase_price'] = '1000000000000000';
-        $payload['units'][0]['selling_price'] = '1000000000000000';
+        $payload['purchase_price'] = '1000000000000000';
+        $payload['selling_price'] = '1000000000000000';
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
             ->post(route('master-data.products.store'), $payload)
             ->assertSessionHasErrors([
-                'units.0.conversion_factor',
-                'units.0.purchase_price',
-                'units.0.selling_price',
+                'purchase_price',
+                'selling_price',
             ]);
 
         $this->assertDatabaseCount('products', 0);
@@ -336,8 +327,8 @@ class MasterDataTest extends TestCase
             ->post(route('master-data.products.store'), $this->productPayload($category, $unit))
             ->assertSessionHasErrors([
                 'category_public_id',
-                'base_unit_public_id',
-                'units.0.unit_public_id',
+                'retail_unit_public_id',
+                'large_unit_public_id',
             ]);
 
         $this->assertDatabaseCount('products', 0);
@@ -345,13 +336,18 @@ class MasterDataTest extends TestCase
 
     public function test_product_with_separate_variants_has_independent_inventory(): void
     {
+        Storage::fake('local');
         [$owner, $store] = $this->ownerAndStore();
         $category = Category::factory()->for($store)->create();
         $retail = Unit::factory()->for($store)->create(['unit_type' => UnitType::Retail]);
         $large = Unit::factory()->for($store)->create(['unit_type' => UnitType::Large]);
         $payload = $this->modernProductPayload($category, $retail, $large, 'separate');
         $payload['variants'] = [
-            ['name' => 'Cokelat', 'purchase_price' => '3000', 'selling_price' => '5000', 'current_stock' => '12', 'minimum_stock' => '3'],
+            [
+                'name' => 'Cokelat', 'sku' => 'KOPI-COKELAT', 'barcode' => '8991000000012',
+                'photo' => UploadedFile::fake()->image('cokelat.jpg'),
+                'purchase_price' => '3000', 'selling_price' => '5000', 'current_stock' => '12', 'minimum_stock' => '3',
+            ],
             ['name' => 'Vanila', 'purchase_price' => '3200', 'selling_price' => '5200', 'current_stock' => '8', 'minimum_stock' => '2'],
         ];
 
@@ -364,6 +360,17 @@ class MasterDataTest extends TestCase
         $this->assertCount(2, $variants);
         $this->assertSame('12.000000', InventoryBalance::query()->where('product_variant_id', $variants[0]->id)->value('quantity'));
         $this->assertSame('8.000000', InventoryBalance::query()->where('product_variant_id', $variants[1]->id)->value('quantity'));
+        $variantUnit = $variants[0]->productUnits()->sole();
+        $this->assertDatabaseHas('product_units', [
+            'product_variant_id' => $variants[0]->id,
+            'id' => $variantUnit->id,
+            'sku' => 'KOPI-COKELAT',
+        ]);
+        $this->assertNotNull($variants[0]->photo_path);
+        Storage::disk('local')->assertExists($variants[0]->photo_path);
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('master-data.products.variants.photo', [$parent->public_id, $variants[0]->public_id]))
+            ->assertOk();
     }
 
     public function test_wholesale_variants_share_retail_inventory_and_conversion(): void
@@ -504,23 +511,9 @@ class MasterDataTest extends TestCase
     }
 
     /** @return array<string, mixed> */
-    private function productPayload(?Category $category, Unit $baseUnit, ?Unit $alternateUnit = null): array
+    private function productPayload(?Category $category, Unit $baseUnit): array
     {
-        $units = [[
-            'unit_public_id' => $baseUnit->public_id,
-            'conversion_factor' => '1',
-            'purchase_price' => '2500',
-            'selling_price' => '4000',
-        ]];
-
-        if ($alternateUnit !== null) {
-            $units[] = [
-                'unit_public_id' => $alternateUnit->public_id,
-                'conversion_factor' => '12',
-                'purchase_price' => '30000',
-                'selling_price' => '45000',
-            ];
-        }
+        $category ??= Category::factory()->for($baseUnit->store)->create();
 
         return [
             'idempotency_key' => (string) Str::uuid(),
@@ -528,10 +521,16 @@ class MasterDataTest extends TestCase
             'sku' => 'SKU-TEH-001',
             'barcode' => '8990000000001',
             'description' => 'Teh siap minum',
-            'category_public_id' => $category?->public_id,
-            'base_unit_public_id' => $baseUnit->public_id,
+            'category_public_id' => $category->public_id,
+            'retail_unit_public_id' => $baseUnit->public_id,
+            'large_unit_public_id' => $baseUnit->public_id,
+            'variant_mode' => 'none',
+            'purchase_price' => '2500',
+            'selling_price' => '4000',
+            'current_stock' => '0',
+            'minimum_stock' => '0',
+            'variants' => [],
             'is_active' => true,
-            'units' => $units,
         ];
     }
 

@@ -6,7 +6,6 @@ use App\Actions\MasterData\SaveProduct;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MasterData\ProductRequest;
 use App\Models\Category;
-use App\Models\InventoryBalance;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Unit;
@@ -35,8 +34,13 @@ class ProductController extends Controller
                 'variants' => fn ($query) => $query->where('is_active', true)->with([
                     'productUnits' => fn ($units) => $units->where('is_active', true)->with('unit:id,public_id,name,symbol'),
                 ]),
+                'inventoryBalances',
             ])
-            ->when($search !== '', fn ($query) => $query->where(fn ($nested) => $nested->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%")->orWhere('barcode', 'like', "%{$search}%")))
+            ->when($search !== '', fn ($query) => $query->where(fn ($nested) => $nested
+                ->where('name', 'like', "%{$search}%")
+                ->orWhereHas('productUnits', fn ($units) => $units
+                    ->where('sku', 'like', "%{$search}%")
+                    ->orWhere('barcode', 'like', "%{$search}%"))))
             ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('is_active', $status === 'active'))
             ->orderBy('name')->paginate(12)->withQueryString()
             ->through(fn (Product $product) => $this->serialize($product));
@@ -83,32 +87,50 @@ class ProductController extends Controller
         return Storage::disk('local')->response($model->photo_path, null, ['Cache-Control' => 'private, max-age=3600']);
     }
 
+    public function variantPhoto(CurrentStore $currentStore, string $product, string $variant): StreamedResponse
+    {
+        Gate::authorize('viewMasterData', $currentStore->get());
+        $model = ProductVariant::query()
+            ->where('store_id', $currentStore->id())
+            ->where('public_id', $variant)
+            ->whereHas('product', fn ($query) => $query->where('public_id', $product))
+            ->firstOrFail();
+        abort_unless($model->photo_path && Storage::disk('local')->exists($model->photo_path), 404);
+
+        return Storage::disk('local')->response($model->photo_path, null, ['Cache-Control' => 'private, max-age=3600']);
+    }
+
     /** @return array<string, mixed> */
     private function serialize(Product $product): array
     {
-        $balances = InventoryBalance::query()->where('store_id', $product->store_id)->where('product_id', $product->id)->get();
+        $balances = $product->inventoryBalances;
         $variantBalances = $balances->whereNotNull('product_variant_id')->keyBy('product_variant_id');
-        $basePrices = $product->productUnits()->whereNull('product_variant_id')->where('unit_id', $product->base_unit_id)->first(['purchase_price', 'selling_price']);
         $parentBalance = $balances->firstWhere('product_variant_id', null);
+        $defaultUnit = $product->productUnits->first(fn ($unit) => $unit->product_variant_id === null && $unit->unit_id === $product->base_unit_id);
 
         return [
-            ...$product->only(['public_id', 'name', 'sku', 'barcode', 'description', 'is_active']),
+            ...$product->only(['public_id', 'name', 'description', 'is_active']),
+            'sku' => $defaultUnit?->sku,
+            'barcode' => $defaultUnit?->barcode,
             'category' => $product->category?->only(['public_id', 'name']),
             'retail_unit_public_id' => $product->baseUnit->public_id,
             'large_unit_public_id' => $product->large_unit_id === null ? $product->baseUnit->public_id : $product->largeUnit->public_id,
             'variant_mode' => $product->variant_mode,
-            'purchase_price' => $basePrices === null ? '0.0000' : $basePrices->purchase_price,
-            'selling_price' => $basePrices === null ? '0.0000' : $basePrices->selling_price,
+            'purchase_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->purchase_price,
+            'selling_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->selling_price,
             'current_stock' => $parentBalance === null ? '0.000000' : $parentBalance->quantity,
             'minimum_stock' => $parentBalance === null ? '0.000000' : $parentBalance->minimum_quantity,
             'photo_url' => $product->photo_path ? route('master-data.products.photo', $product->public_id) : null,
             'variants' => $product->variants->map(function (ProductVariant $variant) use ($variantBalances, $product): array {
-                $unit = $variant->productUnits()->where('is_active', true)->first(['purchase_price', 'selling_price', 'conversion_factor']);
+                $unit = $variant->productUnits->first();
                 $balance = $variantBalances->get($variant->id);
 
                 return [
                     'public_id' => $variant->public_id,
                     'name' => $variant->name,
+                    'sku' => $unit?->sku,
+                    'barcode' => $unit?->barcode,
+                    'photo_url' => $variant->photo_path ? route('master-data.products.variants.photo', [$product->public_id, $variant->public_id]) : null,
                     'purchase_price' => $unit === null ? '0.0000' : $unit->purchase_price,
                     'selling_price' => $unit === null ? '0.0000' : $unit->selling_price,
                     'conversion_factor' => $unit === null ? '1.000000' : $unit->conversion_factor,

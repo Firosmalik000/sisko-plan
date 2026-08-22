@@ -8,10 +8,12 @@ use App\Enums\ProductVariantMode;
 use App\Models\Category;
 use App\Models\InventoryBalance;
 use App\Models\Product;
+use App\Models\ProductUnit;
 use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\Intelligence\CatalogIntelligenceClient;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Decimal;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -22,12 +24,15 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
+use function Illuminate\Support\defer;
+
 class SaveProduct
 {
     public function __construct(
         private RecordAudit $recordAudit,
         private SubscriptionAccess $subscriptionAccess,
         private ApplyStockMovement $stock,
+        private CatalogIntelligenceClient $catalogIntelligence,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -38,9 +43,10 @@ class SaveProduct
             Str::ulid().'.'.$photo->extension(),
             'local',
         );
+        $newVariantPhotoPaths = [];
 
         try {
-            $saved = DB::transaction(function () use ($actor, $store, $data, $product, $newPhotoPath, $ipAddress): Product {
+            $saved = DB::transaction(function () use ($actor, $store, $data, $product, $newPhotoPath, &$newVariantPhotoPaths, $ipAddress): Product {
                 $locked = $product === null ? null : Product::query()
                     ->where('store_id', $store->id)->lockForUpdate()->findOrFail($product->id);
                 $creationToken = $data['idempotency_key'] ?? null;
@@ -54,7 +60,7 @@ class SaveProduct
                     $this->subscriptionAccess->assertProductCapacity($store);
                 }
                 $oldPrices = $locked?->productUnits()->where('is_active', true)->with('unit:id,public_id')->get()
-                    ->mapWithKeys(fn ($item) => [$item->unit->public_id => [
+                    ->mapWithKeys(fn ($item) => [($item->product_variant_id ?? 'product').':'.$item->unit->public_id => [
                         'purchase_price' => $item->purchase_price,
                         'selling_price' => $item->selling_price,
                     ]])->sortKeys()->all() ?? [];
@@ -75,8 +81,6 @@ class SaveProduct
                     'large_unit_id' => $largeUnitId,
                     'variant_mode' => $mode->value,
                     'name' => $data['name'],
-                    'sku' => filled($data['sku'] ?? null) ? $data['sku'] : null,
-                    'barcode' => filled($data['barcode'] ?? null) ? $data['barcode'] : null,
                     'description' => filled($data['description'] ?? null) ? $data['description'] : null,
                     'photo_path' => $photoPath,
                     'is_active' => $data['is_active'] ?? true,
@@ -101,30 +105,20 @@ class SaveProduct
                 $locked->productUnits()->update(['is_active' => false]);
                 $activeVariantIds = [];
                 if ($mode === ProductVariantMode::None) {
-                    if (isset($data['units'])) {
-                        foreach ($data['units'] as $legacyUnit) {
-                            $unitId = Unit::query()->where(['store_id' => $store->id, 'public_id' => $legacyUnit['unit_public_id']])->valueOrFail('id');
-                            $locked->productUnits()->updateOrCreate(['unit_id' => $unitId], [
-                                'store_id' => $store->id,
-                                'conversion_factor' => $unitId === $retailUnitId ? 1 : $legacyUnit['conversion_factor'],
-                                'purchase_price' => $legacyUnit['purchase_price'],
-                                'selling_price' => $legacyUnit['selling_price'],
-                                'is_active' => true,
-                            ]);
-                        }
-                    } else {
-                        $locked->productUnits()->updateOrCreate(['unit_id' => $retailUnitId], [
-                            'store_id' => $store->id,
-                            'conversion_factor' => 1,
-                            'purchase_price' => $data['purchase_price'],
-                            'selling_price' => $data['selling_price'],
-                            'is_active' => true,
-                        ]);
-                    }
+                    $defaultUnit = $locked->productUnits()->updateOrCreate(['unit_id' => $retailUnitId, 'product_variant_id' => null], [
+                        'store_id' => $store->id,
+                        'sku' => filled($data['sku'] ?? null) ? trim($data['sku']) : null,
+                        'barcode' => filled($data['barcode'] ?? null) ? trim($data['barcode']) : null,
+                        'conversion_factor' => 1,
+                        'purchase_price' => $data['purchase_price'],
+                        'selling_price' => $data['selling_price'],
+                        'is_active' => true,
+                    ]);
+                    abort_unless($defaultUnit instanceof ProductUnit, 422);
                     $this->setStock($store, $actor, $locked, null, $data['current_stock'], $data['minimum_stock'], $data['purchase_price']);
                 } else {
                     foreach ($data['variants'] as $variant) {
-                        $child = $this->saveVariant($store, $locked, $variant, $mode, $retailUnitId, $largeUnitId);
+                        $child = $this->saveVariant($store, $locked, $variant, $mode, $retailUnitId, $largeUnitId, $newVariantPhotoPaths);
                         $activeVariantIds[] = $child->id;
                         if ($mode === ProductVariantMode::Separate) {
                             $this->setStock($store, $actor, $locked, $child, $variant['current_stock'], $variant['minimum_stock'], $variant['purchase_price']);
@@ -146,7 +140,7 @@ class SaveProduct
                 });
 
                 $newPrices = $locked->productUnits()->where('is_active', true)->with('unit:id,public_id')->get()
-                    ->mapWithKeys(fn ($item) => [$item->unit->public_id => [
+                    ->mapWithKeys(fn ($item) => [($item->product_variant_id ?? 'product').':'.$item->unit->public_id => [
                         'purchase_price' => $item->purchase_price,
                         'selling_price' => $item->selling_price,
                     ]])->sortKeys()->all();
@@ -166,22 +160,31 @@ class SaveProduct
                 return $locked->fresh();
             }, 3);
 
+            if (config('services.catalog_intelligence.enabled')) {
+                defer(fn () => rescue(
+                    fn () => $this->catalogIntelligence->syncProduct($saved->fresh(), (string) Str::uuid()),
+                    report: false,
+                ));
+            }
+
             return $saved;
         } catch (UniqueConstraintViolationException) {
             if ($newPhotoPath) {
                 Storage::disk('local')->delete($newPhotoPath);
             }
+            Storage::disk('local')->delete($newVariantPhotoPaths);
             throw ValidationException::withMessages(['name' => 'Produk atau varian dengan data yang sama sudah tersedia.']);
         } catch (Throwable $exception) {
             if ($newPhotoPath) {
                 Storage::disk('local')->delete($newPhotoPath);
             }
+            Storage::disk('local')->delete($newVariantPhotoPaths);
             throw $exception;
         }
     }
 
     /** @param array<string, mixed> $variant */
-    private function saveVariant(Store $store, Product $parent, array $variant, ProductVariantMode $mode, int $retailUnitId, int $largeUnitId): ProductVariant
+    private function saveVariant(Store $store, Product $parent, array $variant, ProductVariantMode $mode, int $retailUnitId, int $largeUnitId, array &$newPhotoPaths): ProductVariant
     {
         $child = isset($variant['public_id'])
             ? ProductVariant::query()->where(['store_id' => $store->id, 'product_id' => $parent->id, 'public_id' => $variant['public_id']])->lockForUpdate()->first()
@@ -192,10 +195,20 @@ class SaveProduct
             'name' => $variant['name'],
             'is_active' => false,
         ])->lockForUpdate()->first();
+        $oldPhotoPath = $child?->photo_path;
+        $uploadedPhoto = $variant['photo'] ?? null;
+        $newPhotoPath = $uploadedPhoto instanceof UploadedFile
+            ? $uploadedPhoto->storeAs("product-variant-photos/{$store->public_id}", Str::ulid().'.'.$uploadedPhoto->extension(), 'local')
+            : null;
+        if ($newPhotoPath !== null) {
+            $newPhotoPaths[] = $newPhotoPath;
+        }
+        $photoPath = $newPhotoPath ?: (($variant['remove_photo'] ?? false) ? null : $oldPhotoPath);
         $childData = [
             'store_id' => $store->id,
             'product_id' => $parent->id,
             'name' => $variant['name'],
+            'photo_path' => $photoPath,
             'is_active' => $parent->is_active,
         ];
         if ($child === null) {
@@ -204,14 +217,19 @@ class SaveProduct
             $child->update($childData);
         }
         $child->productUnits()->update(['is_active' => false]);
-        $child->productUnits()->updateOrCreate(['unit_id' => $mode === ProductVariantMode::Shared ? $largeUnitId : $retailUnitId], [
+        $productUnit = $child->productUnits()->updateOrCreate(['unit_id' => $mode === ProductVariantMode::Shared ? $largeUnitId : $retailUnitId], [
             'store_id' => $store->id,
             'product_id' => $parent->id,
+            'sku' => filled($variant['sku'] ?? null) ? trim($variant['sku']) : null,
+            'barcode' => filled($variant['barcode'] ?? null) ? trim($variant['barcode']) : null,
             'conversion_factor' => $mode === ProductVariantMode::Shared ? $variant['conversion_factor'] : 1,
             'purchase_price' => $variant['purchase_price'],
             'selling_price' => $variant['selling_price'],
             'is_active' => true,
         ]);
+        if ($oldPhotoPath && $oldPhotoPath !== $photoPath) {
+            DB::afterCommit(fn () => Storage::disk('local')->delete($oldPhotoPath));
+        }
 
         return $child;
     }

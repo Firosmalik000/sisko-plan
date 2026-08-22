@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $public_id
  * @property string $name
  */
-#[Fillable(['store_id', 'product_id', 'name', 'is_active'])]
+#[Fillable(['store_id', 'product_id', 'name', 'photo_path', 'is_active'])]
 class ProductVariant extends Model
 {
     use HasPublicId;

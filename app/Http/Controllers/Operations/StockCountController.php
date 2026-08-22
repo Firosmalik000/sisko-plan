@@ -75,6 +75,15 @@ class StockCountController extends Controller
             ->where('stock_count_items.stock_count_id', $stockCount->id)
             ->join('products', 'products.id', '=', 'stock_count_items.product_id')
             ->leftJoin('product_variants', 'product_variants.id', '=', 'stock_count_items.product_variant_id')
+            ->leftJoin('product_units', function ($join): void {
+                $join->on('product_units.product_id', '=', 'stock_count_items.product_id')
+                    ->on(function ($identity): void {
+                        $identity->on('product_units.product_variant_id', '=', 'stock_count_items.product_variant_id')
+                            ->orWhere(fn ($query) => $query->whereNull('product_units.product_variant_id')->whereNull('stock_count_items.product_variant_id'));
+                    })
+                    ->where('product_units.is_active', true)
+                    ->whereRaw('(product_units.product_variant_id IS NOT NULL OR product_units.unit_id = products.base_unit_id)');
+            })
             ->join('units', 'units.id', '=', 'products.base_unit_id')
             ->leftJoin('inventory_balances', function ($join) use ($store): void {
                 $join->on('inventory_balances.product_id', '=', 'products.id')
@@ -86,7 +95,7 @@ class StockCountController extends Controller
             })
             ->orderBy('products.name')->orderBy('product_variants.name')
             ->get([
-                DB::raw('COALESCE(product_variants.public_id, products.public_id) as product_id'), 'products.name', 'products.sku', 'products.barcode',
+                DB::raw('COALESCE(product_variants.public_id, products.public_id) as product_id'), 'products.name', 'product_units.sku', 'product_units.barcode',
                 'product_variants.name as variant_name', DB::raw('CASE WHEN product_variants.id IS NULL THEN NULL ELSE products.name END as parent_name'), 'units.symbol as unit',
                 'stock_count_items.system_quantity', 'stock_count_items.counted_quantity',
                 'stock_count_items.difference_quantity', 'stock_count_items.snapshot_unit_cost',

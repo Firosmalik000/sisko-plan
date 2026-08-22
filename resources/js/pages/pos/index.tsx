@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import {
     Barcode,
     Banknote,
+    Camera,
     Keyboard,
     Minus,
     PackageOpen,
@@ -12,7 +13,7 @@ import {
     QrCode,
     Trash2,
 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
     currentDateTime,
@@ -20,6 +21,7 @@ import {
     postingToken,
     quantity,
 } from '@/components/operations-shell';
+import type { ScannerSelection } from '@/components/product-scanner/types';
 import {
     Dialog,
     DialogContent,
@@ -73,6 +75,10 @@ type SaleForm = {
 };
 type EntryMode = 'input' | 'scan';
 
+const ProductScanner = lazy(
+    () => import('@/components/product-scanner/ProductScanner'),
+);
+
 const fieldClass =
     'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15';
 
@@ -89,6 +95,12 @@ export default function PosPage({
     const [search, setSearch] = useState('');
     const [barcode, setBarcode] = useState('');
     const [scanError, setScanError] = useState('');
+    const [scannerOpen, setScannerOpen] = useState(
+        () =>
+            typeof window !== 'undefined' &&
+            new URL(window.location.href).searchParams.get('scan') === '1',
+    );
+    const [scannerSummary, setScannerSummary] = useState('');
     const [selectedProduct, setSelectedProduct] =
         useState<CatalogProduct | null>(null);
     const searchRef = useRef<HTMLInputElement>(null);
@@ -138,10 +150,15 @@ export default function PosPage({
                 ?.toLocaleLowerCase('id-ID')
                 .includes(normalizedSearch) ||
             product.barcode?.includes(normalizedSearch) ||
-            product.options.some((option) =>
-                option.variant_name
-                    ?.toLocaleLowerCase('id-ID')
-                    .includes(normalizedSearch),
+            product.options.some(
+                (option) =>
+                    option.variant_name
+                        ?.toLocaleLowerCase('id-ID')
+                        .includes(normalizedSearch) ||
+                    option.sku
+                        ?.toLocaleLowerCase('id-ID')
+                        .includes(normalizedSearch) ||
+                    option.barcode?.includes(normalizedSearch),
             ),
     );
     const available = (product: ProductOption) =>
@@ -171,6 +188,17 @@ export default function PosPage({
             Math.ceil(total / 10000) * 10000,
         ]),
     ).filter((amount) => amount >= total && amount > 0);
+
+    useEffect(() => {
+        const url = new URL(window.location.href);
+
+        if (!scannerOpen || url.searchParams.get('scan') !== '1') {
+            return;
+        }
+
+        url.searchParams.delete('scan');
+        window.history.replaceState({}, '', url);
+    }, [scannerOpen]);
 
     const focusEntry = (mode: EntryMode = entryMode) => {
         window.setTimeout(
@@ -225,6 +253,62 @@ export default function PosPage({
         setSelectedProduct(null);
         setScanError('');
         restoreEntry();
+    };
+    const addScannerSelections = (selections: ScannerSelection[]) => {
+        let added = 0;
+        let skipped = 0;
+        sale.setData((data) => {
+            const items = [...data.items];
+            selections.forEach((selection) => {
+                const option = products.find(
+                    (product) =>
+                        product.product_id === selection.productId &&
+                        product.unit_id === selection.unitId,
+                );
+
+                if (!option || available(option) <= 0) {
+                    skipped++;
+
+                    return;
+                }
+
+                const index = items.findIndex(
+                    (item) =>
+                        item.product_id === option.product_id &&
+                        item.unit_id === option.unit_id,
+                );
+
+                if (index >= 0) {
+                    items[index] = {
+                        ...items[index],
+                        quantity: String(
+                            Math.min(
+                                Number(items[index].quantity) +
+                                    selection.quantity,
+                                available(option),
+                            ),
+                        ),
+                    };
+                } else {
+                    items.push({
+                        ...option,
+                        quantity: String(
+                            Math.min(selection.quantity, available(option)),
+                        ),
+                        discount_amount: '0',
+                    });
+                }
+
+                added++;
+            });
+
+            return { ...data, items };
+        });
+        setScannerSummary(
+            skipped > 0
+                ? `${added} produk ditambahkan, ${skipped} dilewati karena tidak tersedia atau stok habis.`
+                : `${added} produk ditambahkan ke keranjang.`,
+        );
     };
     const chooseProduct = (product: CatalogProduct) => {
         setSelectedProduct(product);
@@ -330,14 +414,32 @@ export default function PosPage({
                                 <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
                                     Kasir
                                 </h1>
-                                <Link
-                                    href="/sales"
-                                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#edf4f0] px-3 text-xs font-bold text-[#245c4f] hover:bg-[#e2ece7]"
-                                >
-                                    <ReceiptText className="size-4" />
-                                    Riwayat & retur
-                                </Link>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setScannerOpen(true)}
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#173c35] px-3 text-xs font-black text-white hover:bg-[#255d4e]"
+                                    >
+                                        <Camera className="size-4" />
+                                        Scan kamera
+                                    </button>
+                                    <Link
+                                        href="/sales"
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#edf4f0] px-3 text-xs font-bold text-[#245c4f] hover:bg-[#e2ece7]"
+                                    >
+                                        <ReceiptText className="size-4" />
+                                        Riwayat & retur
+                                    </Link>
+                                </div>
                             </div>
+                            {scannerSummary && (
+                                <p
+                                    role="status"
+                                    className="mt-3 rounded-xl bg-[#edf4f0] px-3 py-2 text-xs font-bold text-[#245c4f]"
+                                >
+                                    {scannerSummary}
+                                </p>
+                            )}
                             <div className="mt-4 rounded-2xl bg-[#edf3ef] p-1.5 shadow-inner shadow-[#173c35]/5">
                                 <div
                                     className="grid grid-cols-2 gap-1"
@@ -864,6 +966,21 @@ export default function PosPage({
                     </form>
                 </div>
             </div>
+            <Suspense fallback={null}>
+                {scannerOpen && (
+                    <ProductScanner
+                        purpose="sale"
+                        title="Scan produk untuk penjualan"
+                        open={scannerOpen}
+                        onOpenChange={setScannerOpen}
+                        onConfirm={addScannerSelections}
+                        onManualSearch={() => {
+                            setScannerOpen(false);
+                            selectEntryMode('input');
+                        }}
+                    />
+                )}
+            </Suspense>
 
             <Dialog
                 open={selectedProduct !== null}

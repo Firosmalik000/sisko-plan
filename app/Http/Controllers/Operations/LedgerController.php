@@ -42,12 +42,21 @@ class LedgerController extends Controller
         $products = InventoryBalance::query()->where('inventory_balances.store_id', $store->id)
             ->join('products', 'products.id', '=', 'inventory_balances.product_id')
             ->leftJoin('product_variants', 'product_variants.id', '=', 'inventory_balances.product_variant_id')
+            ->leftJoin('product_units', function ($join): void {
+                $join->on('product_units.product_id', '=', 'inventory_balances.product_id')
+                    ->on(function ($identity): void {
+                        $identity->on('product_units.product_variant_id', '=', 'inventory_balances.product_variant_id')
+                            ->orWhere(fn ($query) => $query->whereNull('product_units.product_variant_id')->whereNull('inventory_balances.product_variant_id'));
+                    })
+                    ->where('product_units.is_active', true)
+                    ->whereRaw('(product_units.product_variant_id IS NOT NULL OR product_units.unit_id = products.base_unit_id)');
+            })
             ->join('units', 'units.id', '=', 'products.base_unit_id')
             ->where('products.is_active', true)
             ->where(fn ($query) => $query->whereNull('inventory_balances.product_variant_id')->orWhere('product_variants.is_active', true))
             ->orderBy('products.name')->orderBy('product_variants.name')
             ->get([
-                DB::raw('COALESCE(product_variants.public_id, products.public_id) as public_id'), 'products.name', 'products.sku',
+                DB::raw('COALESCE(product_variants.public_id, products.public_id) as public_id'), 'products.name', 'product_units.sku',
                 'product_variants.name as variant_name', 'units.symbol as unit',
                 DB::raw('CASE WHEN product_variants.id IS NULL THEN NULL ELSE products.public_id END as parent_public_id'),
                 DB::raw('CASE WHEN product_variants.id IS NULL THEN NULL ELSE products.name END as parent_name'),

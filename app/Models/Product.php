@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property-read Collection<int, ProductUnit> $productUnits
  */
-#[Fillable(['store_id', 'creation_token', 'category_id', 'base_unit_id', 'large_unit_id', 'variant_mode', 'name', 'sku', 'barcode', 'description', 'photo_path', 'is_active'])]
+#[Fillable(['store_id', 'creation_token', 'category_id', 'base_unit_id', 'large_unit_id', 'variant_mode', 'name', 'description', 'photo_path', 'is_active'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -54,6 +54,12 @@ class Product extends Model
     public function productUnits(): HasMany
     {
         return $this->hasMany(ProductUnit::class);
+    }
+
+    /** @return HasMany<InventoryBalance, $this> */
+    public function inventoryBalances(): HasMany
+    {
+        return $this->hasMany(InventoryBalance::class);
     }
 
     protected function casts(): array
