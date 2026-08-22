@@ -1501,10 +1501,9 @@ html:has(.ledger-landing)::-webkit-scrollbar-thumb {
         margin-top: 4rem;
     }
     .ledger-services article {
-        grid-template-columns: 3rem minmax(150px, 0.55fr) minmax(
-                200px,
-                1fr
-            ) 1.5rem;
+        grid-template-columns:
+            3rem minmax(150px, 0.55fr) minmax(200px, 1fr)
+            1.5rem;
     }
     .ledger-method-layout {
         gap: 4rem;
