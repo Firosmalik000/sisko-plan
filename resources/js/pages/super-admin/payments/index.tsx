@@ -9,6 +9,11 @@ import {
 import { money } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import {
+    paginatedRowNumber,
+    PlatformTableLeadCell,
+    PlatformTableLeadHeader,
+} from '@/components/platform-table-lead-cell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +29,7 @@ type Payment = {
     paid_at: string;
     notes: string | null;
     store: { public_id: string; name: string };
+    account: { name: string; email: string } | null;
     created_by: string | null;
 };
 
@@ -37,6 +43,7 @@ type Props = {
         data: Payment[];
         total: number;
         current_page: number;
+        per_page: number;
         last_page: number;
         links: PaginationLink[];
     };
@@ -105,7 +112,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                         <Input
                             name="search"
                             defaultValue={filters.search}
-                            placeholder="Receipt, referensi, atau toko"
+                            placeholder="Receipt, akun, atau referensi"
                             className="bg-white pl-9"
                         />
                     </div>
@@ -144,8 +151,9 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                     <table className="w-full min-w-[980px] text-left text-sm">
                         <thead className="platform-table-head">
                             <tr>
+                                <PlatformTableLeadHeader withActions={false} />
                                 <th className="px-5 py-4">Pembayaran</th>
-                                <th className="px-5 py-4">Tenant</th>
+                                <th className="px-5 py-4">Akun</th>
                                 <th className="px-5 py-4">Periode</th>
                                 <th className="px-5 py-4">Metode</th>
                                 <th className="px-5 py-4">Dicatat oleh</th>
@@ -155,11 +163,19 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#0b292f]/8">
-                            {payments.data.map((payment) => (
+                            {payments.data.map((payment, index) => (
                                 <tr
                                     key={payment.public_id}
                                     className="transition hover:bg-[#0b292f]/[.025]"
                                 >
+                                    <PlatformTableLeadCell
+                                        index={paginatedRowNumber(
+                                            payments.current_page,
+                                            payments.per_page,
+                                            index,
+                                        )}
+                                        label={payment.receipt_number}
+                                    />
                                     <td className="px-5 py-4">
                                         <p className="font-mono font-bold text-[#0b292f]">
                                             {payment.receipt_number}
@@ -168,8 +184,16 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                                             {dateTime(payment.paid_at)}
                                         </p>
                                     </td>
-                                    <td className="px-5 py-4 font-semibold">
-                                        {payment.store.name}
+                                    <td className="px-5 py-4">
+                                        <p className="font-semibold">
+                                            {payment.account?.name ??
+                                                payment.store.name}
+                                        </p>
+                                        {payment.account && (
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                {payment.account.email}
+                                            </p>
+                                        )}
                                     </td>
                                     <td className="px-5 py-4">
                                         <span className="inline-flex items-center gap-2 text-slate-600">

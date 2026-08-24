@@ -7,6 +7,7 @@ use App\Enums\StoreStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
+use App\Support\PlatformPermission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,7 @@ class StoreController extends Controller
         return Inertia::render('super-admin/stores/index', [
             'stores' => $stores,
             'filters' => ['search' => $search],
+            'can_update_status' => AuthenticatedPlatformAdmin::get($request)->can(PlatformPermission::STORES_STATUS_UPDATE),
         ]);
     }
 

@@ -28,10 +28,10 @@ export function SubscriptionBanner() {
                 </p>
             </div>
             <Link
-                href="/subscription"
+                href="/pricing"
                 className="inline-flex shrink-0 items-center gap-1 font-bold underline underline-offset-4"
             >
-                Lihat langganan <ArrowRight className="size-4" />
+                Lihat penawaran <ArrowRight className="size-4" />
             </Link>
         </div>
     );

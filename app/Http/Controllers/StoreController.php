@@ -34,8 +34,15 @@ class StoreController extends Controller
         return Inertia::render('stores/index', ['stores' => $stores]);
     }
 
-    public function create(): Response
+    public function create(Request $request, SubscriptionAccess $subscriptionAccess): Response|RedirectResponse
     {
+        $state = $subscriptionAccess->storeCreationState(AuthenticatedUser::get($request));
+        if (! $state['can_create']) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => $state['reason']]);
+
+            return to_route('stores.index');
+        }
+
         return Inertia::render('stores/create');
     }
 

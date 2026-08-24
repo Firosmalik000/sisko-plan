@@ -114,7 +114,7 @@ class Store extends Model
     /** @return HasOne<Subscription, $this> */
     public function subscription(): HasOne
     {
-        return $this->hasOne(Subscription::class);
+        return $this->hasOne(Subscription::class, 'user_id', 'owner_user_id');
     }
 
     protected function casts(): array

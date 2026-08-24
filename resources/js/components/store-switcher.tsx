@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Check, ChevronsUpDown, Plus, Store } from 'lucide-react';
+import { Check, ChevronsUpDown, LockKeyhole, Plus, Store } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,32 +13,55 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import type { StoreSummary } from '@/types';
+import type { StoreCreationState, StoreSummary } from '@/types';
 
 type PageProps = {
     stores: StoreSummary[];
     activeStore: StoreSummary | null;
+    storeCreation: StoreCreationState;
 };
 
 export function StoreSwitcher() {
-    const { stores, activeStore } = usePage<PageProps>().props;
+    const { stores, activeStore, storeCreation } = usePage<PageProps>().props;
 
     if (!activeStore) {
         return (
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild size="lg">
-                        <Link href="/stores/create">
-                            <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-700 text-white">
-                                <Plus className="size-4" />
-                            </span>
-                            <span className="grid flex-1 text-left text-sm">
-                                <span className="font-semibold">Buat toko</span>
-                                <span className="text-xs text-muted-foreground">
-                                    Mulai operasional
+                    <SidebarMenuButton
+                        asChild={storeCreation.can_create}
+                        disabled={!storeCreation.can_create}
+                        size="lg"
+                    >
+                        {storeCreation.can_create ? (
+                            <Link href="/stores/create">
+                                <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-700 text-white">
+                                    <Plus className="size-4" />
+                                </span>
+                                <span className="grid flex-1 text-left text-sm">
+                                    <span className="font-semibold">
+                                        Buat toko
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        Mulai operasional
+                                    </span>
+                                </span>
+                            </Link>
+                        ) : (
+                            <span>
+                                <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                                    <LockKeyhole className="size-4" />
+                                </span>
+                                <span className="grid flex-1 text-left text-sm">
+                                    <span className="font-semibold">
+                                        Toko terkunci
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        Batas paket tercapai
+                                    </span>
                                 </span>
                             </span>
-                        </Link>
+                        )}
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
@@ -96,12 +119,19 @@ export function StoreSwitcher() {
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                            <Link href="/stores/create" className="gap-2">
-                                <Plus className="size-4" />
-                                Tambah toko
-                            </Link>
-                        </DropdownMenuItem>
+                        {storeCreation.can_create ? (
+                            <DropdownMenuItem asChild>
+                                <Link href="/stores/create" className="gap-2">
+                                    <Plus className="size-4" />
+                                    Tambah toko
+                                </Link>
+                            </DropdownMenuItem>
+                        ) : (
+                            <DropdownMenuItem disabled className="gap-2">
+                                <LockKeyhole className="size-4" />
+                                Batas toko tercapai
+                            </DropdownMenuItem>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>

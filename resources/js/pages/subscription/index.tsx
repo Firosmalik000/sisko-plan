@@ -1,9 +1,12 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import {
+    Building2,
     Boxes,
     CalendarDays,
     CheckCircle2,
+    Clock3,
     CreditCard,
+    History,
     Users,
 } from 'lucide-react';
 import { money } from '@/components/operations-shell';
@@ -21,6 +24,8 @@ type Subscription = {
         name: string;
         description: string | null;
         monthly_price: string;
+        duration_months: number;
+        max_stores: number;
         max_products: number;
         max_members: number;
     };
@@ -30,6 +35,8 @@ type Usage = {
     reason: string | null;
     products_used: number;
     members_used: number;
+    stores_used: number;
+    max_stores: number;
     max_products: number;
     max_members: number;
 };
@@ -43,14 +50,31 @@ type Payment = {
     external_reference: string | null;
     paid_at: string;
 };
+type SubscriptionPeriod = {
+    public_id: string;
+    plan_name: string;
+    monthly_price: string;
+    duration_months: number;
+    is_trial: boolean;
+    period_start: string;
+    period_end: string | null;
+    source: string;
+    status: 'scheduled' | 'active' | 'completed';
+};
 
 export default function StoreSubscriptionPage({
     subscription,
     usage,
+    history,
     payments,
 }: {
     subscription: Subscription;
     usage: Usage;
+    history: {
+        data: SubscriptionPeriod[];
+        links: PaginationLink[];
+        total: number;
+    };
     payments: { data: Payment[]; links: PaginationLink[]; total: number };
 }) {
     const productPercentage = percentage(
@@ -58,6 +82,7 @@ export default function StoreSubscriptionPage({
         usage.max_products,
     );
     const memberPercentage = percentage(usage.members_used, usage.max_members);
+    const storePercentage = percentage(usage.stores_used, usage.max_stores);
 
     return (
         <>
@@ -115,30 +140,105 @@ export default function StoreSubscriptionPage({
                     {!usage.can_write && (
                         <section className="rounded-2xl border border-amber-300 bg-amber-100 p-5 text-amber-950">
                             <h2 className="font-bold">
-                                Toko dalam mode hanya-baca
+                                Akses portal toko dinonaktifkan
                             </h2>
-                            <p className="mt-1 text-sm">
-                                {usage.reason} Hubungi pengelola platform untuk
-                                mengaktifkan kembali subscription.
-                            </p>
+                            <p className="mt-1 text-sm">{usage.reason}</p>
+                            <Link
+                                className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#173c35] px-4 text-sm font-bold text-white"
+                                href="/pricing"
+                            >
+                                Lihat paket
+                            </Link>
                         </section>
                     )}
 
-                    <section className="grid gap-4 lg:grid-cols-2">
+                    <section className="grid gap-4 lg:grid-cols-3">
+                        <UsageCard
+                            icon={Building2}
+                            title="Toko"
+                            used={usage.stores_used}
+                            limit={usage.max_stores}
+                            percentage={storePercentage}
+                        />
                         <UsageCard
                             icon={Boxes}
-                            title="Produk aktif"
+                            title="Produk seluruh toko"
                             used={usage.products_used}
                             limit={usage.max_products}
                             percentage={productPercentage}
                         />
                         <UsageCard
                             icon={Users}
-                            title="Anggota aktif"
+                            title="Staf aktif"
                             used={usage.members_used}
                             limit={usage.max_members}
                             percentage={memberPercentage}
                         />
+                    </section>
+
+                    <section className="overflow-hidden rounded-[1.35rem] border border-slate-900/10 bg-white shadow-sm">
+                        <div className="flex items-center justify-between gap-4 border-b border-slate-900/8 p-4 sm:p-5">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f1ec] text-[#173c35]">
+                                    <History className="size-5" />
+                                </span>
+                                <h2 className="truncate text-lg font-black tracking-[-0.025em] text-[#173c35]">
+                                    Riwayat langganan
+                                </h2>
+                            </div>
+                            <span className="shrink-0 text-sm font-bold text-slate-500 tabular-nums">
+                                {history.total} periode
+                            </span>
+                        </div>
+                        <div className="divide-y divide-slate-900/8">
+                            {history.data.map((period) => (
+                                <article
+                                    key={period.public_id}
+                                    className="grid gap-4 p-4 sm:p-5 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_auto] md:items-center"
+                                >
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h3 className="truncate font-black text-[#173c35]">
+                                                {period.plan_name}
+                                            </h3>
+                                            <PeriodStatus
+                                                status={period.status}
+                                            />
+                                        </div>
+                                        <p className="mt-1 text-sm font-semibold text-slate-500">
+                                            {period.is_trial
+                                                ? '30 hari trial'
+                                                : `${period.duration_months} bulan`}
+                                        </p>
+                                    </div>
+                                    <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <CalendarDays className="size-4 shrink-0 text-[#28705d]" />
+                                        <span className="break-words">
+                                            {date(period.period_start)} –{' '}
+                                            {period.period_end
+                                                ? date(period.period_end)
+                                                : 'Tanpa batas'}
+                                        </span>
+                                    </div>
+                                    <p className="font-black text-[#173c35] tabular-nums md:text-right">
+                                        {money(period.monthly_price)}
+                                    </p>
+                                </article>
+                            ))}
+                            {history.data.length === 0 && (
+                                <div className="px-5 py-12 text-center">
+                                    <Clock3 className="mx-auto size-6 text-slate-400" />
+                                    <p className="mt-3 text-sm font-semibold text-slate-500">
+                                        Belum ada riwayat langganan.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        {history.links.length > 3 && (
+                            <div className="border-t border-slate-900/8 p-4 sm:p-5">
+                                <Pagination links={history.links} />
+                            </div>
+                        )}
                     </section>
 
                     <section className="rounded-[1.35rem] border border-slate-900/10 bg-white p-4 shadow-sm sm:p-5">
@@ -197,6 +297,27 @@ export default function StoreSubscriptionPage({
                 </div>
             </main>
         </>
+    );
+}
+
+function PeriodStatus({ status }: { status: SubscriptionPeriod['status'] }) {
+    const styles = {
+        scheduled: 'bg-amber-100 text-amber-800',
+        active: 'bg-emerald-100 text-emerald-800',
+        completed: 'bg-slate-100 text-slate-600',
+    };
+    const labels = {
+        scheduled: 'Terjadwal',
+        active: 'Berjalan',
+        completed: 'Selesai',
+    };
+
+    return (
+        <span
+            className={`rounded-full px-2.5 py-1 text-xs font-bold ${styles[status]}`}
+        >
+            {labels[status]}
+        </span>
     );
 }
 

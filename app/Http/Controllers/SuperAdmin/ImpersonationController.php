@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Actions\Platform\RecordAdminAudit;
-use App\Enums\PlatformAdminRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
@@ -23,7 +22,6 @@ class ImpersonationController extends Controller
     ): RedirectResponse {
         $admin = AuthenticatedPlatformAdmin::get($request);
 
-        abort_unless($admin->platform_role === PlatformAdminRole::SuperAdmin, 403);
         abort_unless($user->canBeImpersonated(), 403);
         abort_unless(! Impersonation::active($request), 409);
 

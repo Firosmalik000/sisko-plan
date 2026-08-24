@@ -51,7 +51,7 @@ class ExpenseController extends Controller
             ->when($category !== '', fn ($query) => $query->whereHas('category', fn ($nested) => $nested->where('public_id', $category)))
             ->when($start !== null, fn ($query) => $query->where('occurred_at', '>=', $start))
             ->when($end !== null, fn ($query) => $query->where('occurred_at', '<=', $end));
-        $largestCategory = (clone $expenseQuery)
+        $largestCategory = (clone $expenseQuery)->toBase()
             ->select('category_name')
             ->selectRaw('SUM(amount) as total')
             ->groupBy('category_name')

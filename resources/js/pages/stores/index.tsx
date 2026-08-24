@@ -1,5 +1,12 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRight, Building2, Plus, ShieldCheck, Users } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import {
+    ArrowRight,
+    Building2,
+    LockKeyhole,
+    Plus,
+    ShieldCheck,
+    Users,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +16,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import type { StoreCreationState } from '@/types';
 
 type StoreItem = {
     public_id: string;
@@ -19,6 +27,10 @@ type StoreItem = {
 };
 
 export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
+    const { storeCreation } = usePage<{
+        storeCreation: StoreCreationState;
+    }>().props;
+
     return (
         <>
             <Head title="Toko & Anggota" />
@@ -27,14 +39,20 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
                     <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
                         Toko & Anggota
                     </h1>
-                    <Button
-                        asChild
-                        className="bg-emerald-700 hover:bg-emerald-800"
-                    >
-                        <Link href="/stores/create">
-                            <Plus /> Tambah toko
-                        </Link>
-                    </Button>
+                    {storeCreation.can_create ? (
+                        <Button
+                            asChild
+                            className="bg-emerald-700 hover:bg-emerald-800"
+                        >
+                            <Link href="/stores/create">
+                                <Plus /> Tambah toko
+                            </Link>
+                        </Button>
+                    ) : (
+                        <Button disabled variant="outline">
+                            <LockKeyhole /> Batas toko tercapai
+                        </Button>
+                    )}
                 </div>
 
                 {stores.length === 0 ? (
@@ -47,12 +65,16 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
                             Buat toko pertama untuk mengaktifkan dashboard dan
                             mulai menyiapkan operasional.
                         </p>
-                        <Button
-                            asChild
-                            className="mt-6 bg-emerald-700 hover:bg-emerald-800"
-                        >
-                            <Link href="/stores/create">Buat toko pertama</Link>
-                        </Button>
+                        {storeCreation.can_create && (
+                            <Button
+                                asChild
+                                className="mt-6 bg-emerald-700 hover:bg-emerald-800"
+                            >
+                                <Link href="/stores/create">
+                                    Buat toko pertama
+                                </Link>
+                            </Button>
+                        )}
                     </div>
                 ) : (
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

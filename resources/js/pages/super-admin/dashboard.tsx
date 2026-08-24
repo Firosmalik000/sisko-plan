@@ -31,7 +31,7 @@ type Trend = { label: string; amount: string | number };
 type RecentPayment = {
     public_id: string;
     receipt_number: string;
-    store: string;
+    account: string;
     amount: string;
     paid_at: string;
 };
@@ -293,7 +293,7 @@ export default function SuperAdminDashboard({
                                     </span>
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm font-bold">
-                                            {payment.store}
+                                            {payment.account}
                                         </p>
                                         <p className="truncate font-mono text-[10px] text-slate-400">
                                             {payment.receipt_number}

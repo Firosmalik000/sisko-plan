@@ -21,12 +21,22 @@ export type StoreSummary = {
     theme_color?: string;
 };
 
+export type StoreCreationState = {
+    can_create: boolean;
+    reason: string | null;
+    plan_name: string;
+    stores_used: number;
+    max_stores: number;
+};
+
 export type PlatformAdmin = {
     id: number;
     name: string;
     email: string;
     role: 'super_admin' | 'admin';
     two_factor_enabled: boolean;
+    permissions: string[];
+    home_url: string;
 };
 
 export type Impersonation = {

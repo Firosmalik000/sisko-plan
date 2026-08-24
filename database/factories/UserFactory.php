@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\PlatformAdminRole;
 use App\Enums\UserStatus;
 use App\Models\User;
+use App\Support\PlatformPermission;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -71,8 +72,10 @@ class UserFactory extends Factory
 
     public function platformAdmin(): static
     {
-        return $this->state(fn (): array => [
-            'platform_role' => PlatformAdminRole::Admin,
-        ]);
+        return $this
+            ->state(fn (): array => [
+                'platform_role' => PlatformAdminRole::Admin,
+            ])
+            ->afterCreating(fn (User $user) => $user->syncPermissions(PlatformPermission::defaultAdmin()));
     }
 }

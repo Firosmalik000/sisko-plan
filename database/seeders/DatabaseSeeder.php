@@ -30,8 +30,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(PlanSeeder::class);
+
         if (app()->environment('production')) {
-            $this->command->warn('Demo accounts were not seeded in production. Use platform-admin:create for the initial Platform Admin.');
+            $this->command->warn('Paket sistem diperbarui. Akun demo tidak dibuat di production; gunakan platform-admin:create untuk Platform Admin awal.');
 
             return;
         }

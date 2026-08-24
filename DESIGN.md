@@ -1,6 +1,6 @@
 ---
 name: Sisko Plan Public Landing
-description: A calm Indonesian retail ledger built from ivory paper, forest ink, ruled records, and one orange action color.
+description: A scan-first Indonesian retail landing built from ivory paper, forest ink, ruled records, and one orange action color.
 colors:
     primary-action: '#f05a16'
     primary-action-hover: '#db4909'
@@ -87,9 +87,9 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Calm Retail Ledger"**
+**Creative North Star: "The Scan-First Retail Ledger"**
 
-The public landing page feels like an orderly worktable for a real Indonesian shop: warm ivory paper, dark forest ink, fine ruled divisions, receipts, and dense but legible operational figures. Its confidence comes from visible system behavior rather than generic SaaS decoration. Kasir, stok, kas, and laporan appear as one connected record in the first viewport.
+The public landing page feels like an orderly worktable for a real Indonesian shop: warm ivory paper, dark forest ink, fine ruled divisions, receipts, and compact operational figures. Its confidence comes from a visible scan interaction rather than generic SaaS decoration. A product moves from scan to cart while stock and sales updates show how kasir, stok, kas, and laporan remain connected.
 
 The world is professional, compact, and direct. Large editorial headings create persuasion while small tables, totals, status labels, and chart marks supply believable operational texture. Orange is reserved for decisive action and small points of attention; the rest of the interface stays calm and readable. The public experience is light-only.
 
@@ -98,7 +98,7 @@ The world is professional, compact, and direct. Large editorial headings create 
 - Warm ivory paper rather than pure-white software chrome.
 - Forest ink carries brand, structure, and high-contrast content.
 - Ruled rows and columns organize information before cards or decoration.
-- Compact example data is always identified as synthetic proof.
+- Compact scan and operations data is always identified as synthetic proof.
 - Direct Indonesian labels and actions avoid marketing filler.
 - Responsive simplification preserves the primary action and operational story.
 
@@ -155,9 +155,9 @@ The palette combines warm paper neutrals with credible forest greens, then uses 
 
 ## Layout
 
-The system uses a centered fluid container capped at 1480px with 1rem side gutters at wide widths. The hero is an asymmetric two-column composition: a compact editorial promise sits beside a wider operational board. Subsequent sections alternate between ruled feature rows, a dark two-column setup sequence, a split operational summary, and a full-width closing action. Section spacing is generous and fluid, while data surfaces remain compact.
+The system uses a centered fluid container capped at 1480px with 1rem side gutters at wide widths. The hero is an asymmetric two-column composition: an editorial scan promise sits beside a live scanner-and-cart proof. Subsequent sections move through a connected workflow strip, familiar operational problems, a dark three-step sequence, ruled feature rows, horizontally adaptable product views, operational coverage, a comparison with manual recording, FAQ, and a full-width closing action. The pricing surface inherits the same world through an ivory hero, forest workflow proof, ruled package records, and dark closing action. Section spacing is generous and fluid, while product surfaces remain compact.
 
-At 1279px and below, the hero columns tighten and the board reduces internal density. At 1023px and below, desktop navigation is removed, the hero becomes a single vertical flow, and the board follows the copy. At 767px and below, a 44px menu control replaces desktop actions, primary hero and closing actions span the available width, the workflow becomes horizontally scrollable with snap points, and only the first two board columns remain visible as stacked ruled sections. The feature list loses decorative icons, the setup intro stops being sticky, and split layouts stack. At 374px and below, gutters, brand scale, headings, workflow widths, and board padding tighten again for a 320px viewport.
+At 1279px and below, the hero columns tighten and the scan proof reduces its peripheral annotations. At 1023px and below, desktop navigation is removed, the hero becomes a single vertical flow, and the scan proof follows the copy. At 767px and below, a 44px menu control replaces desktop actions, primary hero and closing actions span the available width, the workflow and product gallery become horizontally scrollable with snap points, and the cart detail is removed from the scanner proof rather than compressed past legibility. Split layouts stack. At 374px and below, gutters, brand scale, headings, workflow widths, and proof padding tighten again for a 320px viewport.
 
 Verify every public-page change at 320px, 375px, 640px, 768px, 1024px, 1280px, and 1536px. There must be no horizontal page overflow, clipped control, overlapping content, hidden primary action, or broken text wrapping.
 
@@ -179,6 +179,20 @@ The system is flat by default. Depth comes first from paper-tone changes, fine r
 ### Named Rules
 
 **The Ruled Before Raised Rule.** Use a border, divider, tonal shift, or dark reversal before adding shadow; most surfaces remain flat at rest.
+
+## Motion
+
+Motion follows the store workflow rather than decorating every section. The authored focal sequence moves from the hero promise to the scanner, product match, stock update, and sales update. Supporting sections use distinct but restrained relationships: clipped headline reveals, alternating panel arrivals, and bounded sibling stagger for lists and package choices.
+
+- Entrances use confident exponential ease-out and finish within 800ms.
+- Repeated lists cap stagger at approximately 90ms per sibling.
+- Hover feedback moves only actionable or selectable surfaces and never uses bounce.
+- The scanner beam is the only nonessential loop; it pauses outside the viewport.
+- Framer Motion runs through `LazyMotion`, and `MotionConfig reducedMotion="user"` removes spatial movement when the user requests reduced motion. Meaningful opacity and state feedback remain.
+
+**The Scan Sequence Rule.** The most expressive motion belongs to scan-to-record causality. Supporting reveals must remain quieter than the scanner sequence.
+
+**The Rest When Unseen Rule.** No looping public-page motion may continue while its surface is outside the viewport.
 
 ## Shapes
 
@@ -219,9 +233,9 @@ Corners are compact and practical. Operational records use a small 0.35rem radiu
 - **Desktop:** Uppercase wordmark, centered section links, and account actions in a 76px header with translucent ivory and blur. Hover uses orange text or a short orange underline.
 - **Mobile:** At widths below 768px, use a native `details` disclosure with a 44px square trigger and a ruled ivory popover. Each menu row is at least 46px high; the account-creation row receives a Forest Ink fill.
 
-### Operational Board
+### Scanner Proof
 
-The signature proof surface connects four workflow stages above four compact data columns. It combines transaction rows, status text, totals, rankings, bars, a line chart, and category share without decorative illustration. The external `Data contoh` label is mandatory whenever synthetic values are presented. On mobile, preserve the horizontally scrollable workflow and the first two useful columns rather than shrinking all data beyond legibility.
+The signature proof surface shows a product inside a camera frame, a successful match, its cart line, the transaction total, and compact stock and sales updates. The external `Data contoh` label is mandatory whenever synthetic values are presented. On mobile, preserve the scan frame and successful product state, but remove cart and peripheral update annotations rather than shrinking them beyond legibility.
 
 ### Ruled Feature Rows
 
@@ -233,9 +247,10 @@ Feature coverage is presented as full-width rows rather than a gallery of cards.
 
 - **Do** use warm ivory paper, forest ink, and fine ruled divisions as the default visual grammar.
 - **Do** reserve orange for primary action, focus, direction, and small operational highlights.
-- **Do** use compact, explicitly labeled example data to demonstrate the product flow.
+- **Do** use a compact, explicitly labeled scan interaction to demonstrate the product flow.
 - **Do** keep Indonesian copy direct, concise, and grounded in real store work.
 - **Do** preserve visible keyboard focus, comfortable touch targets, reduced-motion behavior, and light color scheme at the document root.
+- **Do** use motion to show scan-to-record causality, list sequence, or selectable package feedback.
 - **Do** simplify responsively rather than compressing every desktop detail onto a phone.
 
 ### Don't:
@@ -245,4 +260,5 @@ Feature coverage is presented as full-width rows rather than a gallery of cards.
 - **Don't** replace ruled operational structure with a generic rounded-card grid, glassmorphism, or broad decorative gradients.
 - **Don't** use orange as a large background field or introduce competing accent hues.
 - **Don't** add helper text, marketing paragraphs, or repeated instructions when a clear label or direct action is enough.
-- **Don't** hide the primary action, `Data contoh` disclosure, or Kasir-to-Laporan story at any supported viewport.
+- **Don't** hide the primary action, `Data contoh` disclosure, or Scan-to-Laporan story at any supported viewport.
+- **Don't** add bounce, infinite decorative motion, or the same fade-and-rise treatment to every section.

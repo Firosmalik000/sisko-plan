@@ -8,6 +8,8 @@ import {
     ChevronDown,
     ChevronRight,
     CreditCard,
+    ImagePlus,
+    LockKeyhole,
     Home,
     LogOut,
     PackageSearch,
@@ -50,6 +52,7 @@ import { edit } from '@/routes/profile';
 import type {
     AppLayoutProps,
     BreadcrumbItem,
+    StoreCreationState,
     StoreSummary,
     User,
 } from '@/types';
@@ -59,6 +62,7 @@ type CustomerPageProps = {
     auth: { user: User | null };
     stores: StoreSummary[];
     activeStore: StoreSummary | null;
+    storeCreation: StoreCreationState;
 };
 
 const primaryItems = [
@@ -262,7 +266,7 @@ export default function AppMobileLayout({
 }
 
 function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
-    const { name, auth, stores, activeStore } =
+    const { name, auth, stores, activeStore, storeCreation } =
         usePage<CustomerPageProps>().props;
     const getInitials = useInitials();
     const landingHref = activeStore ? '/dashboard' : '/stores';
@@ -278,7 +282,11 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                     <AppLogoIcon className="size-5 fill-current" />
                 </Link>
 
-                <StoreMenu stores={stores} activeStore={activeStore} />
+                <StoreMenu
+                    stores={stores}
+                    activeStore={activeStore}
+                    storeCreation={storeCreation}
+                />
 
                 {auth.user && (
                     <DropdownMenu>
@@ -384,12 +392,14 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
 function StoreMenu({
     stores,
     activeStore,
+    storeCreation,
 }: {
     stores: StoreSummary[];
     activeStore: StoreSummary | null;
+    storeCreation: StoreCreationState;
 }) {
     if (!activeStore) {
-        return (
+        return storeCreation.can_create ? (
             <Link
                 href="/stores/create"
                 className="flex min-w-0 items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm ring-1 ring-[var(--app-ink)]/8"
@@ -406,6 +416,24 @@ function StoreMenu({
                     </span>
                 </span>
             </Link>
+        ) : (
+            <button
+                type="button"
+                disabled
+                className="flex min-w-0 items-center gap-2 rounded-2xl bg-white px-3 py-2 text-left opacity-60 shadow-sm ring-1 ring-[var(--app-ink)]/8"
+            >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f3eee1] text-[#7a6740]">
+                    <LockKeyhole className="size-4" />
+                </span>
+                <span className="min-w-0">
+                    <span className="block truncate text-xs font-bold">
+                        Toko terkunci
+                    </span>
+                    <span className="block truncate text-xs text-[#778a84]">
+                        Batas paket tercapai
+                    </span>
+                </span>
+            </button>
         );
     }
 
@@ -459,12 +487,19 @@ function StoreMenu({
                     </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-xl p-3">
-                    <Link href="/stores/create">
-                        <Plus className="size-4" />
-                        Tambah toko baru
-                    </Link>
-                </DropdownMenuItem>
+                {storeCreation.can_create ? (
+                    <DropdownMenuItem asChild className="rounded-xl p-3">
+                        <Link href="/stores/create">
+                            <Plus className="size-4" />
+                            Tambah toko baru
+                        </Link>
+                    </DropdownMenuItem>
+                ) : (
+                    <DropdownMenuItem disabled className="rounded-xl p-3">
+                        <LockKeyhole className="size-4" />
+                        Batas toko tercapai
+                    </DropdownMenuItem>
+                )}
             </DropdownMenuContent>
         </DropdownMenu>
     );

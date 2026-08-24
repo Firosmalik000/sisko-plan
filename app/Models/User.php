@@ -14,12 +14,14 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
@@ -40,13 +42,16 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read StoreMembership $pivot
  * @property-read Collection<int, Store> $stores
  * @property-read Collection<int, Store> $ownedStores
+ * @property-read Subscription|null $subscription
  */
 #[Fillable(['name', 'email', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at'])]
 #[Hidden(['avatar_path', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    protected string $guard_name = 'web';
 
     protected $appends = ['avatar'];
 
@@ -62,6 +67,12 @@ class User extends Authenticatable implements PasskeyUser
     public function ownedStores(): HasMany
     {
         return $this->hasMany(Store::class, 'owner_user_id');
+    }
+
+    /** @return HasOne<Subscription, $this> */
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class);
     }
 
     /** @return HasMany<AdminAuditLog, $this> */

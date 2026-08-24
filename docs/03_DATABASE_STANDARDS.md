@@ -49,6 +49,12 @@ Examples:
 - system_settings
 - admin_audit_logs
 
+`subscriptions.user_id` is the authoritative account owner for the active subscription. `subscriptions.store_id` and `subscription_payments.store_id` are retained as historical origin/attribution fields; commercial access and billing queries use the account owner.
+
+`plans.duration_months` stores the paid activation term as an integer from 1 through 12. Trial duration remains governed by the fixed trial policy and is not inferred from this column.
+
+`subscription_periods` is the account subscription timeline. Confirmed period terms are appended with plan snapshots; only activation metadata may change when a scheduled period becomes effective. Queries and indexes remain scoped through `user_id` and `subscription_id`.
+
 ### Identity and stores
 
 - users

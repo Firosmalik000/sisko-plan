@@ -7,10 +7,11 @@ related_targets: ["resources/css/app.css","resources/views/app.blade.php"]
 
 Scope: Public landing page at `/`; Persuade mode.
 Audience: Indonesian small-retail owners and store teams evaluating an operational system.
-Job: Understand within seconds that Sisko Plan connects cashier transactions, stock, cash, and reports.
+Job: Understand within seconds that scanning a product in Sisko Plan connects cashier transactions, stock, cash, and reports.
 Primary action: Create a free account, or open the dashboard for authenticated users.
-Proof: A compact synthetic operations board labelled `Data contoh`, supported by direct feature rows and a three-step setup flow.
+Proof: A synthetic scanner-and-cart interaction labelled `Data contoh`, supported by direct feature rows, product views, a three-step transaction flow, and an honest comparison with manual recording.
 Constraints: Light-only; no invented adoption, testimonial, pricing, or accounting-audit claims; concise Indonesian copy; accessible keyboard focus; responsive from 320px through 1536px.
-Direction: Professional category-canon raised into a calm retail ledger world using ivory paper, forest ink, ruled records, and one orange action color.
-Memorable moment: The first viewport shows transactions flowing through Kasir, Stok, Kas, and Laporan beside the editorial promise.
-Unresolved: Final pixel comparison remains pending because browser screenshot capture was unavailable in this session.
+Direction: Professional category-canon raised into a scan-first retail ledger world using ivory paper, forest ink, ruled records, and one orange action color.
+Memorable moment: The first viewport shows a product being scanned, found, and added to a transaction beside the promise `Scan barangnya. Sisanya langsung tercatat.` The page then moves from familiar store problems to the connected operating flow.
+Motion: Hero copy and scanner resolve as one short sequence; the match, stock, and sales states arrive in operational order. The scan beam pauses outside the viewport, while supporting lists use bounded stagger and distinct directional reveals.
+Unresolved: None.

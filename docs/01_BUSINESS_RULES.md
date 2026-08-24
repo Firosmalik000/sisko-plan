@@ -13,6 +13,15 @@
 - Every store action requires authentication and an active store context.
 - A user must not access another store by changing an ID in the URL or request payload.
 - Sensitive platform actions require the platform admin surface and separate authorization.
+- One owner account has one active subscription shared by every store it owns.
+- Plan limits for stores, active products, and distinct active staff are enforced across all stores owned by that account; the account owner does not consume a staff seat.
+- Store portal access requires an operational subscription: trials need an unexpired end date, while active subscriptions need a started billing period that has not expired.
+- A trial plan is identified explicitly by platform metadata, lasts 30 days, and can be used only once per owner account; changing plans must not erase trial history.
+- An owner with a non-operational subscription may confirm an eligible active plan from public pricing, while an operational subscription cannot be silently replaced mid-period.
+- Paid plans define a fixed duration from 1 through 12 months. Self-service and bulk activation derive the inclusive billing end date from that duration; changing a plan later does not rewrite an existing subscription period.
+- A paid self-service renewal never shortens an operational subscription. It is appended after the latest scheduled period and becomes effective automatically on its start date.
+- Subscription period history is account-scoped and preserves the plan name, price, duration, and date window that were confirmed at the time.
+- Store capacity is enforced across all stores owned by the account at form entry and again transactionally when a store is created.
 
 ## Transaction rules
 

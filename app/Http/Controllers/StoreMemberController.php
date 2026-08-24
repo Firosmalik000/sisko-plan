@@ -25,8 +25,6 @@ class StoreMemberController extends Controller
             $lockedStore = Store::query()->lockForUpdate()->findOrFail($store->id);
             abort_unless($lockedStore->status === StoreStatus::Active, 403);
 
-            $subscriptionAccess->assertMemberCapacity($lockedStore);
-
             if ($request->validated('mode') === 'create') {
                 $member = User::create([
                     'name' => $request->validated('name'),
@@ -58,6 +56,8 @@ class StoreMemberController extends Controller
                     'email' => 'Pengguna tersebut sudah menjadi anggota toko.',
                 ]);
             }
+
+            $subscriptionAccess->assertMemberCapacity($lockedStore, $member->id);
 
             $lockedStore->users()->attach($member->id, [
                 'role' => $request->validated('role'),
@@ -98,7 +98,7 @@ class StoreMemberController extends Controller
             }
 
             if ($membership->status !== MembershipStatus::Active->value && $request->validated('status') === MembershipStatus::Active->value) {
-                $subscriptionAccess->assertMemberCapacity($lockedStore);
+                $subscriptionAccess->assertMemberCapacity($lockedStore, $member->id);
             }
 
             DB::table('store_user')

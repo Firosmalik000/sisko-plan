@@ -4,6 +4,8 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Actions\Platform\RecordAdminAudit;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\PasswordUpdateRequest;
+use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\User;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +34,51 @@ class SecurityController extends Controller
             'qrCodeSvg' => $admin->two_factor_secret !== null && ! $enabled ? $admin->twoFactorQrCodeSvg() : null,
             'recoveryCodes' => $request->session()->get('platform_admin_recovery_codes', []),
         ]);
+    }
+
+    public function updateProfile(
+        ProfileUpdateRequest $request,
+        RecordAdminAudit $audit,
+    ): RedirectResponse {
+        $admin = AuthenticatedPlatformAdmin::get($request);
+
+        DB::transaction(function () use ($admin, $request, $audit): void {
+            $admin->fill($request->validated());
+            $changedFields = array_keys($admin->getDirty());
+
+            if ($admin->isDirty('email')) {
+                $admin->email_verified_at = null;
+            }
+
+            $admin->save();
+            $audit->handle(
+                $admin,
+                'admin.profile_updated',
+                $admin,
+                $request->ip(),
+                ['changed_fields' => $changedFields],
+            );
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Profil akun berhasil diperbarui.']);
+
+        return back();
+    }
+
+    public function updatePassword(
+        PasswordUpdateRequest $request,
+        RecordAdminAudit $audit,
+    ): RedirectResponse {
+        $admin = AuthenticatedPlatformAdmin::get($request);
+
+        DB::transaction(function () use ($admin, $request, $audit): void {
+            $admin->update(['password' => $request->validated('password')]);
+            $audit->handle($admin, 'admin.password_updated', $admin, $request->ip());
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Kata sandi berhasil diperbarui.']);
+
+        return back();
     }
 
     public function enable(Request $request, EnableTwoFactorAuthentication $enable, RecordAdminAudit $audit): RedirectResponse

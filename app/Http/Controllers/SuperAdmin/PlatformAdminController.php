@@ -8,9 +8,11 @@ use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
+use App\Support\PlatformPermission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -18,8 +20,10 @@ use Inertia\Response;
 
 class PlatformAdminController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $actor = AuthenticatedPlatformAdmin::get($request);
+
         return Inertia::render('super-admin/platform-admins/index', [
             'admins' => User::query()
                 ->whereNotNull('platform_role')
@@ -32,7 +36,10 @@ class PlatformAdminController extends Controller
                     'role' => $admin->platform_role?->value,
                     'two_factor_enabled' => $admin->hasEnabledTwoFactorAuthentication(),
                     'last_login_at' => $admin->last_login_at?->toIso8601String(),
+                    'permissions' => $admin->getAllPermissions()->pluck('name')->values(),
                 ]),
+            'permission_groups' => PlatformPermission::groups(),
+            'can_manage' => $actor->can(PlatformPermission::ADMINS_MANAGE),
         ]);
     }
 
@@ -51,12 +58,62 @@ class PlatformAdminController extends Controller
                 'platform_role' => PlatformAdminRole::Admin,
                 'status' => UserStatus::Active,
             ]);
+            $admin->syncPermissions(PlatformPermission::defaultAdmin());
             $audit->handle($actor, 'platform_admin.created', $admin, $request->ip(), ['email' => $admin->email]);
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Admin platform berhasil ditambahkan.']);
 
         return back();
+    }
+
+    public function updatePermissions(Request $request, User $platformAdmin, RecordAdminAudit $audit): RedirectResponse
+    {
+        abort_unless($platformAdmin->isPlatformAdmin(), 404);
+        if ($platformAdmin->platform_role === PlatformAdminRole::SuperAdmin) {
+            throw ValidationException::withMessages(['permissions' => 'Super Admin selalu memiliki akses penuh.']);
+        }
+
+        $request->validate([
+            'permissions' => ['present', 'array'],
+            'permissions.*' => ['string', Rule::in(PlatformPermission::all())],
+        ]);
+        $actor = AuthenticatedPlatformAdmin::get($request);
+        $before = $platformAdmin->getAllPermissions()->pluck('name')->sort()->values()->all();
+        $permissions = $this->normalizedPermissions($request);
+
+        DB::transaction(function () use ($platformAdmin, $permissions, $before, $actor, $audit, $request): void {
+            $platformAdmin->syncPermissions($permissions);
+            $audit->handle($actor, 'platform_admin.permissions_updated', $platformAdmin, $request->ip(), [
+                'before' => $before,
+                'after' => $permissions,
+            ]);
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Akses admin berhasil diperbarui.']);
+
+        return back();
+    }
+
+    /** @return list<string> */
+    private function normalizedPermissions(Request $request): array
+    {
+        $rawPermissions = $request->input('permissions', []);
+        if (! is_array($rawPermissions)) {
+            return [];
+        }
+
+        $permissions = [];
+        foreach ($rawPermissions as $permission) {
+            if (is_string($permission) && in_array($permission, PlatformPermission::all(), true)) {
+                $permissions[] = $permission;
+            }
+        }
+
+        $permissions = array_values(array_unique($permissions));
+        sort($permissions);
+
+        return $permissions;
     }
 
     public function updateStatus(Request $request, User $platformAdmin, RecordAdminAudit $audit): RedirectResponse

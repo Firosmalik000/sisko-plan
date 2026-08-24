@@ -1,7 +1,12 @@
 import { Form, Head } from '@inertiajs/react';
-import { Building2, Search } from 'lucide-react';
+import { Building2, Power, Search } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import {
+    paginatedRowNumber,
+    PlatformTableLeadCell,
+    PlatformTableLeadHeader,
+} from '@/components/platform-table-lead-cell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +23,7 @@ type StoreItem = {
 type Paginated<T> = {
     data: T[];
     current_page: number;
+    per_page: number;
     last_page: number;
     total: number;
     links: PaginationLink[];
@@ -26,9 +32,11 @@ type Paginated<T> = {
 export default function AdminStores({
     stores,
     filters,
+    can_update_status,
 }: {
     stores: Paginated<StoreItem>;
     filters: { search: string };
+    can_update_status: boolean;
 }) {
     return (
         <>
@@ -64,19 +72,51 @@ export default function AdminStores({
                     <table className="w-full min-w-[800px] text-left text-sm">
                         <thead className="platform-table-head">
                             <tr>
+                                <PlatformTableLeadHeader />
                                 <th className="px-5 py-4">Toko</th>
                                 <th className="px-5 py-4">Pemilik</th>
                                 <th className="px-5 py-4">Anggota aktif</th>
                                 <th className="px-5 py-4">Status</th>
                                 <th className="px-5 py-4">Subscription</th>
-                                <th className="px-5 py-4 text-right">
-                                    Tindakan
-                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-900/8">
-                            {stores.data.map((store) => (
+                            {stores.data.map((store, index) => (
                                 <tr key={store.public_id}>
+                                    <PlatformTableLeadCell
+                                        index={paginatedRowNumber(
+                                            stores.current_page,
+                                            stores.per_page,
+                                            index,
+                                        )}
+                                        label={store.name}
+                                        actions={
+                                            can_update_status
+                                                ? [
+                                                      {
+                                                          label:
+                                                              store.status ===
+                                                              'active'
+                                                                  ? 'Tangguhkan toko'
+                                                                  : 'Aktifkan toko',
+                                                          icon: Power,
+                                                          href: `/super-admin/stores/${store.public_id}/status`,
+                                                          method: 'patch',
+                                                          data: {
+                                                              status:
+                                                                  store.status ===
+                                                                  'active'
+                                                                      ? 'suspended'
+                                                                      : 'active',
+                                                          },
+                                                          destructive:
+                                                              store.status ===
+                                                              'active',
+                                                      },
+                                                  ]
+                                                : []
+                                        }
+                                    />
                                     <td className="px-5 py-4">
                                         <div className="flex items-center gap-3">
                                             <span className="flex size-9 items-center justify-center rounded-lg bg-[#d7a941]/20 text-[#725515]">
@@ -132,27 +172,6 @@ export default function AdminStores({
                                                 </p>
                                             </div>
                                         )}
-                                    </td>
-                                    <td className="px-5 py-4 text-right">
-                                        <Form
-                                            action={`/super-admin/stores/${store.public_id}/status`}
-                                            method="patch"
-                                        >
-                                            <input
-                                                type="hidden"
-                                                name="status"
-                                                value={
-                                                    store.status === 'active'
-                                                        ? 'suspended'
-                                                        : 'active'
-                                                }
-                                            />
-                                            <Button size="sm" variant="outline">
-                                                {store.status === 'active'
-                                                    ? 'Tangguhkan'
-                                                    : 'Aktifkan'}
-                                            </Button>
-                                        </Form>
                                     </td>
                                 </tr>
                             ))}

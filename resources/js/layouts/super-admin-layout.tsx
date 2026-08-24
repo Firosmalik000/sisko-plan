@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Building2,
+    ChevronUp,
     CreditCard,
     Gauge,
     LogOut,
@@ -11,25 +12,50 @@ import {
     Users,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { PlatformAdmin } from '@/types';
 
 type NavigationItem = {
     label: string;
     href: string;
     icon: ComponentType<{ className?: string }>;
-    superAdminOnly?: boolean;
+    permission?: string;
 };
 
 const navigation: Array<{ label: string; items: NavigationItem[] }> = [
     {
         label: 'Ringkasan',
-        items: [{ label: 'Dashboard', href: '/super-admin', icon: Gauge }],
+        items: [
+            {
+                label: 'Dashboard',
+                href: '/super-admin',
+                icon: Gauge,
+                permission: 'platform.dashboard.view',
+            },
+        ],
     },
     {
         label: 'Tenant',
         items: [
-            { label: 'Pengguna', href: '/super-admin/users', icon: Users },
-            { label: 'Toko', href: '/super-admin/stores', icon: Building2 },
+            {
+                label: 'Pengguna',
+                href: '/super-admin/users',
+                icon: Users,
+                permission: 'platform.users.view',
+            },
+            {
+                label: 'Toko',
+                href: '/super-admin/stores',
+                icon: Building2,
+                permission: 'platform.stores.view',
+            },
         ],
     },
     {
@@ -39,11 +65,13 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 label: 'Subscription & paket',
                 href: '/super-admin/subscriptions',
                 icon: CreditCard,
+                permission: 'platform.subscriptions.view',
             },
             {
                 label: 'Riwayat pembayaran',
                 href: '/super-admin/payments',
                 icon: ReceiptText,
+                permission: 'platform.payments.view',
             },
         ],
     },
@@ -54,12 +82,7 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 label: 'Admin platform',
                 href: '/super-admin/platform-admins',
                 icon: UserCog,
-                superAdminOnly: true,
-            },
-            {
-                label: 'Keamanan akun',
-                href: '/super-admin/security',
-                icon: LockKeyhole,
+                permission: 'platform.admins.view',
             },
         ],
     },
@@ -78,7 +101,7 @@ export default function SuperAdminLayout({
             <aside className="border-b border-white/10 bg-[#0b292f] text-white shadow-2xl shadow-[#0b292f]/10 md:sticky md:top-0 md:flex md:h-screen md:w-72 md:shrink-0 md:flex-col md:border-r md:border-b-0">
                 <div className="flex items-center justify-between px-4 py-4 md:px-5 md:py-5">
                     <Link
-                        href="/super-admin"
+                        href={platformAdmin.home_url}
                         className="flex items-center gap-3"
                     >
                         <span className="flex size-9 items-center justify-center rounded-lg bg-[#d7a941] text-[#102b31]">
@@ -93,23 +116,20 @@ export default function SuperAdminLayout({
                             </span>
                         </span>
                     </Link>
-                    <Link
-                        href="/super-admin/logout"
-                        method="post"
-                        as="button"
-                        className="flex size-9 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white md:hidden"
-                        aria-label="Keluar"
-                    >
-                        <LogOut className="size-4" />
-                    </Link>
+                    <div className="md:hidden">
+                        <AccountMenu admin={platformAdmin} compact />
+                    </div>
                 </div>
 
                 <nav className="flex [scrollbar-width:none] gap-1 overflow-x-auto px-3 pb-3 md:block md:flex-1 md:space-y-5 md:overflow-visible md:px-3 md:pb-0 [&::-webkit-scrollbar]:hidden">
                     {navigation.map((group) => {
                         const items = group.items.filter(
                             (item) =>
-                                !item.superAdminOnly ||
-                                platformAdmin.role === 'super_admin',
+                                item.permission === undefined ||
+                                platformAdmin.role === 'super_admin' ||
+                                platformAdmin.permissions.includes(
+                                    item.permission,
+                                ),
                         );
 
                         if (items.length === 0) {
@@ -149,30 +169,7 @@ export default function SuperAdminLayout({
                 </nav>
 
                 <div className="hidden border-t border-white/10 p-3 md:block">
-                    <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-                        <span className="flex size-8 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-[#e9c96f]">
-                            {platformAdmin.name.slice(0, 2).toUpperCase()}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-semibold">
-                                {platformAdmin.name}
-                            </p>
-                            <p className="truncate text-[10px] text-slate-400">
-                                {platformAdmin.role === 'super_admin'
-                                    ? 'Super Admin'
-                                    : 'Admin Platform'}
-                            </p>
-                        </div>
-                        <Link
-                            href="/super-admin/logout"
-                            method="post"
-                            as="button"
-                            className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white"
-                            aria-label="Keluar"
-                        >
-                            <LogOut className="size-4" />
-                        </Link>
-                    </div>
+                    <AccountMenu admin={platformAdmin} />
                 </div>
             </aside>
 
@@ -182,5 +179,89 @@ export default function SuperAdminLayout({
                 </div>
             </main>
         </div>
+    );
+}
+
+function AccountMenu({
+    admin,
+    compact = false,
+}: {
+    admin: PlatformAdmin;
+    compact?: boolean;
+}) {
+    const initials = admin.name.slice(0, 2).toUpperCase();
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                {compact ? (
+                    <button
+                        type="button"
+                        className="flex size-10 items-center justify-center rounded-xl bg-white/10 text-xs font-black text-[#e9c96f] transition outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-[#e9c96f]"
+                        aria-label="Buka menu akun"
+                    >
+                        {initials}
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-[#e9c96f]"
+                    >
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-black text-[#e9c96f]">
+                            {initials}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs font-semibold">
+                                {admin.name}
+                            </span>
+                            <span className="block truncate text-[10px] text-slate-400">
+                                {admin.role === 'super_admin'
+                                    ? 'Super Admin'
+                                    : 'Admin Platform'}
+                            </span>
+                        </span>
+                        <ChevronUp className="size-4 text-slate-400" />
+                    </button>
+                )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+                align={compact ? 'end' : 'start'}
+                side={compact ? 'bottom' : 'top'}
+                sideOffset={8}
+                className="w-64 rounded-xl border-slate-200 p-1.5 shadow-xl"
+            >
+                <DropdownMenuLabel className="px-3 py-2">
+                    <span className="block truncate text-sm font-bold text-[#0b292f]">
+                        {admin.name}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs font-normal text-slate-500">
+                        {admin.email}
+                    </span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="min-h-10 rounded-lg px-3">
+                    <Link href="/super-admin/security">
+                        <LockKeyhole className="size-4" />
+                        Pengaturan akun
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                    asChild
+                    variant="destructive"
+                    className="min-h-10 rounded-lg px-3"
+                >
+                    <Link
+                        href="/super-admin/logout"
+                        method="post"
+                        as="button"
+                        className="w-full"
+                    >
+                        <LogOut className="size-4" />
+                        Keluar
+                    </Link>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

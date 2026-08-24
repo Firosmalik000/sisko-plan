@@ -25,10 +25,11 @@ class PaymentController extends Controller
         $to = $filters['to'] ?? null;
 
         $query = SubscriptionPayment::query()
-            ->with(['store:id,public_id,name', 'creator:id,name'])
+            ->with(['user:id,name,email', 'store:id,public_id,name', 'creator:id,name'])
             ->when($search !== '', fn ($builder) => $builder->where(function ($builder) use ($search): void {
                 $builder->where('receipt_number', 'like', "%{$search}%")
                     ->orWhere('external_reference', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
                     ->orWhereHas('store', fn ($store) => $store->where('name', 'like', "%{$search}%"));
             }))
             ->when($method !== '', fn ($builder) => $builder->where('payment_method', $method))
@@ -50,6 +51,7 @@ class PaymentController extends Controller
                         'payment_method', 'external_reference', 'paid_at', 'notes',
                     ]),
                     'store' => $payment->store->only(['public_id', 'name']),
+                    'account' => $payment->user?->only(['name', 'email']),
                     'created_by' => $payment->creator?->name,
                 ]),
             'filters' => compact('search', 'method', 'from', 'to'),

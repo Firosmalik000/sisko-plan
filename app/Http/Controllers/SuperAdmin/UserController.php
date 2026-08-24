@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Actions\Platform\DeleteUser;
 use App\Actions\Platform\RecordAdminAudit;
 use App\Enums\PlatformAdminRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
+use App\Support\PlatformPermission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,9 +23,10 @@ class UserController extends Controller
     public function index(Request $request): Response
     {
         $search = trim((string) $request->string('search'));
+        $admin = AuthenticatedPlatformAdmin::get($request);
 
         $users = User::query()
-            ->withCount('stores')
+            ->withCount(['stores', 'ownedStores'])
             ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
@@ -39,7 +42,11 @@ class UserController extends Controller
                 'platform_role' => $user->platform_role?->value,
                 'stores_count' => $user->stores_count,
                 'created_at' => $user->created_at?->toDateString(),
-                'can_impersonate' => $user->canBeImpersonated(),
+                'can_update_status' => $admin->can($user->isPlatformAdmin() ? PlatformPermission::ADMINS_MANAGE : PlatformPermission::USERS_STATUS_UPDATE),
+                'can_impersonate' => $admin->can(PlatformPermission::USERS_IMPERSONATE) && $user->canBeImpersonated(),
+                'can_delete' => $admin->can(PlatformPermission::USERS_DELETE)
+                    && ! $user->isPlatformAdmin()
+                    && $user->owned_stores_count === 0,
             ]);
 
         return Inertia::render('super-admin/users/index', [
@@ -60,7 +67,7 @@ class UserController extends Controller
         $admin = AuthenticatedPlatformAdmin::get($request);
 
         if ($user->isPlatformAdmin()) {
-            abort_unless($admin->platform_role === PlatformAdminRole::SuperAdmin, 403);
+            abort_unless($admin->can(PlatformPermission::ADMINS_MANAGE), 403);
             if ($admin->is($user) && $validated['status'] !== UserStatus::Active->value) {
                 throw ValidationException::withMessages([
                     'status' => 'Anda tidak dapat menonaktifkan akun sendiri.',
@@ -85,6 +92,14 @@ class UserController extends Controller
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Status pengguna berhasil diperbarui.']);
+
+        return back();
+    }
+
+    public function destroy(Request $request, User $user, DeleteUser $action): RedirectResponse
+    {
+        $action->handle(AuthenticatedPlatformAdmin::get($request), $user, $request->ip());
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Akun pengguna berhasil dihapus.']);
 
         return back();
     }

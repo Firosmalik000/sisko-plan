@@ -746,7 +746,7 @@ export default function Profile({
                                     limit={subscription.max_products}
                                 />
                                 <UsageRow
-                                    label="Anggota"
+                                    label="Staf aktif"
                                     used={subscription.members_used}
                                     limit={subscription.max_members}
                                 />

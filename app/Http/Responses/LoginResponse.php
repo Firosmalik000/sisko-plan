@@ -4,6 +4,7 @@ namespace App\Http\Responses;
 
 use App\Actions\Platform\RecordAdminAudit;
 use App\Models\User;
+use App\Support\PlatformPermission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
@@ -22,7 +23,7 @@ class LoginResponse implements LoginResponseContract
             app(RecordAdminAudit::class)->handle($user, 'admin.login', null, $request->ip(), ['two_factor' => false]);
         }
         $destination = $user instanceof User && $user->isPlatformAdmin()
-            ? route('super-admin.dashboard')
+            ? route(PlatformPermission::landingRoute($user))
             : route('dashboard');
 
         return redirect()->intended($destination);

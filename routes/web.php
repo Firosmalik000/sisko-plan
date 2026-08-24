@@ -10,6 +10,7 @@ use App\Http\Controllers\MasterData\UnitController;
 use App\Http\Controllers\Operations\LedgerController;
 use App\Http\Controllers\Operations\StockCountController;
 use App\Http\Controllers\ProductScannerController;
+use App\Http\Controllers\PricingController;
 use App\Http\Controllers\Purchasing\PurchasingController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Sales\PosController;
@@ -21,12 +22,14 @@ use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+Route::get('pricing', PricingController::class)->name('pricing');
 
 Route::middleware(['auth', 'throttle:store-writes'])->group(function () {
     Route::post('impersonation/leave', [ImpersonationController::class, 'destroy'])->name('impersonation.leave');
 });
 
 Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function () {
+    Route::post('pricing/subscribe', [PricingController::class, 'subscribe'])->name('pricing.subscribe');
     Route::get('stores', [StoreController::class, 'index'])->name('stores.index');
     Route::get('stores/create', [StoreController::class, 'create'])->name('stores.create');
     Route::post('stores', [StoreController::class, 'store'])->name('stores.store');

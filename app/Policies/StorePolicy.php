@@ -113,7 +113,8 @@ class StorePolicy
 
     public function viewSubscription(User $user, Store $store): bool
     {
-        return $this->manageMasterData($user, $store);
+        return $store->status === StoreStatus::Active
+            && $this->hasActiveOwnerMembership($user, $store);
     }
 
     private function hasActiveMembership(User $user, Store $store): bool

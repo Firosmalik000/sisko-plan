@@ -9,6 +9,7 @@ use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use App\Support\Authentication\AuthenticatedUser;
 use App\Support\Authentication\Impersonation;
+use App\Support\PlatformPermission;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -46,13 +47,14 @@ class HandleInertiaRequests extends Middleware
         $stores = collect();
         $activeStore = null;
         $subscription = null;
+        $storeCreation = null;
 
         if ($user !== null) {
             $storeModels = $user->stores()
                 ->where('stores.status', StoreStatus::Active->value)
                 ->wherePivot('status', MembershipStatus::Active->value)
                 ->orderBy('stores.name')
-                ->get(['stores.id', 'stores.public_id', 'stores.name']);
+                ->get(['stores.id', 'stores.public_id', 'stores.owner_user_id', 'stores.name']);
 
             $activeStoreModel = $storeModels->firstWhere('id', $request->session()->get('active_store_id'))
                 ?? $storeModels->first();
@@ -70,6 +72,9 @@ class HandleInertiaRequests extends Middleware
             if ($activeStoreModel !== null) {
                 $subscription = app(SubscriptionAccess::class)->summary($activeStoreModel);
             }
+            if (! $user->isPlatformAdmin()) {
+                $storeCreation = app(SubscriptionAccess::class)->storeCreationState($user);
+            }
         }
 
         return [
@@ -82,6 +87,8 @@ class HandleInertiaRequests extends Middleware
                 ...$platformAdmin->only(['id', 'name', 'email']),
                 'role' => $platformAdmin->platform_role?->value,
                 'two_factor_enabled' => $platformAdmin->hasEnabledTwoFactorAuthentication(),
+                'permissions' => $platformAdmin->getAllPermissions()->pluck('name')->values(),
+                'home_url' => route(PlatformPermission::landingRoute($platformAdmin)),
             ],
             'impersonation' => Impersonation::current($request),
             'stores' => $stores,
@@ -94,6 +101,7 @@ class HandleInertiaRequests extends Middleware
                     && filled(config('services.catalog_intelligence.url'))
                     && filled(config('services.catalog_intelligence.token')),
             ],
+            'storeCreation' => $storeCreation,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
