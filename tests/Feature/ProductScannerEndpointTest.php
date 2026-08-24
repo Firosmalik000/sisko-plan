@@ -54,9 +54,10 @@ class ProductScannerEndpointTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.0.status', 'found')
-            ->assertJsonPath('data.0.productId', $product->public_id)
-            ->assertJsonPath('data.0.unitId', $unit->unit->public_id)
-            ->assertJsonPath('data.0.methods.0', 'barcode');
+            ->assertJsonPath('data.0.match.productPublicId', $product->public_id)
+            ->assertJsonPath('data.0.selectedOption.productId', $product->public_id)
+            ->assertJsonPath('data.0.selectedOption.unitId', $unit->unit->public_id)
+            ->assertJsonPath('data.0.match.methods.0', 'barcode');
 
         $sku = $unit->sku;
 
@@ -67,25 +68,50 @@ class ProductScannerEndpointTest extends TestCase
                 'identifier' => $sku,
             ])
             ->assertOk()
-            ->assertJsonPath('data.0.methods.0', 'sku');
+            ->assertJsonPath('data.0.match.methods.0', 'sku');
     }
 
-    public function test_recognition_resolves_only_active_store_catalog_keys(): void
+    public function test_recognition_groups_store_candidates_and_requires_a_sale_option(): void
     {
         [$user, $store] = $this->ownerAndStore();
         config()->set('services.catalog_intelligence.enabled', true);
-        $product = Product::factory()->for($store)->create(['name' => 'Teh Hijau']);
+        $product = Product::factory()->for($store)->create([
+            'name' => 'Teh Hijau',
+            'variant_mode' => 'shared',
+        ]);
+        $unit = Unit::query()->findOrFail($product->base_unit_id);
+        $variants = collect(['250 gram', '500 gram'])->map(function (string $name) use ($product, $store, $unit): ProductVariant {
+            $variant = ProductVariant::create([
+                'store_id' => $store->id,
+                'product_id' => $product->id,
+                'name' => $name,
+                'is_active' => true,
+            ]);
+            ProductUnit::create([
+                'store_id' => $store->id,
+                'product_id' => $product->id,
+                'product_variant_id' => $variant->id,
+                'unit_id' => $unit->id,
+                'conversion_factor' => 1,
+                'purchase_price' => 1000,
+                'selling_price' => 1500,
+                'is_active' => true,
+            ]);
+
+            return $variant;
+        });
         $foreign = Product::factory()->create();
-        $this->mock(CatalogIntelligenceClient::class, function (MockInterface $mock) use ($product, $foreign): void {
+        $this->mock(CatalogIntelligenceClient::class, function (MockInterface $mock) use ($product, $variants, $foreign): void {
             $mock->shouldReceive('recognize')->once()->andReturn([
                 'status' => 'success',
                 'data' => ['images' => [[
                     'image_index' => 0,
                     'items' => [[
                         'item_index' => 0,
-                        'recognition_status' => 'uncertain',
+                        'recognition_status' => 'found',
                         'candidates' => [
                             ['catalog_item_key' => "product:{$product->public_id}", 'confidence' => 0.91, 'methods' => ['visual']],
+                            ['catalog_item_key' => "variant:{$variants->first()->public_id}", 'confidence' => 0.88, 'methods' => ['visual', 'ocr']],
                             ['catalog_item_key' => "product:{$foreign->public_id}", 'confidence' => 0.8, 'methods' => ['visual']],
                         ],
                     ]],
@@ -101,7 +127,10 @@ class ProductScannerEndpointTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonCount(1, 'data.0.candidates')
-            ->assertJsonPath('data.0.candidates.0.productPublicId', $product->public_id);
+            ->assertJsonPath('data.0.candidates.0.productPublicId', $product->public_id)
+            ->assertJsonCount(2, 'data.0.candidates.0.options')
+            ->assertJsonPath('data.0.match.productPublicId', $product->public_id)
+            ->assertJsonPath('data.0.selectedOption', null);
     }
 
     public function test_recognition_rejects_more_than_configured_image_limit(): void
@@ -238,11 +267,15 @@ class ProductScannerEndpointTest extends TestCase
 
         app(CatalogIntelligenceClient::class)->syncProduct($product, 'request-id');
 
+        $parentBody = collect($requestBodies)->first(fn (string $body, string $url) => str_ends_with($url, "product:{$product->public_id}"));
         $withPhotoBody = collect($requestBodies)->first(fn (string $body, string $url) => str_ends_with($url, "variant:{$withPhoto->public_id}"));
         $withoutPhotoBody = collect($requestBodies)->first(fn (string $body, string $url) => str_ends_with($url, "variant:{$withoutPhoto->public_id}"));
 
+        $this->assertIsString($parentBody);
         $this->assertIsString($withPhotoBody);
         $this->assertIsString($withoutPhotoBody);
+        $this->assertStringContainsString('"active":true', $parentBody);
+        $this->assertStringContainsString('name="images"', $parentBody);
         $this->assertStringContainsString('name="images"', $withPhotoBody);
         $this->assertStringNotContainsString('name="images"', $withoutPhotoBody);
     }

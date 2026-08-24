@@ -8,21 +8,27 @@ export type ScannerErrorCode =
     | 'SCANNER_UNAVAILABLE'
     | 'SCANNER_REQUEST_FAILED';
 
-export type ScannerCandidate = {
+export type ScannerSaleOption = {
+    id: string;
     productId: string;
     productPublicId: string;
     variantPublicId: string | null;
-    unitId: string;
-    name: string;
     variantName: string | null;
+    unitId: string;
     unitName: string;
     unitSymbol: string;
     purchasePrice: string;
     sellingPrice: string;
     stockQuantity: string;
+};
+
+export type ScannerProductCandidate = {
+    productPublicId: string;
+    name: string;
     photoUrl: string | null;
     confidence: number | null;
     methods: string[];
+    options: ScannerSaleOption[];
 };
 
 export type ScannerCatalogItem = {
@@ -30,21 +36,11 @@ export type ScannerCatalogItem = {
     imageIndex: number;
     itemIndex: number;
     status: ScannerStatus;
-    productId: string | null;
-    productPublicId: string | null;
-    variantPublicId: string | null;
-    unitId: string | null;
-    name: string | null;
-    variantName: string | null;
-    unitName: string | null;
-    unitSymbol: string | null;
-    purchasePrice: string | null;
-    sellingPrice: string | null;
-    stockQuantity: string | null;
-    photoUrl: string | null;
-    confidence: number | null;
-    methods: string[];
-    candidates: ScannerCandidate[];
+    match: ScannerProductCandidate | null;
+    selectedOption: ScannerSaleOption | null;
+    candidates: ScannerProductCandidate[];
+    skipped?: boolean;
+    quantity?: number;
 };
 
 export type ScannerCapture = {
@@ -58,9 +54,11 @@ export type ScannerCapture = {
     results: ScannerCatalogItem[];
 };
 
-export type ScannerSelection = ScannerCandidate & {
+export type ScannerSelection = ScannerSaleOption & {
     captureId: string;
     itemIndex: number;
+    name: string;
+    photoUrl: string | null;
     quantity: number;
 };
 

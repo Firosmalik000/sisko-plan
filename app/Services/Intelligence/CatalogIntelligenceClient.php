@@ -92,7 +92,9 @@ class CatalogIntelligenceClient
         $activeVariants = $product->variants->filter(
             fn (ProductVariant $variant) => $variant->is_active && $variant->productUnits->contains('is_active', true),
         );
-        $productActive = ! $usesVariants && $product->is_active && $baseUnit?->is_active === true;
+        $productActive = $product->is_active && ($usesVariants
+            ? $activeVariants->isNotEmpty()
+            : $baseUnit?->is_active === true);
 
         $this->syncCatalogItem(
             $product->store,
@@ -103,19 +105,15 @@ class CatalogIntelligenceClient
             $requestId,
         );
 
-        $product->variants->each(function (ProductVariant $variant) use ($activeVariants, $product, $requestId, $usesVariants): void {
+        $product->variants->each(function (ProductVariant $variant) use ($product, $requestId, $usesVariants): void {
             $unit = $variant->productUnits->first();
             $variantActive = $usesVariants && $product->is_active && $variant->is_active && $unit?->is_active === true;
-            $photoPath = $variant->photo_path;
-            if ($photoPath === null && $activeVariants->count() === 1) {
-                $photoPath = $product->photo_path;
-            }
             $this->syncCatalogItem(
                 $product->store,
                 "variant:{$variant->public_id}",
                 $variantActive,
                 $this->metadata($product, $variant, $unit),
-                $variantActive ? $this->images($photoPath) : [],
+                $variantActive ? $this->images($variant->photo_path) : [],
                 $requestId,
             );
         });
