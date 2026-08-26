@@ -344,6 +344,18 @@ class SubscriptionManagementTest extends TestCase
         $this->actingAs($owner)->get(route('pricing'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('account.next_period_start', '2027-03-24'));
+        $admin = User::factory()->superAdmin()->create();
+        $this->actingAs($admin)->get(route('super-admin.subscriptions.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('subscriptions.data', 1)
+                ->where('subscriptions.data.0.plan.name', 'Owner Growth')
+                ->has('subscriptions.data.0.scheduled_periods', 2)
+                ->where('subscriptions.data.0.scheduled_periods.0.plan_name', 'Owner Next')
+                ->where('subscriptions.data.0.scheduled_periods.0.period_start', '2026-11-24')
+                ->where('subscriptions.data.0.scheduled_periods.0.period_end', '2026-12-23')
+                ->where('subscriptions.data.0.scheduled_periods.1.plan_name', 'Owner Growth')
+                ->where('subscriptions.data.0.scheduled_periods.1.period_start', '2026-12-24')
+                ->where('subscriptions.data.0.scheduled_periods.1.period_end', '2027-03-23'));
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
             ->get(route('subscription.index'))
             ->assertInertia(fn (Assert $page) => $page

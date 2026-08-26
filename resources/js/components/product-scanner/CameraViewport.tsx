@@ -28,6 +28,7 @@ export function CameraViewport({
     onFinish,
     onToggleAuto,
     onToggleTorch,
+    onRetry,
     onManualSearch,
     manualActionLabel,
 }: {
@@ -45,6 +46,7 @@ export function CameraViewport({
     onFinish: () => void;
     onToggleAuto: () => void;
     onToggleTorch: () => void;
+    onRetry: () => void;
     onManualSearch?: () => void;
     manualActionLabel?: string;
 }) {
@@ -91,7 +93,11 @@ export function CameraViewport({
 
             <div className="relative z-10 flex flex-1 items-center justify-center px-7 py-4">
                 {error ? (
-                    <div className="max-w-sm rounded-2xl bg-[#fffaf0] p-5 text-center text-[#173c35] shadow-xl">
+                    <div
+                        className="max-w-sm rounded-2xl bg-white p-5 text-center text-[#173c35] shadow-xl"
+                        role="status"
+                        aria-live="polite"
+                    >
                         <Camera className="mx-auto size-8 text-[#d66a35]" />
                         <p className="mt-3 text-base font-black">
                             Kamera belum tersedia
@@ -99,11 +105,18 @@ export function CameraViewport({
                         <p className="mt-1 text-sm leading-6 text-[#58736a]">
                             {error}
                         </p>
+                        <button
+                            type="button"
+                            onClick={onRetry}
+                            className="mt-4 min-h-11 w-full rounded-xl border border-[#bfd1cb] bg-white px-4 text-sm font-black text-[#173c35] focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
+                        >
+                            Coba lagi
+                        </button>
                         {onManualSearch && (
                             <button
                                 type="button"
                                 onClick={onManualSearch}
-                                className="mt-4 min-h-11 w-full rounded-xl bg-[#173c35] px-4 text-sm font-black text-white"
+                                className="mt-2 min-h-11 w-full rounded-xl bg-[#173c35] px-4 text-sm font-black text-white focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
                             >
                                 {manualActionLabel ?? 'Cari manual'}
                             </button>

@@ -246,6 +246,7 @@ export default function ProductScanner({
                         }}
                         onToggleAuto={() => setAutoPaused((value) => !value)}
                         onToggleTorch={() => void camera.toggleTorch()}
+                        onRetry={camera.retry}
                         onManualSearch={
                             scanner.captures.length === 0
                                 ? onManualSearch

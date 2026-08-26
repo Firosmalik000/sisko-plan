@@ -11,6 +11,17 @@ use Illuminate\Support\Facades\DB;
 
 class SubscriptionPeriods
 {
+    public function syncDuePeriods(): void
+    {
+        SubscriptionPeriod::query()
+            ->whereNull('activated_at')
+            ->whereDate('period_start', '<=', CarbonImmutable::today())
+            ->where(fn ($query) => $query->whereNull('period_end')->orWhereDate('period_end', '>=', CarbonImmutable::today()))
+            ->distinct()
+            ->pluck('user_id')
+            ->each(fn (int $ownerId) => $this->syncForOwner($ownerId));
+    }
+
     public function syncForOwner(int $ownerId): ?Subscription
     {
         return DB::transaction(function () use ($ownerId): ?Subscription {

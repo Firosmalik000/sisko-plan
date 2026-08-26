@@ -71,6 +71,7 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
     const [ready, setReady] = useState(false);
     const [torchAvailable, setTorchAvailable] = useState(false);
     const [torchOn, setTorchOn] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
     const agreementRef = useRef({ value: '', count: 0, lastSent: 0 });
 
     const stop = useCallback(() => {
@@ -82,6 +83,7 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
         }
 
         setReady(false);
+        setTorchAvailable(false);
         setTorchOn(false);
     }, []);
 
@@ -91,9 +93,31 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
         }
 
         let cancelled = false;
-        navigator.mediaDevices
-            ?.getUserMedia(cameraConstraints)
-            .then(async (stream) => {
+        const start = async () => {
+            setError(null);
+
+            if (!window.isSecureContext) {
+                setError(
+                    'Akses kamera memerlukan HTTPS. Buka halaman ini melalui alamat HTTPS.',
+                );
+
+                return;
+            }
+
+            if (!navigator.mediaDevices?.getUserMedia) {
+                setError(
+                    'Browser ini tidak menyediakan akses kamera. Gunakan browser terbaru atau pilih foto dari galeri.',
+                );
+
+                return;
+            }
+
+            try {
+                const stream =
+                    await navigator.mediaDevices.getUserMedia(
+                        cameraConstraints,
+                    );
+
                 if (cancelled) {
                     stream.getTracks().forEach((track) => track.stop());
 
@@ -115,18 +139,23 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
                 setTorchAvailable(Boolean(capabilities?.torch));
                 setReady(true);
                 setError(null);
-            })
-            .catch(() =>
-                setError(
-                    'Kamera tidak dapat dibuka. Izinkan akses kamera atau pilih foto dari galeri.',
-                ),
-            );
+            } catch (reason: unknown) {
+                if (cancelled) {
+                    return;
+                }
+
+                stop();
+                setError(cameraErrorMessage(reason));
+            }
+        };
+
+        void start();
 
         return () => {
             cancelled = true;
             stop();
         };
-    }, [open, stop]);
+    }, [open, retryCount, stop]);
 
     useEffect(() => {
         if (!open || !ready) {
@@ -231,6 +260,12 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
         setTorchOn(next);
     }, [torchAvailable, torchOn]);
 
+    const retry = useCallback(() => {
+        stop();
+        setError(null);
+        setRetryCount((count) => count + 1);
+    }, [stop]);
+
     return {
         videoRef,
         ready,
@@ -239,5 +274,28 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
         torchAvailable,
         torchOn,
         toggleTorch,
+        retry,
     };
+}
+
+function cameraErrorMessage(reason: unknown): string {
+    const name = reason instanceof DOMException ? reason.name : '';
+
+    if (name === 'NotAllowedError' || name === 'SecurityError') {
+        return 'Izin kamera ditolak. Izinkan kamera di pengaturan situs, lalu coba lagi.';
+    }
+
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        return 'Kamera tidak ditemukan pada perangkat ini. Pilih foto dari galeri untuk melanjutkan.';
+    }
+
+    if (
+        name === 'NotReadableError' ||
+        name === 'TrackStartError' ||
+        name === 'AbortError'
+    ) {
+        return 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut, lalu coba lagi.';
+    }
+
+    return 'Kamera tidak dapat dibuka. Periksa izin kamera, lalu coba lagi atau pilih foto dari galeri.';
 }

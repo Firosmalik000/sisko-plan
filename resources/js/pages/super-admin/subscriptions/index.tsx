@@ -63,6 +63,15 @@ type Subscription = {
         duration_months: number;
         is_active: boolean;
     };
+    scheduled_periods: Array<{
+        public_id: string;
+        plan_name: string;
+        monthly_price: string;
+        duration_months: number;
+        is_trial: boolean;
+        period_start: string;
+        period_end: string | null;
+    }>;
 };
 type Paginated<T> = {
     data: T[];
@@ -743,6 +752,23 @@ function SubscriptionRow({
                         Paket nonaktif
                     </p>
                 )}
+                {subscription.scheduled_periods.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+                        {subscription.scheduled_periods.map((period) => (
+                            <div
+                                key={period.public_id}
+                                className="flex min-w-0 items-center gap-2"
+                            >
+                                <span className="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
+                                    Terjadwal
+                                </span>
+                                <span className="min-w-0 truncate text-sm font-bold text-slate-700">
+                                    {period.plan_name}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </td>
             <td className="px-5 py-4 text-slate-600">
                 <p className="font-semibold text-slate-800">
@@ -760,6 +786,26 @@ function SubscriptionRow({
                         ? 'Masa trial'
                         : 'Periode langganan'}
                 </p>
+                {subscription.scheduled_periods.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+                        {subscription.scheduled_periods.map((period) => (
+                            <div key={period.public_id}>
+                                <p className="font-semibold text-amber-800">
+                                    {periodLabel(
+                                        period.period_start,
+                                        period.period_end,
+                                    )}
+                                </p>
+                                <p className="mt-0.5 text-xs text-amber-700">
+                                    {period.plan_name} ·{' '}
+                                    {period.is_trial
+                                        ? '30 hari trial'
+                                        : `${period.duration_months} bulan`}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </td>
             <td className="px-5 py-4">
                 <Badge

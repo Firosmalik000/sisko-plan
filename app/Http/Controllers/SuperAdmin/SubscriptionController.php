@@ -10,6 +10,7 @@ use App\Enums\SubscriptionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Services\Subscriptions\SubscriptionPeriods;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use App\Support\PlatformPermission;
 use Illuminate\Http\RedirectResponse;
@@ -21,10 +22,11 @@ use Inertia\Response;
 
 class SubscriptionController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, SubscriptionPeriods $periods): Response
     {
         $search = $request->string('search')->trim()->toString();
         $status = $request->string('status')->toString();
+        $periods->syncDuePeriods();
         $plans = Plan::query()
             ->withCount(['subscriptions' => fn ($query) => $query->whereNotNull('user_id')])
             ->orderBy('monthly_price')->get()
@@ -34,6 +36,11 @@ class SubscriptionController extends Controller
             ->with([
                 'user' => fn ($query) => $query->select(['id', 'name', 'email'])->withCount('ownedStores'),
                 'plan:id,public_id,name,monthly_price,duration_months,is_active',
+                'periods' => fn ($query) => $query
+                    ->with('plan:id,is_trial')
+                    ->whereDate('period_start', '>', now()->toDateString())
+                    ->orderBy('period_start')
+                    ->orderBy('id'),
             ])
             ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search): void {
                 $query->whereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
@@ -49,6 +56,12 @@ class SubscriptionController extends Controller
                     'stores_count' => $subscription->user->owned_stores_count,
                 ],
                 'plan' => $subscription->plan->only(['public_id', 'name', 'monthly_price', 'duration_months', 'is_active']),
+                'scheduled_periods' => $subscription->periods->map(fn ($period): array => [
+                    ...$period->only(['public_id', 'plan_name', 'monthly_price', 'duration_months']),
+                    'is_trial' => $period->plan->is_trial,
+                    'period_start' => $period->period_start->toDateString(),
+                    'period_end' => $period->period_end?->toDateString(),
+                ])->values(),
             ]);
 
         return Inertia::render('super-admin/subscriptions/index', [
