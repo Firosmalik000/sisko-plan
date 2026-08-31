@@ -34,6 +34,13 @@ class GoogleAuthenticationTest extends TestCase
             ->where('googleAuthEnabled', true));
     }
 
+    public function test_registration_page_exposes_google_login_when_configured(): void
+    {
+        $this->get(route('register'))->assertInertia(fn (Assert $page) => $page
+            ->component('auth/register')
+            ->where('googleAuthEnabled', true));
+    }
+
     public function test_guest_can_be_redirected_to_google(): void
     {
         Socialite::fake('google');

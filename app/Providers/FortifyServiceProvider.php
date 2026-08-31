@@ -88,6 +88,7 @@ class FortifyServiceProvider extends ServiceProvider
         ]));
 
         Fortify::registerView(fn () => Inertia::render('auth/register', [
+            'googleAuthEnabled' => (bool) config('services.google.enabled'),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]));
 
