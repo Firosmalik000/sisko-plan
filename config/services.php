@@ -36,7 +36,7 @@ return [
     ],
 
     'google' => [
-        'enabled' => (bool) env('GOOGLE_AUTH_ENABLED', false),
+        'enabled' => (bool) env('GOOGLE_AUTH_ENABLED', true),
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI', rtrim((string) config('app.url'), '/').'/auth/google/callback'),

@@ -42,12 +42,24 @@ class GoogleAuthenticationTest extends TestCase
             ->assertRedirect('https://socialite.fake/google/authorize');
     }
 
-    public function test_google_routes_are_hidden_when_provider_is_not_configured(): void
+    public function test_google_option_remains_visible_when_credentials_are_not_configured(): void
     {
-        config(['services.google.enabled' => false]);
+        config([
+            'services.google.client_id' => null,
+            'services.google.client_secret' => null,
+        ]);
 
-        $this->get(route('auth.google.redirect'))->assertNotFound();
-        $this->get(route('auth.google.callback'))->assertNotFound();
+        $this->get(route('login'))->assertInertia(fn (Assert $page) => $page
+            ->component('auth/login')
+            ->where('googleAuthEnabled', true));
+
+        $this->get(route('auth.google.redirect'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('oauth_error', 'Login Google belum dikonfigurasi.');
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('oauth_error', 'Login Google belum dikonfigurasi.');
     }
 
     public function test_verified_google_user_can_create_and_login_to_tenant_account(): void

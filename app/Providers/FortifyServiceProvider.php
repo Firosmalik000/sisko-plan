@@ -68,9 +68,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'googleAuthEnabled' => config('services.google.enabled')
-                && filled(config('services.google.client_id'))
-                && filled(config('services.google.client_secret')),
+            'googleAuthEnabled' => (bool) config('services.google.enabled'),
             'oauthError' => $request->session()->get('oauth_error'),
             'status' => $request->session()->get('status'),
         ]));

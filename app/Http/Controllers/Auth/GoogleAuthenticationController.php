@@ -19,14 +19,18 @@ class GoogleAuthenticationController extends Controller
 {
     public function redirect(): RedirectResponse
     {
-        $this->ensureGoogleIsConfigured();
+        if (! $this->googleIsConfigured()) {
+            return to_route('login')->with('oauth_error', 'Login Google belum dikonfigurasi.');
+        }
 
         return Socialite::driver('google')->redirect();
     }
 
     public function callback(Request $request): RedirectResponse
     {
-        $this->ensureGoogleIsConfigured();
+        if (! $this->googleIsConfigured()) {
+            return to_route('login')->with('oauth_error', 'Login Google belum dikonfigurasi.');
+        }
 
         try {
             $googleUser = Socialite::driver('google')->user();
@@ -122,13 +126,10 @@ class GoogleAuthenticationController extends Controller
         return Str::limit($name !== '' ? $name : Str::before($email, '@'), 255, '');
     }
 
-    private function ensureGoogleIsConfigured(): void
+    private function googleIsConfigured(): bool
     {
-        abort_unless(
-            config('services.google.enabled')
+        return (bool) config('services.google.enabled')
             && filled(config('services.google.client_id'))
-            && filled(config('services.google.client_secret')),
-            404,
-        );
+            && filled(config('services.google.client_secret'));
     }
 }
