@@ -6,6 +6,7 @@ use App\Enums\PlatformAdminRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Laravel\Telescope\EntryType;
 use Laravel\Telescope\IncomingEntry;
 use Laravel\Telescope\Telescope;
@@ -22,6 +23,20 @@ class TelescopeAccessTest extends TestCase
 
         $this->assertFalse(Gate::forUser($storeUser)->allows('viewTelescope'));
         $this->assertTrue(Gate::forUser($platformAdmin)->allows('viewTelescope'));
+    }
+
+    public function test_telescope_dashboard_allows_its_inline_assets_through_the_content_security_policy(): void
+    {
+        config(['security.content_security_policy' => true]);
+
+        Route::middleware('web')->get('/telescope/_test-csp', fn (): string => 'Telescope shell');
+
+        $response = $this->get('/telescope/_test-csp');
+
+        $response->assertSuccessful();
+        $this->assertStringContainsString("script-src 'self' 'unsafe-inline'", (string) $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('style-src', (string) $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('https://fonts.bunny.net', (string) $response->headers->get('Content-Security-Policy'));
     }
 
     public function test_production_filter_keeps_intelligence_requests_and_warning_logs(): void

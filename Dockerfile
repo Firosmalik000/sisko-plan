@@ -87,7 +87,7 @@ ENV APP_ENV=production \
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD if [ "$APP_ROLE" != "web" ]; then exit 0; else php -r "exit(@file_get_contents('http://127.0.0.1:8080/up') === false ? 1 : 0);"; fi
+    CMD if [ "$APP_ROLE" != "web" ]; then exit 0; else php -r '$host = parse_url(getenv("APP_URL") ?: "http://localhost", PHP_URL_HOST) ?: "localhost"; $context = stream_context_create(["http" => ["header" => "Host: ".$host."\r\n"]]); exit(@file_get_contents("http://127.0.0.1:8080/up", false, $context) === false ? 1 : 0);'; fi
 
 ENTRYPOINT ["app-entrypoint"]
 CMD ["web"]
