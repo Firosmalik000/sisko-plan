@@ -29,7 +29,6 @@ import {
     revealClip,
     revealLeft,
     revealRight,
-    revealUp,
     staggerGroup,
     staggerItem,
 } from '@/components/public-motion';

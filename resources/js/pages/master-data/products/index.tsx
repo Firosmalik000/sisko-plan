@@ -2351,6 +2351,7 @@ export default function ProductsIndex({
                         }
                         onManualSearch={() => {
                             setScannerOpen(false);
+
                             if (scannerFlow === 'edit') {
                                 setFormOpen(true);
 
