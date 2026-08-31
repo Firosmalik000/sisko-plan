@@ -26,13 +26,13 @@ class SubscriptionPeriod extends Model
         return $this->belongsTo(Plan::class);
     }
 
-    /** @return Attribute<string, mixed> */
+    /** @return Attribute<CarbonImmutable, mixed> */
     protected function periodStart(): Attribute
     {
         return Attribute::set(fn (mixed $value): string => CarbonImmutable::parse($value)->toDateString());
     }
 
-    /** @return Attribute<string|null, mixed> */
+    /** @return Attribute<CarbonImmutable|null, mixed> */
     protected function periodEnd(): Attribute
     {
         return Attribute::set(fn (mixed $value): ?string => $value === null ? null : CarbonImmutable::parse($value)->toDateString());

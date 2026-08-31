@@ -8,7 +8,6 @@ import {
     ChevronDown,
     ChevronRight,
     CreditCard,
-    ImagePlus,
     LockKeyhole,
     Home,
     LogOut,

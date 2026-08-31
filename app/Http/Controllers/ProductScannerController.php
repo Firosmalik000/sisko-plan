@@ -53,9 +53,11 @@ class ProductScannerController extends Controller
         }
 
         try {
+            $images = $request->file('images');
+            abort_unless(is_array($images), 422);
             $data = $recognizer->handle(
                 $currentStore->get(),
-                $request->file('images'),
+                array_values($images),
                 $request->validated('capture_ids') ?? [],
                 $this->requestId($request),
             );
@@ -73,9 +75,12 @@ class ProductScannerController extends Controller
         }
 
         try {
+            $images = $request->file('images');
+            abort_unless(is_array($images), 422);
+
             return response()->json($client->discover(
                 $currentStore->get(),
-                $request->file('images'),
+                array_values($images),
                 $request->validated('market'),
                 $this->requestId($request),
             ));

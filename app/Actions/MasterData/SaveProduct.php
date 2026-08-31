@@ -8,7 +8,6 @@ use App\Enums\ProductVariantMode;
 use App\Models\Category;
 use App\Models\InventoryBalance;
 use App\Models\Product;
-use App\Models\ProductUnit;
 use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\Unit;
@@ -23,6 +22,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
+use UnexpectedValueException;
 
 use function Illuminate\Support\defer;
 
@@ -114,7 +114,6 @@ class SaveProduct
                         'selling_price' => $data['selling_price'],
                         'is_active' => true,
                     ]);
-                    abort_unless($defaultUnit instanceof ProductUnit, 422);
                     $this->setStock($store, $actor, $locked, null, $data['current_stock'], $data['minimum_stock'], $data['purchase_price']);
                 } else {
                     foreach ($data['variants'] as $variant) {
@@ -183,7 +182,10 @@ class SaveProduct
         }
     }
 
-    /** @param array<string, mixed> $variant */
+    /**
+     * @param  array<string, mixed>  $variant
+     * @param  list<string>  $newPhotoPaths
+     */
     private function saveVariant(Store $store, Product $parent, array $variant, ProductVariantMode $mode, int $retailUnitId, int $largeUnitId, array &$newPhotoPaths): ProductVariant
     {
         $child = isset($variant['public_id'])
@@ -200,6 +202,9 @@ class SaveProduct
         $newPhotoPath = $uploadedPhoto instanceof UploadedFile
             ? $uploadedPhoto->storeAs("product-variant-photos/{$store->public_id}", Str::ulid().'.'.$uploadedPhoto->extension(), 'local')
             : null;
+        if ($newPhotoPath === false) {
+            throw new UnexpectedValueException('The product variant photo could not be stored.');
+        }
         if ($newPhotoPath !== null) {
             $newPhotoPaths[] = $newPhotoPath;
         }

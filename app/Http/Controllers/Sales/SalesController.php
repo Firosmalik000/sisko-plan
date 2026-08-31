@@ -14,7 +14,6 @@ use App\Support\CurrentStore;
 use App\Support\Decimal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -107,19 +106,7 @@ class SalesController extends Controller
         return $user;
     }
 
-    /**
-     * @return array{
-     *     sale: array<string, mixed>,
-     *     items: Collection<int, array<string, mixed>>,
-     *     payment: object|null,
-     *     returns: Collection<int, mixed>,
-     *     accounts: Collection<int, array<string, string>>,
-     *     canReturn: bool,
-     *     canViewProfit: bool,
-     *     timezone: string,
-     *     receipt: array<string, mixed>
-     * }
-     */
+    /** @return array<string, mixed> */
     private function saleData(Sale $sale, CurrentStore $currentStore): array
     {
         $store = $currentStore->get();
@@ -145,7 +132,7 @@ class SalesController extends Controller
             ->latest('sale_returns.id')->get(['sale_returns.public_id', 'sale_returns.document_number', 'sale_returns.refund_amount', 'sale_returns.cogs_reversed', 'sale_returns.gross_profit_reversed', 'sale_returns.occurred_at', 'sale_returns.notes', 'financial_accounts.name as account_name']);
         $accounts = FinancialAccount::query()->where(['store_id' => $store->id, 'is_active' => true])->orderBy('name')->get(['public_id', 'name']);
         $canViewProfit = Gate::allows('manageOperations', $store);
-        $storeSettings = $store->settings()->first();
+        $storeSettings = $store->settings;
         if (! $canViewProfit) {
             $returns->each->makeHidden(['cogs_reversed', 'gross_profit_reversed']);
         }
@@ -164,16 +151,16 @@ class SalesController extends Controller
             'accounts' => $accounts,
             'canReturn' => Gate::allows('manageSaleReturns', $store),
             'canViewProfit' => $canViewProfit,
-            'timezone' => $storeSettings?->timezone ?? 'Asia/Jakarta',
+            'timezone' => $storeSettings->timezone ?? 'Asia/Jakarta',
             'receipt' => [
                 'store_name' => $store->name,
                 'address' => $storeSettings?->address,
-                'header' => $storeSettings?->receipt_header ?? 'Bukti penjualan',
-                'footer' => $storeSettings?->receipt_footer ?? 'Terima kasih. Simpan struk ini untuk referensi retur.',
-                'paper_size' => $storeSettings?->receipt_paper_size ?? '58mm',
-                'show_address' => $storeSettings?->receipt_show_address ?? true,
-                'show_cashier' => $storeSettings?->receipt_show_cashier ?? true,
-                'auto_print' => $storeSettings?->auto_print_receipt ?? false,
+                'header' => $storeSettings->receipt_header ?? 'Bukti penjualan',
+                'footer' => $storeSettings->receipt_footer ?? 'Terima kasih. Simpan struk ini untuk referensi retur.',
+                'paper_size' => $storeSettings->receipt_paper_size ?? '58mm',
+                'show_address' => $storeSettings->receipt_show_address ?? true,
+                'show_cashier' => $storeSettings->receipt_show_cashier ?? true,
+                'auto_print' => $storeSettings->auto_print_receipt ?? false,
             ],
         ];
     }

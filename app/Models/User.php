@@ -56,7 +56,7 @@ class User extends Authenticatable implements PasskeyUser
 
     protected $appends = ['avatar'];
 
-    /** @return Attribute<string|null, never> */
+    /** @return Attribute<covariant string|null, never> */
     protected function avatar(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->avatar_path === null

@@ -94,7 +94,7 @@ class SubscriptionAccess
     {
         $this->periods->syncForOwner($owner->id);
         $subscription = Subscription::query()->with('plan')->where('user_id', $owner->id)->first();
-        $plan = $subscription?->plan
+        $plan = ($subscription === null ? null : $subscription->plan)
             ?? Plan::query()->where(['is_default' => true, 'is_active' => true])->firstOrFail();
         $storesUsed = Store::query()->where('owner_user_id', $owner->id)->count();
         $reason = null;

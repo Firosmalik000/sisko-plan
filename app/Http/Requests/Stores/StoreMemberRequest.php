@@ -5,10 +5,13 @@ namespace App\Http\Requests\Stores;
 use App\Enums\MembershipRole;
 use App\Models\User;
 use App\Support\Authentication\AuthenticatedUser;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ConditionalRules;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules\ProhibitedIf;
+use Illuminate\Validation\Rules\RequiredIf;
 
 class StoreMemberRequest extends FormRequest
 {
@@ -24,7 +27,7 @@ class StoreMemberRequest extends FormRequest
         return AuthenticatedUser::optional($this)?->can('manageMembers', $this->route('store')) ?? false;
     }
 
-    /** @return array<string, array<int, ValidationRule|array<mixed>|string>> */
+    /** @return array<string, list<ConditionalRules|In|Password|ProhibitedIf|RequiredIf|string>> */
     public function rules(): array
     {
         return [
