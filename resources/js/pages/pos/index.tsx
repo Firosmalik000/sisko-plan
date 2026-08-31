@@ -1000,20 +1000,18 @@ export default function PosPage({
                 </div>
             </div>
             <Suspense fallback={null}>
-                {scannerOpen && (
-                    <ProductScanner
-                        purpose="sale"
-                        title="Scan produk untuk penjualan"
-                        open={scannerOpen}
-                        onOpenChange={setScannerOpen}
-                        onConfirm={addScannerSelections}
-                        manualProducts={scannerProducts}
-                        onManualSearch={() => {
-                            setScannerOpen(false);
-                            selectEntryMode('input');
-                        }}
-                    />
-                )}
+                <ProductScanner
+                    purpose="sale"
+                    title="Scan produk untuk penjualan"
+                    open={scannerOpen}
+                    onOpenChange={setScannerOpen}
+                    onConfirm={addScannerSelections}
+                    manualProducts={scannerProducts}
+                    onManualSearch={() => {
+                        setScannerOpen(false);
+                        selectEntryMode('input');
+                    }}
+                />
             </Suspense>
 
             <Dialog

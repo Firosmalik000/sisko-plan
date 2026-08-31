@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { CameraViewport } from './CameraViewport';
+import { decodeBarcodeImage } from './decode-barcode-image';
 import { ScanReview } from './ScanReview';
 import type {
     ScannerConfig,
@@ -22,9 +23,12 @@ type ProductScannerProps = {
     onManualSearch?: () => void;
     manualProducts?: ScannerProductCandidate[];
     onProductCaptures?: (photos: File[]) => void;
+    onBarcodeDetected?: (value: string) => void;
     manualActionLabel?: string;
     singleCapture?: boolean;
 };
+
+type ScanMode = 'photo' | 'barcode';
 
 export default function ProductScanner({
     purpose,
@@ -35,23 +39,67 @@ export default function ProductScanner({
     onManualSearch,
     manualProducts = [],
     onProductCaptures,
+    onBarcodeDetected,
     manualActionLabel,
     singleCapture = false,
 }: ProductScannerProps) {
     const { scanner: config } = usePage<{ scanner: ScannerConfig }>().props;
     const scanner = useProductScanner(open, purpose, config);
+    const lookupBarcode = scanner.lookupBarcode;
     const [autoPaused, setAutoPaused] = useState(
         singleCapture || !config.auto_capture_enabled,
     );
     const [retakeCaptureId, setRetakeCaptureId] = useState<string | null>(null);
     const [cameraCaptureStart, setCameraCaptureStart] = useState(0);
+    const [scanMode, setScanMode] = useState<ScanMode>('photo');
+    const [barcodeError, setBarcodeError] = useState('');
+    const [barcodeStatus, setBarcodeStatus] = useState<
+        'idle' | 'reading' | 'success' | 'not_found'
+    >('idle');
+    const barcodeBusyRef = useRef(false);
     const stableRef = useRef({
         pixels: new Uint8ClampedArray(),
         count: 0,
         lastCapture: 0,
         fingerprint: '',
     });
-    const camera = useCamera(open, scanner.lookupBarcode);
+    const handleBarcode = useCallback(
+        (value: string) => {
+            if (barcodeBusyRef.current) {
+                return;
+            }
+
+            barcodeBusyRef.current = true;
+            setBarcodeError('');
+            setBarcodeStatus('reading');
+
+            if (purpose === 'product' && onBarcodeDetected) {
+                onBarcodeDetected(value);
+                setBarcodeStatus('success');
+                window.setTimeout(() => {
+                    barcodeBusyRef.current = false;
+                }, 1200);
+
+                return;
+            }
+
+            void lookupBarcode(value)
+                .then((found) => {
+                    setBarcodeStatus(found ? 'success' : 'not_found');
+                })
+                .catch(() => {
+                    setBarcodeStatus('not_found');
+                    setBarcodeError('Pencarian barcode gagal. Coba lagi.');
+                })
+                .finally(() => {
+                    window.setTimeout(() => {
+                        barcodeBusyRef.current = false;
+                    }, 1200);
+                });
+        },
+        [lookupBarcode, onBarcodeDetected, purpose],
+    );
+    const camera = useCamera(open, handleBarcode, scanMode === 'barcode');
 
     const takePhoto = useCallback(async () => {
         const blob = await camera.capture();
@@ -61,6 +109,25 @@ export default function ProductScanner({
         }
 
         navigator.vibrate?.(30);
+
+        if (scanMode === 'barcode') {
+            setBarcodeError('');
+            setBarcodeStatus('reading');
+            const barcode = await decodeBarcodeImage(blob);
+
+            if (!barcode) {
+                setBarcodeStatus('not_found');
+                setBarcodeError(
+                    'Barcode belum terbaca. Dekatkan dan ratakan kode.',
+                );
+
+                return;
+            }
+
+            handleBarcode(barcode);
+
+            return;
+        }
 
         if (retakeCaptureId) {
             await scanner.replaceBlob(retakeCaptureId, blob, false);
@@ -77,10 +144,23 @@ export default function ProductScanner({
         } else {
             await scanner.addBlobs([blob], false);
         }
-    }, [camera, retakeCaptureId, scanner, singleCapture]);
+    }, [
+        camera,
+        handleBarcode,
+        retakeCaptureId,
+        scanMode,
+        scanner,
+        singleCapture,
+    ]);
 
     useEffect(() => {
-        if (!open || autoPaused || scanner.reviewing || !camera.ready) {
+        if (
+            !open ||
+            scanMode === 'barcode' ||
+            autoPaused ||
+            scanner.reviewing ||
+            !camera.ready
+        ) {
             return;
         }
 
@@ -158,15 +238,36 @@ export default function ProductScanner({
         camera.videoRef,
         open,
         scanner.reviewing,
+        scanMode,
         takePhoto,
     ]);
 
-    const close = () => {
+    const dismiss = () => {
         setRetakeCaptureId(null);
         setCameraCaptureStart(0);
-        scanner.reset();
+        setScanMode('photo');
+        setBarcodeError('');
+        setBarcodeStatus('idle');
+        barcodeBusyRef.current = false;
+        setAutoPaused(singleCapture || !config.auto_capture_enabled);
         onOpenChange(false);
     };
+    const complete = () => {
+        scanner.reset();
+        dismiss();
+    };
+
+    const closeCamera = () => {
+        if (scanner.captures.length > 0) {
+            setRetakeCaptureId(null);
+            scanner.setReviewing(true);
+
+            return;
+        }
+
+        dismiss();
+    };
+
     const gallery = (event: ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files ?? []).filter(
             (file) =>
@@ -175,6 +276,26 @@ export default function ProductScanner({
         event.target.value = '';
 
         if (files.length === 0) {
+            return;
+        }
+
+        if (scanMode === 'barcode') {
+            setBarcodeError('');
+
+            void (async () => {
+                for (const file of files) {
+                    const barcode = await decodeBarcodeImage(file);
+
+                    if (barcode) {
+                        handleBarcode(barcode);
+                    } else {
+                        setBarcodeError(
+                            'Barcode belum terbaca. Pilih foto yang menampilkan seluruh kode.',
+                        );
+                    }
+                }
+            })();
+
             return;
         }
 
@@ -199,7 +320,7 @@ export default function ProductScanner({
     };
 
     return (
-        <Dialog open={open} onOpenChange={(next) => !next && close()}>
+        <Dialog open={open} onOpenChange={(next) => !next && dismiss()}>
             <DialogContent
                 aria-describedby={undefined}
                 className="inset-0 top-0 left-0 z-[70] block h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[#102a25] p-0 shadow-none duration-300 [&>button]:hidden"
@@ -231,7 +352,7 @@ export default function ProductScanner({
                         manualProducts={manualProducts}
                         onConfirm={(selections) => {
                             onConfirm(selections);
-                            close();
+                            complete();
                         }}
                     />
                 ) : (
@@ -243,7 +364,7 @@ export default function ProductScanner({
                         autoPaused={autoPaused}
                         torchAvailable={camera.torchAvailable}
                         torchOn={camera.torchOn}
-                        onClose={close}
+                        onClose={closeCamera}
                         onCapture={() => void takePhoto()}
                         onGallery={gallery}
                         onRemove={scanner.removeCapture}
@@ -264,7 +385,7 @@ export default function ProductScanner({
                                             ),
                                     ),
                                 );
-                                close();
+                                complete();
 
                                 return;
                             }
@@ -272,6 +393,18 @@ export default function ProductScanner({
                             scanner.setReviewing(true);
                         }}
                         onToggleAuto={() => setAutoPaused((value) => !value)}
+                        scanMode={scanMode}
+                        barcodeError={barcodeError}
+                        barcodeStatus={barcodeStatus}
+                        onToggleScanMode={() => {
+                            setBarcodeError('');
+                            setBarcodeStatus('idle');
+                            barcodeBusyRef.current = false;
+                            setScanMode((mode) =>
+                                mode === 'photo' ? 'barcode' : 'photo',
+                            );
+                            setAutoPaused(true);
+                        }}
                         onToggleTorch={() => void camera.toggleTorch()}
                         onRetry={camera.retry}
                         onManualSearch={

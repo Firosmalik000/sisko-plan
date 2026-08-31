@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { decodeBarcodeImage } from './decode-barcode-image';
 import type {
     ScannerCapture,
     ScannerCatalogItem,
@@ -31,6 +32,10 @@ export function useProductScanner(
     const [reviewing, setReviewing] = useState(false);
     const controllersRef = useRef(new Map<string, AbortController>());
     const capturesRef = useRef<ScannerCapture[]>([]);
+    const barcodeMatchedRef = useRef(new Set<string>());
+    const lookupBarcodeRef = useRef<
+        (identifier: string, captureId?: string) => Promise<boolean>
+    >(async () => false);
 
     useEffect(() => {
         capturesRef.current = captures;
@@ -83,6 +88,28 @@ export function useProductScanner(
         async (capture: ScannerCapture) => {
             const controller = new AbortController();
             controllersRef.current.set(capture.id, controller);
+            const barcodePromise =
+                purpose === 'product'
+                    ? Promise.resolve('')
+                    : decodeBarcodeImage(capture.blob).catch(() => '');
+
+            const barcode = await barcodePromise;
+
+            if (barcode && !controller.signal.aborted) {
+                const found = await lookupBarcodeRef.current(
+                    barcode,
+                    capture.id,
+                );
+
+                if (found) {
+                    barcodeMatchedRef.current.add(capture.id);
+                }
+            }
+
+            if (controller.signal.aborted) {
+                return;
+            }
+
             setCaptures((current) =>
                 current.map((item) =>
                     item.id === capture.id
@@ -131,22 +158,72 @@ export function useProductScanner(
                         skipped: false,
                         quantity: 1,
                     }));
-                setCaptures((current) =>
-                    current.map((item) =>
-                        item.id === capture.id
-                            ? {
-                                  ...item,
-                                  status: 'recognized',
-                                  errorCode: null,
-                                  retryable: true,
-                                  results:
-                                      results.length > 0
-                                          ? results
-                                          : [unknownResult(capture.id)],
-                              }
-                            : item,
-                    ),
-                );
+
+                if (!barcodeMatchedRef.current.has(capture.id)) {
+                    setCaptures((current) => {
+                        const nextResults =
+                            results.length > 0
+                                ? results
+                                : [unknownResult(capture.id)];
+                        const currentCapture = current.find(
+                            (item) => item.id === capture.id,
+                        );
+                        const identity = resultIdentity(nextResults[0]);
+                        const duplicate = identity
+                            ? current.find(
+                                  (item) =>
+                                      item.id !== capture.id &&
+                                      item.results.some(
+                                          (entry) =>
+                                              entry.status === 'found' &&
+                                              resultIdentity(entry) ===
+                                                  identity,
+                                      ),
+                              )
+                            : undefined;
+
+                        if (duplicate && currentCapture) {
+                            const quantity =
+                                (duplicate.results[0]?.quantity ?? 0) +
+                                (currentCapture.results[0]?.quantity ?? 1);
+
+                            if (currentCapture.previewUrl.startsWith('blob:')) {
+                                URL.revokeObjectURL(currentCapture.previewUrl);
+                            }
+
+                            return current
+                                .filter((item) => item.id !== capture.id)
+                                .map((item) =>
+                                    item.id === duplicate.id
+                                        ? {
+                                              ...item,
+                                              results: item.results.map(
+                                                  (entry, index) =>
+                                                      index === 0
+                                                          ? {
+                                                                ...entry,
+                                                                quantity,
+                                                            }
+                                                          : entry,
+                                              ),
+                                          }
+                                        : item,
+                                );
+                        }
+
+                        return current.map((item) =>
+                            item.id === capture.id
+                                ? {
+                                      ...item,
+                                      status: 'recognized',
+                                      errorCode: null,
+                                      retryable: true,
+                                      results: nextResults,
+                                  }
+                                : item,
+                        );
+                    });
+                }
             } catch (error) {
                 if (!controller.signal.aborted) {
                     const failure = scannerFailure(
@@ -193,7 +270,7 @@ export function useProductScanner(
     ]);
 
     const lookupBarcode = useCallback(
-        async (identifier: string) => {
+        async (identifier: string, captureId?: string): Promise<boolean> => {
             const response = await fetch('/scanner/catalog-item-lookups', {
                 method: 'POST',
                 headers: {
@@ -211,7 +288,7 @@ export function useProductScanner(
             });
 
             if (!response.ok) {
-                return;
+                return false;
             }
 
             const payload = (await response.json()) as {
@@ -220,30 +297,98 @@ export function useProductScanner(
             const result = payload.data[0];
 
             if (!result || result.status !== 'found') {
-                return;
+                return false;
             }
 
-            setCaptures((current) => [
-                ...current,
-                {
-                    id: result.captureId,
-                    blob: new Blob(),
-                    previewUrl: result.match?.photoUrl ?? '',
-                    status: 'recognized',
-                    error: null,
-                    errorCode: null,
-                    retryable: true,
-                    results: [{ ...result, skipped: false, quantity: 1 }],
-                },
-            ]);
+            setCaptures((current) => {
+                const targetId = captureId ?? result.captureId;
+                const nextResult = { ...result, skipped: false, quantity: 1 };
+                const currentCapture = current.find(
+                    (captureItem) => captureItem.id === targetId,
+                );
+                const identity = resultIdentity(nextResult);
+                const duplicate = identity
+                    ? current.find(
+                          (captureItem) =>
+                              captureItem.id !== targetId &&
+                              captureItem.results.some(
+                                  (item) =>
+                                      item.status === 'found' &&
+                                      resultIdentity(item) === identity,
+                              ),
+                      )
+                    : undefined;
+
+                if (duplicate) {
+                    const quantity =
+                        (duplicate.results[0]?.quantity ?? 0) +
+                        (currentCapture?.results[0]?.quantity ?? 1);
+
+                    if (currentCapture?.previewUrl.startsWith('blob:')) {
+                        URL.revokeObjectURL(currentCapture.previewUrl);
+                    }
+
+                    return current
+                        .filter((item) => item.id !== targetId)
+                        .map((item) =>
+                            item.id === duplicate.id
+                                ? {
+                                      ...item,
+                                      results: item.results.map(
+                                          (entry, index) =>
+                                              index === 0
+                                                  ? { ...entry, quantity }
+                                                  : entry,
+                                      ),
+                                  }
+                                : item,
+                        );
+                }
+
+                if (currentCapture) {
+                    return current.map((item) =>
+                        item.id === targetId
+                            ? {
+                                  ...item,
+                                  status: 'recognized' as const,
+                                  error: null,
+                                  errorCode: null,
+                                  retryable: true,
+                                  results: [nextResult],
+                              }
+                            : item,
+                    );
+                }
+
+                return [
+                    ...current,
+                    {
+                        id: targetId,
+                        blob: new Blob(),
+                        previewUrl: result.match?.photoUrl ?? '',
+                        status: 'recognized' as const,
+                        error: null,
+                        errorCode: null,
+                        retryable: true,
+                        results: [nextResult],
+                    },
+                ];
+            });
             navigator.vibrate?.(45);
+
+            return true;
         },
         [purpose],
     );
 
+    useEffect(() => {
+        lookupBarcodeRef.current = lookupBarcode;
+    }, [lookupBarcode]);
+
     const removeCapture = useCallback((id: string) => {
         controllersRef.current.get(id)?.abort();
         controllersRef.current.delete(id);
+        barcodeMatchedRef.current.delete(id);
         setCaptures((current) => {
             const capture = current.find((item) => item.id === id);
 
@@ -261,6 +406,7 @@ export function useProductScanner(
                 return;
             }
 
+            barcodeMatchedRef.current.delete(id);
             setCaptures((current) =>
                 current.map((capture) =>
                     capture.id === id
@@ -284,6 +430,7 @@ export function useProductScanner(
 
             controllersRef.current.get(id)?.abort();
             controllersRef.current.delete(id);
+            barcodeMatchedRef.current.delete(id);
             setCaptures((current) =>
                 current.map((capture) => {
                     if (capture.id !== id) {
@@ -469,6 +616,7 @@ export function useProductScanner(
     const reset = useCallback(() => {
         controllersRef.current.forEach((controller) => controller.abort());
         controllersRef.current.clear();
+        barcodeMatchedRef.current.clear();
         setCaptures((current) => {
             current.forEach((capture) => {
                 if (capture.previewUrl.startsWith('blob:')) {
@@ -504,6 +652,24 @@ class ScannerRequestError extends Error {
     public constructor(public readonly code: string | undefined) {
         super('Scanner request failed.');
     }
+}
+
+function resultIdentity(result: ScannerCatalogItem | undefined): string {
+    if (!result?.match) {
+        return '';
+    }
+
+    const option = result.selectedOption ?? result.match.options[0];
+
+    if (!option) {
+        return result.match.productPublicId;
+    }
+
+    return [
+        result.match.productPublicId,
+        option.variantPublicId ?? 'base',
+        option.unitId,
+    ].join(':');
 }
 
 function scannerFailure(code: string | null | undefined): {

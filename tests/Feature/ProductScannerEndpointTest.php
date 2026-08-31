@@ -182,6 +182,7 @@ class ProductScannerEndpointTest extends TestCase
                 'message' => 'Discovery completed.',
                 'data' => [
                     'name' => 'Aqua Air Mineral 600 ml',
+                    'barcode' => '8992752110601',
                     'estimated_purchase_price' => 2700,
                     'recommended_selling_price' => 3500,
                 ],
@@ -195,7 +196,8 @@ class ProductScannerEndpointTest extends TestCase
                 'images' => collect(range(1, 3))->map(fn (int $index) => UploadedFile::fake()->image("{$index}.jpg"))->all(),
             ])
             ->assertOk()
-            ->assertJsonPath('data.name', 'Aqua Air Mineral 600 ml');
+            ->assertJsonPath('data.name', 'Aqua Air Mineral 600 ml')
+            ->assertJsonPath('data.barcode', '8992752110601');
 
         $this->assertDatabaseCount('products', 0);
     }

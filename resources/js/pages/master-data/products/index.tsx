@@ -10,6 +10,7 @@ import {
     PackagePlus,
     Plus,
     RefreshCw,
+    ScanBarcode,
     Search,
     Settings2,
     Trash2,
@@ -28,6 +29,7 @@ import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import BarcodeScannerDialog from '@/components/product-scanner/BarcodeScannerDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,7 +55,10 @@ type UnitOption = Option & {
     unit_type: 'large' | 'retail';
 };
 type VariantMode = 'none' | 'separate' | 'shared';
-type ScannerFlow = 'create' | 'edit';
+type ScannerFlow = 'create' | 'form-photo';
+type BarcodeTarget =
+    | { kind: 'product'; label: string }
+    | { kind: 'variant'; index: number; label: string };
 type ProductVariant = {
     client_id?: string;
     public_id?: string;
@@ -247,6 +252,62 @@ function Field({
             {children}
             <InputError message={error} className="mt-1.5" />
         </div>
+    );
+}
+
+function BarcodeField({
+    value,
+    error,
+    onScan,
+    onClear,
+}: {
+    value: string;
+    error?: string;
+    onScan: () => void;
+    onClear: () => void;
+}) {
+    return (
+        <Field label="Barcode / QR" error={error}>
+            <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-[#0f766e] focus-within:ring-2 focus-within:ring-[#0f766e]/15">
+                <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
+                    <ScanBarcode className="size-4 shrink-0 text-[#0f766e]" />
+                    <span
+                        className={cn(
+                            'truncate text-sm',
+                            value
+                                ? 'font-bold text-slate-800'
+                                : 'text-slate-400',
+                        )}
+                    >
+                        {value || 'Belum dipindai'}
+                    </span>
+                </div>
+                {value && (
+                    <button
+                        type="button"
+                        onClick={onClear}
+                        className="min-h-9 shrink-0 rounded-md px-2 text-xs font-bold text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:outline-none"
+                    >
+                        Hapus
+                    </button>
+                )}
+                <Button
+                    type="button"
+                    size="sm"
+                    variant={value ? 'outline' : 'default'}
+                    onClick={onScan}
+                    className={cn(
+                        'h-9 shrink-0 px-3',
+                        value
+                            ? 'border-[#b8ccc7] text-[#0f766e]'
+                            : 'bg-[#0f766e] text-white hover:bg-[#0b5f59]',
+                    )}
+                >
+                    <ScanBarcode className="size-4" />
+                    {value ? 'Scan ulang' : 'Scan'}
+                </Button>
+            </div>
+        </Field>
     );
 }
 
@@ -576,10 +637,14 @@ export default function ProductsIndex({
             new URL(window.location.href).searchParams.get('scan') === '1',
     );
     const [scannerFlow, setScannerFlow] = useState<ScannerFlow>('create');
+    const [barcodeTarget, setBarcodeTarget] = useState<BarcodeTarget | null>(
+        null,
+    );
     const [discoveryPrefill, setDiscoveryPrefill] = useState(false);
     const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
     const formBodyRef = useRef<HTMLDivElement>(null);
     const pendingVariantIdRef = useRef<string | null>(null);
+    const detectedProductBarcodeRef = useRef('');
     const productDrafts = useProductDrafts();
     const form = useForm<ProductForm>(blankForm());
     const errorFor = (key: string) =>
@@ -680,6 +745,7 @@ export default function ProductsIndex({
         productDrafts.clear();
         setActiveDraftId(null);
         setDiscoveryPrefill(false);
+        detectedProductBarcodeRef.current = '';
         setEditing(null);
         setPreview(null);
         form.setData(blankForm());
@@ -687,6 +753,7 @@ export default function ProductsIndex({
         setFormOpen(true);
     };
     const openCreate = () => {
+        detectedProductBarcodeRef.current = '';
         setScannerFlow('create');
         setScannerOpen(true);
     };
@@ -727,6 +794,8 @@ export default function ProductsIndex({
         setFormOpen(true);
     };
     const setMode = (mode: VariantMode) => {
+        const firstVariant = blankVariant();
+        firstVariant.barcode = form.data.barcode;
         form.setData({
             ...form.data,
             variant_mode: mode,
@@ -735,7 +804,7 @@ export default function ProductsIndex({
                     ? []
                     : form.data.variants.length
                       ? form.data.variants
-                      : [blankVariant()],
+                      : [firstVariant],
         });
     };
     const updateVariantFields = (
@@ -807,6 +876,7 @@ export default function ProductsIndex({
 
             return {
                 name,
+                barcode: text('barcode') || text('gtin') || text('ean'),
                 category_public_id: category?.public_id ?? '',
                 retail_unit_public_id: retailUnit?.public_id ?? '',
                 large_unit_public_id: largeUnit?.public_id ?? '',
@@ -832,6 +902,8 @@ export default function ProductsIndex({
             large_unit_public_id: suggestion?.large_unit_public_id ?? '',
             current_stock: '0',
             minimum_stock: '0',
+            barcode:
+                suggestion?.barcode || detectedProductBarcodeRef.current || '',
             photo: draft.file,
         });
         setEditing(null);
@@ -840,6 +912,7 @@ export default function ProductsIndex({
         setDiscoveryPrefill(draft.status === 'ready');
         form.clearErrors();
         setFormOpen(true);
+        detectedProductBarcodeRef.current = '';
     };
     const beginDrafts = (photos: File[]) => {
         const append = productDrafts.drafts.length > 0;
@@ -885,7 +958,7 @@ export default function ProductsIndex({
     const handleScannerOpenChange = (open: boolean) => {
         setScannerOpen(open);
 
-        if (!open && scannerFlow === 'edit' && editing) {
+        if (!open && scannerFlow === 'form-photo') {
             setFormOpen(true);
         }
     };
@@ -923,6 +996,7 @@ export default function ProductsIndex({
                     form.data.purchase_price || suggestion.purchase_price,
                 selling_price:
                     form.data.selling_price || suggestion.selling_price,
+                barcode: form.data.barcode || suggestion.barcode,
             });
             setDiscoveryPrefill(true);
             productDrafts.markApplied(active.id);
@@ -954,6 +1028,15 @@ export default function ProductsIndex({
         const variant = blankVariant();
         pendingVariantIdRef.current = variant.client_id ?? null;
         form.setData('variants', [...form.data.variants, variant]);
+    };
+    const applyScannedBarcode = (value: string) => {
+        if (barcodeTarget?.kind === 'variant') {
+            updateVariant(barcodeTarget.index, 'barcode', value);
+
+            return;
+        }
+
+        form.setData('barcode', value);
     };
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -1216,7 +1299,7 @@ export default function ProductsIndex({
                     open ? setFormOpen(true) : closeForm()
                 }
             >
-                <DialogContent className="grid max-h-[94dvh] w-[calc(100%-1rem)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden border-slate-200 bg-white p-0 shadow-[0_28px_80px_rgba(15,23,42,0.24)] sm:w-full sm:max-w-4xl sm:rounded-3xl">
+                <DialogContent className="grid max-h-[94dvh] w-[calc(100%-1rem)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden border-slate-200 bg-white p-0 shadow-[0_28px_80px_rgba(15,23,42,0.24)] sm:w-full sm:max-w-5xl sm:rounded-3xl">
                     <DialogHeader className="relative overflow-hidden border-b border-slate-200 bg-white px-5 py-5 text-left sm:px-7">
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0f766e] via-[#2dd4bf] to-[#f4a261]" />
                         <div className="absolute top-0 right-8 size-24 rounded-full bg-teal-100/70 blur-2xl" />
@@ -1363,27 +1446,16 @@ export default function ProductsIndex({
                                 ['waiting', 'analyzing'].includes(
                                     activeDraft.status,
                                 ) && (
-                                    <div className="flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
-                                        <LoaderCircle className="mt-0.5 size-4 shrink-0 animate-spin" />
-                                        <div>
-                                            <p className="font-bold">
-                                                Mencari data produk…
-                                            </p>
-                                            <p className="mt-0.5 text-xs text-teal-800">
-                                                Form boleh dilengkapi sambil
-                                                menunggu. Data AI hanya mengisi
-                                                kolom yang masih kosong.
-                                            </p>
-                                        </div>
+                                    <div className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-sm font-bold text-teal-900">
+                                        <LoaderCircle className="size-4 shrink-0 animate-spin" />
+                                        Membaca foto produk…
                                     </div>
                                 )}
                             {activeDraft?.status === 'failed' && (
                                 <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                                     <AlertCircle className="mt-0.5 size-4 shrink-0" />
                                     <p className="flex-1">
-                                        Data produk belum berhasil diambil. Foto
-                                        tetap terpasang dan form bisa diisi
-                                        sendiri.
+                                        Foto belum berhasil dibaca.
                                     </p>
                                     <Button
                                         type="button"
@@ -1405,7 +1477,7 @@ export default function ProductsIndex({
                                 />
                             )}
                             <Section number="1" title="Informasi Produk">
-                                <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
+                                <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_210px] lg:grid-cols-[minmax(0,1fr)_220px]">
                                     <div className="space-y-4">
                                         <Field
                                             label="Nama produk"
@@ -1457,25 +1529,25 @@ export default function ProductsIndex({
                                                         className="h-11 border-slate-200 bg-white shadow-sm"
                                                     />
                                                 </Field>
-                                                <Field
-                                                    label="Barcode"
+                                                <BarcodeField
+                                                    value={form.data.barcode}
                                                     error={form.errors.barcode}
-                                                >
-                                                    <Input
-                                                        inputMode="numeric"
-                                                        value={
-                                                            form.data.barcode
-                                                        }
-                                                        onChange={(event) =>
-                                                            form.setData(
-                                                                'barcode',
-                                                                event.target
-                                                                    .value,
-                                                            )
-                                                        }
-                                                        className="h-11 border-slate-200 bg-white shadow-sm"
-                                                    />
-                                                </Field>
+                                                    onScan={() =>
+                                                        setBarcodeTarget({
+                                                            kind: 'product',
+                                                            label:
+                                                                form.data
+                                                                    .name ||
+                                                                'produk',
+                                                        })
+                                                    }
+                                                    onClear={() =>
+                                                        form.setData(
+                                                            'barcode',
+                                                            '',
+                                                        )
+                                                    }
+                                                />
                                             </div>
                                         )}
                                         <Field
@@ -1536,6 +1608,7 @@ export default function ProductsIndex({
                                     <Field
                                         label="Foto produk"
                                         error={form.errors.photo}
+                                        className="mx-auto w-full max-w-[220px] lg:mx-0"
                                     >
                                         <label className="group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-[#0f766e] hover:bg-teal-50/40">
                                             {preview ? (
@@ -1581,24 +1654,22 @@ export default function ProductsIndex({
                                                 </span>
                                             )}
                                         </label>
-                                        {editing && (
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="outline"
-                                                onClick={() => {
-                                                    setScannerFlow('edit');
-                                                    setFormOpen(false);
-                                                    setScannerOpen(true);
-                                                }}
-                                                className="mt-2 w-full border-[#b8ccc7] text-[#0f766e] hover:bg-[#edf7f4]"
-                                            >
-                                                <Camera className="size-4" />
-                                                {preview
-                                                    ? 'Ambil ulang dengan kamera'
-                                                    : 'Ambil foto dengan kamera'}
-                                            </Button>
-                                        )}
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setScannerFlow('form-photo');
+                                                setFormOpen(false);
+                                                setScannerOpen(true);
+                                            }}
+                                            className="mt-2 w-full border-[#b8ccc7] text-[#0f766e] hover:bg-[#edf7f4]"
+                                        >
+                                            <Camera className="size-4" />
+                                            {preview
+                                                ? 'Ambil ulang dengan kamera'
+                                                : 'Ambil foto dengan kamera'}
+                                        </Button>
                                         {preview && (
                                             <button
                                                 type="button"
@@ -1955,31 +2026,32 @@ export default function ProductsIndex({
                                                                     className="border-slate-200 bg-white"
                                                                 />
                                                             </Field>
-                                                            <Field
-                                                                label="Barcode varian"
+                                                            <BarcodeField
+                                                                value={
+                                                                    variant.barcode
+                                                                }
                                                                 error={errorFor(
                                                                     `variants.${index}.barcode`,
                                                                 )}
-                                                            >
-                                                                <Input
-                                                                    inputMode="numeric"
-                                                                    value={
-                                                                        variant.barcode
-                                                                    }
-                                                                    onChange={(
-                                                                        event,
-                                                                    ) =>
-                                                                        updateVariant(
+                                                                onScan={() =>
+                                                                    setBarcodeTarget(
+                                                                        {
+                                                                            kind: 'variant',
                                                                             index,
-                                                                            'barcode',
-                                                                            event
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    className="border-slate-200 bg-white"
-                                                                />
-                                                            </Field>
+                                                                            label:
+                                                                                variant.name ||
+                                                                                `varian ${index + 1}`,
+                                                                        },
+                                                                    )
+                                                                }
+                                                                onClear={() =>
+                                                                    updateVariant(
+                                                                        index,
+                                                                        'barcode',
+                                                                        '',
+                                                                    )
+                                                                }
+                                                            />
                                                             <Field
                                                                 label="Foto varian"
                                                                 error={errorFor(
@@ -2330,38 +2402,57 @@ export default function ProductsIndex({
                 units={units}
                 onOpenChange={(open) => !open && setManager(null)}
             />
+            {barcodeTarget && (
+                <BarcodeScannerDialog
+                    open
+                    title={`Scan barcode ${barcodeTarget.label}`}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setBarcodeTarget(null);
+                        }
+                    }}
+                    onDetected={applyScannedBarcode}
+                />
+            )}
             <Suspense fallback={null}>
-                {scannerOpen && (
-                    <ProductScanner
-                        purpose="product"
-                        title={
-                            scannerFlow === 'edit'
-                                ? `Foto ${editing?.name ?? 'produk'}`
-                                : 'Foto produk baru'
+                <ProductScanner
+                    purpose="product"
+                    title={
+                        scannerFlow === 'form-photo'
+                            ? `Foto ${form.data.name || 'produk'}`
+                            : 'Foto produk baru'
+                    }
+                    open={scannerOpen}
+                    onOpenChange={handleScannerOpenChange}
+                    onConfirm={() => undefined}
+                    onProductCaptures={handleProductCaptures}
+                    onBarcodeDetected={(value) => {
+                        if (scannerFlow === 'form-photo') {
+                            form.setData('barcode', value);
+
+                            return;
                         }
-                        open={scannerOpen}
-                        onOpenChange={handleScannerOpenChange}
-                        onConfirm={() => undefined}
-                        onProductCaptures={handleProductCaptures}
-                        singleCapture={scannerFlow === 'edit'}
-                        manualActionLabel={
-                            scannerFlow === 'edit'
-                                ? 'Lanjut tanpa ganti foto'
-                                : undefined
+
+                        detectedProductBarcodeRef.current = value;
+                    }}
+                    singleCapture={scannerFlow === 'form-photo'}
+                    manualActionLabel={
+                        scannerFlow === 'form-photo'
+                            ? 'Lanjut tanpa ganti foto'
+                            : undefined
+                    }
+                    onManualSearch={() => {
+                        setScannerOpen(false);
+
+                        if (scannerFlow === 'form-photo') {
+                            setFormOpen(true);
+
+                            return;
                         }
-                        onManualSearch={() => {
-                            setScannerOpen(false);
 
-                            if (scannerFlow === 'edit') {
-                                setFormOpen(true);
-
-                                return;
-                            }
-
-                            openManualCreate();
-                        }}
-                    />
-                )}
+                        openManualCreate();
+                    }}
+                />
             </Suspense>
         </>
     );

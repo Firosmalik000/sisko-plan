@@ -931,15 +931,13 @@ export default function PurchasingPage({
                 </div>
             </div>
             <Suspense fallback={null}>
-                {scannerOpen && (
-                    <ProductScanner
-                        purpose="purchase"
-                        title="Scan produk pembelian"
-                        open={scannerOpen}
-                        onOpenChange={setScannerOpen}
-                        onConfirm={addScannerSelections}
-                    />
-                )}
+                <ProductScanner
+                    purpose="purchase"
+                    title="Scan produk pembelian"
+                    open={scannerOpen}
+                    onOpenChange={setScannerOpen}
+                    onConfirm={addScannerSelections}
+                />
             </Suspense>
         </>
     );

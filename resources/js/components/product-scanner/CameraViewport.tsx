@@ -31,6 +31,10 @@ export function CameraViewport({
     onRetry,
     onManualSearch,
     manualActionLabel,
+    scanMode,
+    barcodeError,
+    barcodeStatus,
+    onToggleScanMode,
 }: {
     videoRef: RefObject<HTMLVideoElement | null>;
     captures: ScannerCapture[];
@@ -49,6 +53,10 @@ export function CameraViewport({
     onRetry: () => void;
     onManualSearch?: () => void;
     manualActionLabel?: string;
+    scanMode: 'photo' | 'barcode';
+    barcodeError: string;
+    barcodeStatus: 'idle' | 'reading' | 'success' | 'not_found';
+    onToggleScanMode: () => void;
 }) {
     return (
         <div className="relative flex h-svh w-full flex-col overflow-hidden bg-[#102a25] text-white">
@@ -71,7 +79,11 @@ export function CameraViewport({
                     <X className="size-5" />
                 </button>
                 <div className="rounded-xl bg-[#102a25]/75 px-3 py-2 text-center backdrop-blur-sm">
-                    <p className="text-sm font-black">Arahkan, lalu foto</p>
+                    <p className="text-sm font-black">
+                        {scanMode === 'photo'
+                            ? 'Arahkan, lalu foto'
+                            : 'Arahkan ke barcode'}
+                    </p>
                     <p className="text-[11px] text-[#d5e4df]">
                         Satu atau banyak produk—kamu yang tentukan
                     </p>
@@ -140,6 +152,60 @@ export function CameraViewport({
 
             <div className="relative z-10">
                 <CaptureTray captures={captures} onRemove={onRemove} />
+                {captures.length > 0 && (
+                    <p className="mb-2 text-center text-xs font-black text-[#d5e4df]">
+                        {captures.length} hasil tersimpan di sesi ini
+                    </p>
+                )}
+                <div className="mx-auto mb-3 flex w-fit rounded-full bg-[#102a25]/80 p-1 backdrop-blur-sm">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (scanMode !== 'photo') {
+                                onToggleScanMode();
+                            }
+                        }}
+                        className={`min-h-9 rounded-full px-4 text-xs font-black transition ${scanMode === 'photo' ? 'bg-white text-[#173c35]' : 'text-white/70'}`}
+                        aria-pressed={scanMode === 'photo'}
+                    >
+                        Scan Foto
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (scanMode !== 'barcode') {
+                                onToggleScanMode();
+                            }
+                        }}
+                        className={`min-h-9 rounded-full px-4 text-xs font-black transition ${scanMode === 'barcode' ? 'bg-white text-[#173c35]' : 'text-white/70'}`}
+                        aria-pressed={scanMode === 'barcode'}
+                    >
+                        Barcode
+                    </button>
+                </div>
+                {barcodeError && (
+                    <p
+                        role="alert"
+                        className="mx-5 mb-3 rounded-xl bg-red-950/75 px-3 py-2 text-center text-xs font-bold text-red-100"
+                    >
+                        {barcodeError}
+                    </p>
+                )}
+                {scanMode === 'barcode' && (
+                    <p
+                        role="status"
+                        aria-live="polite"
+                        className={`mx-5 mb-3 rounded-xl px-3 py-2 text-center text-xs font-black ${barcodeStatus === 'success' ? 'bg-[#d6f4df] text-[#17633d]' : barcodeStatus === 'not_found' ? 'bg-[#fff0d9] text-[#87531a]' : 'bg-white/15 text-[#e5f1ed]'}`}
+                    >
+                        {barcodeStatus === 'idle'
+                            ? 'Mode barcode aktif. Arahkan kode ke kamera.'
+                            : barcodeStatus === 'reading'
+                            ? 'Barcode terbaca, mencari produk…'
+                            : barcodeStatus === 'success'
+                              ? 'Berhasil. Produk masuk ke hasil scan.'
+                              : 'Kode terbaca, tetapi produk belum ada di katalog.'}
+                    </p>
+                )}
                 <div className="flex items-center justify-between gap-4 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
                     <label className="grid size-12 cursor-pointer place-items-center rounded-2xl bg-white/12 text-white focus-within:ring-2 focus-within:ring-white">
                         <Images className="size-5" />
@@ -167,7 +233,7 @@ export function CameraViewport({
                         disabled={captures.length === 0}
                         className="min-h-12 min-w-24 rounded-2xl bg-white px-3 text-sm font-black text-[#173c35] disabled:opacity-40"
                     >
-                        Lanjutkan · {captures.length}
+                        Tinjau hasil · {captures.length}
                     </button>
                 </div>
                 <button

@@ -582,15 +582,13 @@ export default function StockOpnameShow({
                 </div>
             </OperationsShell>
             <Suspense fallback={null}>
-                {scannerOpen && (
-                    <ProductScanner
-                        purpose="stock_count"
-                        title="Scan produk untuk opname"
-                        open={scannerOpen}
-                        onOpenChange={setScannerOpen}
-                        onConfirm={useScannerSelections}
-                    />
-                )}
+                <ProductScanner
+                    purpose="stock_count"
+                    title="Scan produk untuk opname"
+                    open={scannerOpen}
+                    onOpenChange={setScannerOpen}
+                    onConfirm={useScannerSelections}
+                />
             </Suspense>
         </>
     );

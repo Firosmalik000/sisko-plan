@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { decodeBarcodeImage } from './decode-barcode-image';
 
 type BarcodeDetectorResult = { rawValue: string };
 type BarcodeDetectorInstance = {
@@ -64,7 +65,11 @@ export async function normalizeImage(source: Blob): Promise<Blob> {
     );
 }
 
-export function useCamera(open: boolean, onBarcode: (value: string) => void) {
+export function useCamera(
+    open: boolean,
+    onBarcode: (value: string) => void,
+    barcodeEnabled = true,
+) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -158,27 +163,19 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
     }, [open, retryCount, stop]);
 
     useEffect(() => {
-        if (!open || !ready) {
+        if (!open || !ready || !barcodeEnabled) {
             return;
         }
 
         let cancelled = false;
         let detectionBusy = false;
         const detector = window.BarcodeDetector
-            ? new window.BarcodeDetector({
-                  formats: [
-                      'ean_13',
-                      'ean_8',
-                      'code_128',
-                      'code_39',
-                      'upc_a',
-                      'upc_e',
-                  ],
-              })
+            ? new window.BarcodeDetector()
             : null;
 
         if (!detector) {
-            return;
+            // Older browsers do not expose BarcodeDetector. The frame decoder
+            // keeps barcode mode useful without changing the default photo mode.
         }
 
         const timer = window.setInterval(async () => {
@@ -192,7 +189,9 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
             let value = '';
 
             try {
-                value = (await detector.detect(video))[0]?.rawValue ?? '';
+                value = detector
+                    ? (await detector.detect(video))[0]?.rawValue ?? ''
+                    : await decodeBarcodeImage(await captureVideoFrame(video));
             } catch {
                 value = '';
             } finally {
@@ -215,13 +214,13 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
                 agreement.lastSent = Date.now();
                 onBarcode(value);
             }
-        }, 260);
+        }, detector ? 260 : 900);
 
         return () => {
             cancelled = true;
             window.clearInterval(timer);
         };
-    }, [open, ready, onBarcode]);
+    }, [barcodeEnabled, open, ready, onBarcode]);
 
     const capture = useCallback(async (): Promise<Blob | null> => {
         const video = videoRef.current;
@@ -276,6 +275,27 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void) {
         toggleTorch,
         retry,
     };
+}
+
+async function captureVideoFrame(video: HTMLVideoElement): Promise<Blob> {
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(
+        1,
+        1280 / Math.max(video.videoWidth, video.videoHeight),
+    );
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    canvas
+        .getContext('2d')
+        ?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    return new Promise((resolve, reject) =>
+        canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error('capture'))),
+            'image/jpeg',
+            0.82,
+        ),
+    );
 }
 
 function cameraErrorMessage(reason: unknown): string {
