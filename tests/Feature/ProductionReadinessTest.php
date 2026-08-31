@@ -141,6 +141,14 @@ class ProductionReadinessTest extends TestCase
         $this->assertNotSame($firstErrorId, $secondErrorId);
     }
 
+    public function test_content_security_policy_is_opt_in_for_production_defaults(): void
+    {
+        $this->assertStringContainsString(
+            "'content_security_policy' => env('SECURITY_CSP_ENABLED', false),",
+            file_get_contents(config_path('security.php')),
+        );
+    }
+
     public function test_readiness_is_generic_and_fails_closed_when_database_is_unavailable(): void
     {
         $this->getJson(route('ready'))->assertOk()->assertExactJson(['status' => 'ready']);

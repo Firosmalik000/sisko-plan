@@ -31,7 +31,7 @@ class ProductionReadiness
             $this->check('queue', 'Queue asynchronous', $this->configuredDriver('queue.connections', config('queue.default'), ['database', 'beanstalkd', 'sqs', 'redis']), true, 'QUEUE_CONNECTION harus menggunakan queue asynchronous yang terkonfigurasi.'),
             $this->check('mail', 'Mailer production', $this->configuredDriver('mail.mailers', config('mail.default'), ['smtp', 'ses', 'postmark', 'resend', 'sendmail', 'mailgun', 'failover', 'roundrobin']), true, 'MAIL_MAILER harus menggunakan mailer production yang terkonfigurasi.'),
             $this->check('log_level', 'Level log production', config('logging.production_level') !== 'debug', false, 'Gunakan LOG_LEVEL info atau lebih tinggi.'),
-            $this->check('csp', 'Content Security Policy aktif', (bool) config('security.content_security_policy'), true, 'SECURITY_CSP_ENABLED harus true.'),
+            $this->check('csp', 'Content Security Policy aktif', (bool) config('security.content_security_policy'), false, 'Aktifkan SECURITY_CSP_ENABLED hanya setelah policy kompatibel dengan Inertia.'),
             $this->check('hsts', 'HSTS aktif', (bool) config('security.hsts'), true, 'SECURITY_HSTS_ENABLED harus true.'),
             $this->check('admin_2fa_required', '2FA Platform Admin diwajibkan', (bool) config('security.platform_admin_2fa_required'), true, 'PLATFORM_ADMIN_2FA_REQUIRED harus true.'),
             $this->check('write_limits', 'Rate limit write valid', (int) config('security.store_writes_per_minute') > 0 && (int) config('security.platform_writes_per_minute') > 0, true, 'Rate limit write tenant dan platform harus lebih dari nol.'),
