@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class ProductionReadiness
@@ -66,8 +67,15 @@ class ProductionReadiness
             $files = array_keys($migrator->getMigrationFiles([database_path('migrations')]));
             $pending = array_diff($files, $migrator->getRepository()->getRan());
             $migrations = $this->check('migrations', 'Migration terkini', $pending === [], true, count($pending).' migration belum dijalankan.');
+            $catalogSchema = $this->check(
+                'catalog_schema',
+                'Schema katalog konsisten',
+                $this->catalogSchemaIsCanonical(),
+                true,
+                'Schema produk, varian, unit, SKU, barcode, foto, atau stok tidak sesuai kontrak aplikasi.',
+            );
 
-            return [$database, $admins, $migrations];
+            return [$database, $admins, $migrations, $catalogSchema];
         } catch (Throwable) {
             return [
                 $this->check('database_connection', 'Koneksi database', false, true, 'Database atau metadata migration tidak dapat diperiksa.'),
@@ -105,5 +113,26 @@ class ProductionReadiness
         $driver = config("{$root}.{$selected}.driver") ?? config("{$root}.{$selected}.transport");
 
         return is_string($driver) && in_array($driver, $allowedDrivers, true);
+    }
+
+    private function catalogSchemaIsCanonical(): bool
+    {
+        return Schema::hasColumns('products', [
+            'store_id', 'category_id', 'base_unit_id', 'large_unit_id', 'variant_mode', 'name', 'photo_path',
+        ])
+            && ! Schema::hasColumn('products', 'sku')
+            && ! Schema::hasColumn('products', 'barcode')
+            && Schema::hasColumns('product_variants', [
+                'public_id', 'store_id', 'product_id', 'name', 'photo_path', 'is_active',
+            ])
+            && Schema::hasColumns('product_units', [
+                'store_id', 'product_id', 'product_variant_id', 'unit_id', 'sku', 'barcode',
+                'conversion_factor', 'purchase_price', 'selling_price', 'is_active',
+            ])
+            && Schema::hasIndex('product_units', 'product_units_store_id_sku_unique')
+            && Schema::hasIndex('product_units', 'product_units_store_id_barcode_unique')
+            && Schema::hasColumns('inventory_balances', [
+                'store_id', 'product_id', 'product_variant_id', 'stock_key', 'quantity', 'minimum_quantity',
+            ]);
     }
 }

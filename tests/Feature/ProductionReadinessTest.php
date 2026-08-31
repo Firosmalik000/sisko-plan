@@ -179,11 +179,18 @@ class ProductionReadinessTest extends TestCase
 
     public function test_production_preflight_fails_closed_for_the_test_environment(): void
     {
-        $this->artisan('app:production-check')->assertFailed();
+        $originalUrl = config('app.url');
+        config(['app.url' => 'http://localhost']);
 
-        $checks = app(ProductionReadiness::class)->evaluate(false);
-        $this->assertContains('environment', collect($checks)->where('critical', true)->where('passed', false)->pluck('key'));
-        $this->assertContains('https_url', collect($checks)->where('critical', true)->where('passed', false)->pluck('key'));
+        try {
+            $this->artisan('app:production-check')->assertFailed();
+
+            $checks = app(ProductionReadiness::class)->evaluate(false);
+            $this->assertContains('environment', collect($checks)->where('critical', true)->where('passed', false)->pluck('key'));
+            $this->assertContains('https_url', collect($checks)->where('critical', true)->where('passed', false)->pluck('key'));
+        } finally {
+            config(['app.url' => $originalUrl]);
+        }
     }
 
     public function test_production_preflight_accepts_known_safe_static_configuration(): void

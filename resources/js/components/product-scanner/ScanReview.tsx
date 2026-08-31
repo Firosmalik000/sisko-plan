@@ -6,6 +6,7 @@ import {
     PackageSearch,
     RefreshCw,
     RotateCcw,
+    Camera,
     Search,
     SkipForward,
     Trash2,
@@ -38,6 +39,7 @@ export function ScanReview({
     selections,
     purpose,
     onBack,
+    onScanAgain,
     onRemove,
     onRetry,
     onRetake,
@@ -53,6 +55,7 @@ export function ScanReview({
     selections: ScannerSelection[];
     purpose: ScannerPurpose;
     onBack: () => void;
+    onScanAgain: () => void;
     onRemove: (id: string) => void;
     onRetry: (id: string) => void;
     onRetake: (id: string) => void;
@@ -114,6 +117,12 @@ export function ScanReview({
         !pending &&
         unresolved === 0 &&
         confirmed.length + skipped > 0;
+    const estimatedTotal = confirmed.reduce((total, item) => {
+        const unitPrice =
+            purpose === 'purchase' ? item.purchasePrice : item.sellingPrice;
+
+        return total + Number(unitPrice) * item.quantity;
+    }, 0);
     const manualResults = useMemo(() => {
         const query = manualQuery.trim().toLocaleLowerCase('id-ID');
 
@@ -162,6 +171,14 @@ export function ScanReview({
                         {skipped > 0 ? ` · ${skipped} dilewati` : ''}
                     </p>
                 </div>
+                <button
+                    type="button"
+                    onClick={onScanAgain}
+                    className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-[#173c35] px-3 text-xs font-black text-white focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:ring-offset-2 focus-visible:outline-none"
+                >
+                    <Camera className="size-4" />
+                    Scan lagi
+                </button>
             </header>
 
             <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-5">
@@ -366,6 +383,16 @@ export function ScanReview({
             </div>
 
             <footer className="border-t border-[#173c35]/10 bg-[#fbfcf8] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+.75rem)]">
+                {purpose === 'purchase' && confirmed.length > 0 && (
+                    <div className="mb-3 flex items-center justify-between rounded-xl bg-[#e8f1ec] px-3 py-2.5">
+                        <span className="text-xs font-bold text-[#58736a]">
+                            Estimasi total beli
+                        </span>
+                        <strong className="text-base font-black text-[#173c35]">
+                            {money.format(estimatedTotal)}
+                        </strong>
+                    </div>
+                )}
                 <button
                     type="button"
                     disabled={!canConfirm}
@@ -437,13 +464,26 @@ function MatchedProduct({
     const [editingOptions, setEditingOptions] = useState(
         selectedOption === null,
     );
+    const unitPrice = selectedOption
+        ? Number(
+              purpose === 'purchase'
+                  ? selectedOption.purchasePrice
+                  : selectedOption.sellingPrice,
+          )
+        : 0;
+    const subtotal = unitPrice * quantity;
 
     return (
         <>
             {selectedOption && !editingOptions && (
-                <p className="text-sm font-bold text-[#58736a]">
-                    {optionName(selectedOption)}
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 truncate text-sm font-bold text-[#58736a]">
+                        {optionName(selectedOption)}
+                    </p>
+                    <span className="shrink-0 text-sm font-black text-[#173c35]">
+                        {money.format(unitPrice)} / unit
+                    </span>
+                </div>
             )}
 
             {product.options.length > 1 &&
@@ -522,24 +562,36 @@ function MatchedProduct({
                 )}
 
             {selectedOption && (
-                <label className="mt-3 flex items-center justify-between gap-3 text-xs font-bold text-[#58736a]">
-                    Jumlah
-                    <input
-                        type="number"
-                        min="0.000001"
-                        step="any"
-                        value={quantity}
-                        onChange={(event) =>
-                            onQuantityChange(
-                                Math.max(
-                                    0.000001,
-                                    Number(event.target.value) || 1,
-                                ),
-                            )
-                        }
-                        className="h-10 w-24 rounded-xl border border-[#173c35]/15 px-3 text-right text-sm font-black outline-none focus:border-[#34765f]"
-                    />
-                </label>
+                <div className="mt-3 space-y-2">
+                    <label className="flex items-center justify-between gap-3 text-xs font-bold text-[#58736a]">
+                        Jumlah
+                        <input
+                            type="number"
+                            min="0.000001"
+                            step="any"
+                            value={quantity}
+                            onChange={(event) =>
+                                onQuantityChange(
+                                    Math.max(
+                                        0.000001,
+                                        Number(event.target.value) || 1,
+                                    ),
+                                )
+                            }
+                            className="h-10 w-24 rounded-xl border border-[#173c35]/15 px-3 text-right text-sm font-black outline-none focus:border-[#34765f]"
+                        />
+                    </label>
+                    <div className="flex items-center justify-between rounded-xl bg-[#f3f7f3] px-3 py-2 text-xs">
+                        <span className="font-bold text-[#58736a]">
+                            {purpose === 'purchase'
+                                ? 'Subtotal beli'
+                                : 'Subtotal'}
+                        </span>
+                        <strong className="text-sm font-black text-[#173c35]">
+                            {money.format(subtotal)}
+                        </strong>
+                    </div>
+                </div>
             )}
 
             {canChangeProduct && (

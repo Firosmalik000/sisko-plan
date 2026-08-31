@@ -53,6 +53,7 @@ type UnitOption = Option & {
     unit_type: 'large' | 'retail';
 };
 type VariantMode = 'none' | 'separate' | 'shared';
+type ScannerFlow = 'create' | 'edit';
 type ProductVariant = {
     client_id?: string;
     public_id?: string;
@@ -574,6 +575,7 @@ export default function ProductsIndex({
             typeof window !== 'undefined' &&
             new URL(window.location.href).searchParams.get('scan') === '1',
     );
+    const [scannerFlow, setScannerFlow] = useState<ScannerFlow>('create');
     const [discoveryPrefill, setDiscoveryPrefill] = useState(false);
     const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
     const formBodyRef = useRef<HTMLDivElement>(null);
@@ -684,7 +686,10 @@ export default function ProductsIndex({
         form.clearErrors();
         setFormOpen(true);
     };
-    const openCreate = () => setScannerOpen(true);
+    const openCreate = () => {
+        setScannerFlow('create');
+        setScannerOpen(true);
+    };
     const openEdit = (product: Product) => {
         productDrafts.clear();
         setActiveDraftId(null);
@@ -855,6 +860,33 @@ export default function ProductsIndex({
 
         if (first) {
             openDraft(first);
+        }
+    };
+    const handleProductCaptures = (photos: File[]) => {
+        if (scannerFlow === 'create') {
+            beginDrafts(photos);
+
+            return;
+        }
+
+        const photo = photos.at(-1);
+
+        if (photo) {
+            form.setData({
+                ...form.data,
+                photo,
+                remove_photo: false,
+            });
+            setPreview(URL.createObjectURL(photo));
+        }
+
+        setFormOpen(true);
+    };
+    const handleScannerOpenChange = (open: boolean) => {
+        setScannerOpen(open);
+
+        if (!open && scannerFlow === 'edit' && editing) {
+            setFormOpen(true);
         }
     };
 
@@ -1229,6 +1261,7 @@ export default function ProductsIndex({
                                             size="sm"
                                             variant="outline"
                                             onClick={() => {
+                                                setScannerFlow('create');
                                                 setFormOpen(false);
                                                 setScannerOpen(true);
                                             }}
@@ -1548,6 +1581,24 @@ export default function ProductsIndex({
                                                 </span>
                                             )}
                                         </label>
+                                        {editing && (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setScannerFlow('edit');
+                                                    setFormOpen(false);
+                                                    setScannerOpen(true);
+                                                }}
+                                                className="mt-2 w-full border-[#b8ccc7] text-[#0f766e] hover:bg-[#edf7f4]"
+                                            >
+                                                <Camera className="size-4" />
+                                                {preview
+                                                    ? 'Ambil ulang dengan kamera'
+                                                    : 'Ambil foto dengan kamera'}
+                                            </Button>
+                                        )}
                                         {preview && (
                                             <button
                                                 type="button"
@@ -2283,13 +2334,29 @@ export default function ProductsIndex({
                 {scannerOpen && (
                     <ProductScanner
                         purpose="product"
-                        title="Foto produk baru"
+                        title={
+                            scannerFlow === 'edit'
+                                ? `Foto ${editing?.name ?? 'produk'}`
+                                : 'Foto produk baru'
+                        }
                         open={scannerOpen}
-                        onOpenChange={setScannerOpen}
+                        onOpenChange={handleScannerOpenChange}
                         onConfirm={() => undefined}
-                        onProductCaptures={beginDrafts}
+                        onProductCaptures={handleProductCaptures}
+                        singleCapture={scannerFlow === 'edit'}
+                        manualActionLabel={
+                            scannerFlow === 'edit'
+                                ? 'Lanjut tanpa ganti foto'
+                                : undefined
+                        }
                         onManualSearch={() => {
                             setScannerOpen(false);
+                            if (scannerFlow === 'edit') {
+                                setFormOpen(true);
+
+                                return;
+                            }
+
                             openManualCreate();
                         }}
                     />

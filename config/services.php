@@ -35,6 +35,13 @@ return [
         ],
     ],
 
+    'google' => [
+        'enabled' => (bool) env('GOOGLE_AUTH_ENABLED', false),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', rtrim((string) config('app.url'), '/').'/auth/google/callback'),
+    ],
+
     'catalog_intelligence' => [
         'enabled' => (bool) env('CATALOG_INTELLIGENCE_ENABLED', false),
         'url' => env('CATALOG_INTELLIGENCE_URL', 'http://localhost:8001'),

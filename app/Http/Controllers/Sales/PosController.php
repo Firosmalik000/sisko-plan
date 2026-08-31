@@ -54,7 +54,12 @@ class PosController extends Controller
 
                 return [
                     ...$product->toArray(),
-                    'photo_url' => $photoPublicId ? route('master-data.products.photo', $photoPublicId) : null,
+                    'photo_url' => $photoPublicId
+                        ? route('master-data.products.photo', [
+                            'product' => $photoPublicId,
+                            'v' => substr(hash('sha256', (string) $product->getAttribute('catalog_product_photo_path')), 0, 12),
+                        ])
+                        : null,
                 ];
             });
         $activeAccounts = FinancialAccount::query()->where(['store_id' => $store->id, 'is_active' => true]);

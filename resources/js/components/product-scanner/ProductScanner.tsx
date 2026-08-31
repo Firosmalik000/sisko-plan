@@ -22,6 +22,8 @@ type ProductScannerProps = {
     onManualSearch?: () => void;
     manualProducts?: ScannerProductCandidate[];
     onProductCaptures?: (photos: File[]) => void;
+    manualActionLabel?: string;
+    singleCapture?: boolean;
 };
 
 export default function ProductScanner({
@@ -33,11 +35,16 @@ export default function ProductScanner({
     onManualSearch,
     manualProducts = [],
     onProductCaptures,
+    manualActionLabel,
+    singleCapture = false,
 }: ProductScannerProps) {
     const { scanner: config } = usePage<{ scanner: ScannerConfig }>().props;
     const scanner = useProductScanner(open, purpose, config);
-    const [autoPaused, setAutoPaused] = useState(!config.auto_capture_enabled);
+    const [autoPaused, setAutoPaused] = useState(
+        singleCapture || !config.auto_capture_enabled,
+    );
     const [retakeCaptureId, setRetakeCaptureId] = useState<string | null>(null);
+    const [cameraCaptureStart, setCameraCaptureStart] = useState(0);
     const stableRef = useRef({
         pixels: new Uint8ClampedArray(),
         count: 0,
@@ -63,8 +70,14 @@ export default function ProductScanner({
             return;
         }
 
-        await scanner.addBlobs([blob], false);
-    }, [camera, retakeCaptureId, scanner]);
+        const existingCapture = singleCapture ? scanner.captures[0] : null;
+
+        if (existingCapture) {
+            await scanner.replaceBlob(existingCapture.id, blob, false);
+        } else {
+            await scanner.addBlobs([blob], false);
+        }
+    }, [camera, retakeCaptureId, scanner, singleCapture]);
 
     useEffect(() => {
         if (!open || autoPaused || scanner.reviewing || !camera.ready) {
@@ -150,6 +163,7 @@ export default function ProductScanner({
 
     const close = () => {
         setRetakeCaptureId(null);
+        setCameraCaptureStart(0);
         scanner.reset();
         onOpenChange(false);
     };
@@ -173,7 +187,15 @@ export default function ProductScanner({
             return;
         }
 
-        void scanner.addBlobs(files);
+        const existingCapture = singleCapture ? scanner.captures[0] : null;
+
+        if (existingCapture) {
+            void scanner.replaceBlob(existingCapture.id, files[0]);
+
+            return;
+        }
+
+        void scanner.addBlobs(singleCapture ? files.slice(0, 1) : files);
     };
 
     return (
@@ -189,6 +211,12 @@ export default function ProductScanner({
                         selections={scanner.selections}
                         purpose={purpose}
                         onBack={() => scanner.setReviewing(false)}
+                        onScanAgain={() => {
+                            setCameraCaptureStart(scanner.captures.length);
+                            setRetakeCaptureId(null);
+                            scanner.setReviewing(false);
+                            camera.retry();
+                        }}
                         onRemove={scanner.removeCapture}
                         onRetry={scanner.retry}
                         onRetake={(captureId) => {
@@ -209,7 +237,7 @@ export default function ProductScanner({
                 ) : (
                     <CameraViewport
                         videoRef={camera.videoRef}
-                        captures={scanner.captures}
+                        captures={scanner.captures.slice(cameraCaptureStart)}
                         ready={camera.ready}
                         error={camera.error}
                         autoPaused={autoPaused}
@@ -223,19 +251,18 @@ export default function ProductScanner({
                             setRetakeCaptureId(null);
 
                             if (purpose === 'product' && onProductCaptures) {
+                                const captures = scanner.captures
+                                    .filter((capture) => capture.blob.size > 0)
+                                    .slice(singleCapture ? -1 : 0);
                                 onProductCaptures(
-                                    scanner.captures
-                                        .filter(
-                                            (capture) => capture.blob.size > 0,
-                                        )
-                                        .map(
-                                            (capture, index) =>
-                                                new File(
-                                                    [capture.blob],
-                                                    `produk-${index + 1}.jpg`,
-                                                    { type: 'image/jpeg' },
-                                                ),
-                                        ),
+                                    captures.map(
+                                        (capture, index) =>
+                                            new File(
+                                                [capture.blob],
+                                                `produk-${index + 1}.jpg`,
+                                                { type: 'image/jpeg' },
+                                            ),
+                                    ),
                                 );
                                 close();
 
@@ -253,9 +280,10 @@ export default function ProductScanner({
                                 : undefined
                         }
                         manualActionLabel={
-                            purpose === 'product'
+                            manualActionLabel ??
+                            (purpose === 'product'
                                 ? 'Isi tanpa foto'
-                                : 'Cari manual'
+                                : 'Cari manual')
                         }
                     />
                 )}

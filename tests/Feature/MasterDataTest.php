@@ -13,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\Operations\ProductionReadiness;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
@@ -28,10 +29,18 @@ class MasterDataTest extends TestCase
     public function test_product_variants_use_a_dedicated_normalized_schema(): void
     {
         $this->assertTrue(Schema::hasTable('product_variants'));
-        $this->assertTrue(Schema::hasColumns('product_variants', ['public_id', 'store_id', 'product_id', 'name', 'is_active']));
+        $this->assertTrue(Schema::hasColumns('product_variants', ['public_id', 'store_id', 'product_id', 'name', 'photo_path', 'is_active']));
+        $this->assertTrue(Schema::hasColumns('product_units', ['product_variant_id', 'sku', 'barcode']));
+        $this->assertFalse(Schema::hasColumn('products', 'sku'));
+        $this->assertFalse(Schema::hasColumn('products', 'barcode'));
         $this->assertTrue(Schema::hasColumns('inventory_balances', ['product_id', 'product_variant_id', 'stock_key']));
         $this->assertFalse(Schema::hasColumn('products', 'parent_product_id'));
         $this->assertFalse(Schema::hasColumn('products', 'stock_product_id'));
+
+        $catalogCheck = collect(app(ProductionReadiness::class)->evaluate())
+            ->firstWhere('key', 'catalog_schema');
+        $this->assertNotNull($catalogCheck);
+        $this->assertTrue($catalogCheck['passed']);
         $this->assertFalse(Schema::hasColumn('products', 'variant_name'));
         $this->assertFalse(Schema::hasColumn('products', 'is_inventory_item'));
     }
@@ -365,6 +374,7 @@ class MasterDataTest extends TestCase
             'product_variant_id' => $variants[0]->id,
             'id' => $variantUnit->id,
             'sku' => 'KOPI-COKELAT',
+            'barcode' => '8991000000012',
         ]);
         $this->assertNotNull($variants[0]->photo_path);
         Storage::disk('local')->assertExists($variants[0]->photo_path);
@@ -413,13 +423,31 @@ class MasterDataTest extends TestCase
         $product = Product::query()->sole();
         $this->assertNotNull($product->photo_path);
         Storage::disk('local')->assertExists($product->photo_path);
+        $oldPhotoPath = $product->photo_path;
 
         $payload = $this->modernProductPayload($category, $retail, $large);
         $payload['current_stock'] = '16';
+        $payload['_method'] = 'patch';
+        $payload['photo'] = UploadedFile::fake()->image('kopi-baru.jpg', 300, 300);
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
-            ->patch(route('master-data.products.update', $product->public_id), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+            ->post(route('master-data.products.update', $product->public_id), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+        $product->refresh();
+        $this->assertNotSame($oldPhotoPath, $product->photo_path);
+        Storage::disk('local')->assertMissing($oldPhotoPath);
+        Storage::disk('local')->assertExists($product->photo_path);
+
+        $expectedPhotoVersion = substr(hash('sha256', $product->photo_path), 0, 12);
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
-            ->patch(route('master-data.products.update', $product->public_id), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+            ->get(route('master-data.products.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('products.data.0.photo_url', route('master-data.products.photo', [
+                    'product' => $product->public_id,
+                    'v' => $expectedPhotoVersion,
+                ])));
+
+        unset($payload['photo']);
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.update', $product->public_id), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
 
         $this->assertSame('16.000000', InventoryBalance::query()->where('product_id', $product->id)->value('quantity'));
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])

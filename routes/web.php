@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\GoogleAuthenticationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Expenses\ExpenseController;
 use App\Http\Controllers\MasterData\CategoryController;
@@ -9,8 +10,8 @@ use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\UnitController;
 use App\Http\Controllers\Operations\LedgerController;
 use App\Http\Controllers\Operations\StockCountController;
-use App\Http\Controllers\ProductScannerController;
 use App\Http\Controllers\PricingController;
+use App\Http\Controllers\ProductScannerController;
 use App\Http\Controllers\Purchasing\PurchasingController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Sales\PosController;
@@ -23,6 +24,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 Route::get('pricing', PricingController::class)->name('pricing');
+
+Route::middleware(['guest', 'throttle:10,1'])->group(function () {
+    Route::get('auth/google/redirect', [GoogleAuthenticationController::class, 'redirect'])->name('auth.google.redirect');
+    Route::get('auth/google/callback', [GoogleAuthenticationController::class, 'callback'])->name('auth.google.callback');
+});
 
 Route::middleware(['auth', 'throttle:store-writes'])->group(function () {
     Route::post('impersonation/leave', [ImpersonationController::class, 'destroy'])->name('impersonation.leave');

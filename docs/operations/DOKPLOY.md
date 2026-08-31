@@ -51,6 +51,11 @@ LOG_LEVEL=info
 APP_ROLE=web
 RUN_MIGRATIONS=false
 TRUSTED_PROXIES=YOUR_DOKPLOY_PROXY_CIDR
+
+GOOGLE_AUTH_ENABLED=true
+GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI=https://your-domain.example/auth/google/callback
 ```
 
 Also configure production mail, `PLATFORM_ADMIN_2FA_REQUIRED`, CSP, HSTS,
@@ -61,6 +66,10 @@ Generate `APP_KEY` outside the production container:
 ```sh
 php artisan key:generate --show
 ```
+
+Register the exact `GOOGLE_REDIRECT_URI` as an authorized redirect URI in
+Google Cloud Console. Keep Google login disabled until the client ID, secret,
+production domain, and HTTPS callback are configured.
 
 ## Database Migration
 

@@ -17,10 +17,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use Throwable;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class ProductController extends Controller
 {
@@ -117,7 +117,7 @@ class ProductController extends Controller
         $model = Product::query()->where('store_id', $currentStore->id())->where('public_id', $product)->firstOrFail();
         abort_unless($model->photo_path && Storage::disk('local')->exists($model->photo_path), 404);
 
-        return Storage::disk('local')->response($model->photo_path, null, ['Cache-Control' => 'private, max-age=3600']);
+        return Storage::disk('local')->response($model->photo_path, null, ['Cache-Control' => 'private, no-cache, must-revalidate']);
     }
 
     public function variantPhoto(CurrentStore $currentStore, string $product, string $variant): StreamedResponse
@@ -130,7 +130,7 @@ class ProductController extends Controller
             ->firstOrFail();
         abort_unless($model->photo_path && Storage::disk('local')->exists($model->photo_path), 404);
 
-        return Storage::disk('local')->response($model->photo_path, null, ['Cache-Control' => 'private, max-age=3600']);
+        return Storage::disk('local')->response($model->photo_path, null, ['Cache-Control' => 'private, no-cache, must-revalidate']);
     }
 
     /** @return array<string, mixed> */
@@ -153,7 +153,9 @@ class ProductController extends Controller
             'selling_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->selling_price,
             'current_stock' => $parentBalance === null ? '0.000000' : $parentBalance->quantity,
             'minimum_stock' => $parentBalance === null ? '0.000000' : $parentBalance->minimum_quantity,
-            'photo_url' => $product->photo_path ? route('master-data.products.photo', $product->public_id) : null,
+            'photo_url' => $this->photoUrl('master-data.products.photo', [
+                'product' => $product->public_id,
+            ], $product->photo_path),
             'variants' => $product->variants->map(function (ProductVariant $variant) use ($variantBalances, $product): array {
                 $unit = $variant->productUnits->first();
                 $balance = $variantBalances->get($variant->id);
@@ -163,7 +165,10 @@ class ProductController extends Controller
                     'name' => $variant->name,
                     'sku' => $unit?->sku,
                     'barcode' => $unit?->barcode,
-                    'photo_url' => $variant->photo_path ? route('master-data.products.variants.photo', [$product->public_id, $variant->public_id]) : null,
+                    'photo_url' => $this->photoUrl('master-data.products.variants.photo', [
+                        'product' => $product->public_id,
+                        'variant' => $variant->public_id,
+                    ], $variant->photo_path),
                     'purchase_price' => $unit === null ? '0.0000' : $unit->purchase_price,
                     'selling_price' => $unit === null ? '0.0000' : $unit->selling_price,
                     'conversion_factor' => $unit === null ? '1.000000' : $unit->conversion_factor,
@@ -172,5 +177,18 @@ class ProductController extends Controller
                 ];
             })->values(),
         ];
+    }
+
+    /** @param array<string, string> $parameters */
+    private function photoUrl(string $route, array $parameters, ?string $path): ?string
+    {
+        if ($path === null) {
+            return null;
+        }
+
+        return route($route, [
+            ...$parameters,
+            'v' => substr(hash('sha256', $path), 0, 12),
+        ]);
     }
 }
