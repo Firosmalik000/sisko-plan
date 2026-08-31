@@ -19,6 +19,7 @@ use UnexpectedValueException;
 
 class CatalogIntelligenceClient
 {
+    /** @return array<string, mixed> */
     public function provisionNamespace(Store $store, string $requestId): array
     {
         return $this->send(
@@ -35,13 +36,19 @@ class CatalogIntelligenceClient
         );
     }
 
-    /** @param list<UploadedFile|SplFileInfo> $images */
+    /**
+     * @param  list<UploadedFile|SplFileInfo>  $images
+     * @return array<string, mixed>
+     */
     public function recognize(Store $store, array $images, string $requestId): array
     {
         return $this->send($store, $requestId, 'recognize', 'POST', '/api/v1/catalog-item-recognitions', [], $images);
     }
 
-    /** @param list<UploadedFile|SplFileInfo> $images */
+    /**
+     * @param  list<UploadedFile|SplFileInfo>  $images
+     * @return array<string, mixed>
+     */
     public function discover(Store $store, array $images, string $market, string $requestId): array
     {
         return $this->send(
@@ -58,6 +65,7 @@ class CatalogIntelligenceClient
 
     /** @param array<string, mixed> $searchMetadata
      * @param  list<UploadedFile|SplFileInfo>  $images
+     * @return array<string, mixed>
      */
     public function syncCatalogItem(Store $store, string $catalogItemKey, bool $active, array $searchMetadata, array $images, string $requestId): array
     {
@@ -121,6 +129,7 @@ class CatalogIntelligenceClient
 
     /** @param array<string, string> $fields
      * @param  list<UploadedFile|SplFileInfo>  $images
+     * @return array<string, mixed>
      */
     private function send(
         Store $store,

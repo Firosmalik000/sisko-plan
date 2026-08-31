@@ -76,9 +76,9 @@ return new class extends Migration
                 DB::table('subscriptions')->insert([
                     'public_id' => (string) Str::ulid(),
                     'store_id' => $store->id,
-                    'plan_id' => $accountSubscription?->plan_id ?? $defaultPlanId,
-                    'status' => $accountSubscription?->status ?? 'active',
-                    'starts_at' => $accountSubscription?->starts_at ?? now(),
+                    'plan_id' => $accountSubscription->plan_id ?? $defaultPlanId,
+                    'status' => $accountSubscription->status ?? 'active',
+                    'starts_at' => $accountSubscription->starts_at ?? now(),
                     'trial_ends_at' => $accountSubscription?->trial_ends_at,
                     'current_period_start' => $accountSubscription?->current_period_start,
                     'current_period_end' => $accountSubscription?->current_period_end,

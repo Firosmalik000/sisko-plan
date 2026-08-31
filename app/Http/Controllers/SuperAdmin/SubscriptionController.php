@@ -61,7 +61,7 @@ class SubscriptionController extends Controller
                     'is_trial' => $period->plan->is_trial,
                     'period_start' => $period->period_start->toDateString(),
                     'period_end' => $period->period_end?->toDateString(),
-                ])->values(),
+                ])->values()->all(),
             ]);
 
         return Inertia::render('super-admin/subscriptions/index', [

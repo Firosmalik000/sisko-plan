@@ -9,12 +9,13 @@ use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Services\Intelligence\CatalogIntelligenceClient;
 use Illuminate\Support\Collection;
+use SplFileInfo;
 
 class RecognizeCatalogItems
 {
     public function __construct(private CatalogIntelligenceClient $client) {}
 
-    /** @param array<int, mixed> $images
+    /** @param list<SplFileInfo> $images
      * @param  list<string>  $captureIds
      * @return list<array<string, mixed>>
      */
@@ -26,10 +27,23 @@ class RecognizeCatalogItems
             return [];
         }
 
-        $keys = collect($upstreamImages)
-            ->flatMap(fn ($image) => collect(is_array($image) ? ($image['items'] ?? []) : [])
-                ->flatMap(fn ($item) => collect(is_array($item) ? ($item['candidates'] ?? []) : [])->pluck('catalog_item_key')))
-            ->filter(fn ($key) => is_string($key));
+        $catalogItemKeys = [];
+        foreach ($upstreamImages as $image) {
+            if (! is_array($image) || ! is_array($image['items'] ?? null)) {
+                continue;
+            }
+            foreach ($image['items'] as $item) {
+                if (! is_array($item) || ! is_array($item['candidates'] ?? null)) {
+                    continue;
+                }
+                foreach ($item['candidates'] as $candidate) {
+                    if (is_array($candidate) && is_string($candidate['catalog_item_key'] ?? null)) {
+                        $catalogItemKeys[] = $candidate['catalog_item_key'];
+                    }
+                }
+            }
+        }
+        $keys = collect(array_values(array_unique($catalogItemKeys)));
         $productPublicIds = $keys->filter(fn (string $key) => str_starts_with($key, 'product:'))
             ->map(fn (string $key) => substr($key, 8))->unique()->values();
         $variantPublicIds = $keys->filter(fn (string $key) => str_starts_with($key, 'variant:'))
@@ -135,14 +149,19 @@ class RecognizeCatalogItems
                 $match = $status === 'found' ? $first['candidate'] : null;
                 $selectedOption = null;
 
-                if ($match !== null) {
-                    $options = collect($match['options']);
-                    $matchedVariantOptions = $first['matchedVariantPublicId'] !== null
-                        ? $options->where('variantPublicId', $first['matchedVariantPublicId'])
-                        : collect();
-                    $selectedOption = $matchedVariantOptions->count() === 1
-                        ? $matchedVariantOptions->first()
-                        : ($first['matchedVariantPublicId'] === null && $options->count() === 1 ? $options->first() : null);
+                if ($match !== null && is_array($first)) {
+                    $options = is_array($match['options'] ?? null) ? array_values($match['options']) : [];
+                    $matchedVariantPublicId = $first['matchedVariantPublicId'] ?? null;
+                    $matchedVariantOptions = $matchedVariantPublicId === null
+                        ? []
+                        : array_values(array_filter(
+                            $options,
+                            fn ($option): bool => is_array($option)
+                                && ($option['variantPublicId'] ?? null) === $matchedVariantPublicId,
+                        ));
+                    $selectedOption = count($matchedVariantOptions) === 1
+                        ? $matchedVariantOptions[0]
+                        : ($matchedVariantPublicId === null && count($options) === 1 ? $options[0] : null);
                 }
 
                 $results[] = [
@@ -220,7 +239,7 @@ class RecognizeCatalogItems
     {
         $balanceVariantId = $product->variant_mode === 'separate' ? $variant?->id : null;
         $balance = $balances->get($this->balanceKey($product->id, $balanceVariantId));
-        $productId = $variant?->public_id ?? $product->public_id;
+        $productId = $variant === null ? $product->public_id : $variant->public_id;
 
         return [
             'id' => $productId.':'.$unit->unit->public_id,
@@ -233,16 +252,21 @@ class RecognizeCatalogItems
             'unitSymbol' => $unit->unit->symbol,
             'purchasePrice' => (string) $unit->purchase_price,
             'sellingPrice' => (string) $unit->selling_price,
-            'stockQuantity' => (string) ($balance?->quantity ?? '0.000000'),
+            'stockQuantity' => (string) ($balance === null ? '0.000000' : $balance->quantity),
         ];
     }
 
     /** @return list<string> */
     private function methods(mixed $methods): array
     {
-        return collect(is_array($methods) ? $methods : [])->filter(
-            fn ($method) => is_string($method) && in_array($method, ['barcode', 'sku', 'visual', 'ocr'], true),
-        )->values()->all();
+        $validMethods = [];
+        foreach (is_array($methods) ? $methods : [] as $method) {
+            if (is_string($method) && in_array($method, ['barcode', 'sku', 'visual', 'ocr'], true)) {
+                $validMethods[] = $method;
+            }
+        }
+
+        return $validMethods;
     }
 
     private function balanceKey(int $productId, ?int $variantId): string

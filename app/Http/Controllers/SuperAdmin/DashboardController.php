@@ -75,7 +75,7 @@ class DashboardController extends Controller
                 ->map(fn (SubscriptionPayment $payment): array => [
                     'public_id' => $payment->public_id,
                     'receipt_number' => $payment->receipt_number,
-                    'account' => $payment->user?->name ?? $payment->store->name,
+                    'account' => $payment->user->name ?? $payment->store->name,
                     'amount' => $payment->amount,
                     'paid_at' => $payment->paid_at->toIso8601String(),
                 ]),

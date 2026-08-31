@@ -28,7 +28,7 @@ class SubscriptionController extends Controller
             ->paginate(20, ['public_id', 'plan_id', 'plan_name', 'monthly_price', 'duration_months', 'period_start', 'period_end', 'source', 'activated_at'], 'history_page')
             ->through(function ($period) use ($today, $subscription): array {
                 $currentStart = $subscription->status->value === 'trialing'
-                    ? $subscription->starts_at?->toDateString()
+                    ? $subscription->starts_at->toDateString()
                     : $subscription->current_period_start?->toDateString();
                 $currentEnd = $subscription->status->value === 'trialing'
                     ? $subscription->trial_ends_at?->toDateString()
