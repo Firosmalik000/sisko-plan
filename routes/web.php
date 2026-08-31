@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::get('master-data/products', [ProductController::class, 'index'])->name('master-data.products.index');
         Route::post('master-data/products', [ProductController::class, 'store'])->name('master-data.products.store');
         Route::patch('master-data/products/{product}', [ProductController::class, 'update'])->name('master-data.products.update');
+        Route::delete('master-data/products/{product}', [ProductController::class, 'destroy'])->name('master-data.products.destroy');
         Route::get('master-data/products/{product}/photo', [ProductController::class, 'photo'])->name('master-data.products.photo');
         Route::get('master-data/products/{product}/variants/{variant}/photo', [ProductController::class, 'variantPhoto'])->name('master-data.products.variants.photo');
 

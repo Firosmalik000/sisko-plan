@@ -13,8 +13,11 @@ use App\Support\Authentication\AuthenticatedUser;
 use App\Support\CurrentStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -74,6 +77,36 @@ class ProductController extends Controller
         $model = Product::query()->where('store_id', $currentStore->id())->where('public_id', $product)->firstOrFail();
         $saveProduct->handle(AuthenticatedUser::get($request), $currentStore->get(), $request->productData(), $model, $request->file('photo'), $request->ip());
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Produk berhasil diperbarui.']);
+
+        return back();
+    }
+
+    public function destroy(CurrentStore $currentStore, string $product): RedirectResponse
+    {
+        Gate::authorize('manageMasterData', $currentStore->get());
+
+        $model = Product::query()
+            ->where('store_id', $currentStore->id())
+            ->where('public_id', $product)
+            ->with('variants:id,product_id,photo_path')
+            ->firstOrFail();
+        $photoPaths = $model->variants->pluck('photo_path')->push($model->photo_path)->filter()->values();
+
+        try {
+            DB::transaction(fn () => $model->delete());
+        } catch (Throwable $exception) {
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'product' => 'Produk tidak dapat dihapus karena sudah dipakai dalam transaksi atau data stok. Nonaktifkan produk jika masih diperlukan.',
+            ]);
+        }
+
+        foreach ($photoPaths as $photoPath) {
+            Storage::disk('local')->delete($photoPath);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Produk berhasil dihapus.']);
 
         return back();
     }

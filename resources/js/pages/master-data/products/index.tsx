@@ -560,6 +560,9 @@ export default function ProductsIndex({
     canManage: boolean;
 }) {
     const [editing, setEditing] = useState<Product | null>(null);
+    const [deleting, setDeleting] = useState<Product | null>(null);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
     const [formOpen, setFormOpen] = useState(false);
     const [manager, setManager] = useState<'category' | 'unit' | null>(null);
     const [search, setSearch] = useState(initialSearch);
@@ -587,6 +590,26 @@ export default function ProductsIndex({
     const activeDraftIndex = productDrafts.drafts.findIndex(
         (draft) => draft.id === activeDraftId,
     );
+
+    const submitDelete = () => {
+        if (!deleting || deleteProcessing) {
+            return;
+        }
+
+        setDeleteProcessing(true);
+        setDeleteError('');
+        router.delete(`/master-data/products/${deleting.public_id}`, {
+            preserveScroll: true,
+            onSuccess: () => setDeleting(null),
+            onError: (errors) => {
+                setDeleteError(
+                    errors.product ??
+                        'Produk belum dapat dihapus. Silakan coba lagi.',
+                );
+            },
+            onFinish: () => setDeleteProcessing(false),
+        });
+    };
     const analyzingDrafts = productDrafts.drafts.filter((draft) =>
         ['waiting', 'analyzing'].includes(draft.status),
     ).length;
@@ -1118,17 +1141,33 @@ export default function ProductsIndex({
                                                 : `${product.variants.length} harga`}
                                         </span>
                                         {canManage && (
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() =>
-                                                    openEdit(product)
-                                                }
-                                                className="text-[#0f766e] hover:bg-[#e3f3ef] hover:text-[#0b5f59]"
-                                            >
-                                                <Edit3 className="size-4" />{' '}
-                                                Edit
-                                            </Button>
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() =>
+                                                        openEdit(product)
+                                                    }
+                                                    className="text-[#0f766e] hover:bg-[#e3f3ef] hover:text-[#0b5f59]"
+                                                >
+                                                    <Edit3 className="size-4" />{' '}
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    aria-label={`Hapus ${product.name}`}
+                                                    title="Hapus produk"
+                                                    onClick={() => {
+                                                        setDeleteError('');
+                                                        setDeleting(product);
+                                                    }}
+                                                    className="size-9 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            </div>
                                         )}
                                     </div>
                                 </article>
@@ -2182,6 +2221,54 @@ export default function ProductsIndex({
                             </Button>
                         </div>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={deleting !== null}
+                onOpenChange={(open) => {
+                    if (!open && !deleteProcessing) {
+                        setDeleting(null);
+                        setDeleteError('');
+                    }
+                }}
+            >
+                <DialogContent className="gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
+                    <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 text-left">
+                        <DialogTitle className="text-lg font-black text-slate-900">
+                            Hapus produk {deleting?.name}?
+                        </DialogTitle>
+                        <p className="mt-2 text-sm text-slate-600">
+                            Produk yang sudah dipakai dalam transaksi atau stok
+                            tidak bisa dihapus.
+                        </p>
+                    </DialogHeader>
+                    {deleteError && (
+                        <p
+                            role="alert"
+                            className="mx-5 mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700"
+                        >
+                            {deleteError}
+                        </p>
+                    )}
+                    <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={deleteProcessing}
+                            onClick={() => setDeleting(null)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={deleteProcessing}
+                            onClick={submitDelete}
+                        >
+                            {deleteProcessing ? 'Menghapus...' : 'Hapus produk'}
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 
