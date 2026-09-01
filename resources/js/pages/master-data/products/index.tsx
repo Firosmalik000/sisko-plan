@@ -677,6 +677,29 @@ export default function ProductsIndex({
             onFinish: () => setDeleteProcessing(false),
         });
     };
+    const deactivateProduct = () => {
+        if (!deleting || deleteProcessing) {
+            return;
+        }
+
+        setDeleteProcessing(true);
+        setDeleteError('');
+        router.patch(
+            `/master-data/products/${deleting.public_id}/deactivate`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => setDeleting(null),
+                onError: (errors) => {
+                    setDeleteError(
+                        errors.product ??
+                            'Produk belum dapat dinonaktifkan. Silakan coba lagi.',
+                    );
+                },
+                onFinish: () => setDeleteProcessing(false),
+            },
+        );
+    };
     const analyzingDrafts = productDrafts.drafts.filter((draft) =>
         ['waiting', 'analyzing'].includes(draft.status),
     ).length;
@@ -741,14 +764,14 @@ export default function ProductsIndex({
 
         form.clearErrors();
     };
-    const openManualCreate = () => {
+    const openManualCreate = (barcode = '') => {
         productDrafts.clear();
         setActiveDraftId(null);
         setDiscoveryPrefill(false);
         detectedProductBarcodeRef.current = '';
         setEditing(null);
         setPreview(null);
-        form.setData(blankForm());
+        form.setData({ ...blankForm(), barcode });
         form.clearErrors();
         setFormOpen(true);
     };
@@ -1103,7 +1126,7 @@ export default function ProductsIndex({
                             {canManage && (
                                 <div className="flex flex-wrap justify-end gap-2">
                                     <Button
-                                        onClick={openManualCreate}
+                                        onClick={() => openManualCreate()}
                                         variant="outline"
                                         className="min-h-11 border-[#b8ccc7] px-4 font-bold text-[#245c4f]"
                                     >
@@ -1163,7 +1186,7 @@ export default function ProductsIndex({
                             {canManage && (
                                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                                     <Button
-                                        onClick={openManualCreate}
+                                        onClick={() => openManualCreate()}
                                         variant="outline"
                                         className="border-[#b8ccc7] text-[#245c4f]"
                                     >
@@ -2374,6 +2397,25 @@ export default function ProductsIndex({
                             {deleteError}
                         </p>
                     )}
+                    {deleteError && (
+                        <div className="mx-5 mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                            <p className="text-sm font-bold text-amber-900">
+                                Product ini masih bisa dipakai sebagai riwayat,
+                                tetapi tidak akan muncul untuk transaksi baru.
+                            </p>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={deleteProcessing}
+                                onClick={deactivateProduct}
+                                className="mt-3 w-full border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
+                            >
+                                {deleteProcessing
+                                    ? 'Menonaktifkan...'
+                                    : 'Nonaktifkan product'}
+                            </Button>
+                        </div>
+                    )}
                     <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">
                         <Button
                             type="button"
@@ -2433,7 +2475,7 @@ export default function ProductsIndex({
                             return;
                         }
 
-                        detectedProductBarcodeRef.current = value;
+                        openManualCreate(value);
                     }}
                     singleCapture={scannerFlow === 'form-photo'}
                     manualActionLabel={

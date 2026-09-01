@@ -41,6 +41,7 @@ export function ScanReview({
     onBack,
     onScanAgain,
     onRemove,
+    onRemoveResult,
     onRetry,
     onRetake,
     onSelectProduct,
@@ -57,6 +58,7 @@ export function ScanReview({
     onBack: () => void;
     onScanAgain: () => void;
     onRemove: (id: string) => void;
+    onRemoveResult: (captureId: string, itemIndex: number) => void;
     onRetry: (id: string) => void;
     onRetake: (id: string) => void;
     onSelectProduct: (
@@ -276,7 +278,14 @@ export function ScanReview({
                                     />
                                 </div>
                                 <RemoveButton
-                                    onClick={() => onRemove(capture.id)}
+                                    onClick={() =>
+                                        capture.results.length > 1
+                                            ? onRemoveResult(
+                                                  capture.id,
+                                                  result.itemIndex,
+                                              )
+                                            : onRemove(capture.id)
+                                    }
                                 />
                             </div>
 

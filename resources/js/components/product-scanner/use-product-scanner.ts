@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { decodeBarcodeImage } from './decode-barcode-image';
 import type {
     ScannerCapture,
     ScannerCatalogItem,
@@ -32,13 +31,52 @@ export function useProductScanner(
     const [reviewing, setReviewing] = useState(false);
     const controllersRef = useRef(new Map<string, AbortController>());
     const capturesRef = useRef<ScannerCapture[]>([]);
-    const barcodeMatchedRef = useRef(new Set<string>());
-    const lookupBarcodeRef = useRef<
-        (identifier: string, captureId?: string) => Promise<boolean>
-    >(async () => false);
-
     useEffect(() => {
         capturesRef.current = captures;
+    }, [captures]);
+
+    useEffect(() => {
+        const merged: ScannerCapture[] = [];
+        const byIdentity = new Map<string, ScannerCapture>();
+        let changed = false;
+
+        captures.forEach((capture) => {
+            const identity = resultIdentity(capture.results[0]);
+            const existing = identity ? byIdentity.get(identity) : undefined;
+
+            if (!existing || capture.results.length === 0) {
+                merged.push(capture);
+
+                if (identity) {
+                    byIdentity.set(identity, capture);
+                }
+
+                return;
+            }
+
+            const quantity =
+                (existing.results[0]?.quantity ?? 0) +
+                (capture.results[0]?.quantity ?? 1);
+            const existingIndex = merged.findIndex(
+                (item) => item.id === existing.id,
+            );
+
+            merged[existingIndex] = {
+                ...existing,
+                results: existing.results.map((result, index) =>
+                    index === 0 ? { ...result, quantity } : result,
+                ),
+            };
+            changed = true;
+
+            if (capture.previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(capture.previewUrl);
+            }
+        });
+
+        if (changed) {
+            queueMicrotask(() => setCaptures(merged));
+        }
     }, [captures]);
 
     useEffect(
@@ -88,27 +126,6 @@ export function useProductScanner(
         async (capture: ScannerCapture) => {
             const controller = new AbortController();
             controllersRef.current.set(capture.id, controller);
-            const barcodePromise =
-                purpose === 'product'
-                    ? Promise.resolve('')
-                    : decodeBarcodeImage(capture.blob).catch(() => '');
-
-            const barcode = await barcodePromise;
-
-            if (barcode && !controller.signal.aborted) {
-                const found = await lookupBarcodeRef.current(
-                    barcode,
-                    capture.id,
-                );
-
-                if (found) {
-                    barcodeMatchedRef.current.add(capture.id);
-                }
-            }
-
-            if (controller.signal.aborted) {
-                return;
-            }
 
             setCaptures((current) =>
                 current.map((item) =>
@@ -142,6 +159,7 @@ export function useProductScanner(
                         },
                     },
                 );
+
                 const payload = (await response.json()) as {
                     data?: ScannerCatalogItem[];
                     code?: string;
@@ -159,71 +177,89 @@ export function useProductScanner(
                         quantity: 1,
                     }));
 
-                if (!barcodeMatchedRef.current.has(capture.id)) {
-                    setCaptures((current) => {
-                        const nextResults =
-                            results.length > 0
-                                ? results
-                                : [unknownResult(capture.id)];
-                        const currentCapture = current.find(
-                            (item) => item.id === capture.id,
-                        );
-                        const identity = resultIdentity(nextResults[0]);
-                        const duplicate = identity
-                            ? current.find(
-                                  (item) =>
-                                      item.id !== capture.id &&
-                                      item.results.some(
-                                          (entry) =>
-                                              entry.status === 'found' &&
-                                              resultIdentity(entry) ===
-                                                  identity,
-                                      ),
-                              )
-                            : undefined;
+                setCaptures((current) => {
+                    // One photo represents one physical product. The
+                    // recognition service may return several detected items
+                    // or candidates for the same image; keep only the best
+                    // item so the review drawer stays one-card-per-photo.
+                    const bestResult =
+                        results.find((result) => result.status === 'found') ??
+                        results.find(
+                            (result) => result.status === 'uncertain',
+                        ) ??
+                        results[0];
+                    const nextResults = bestResult
+                        ? [bestResult]
+                        : [unknownResult(capture.id)];
+                    const currentCapture = current.find(
+                        (item) => item.id === capture.id,
+                    );
+                    const identity = resultIdentity(nextResults[0]);
+                    const duplicate = identity
+                        ? current.find(
+                              (item) =>
+                                  item.id !== capture.id &&
+                                  item.results.some(
+                                      (result) =>
+                                          result.selectedOption !== null &&
+                                          resultIdentity(result) === identity,
+                                  ),
+                          )
+                        : undefined;
 
-                        if (duplicate && currentCapture) {
-                            const quantity =
-                                (duplicate.results[0]?.quantity ?? 0) +
-                                (currentCapture.results[0]?.quantity ?? 1);
+                    if (duplicate && currentCapture) {
+                        const quantity =
+                            (duplicate.results[0]?.quantity ?? 0) +
+                            (nextResults[0]?.quantity ?? 1);
 
-                            if (currentCapture.previewUrl.startsWith('blob:')) {
-                                URL.revokeObjectURL(currentCapture.previewUrl);
-                            }
-
-                            return current
-                                .filter((item) => item.id !== capture.id)
-                                .map((item) =>
-                                    item.id === duplicate.id
-                                        ? {
-                                              ...item,
-                                              results: item.results.map(
-                                                  (entry, index) =>
-                                                      index === 0
-                                                          ? {
-                                                                ...entry,
-                                                                quantity,
-                                                            }
-                                                          : entry,
-                                              ),
-                                          }
-                                        : item,
-                                );
+                        if (currentCapture.previewUrl.startsWith('blob:')) {
+                            URL.revokeObjectURL(currentCapture.previewUrl);
                         }
 
-                        return current.map((item) =>
-                            item.id === capture.id
-                                ? {
-                                      ...item,
-                                      status: 'recognized',
-                                      errorCode: null,
-                                      retryable: true,
-                                      results: nextResults,
-                                  }
-                                : item,
-                        );
-                    });
-                }
+                        return current.map((item) => {
+                            if (item.id === duplicate.id) {
+                                return {
+                                    ...item,
+                                    results: item.results.map(
+                                        (result, index) =>
+                                            index === 0
+                                                ? { ...result, quantity }
+                                                : result,
+                                    ),
+                                };
+                            }
+
+                            if (item.id === capture.id) {
+                                return {
+                                    ...item,
+                                    status: 'recognized' as const,
+                                    error: null,
+                                    errorCode: null,
+                                    retryable: true,
+                                    // Keep a completion marker so the camera
+                                    // can transition to review even though
+                                    // the visible card is merged above.
+                                    results: [],
+                                };
+                            }
+
+                            return item;
+                        });
+                    }
+
+                    return current.map((item) =>
+                        item.id === capture.id
+                            ? {
+                                  ...item,
+                                  status: 'recognized',
+                                  error: null,
+                                  errorCode: null,
+                                  retryable: true,
+                                  results: nextResults,
+                              }
+                            : item,
+                    );
+                });
             } catch (error) {
                 if (!controller.signal.aborted) {
                     const failure = scannerFailure(
@@ -256,7 +292,7 @@ export function useProductScanner(
             return;
         }
 
-        const available = Math.max(0, 2 - controllersRef.current.size);
+        const available = Math.max(0, 6 - controllersRef.current.size);
         captures
             .filter((capture) => capture.status === 'queued')
             .slice(0, available)
@@ -307,42 +343,27 @@ export function useProductScanner(
                     (captureItem) => captureItem.id === targetId,
                 );
                 const identity = resultIdentity(nextResult);
-                const duplicate = identity
-                    ? current.find(
-                          (captureItem) =>
-                              captureItem.id !== targetId &&
-                              captureItem.results.some(
-                                  (item) =>
-                                      item.status === 'found' &&
-                                      resultIdentity(item) === identity,
-                              ),
-                      )
-                    : undefined;
+                const sameCapture =
+                    currentCapture &&
+                    identity &&
+                    resultIdentity(currentCapture.results[0]) === identity;
 
-                if (duplicate) {
+                if (sameCapture && currentCapture) {
                     const quantity =
-                        (duplicate.results[0]?.quantity ?? 0) +
-                        (currentCapture?.results[0]?.quantity ?? 1);
+                        (currentCapture.results[0]?.quantity ?? 0) + 1;
 
-                    if (currentCapture?.previewUrl.startsWith('blob:')) {
-                        URL.revokeObjectURL(currentCapture.previewUrl);
-                    }
-
-                    return current
-                        .filter((item) => item.id !== targetId)
-                        .map((item) =>
-                            item.id === duplicate.id
-                                ? {
-                                      ...item,
-                                      results: item.results.map(
-                                          (entry, index) =>
-                                              index === 0
-                                                  ? { ...entry, quantity }
-                                                  : entry,
-                                      ),
-                                  }
-                                : item,
-                        );
+                    return current.map((item) =>
+                        item.id === targetId
+                            ? {
+                                  ...item,
+                                  results: item.results.map((entry, index) =>
+                                      index === 0
+                                          ? { ...entry, quantity }
+                                          : entry,
+                                  ),
+                              }
+                            : item,
+                    );
                 }
 
                 if (currentCapture) {
@@ -358,6 +379,50 @@ export function useProductScanner(
                               }
                             : item,
                     );
+                }
+
+                const duplicate = identity
+                    ? current.find(
+                          (captureItem) =>
+                              captureItem.id !== targetId &&
+                              captureItem.results.some(
+                                  (item) =>
+                                      item.selectedOption !== null &&
+                                      resultIdentity(item) === identity,
+                              ),
+                      )
+                    : undefined;
+
+                if (duplicate) {
+                    const quantity =
+                        (duplicate.results[0]?.quantity ?? 0) +
+                        (nextResult.quantity ?? 1);
+
+                    return current.map((item) => {
+                        if (item.id === duplicate.id) {
+                            return {
+                                ...item,
+                                results: item.results.map((entry, index) =>
+                                    index === 0
+                                        ? { ...entry, quantity }
+                                        : entry,
+                                ),
+                            };
+                        }
+
+                        if (item.id === targetId) {
+                            return {
+                                ...item,
+                                status: 'recognized' as const,
+                                error: null,
+                                errorCode: null,
+                                retryable: true,
+                                results: [],
+                            };
+                        }
+
+                        return item;
+                    });
                 }
 
                 return [
@@ -381,14 +446,9 @@ export function useProductScanner(
         [purpose],
     );
 
-    useEffect(() => {
-        lookupBarcodeRef.current = lookupBarcode;
-    }, [lookupBarcode]);
-
     const removeCapture = useCallback((id: string) => {
         controllersRef.current.get(id)?.abort();
         controllersRef.current.delete(id);
-        barcodeMatchedRef.current.delete(id);
         setCaptures((current) => {
             const capture = current.find((item) => item.id === id);
 
@@ -400,13 +460,41 @@ export function useProductScanner(
         });
     }, []);
 
+    const removeResult = useCallback((captureId: string, itemIndex: number) => {
+        setCaptures((current) => {
+            const capture = current.find((item) => item.id === captureId);
+
+            if (!capture) {
+                return current;
+            }
+
+            const results = capture.results.filter(
+                (result) => result.itemIndex !== itemIndex,
+            );
+
+            if (results.length > 0) {
+                return current.map((item) =>
+                    item.id === captureId ? { ...item, results } : item,
+                );
+            }
+
+            if (capture.previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(capture.previewUrl);
+            }
+
+            controllersRef.current.get(captureId)?.abort();
+            controllersRef.current.delete(captureId);
+
+            return current.filter((item) => item.id !== captureId);
+        });
+    }, []);
+
     const retry = useCallback(
         (id: string) => {
             if (!config.visual_recognition_enabled) {
                 return;
             }
 
-            barcodeMatchedRef.current.delete(id);
             setCaptures((current) =>
                 current.map((capture) =>
                     capture.id === id
@@ -430,7 +518,6 @@ export function useProductScanner(
 
             controllersRef.current.get(id)?.abort();
             controllersRef.current.delete(id);
-            barcodeMatchedRef.current.delete(id);
             setCaptures((current) =>
                 current.map((capture) => {
                     if (capture.id !== id) {
@@ -616,7 +703,6 @@ export function useProductScanner(
     const reset = useCallback(() => {
         controllersRef.current.forEach((controller) => controller.abort());
         controllersRef.current.clear();
-        barcodeMatchedRef.current.clear();
         setCaptures((current) => {
             current.forEach((capture) => {
                 if (capture.previewUrl.startsWith('blob:')) {
@@ -637,6 +723,7 @@ export function useProductScanner(
         addBlobs,
         lookupBarcode,
         removeCapture,
+        removeResult,
         retry,
         replaceBlob,
         selectProductCandidate,
@@ -655,18 +742,14 @@ class ScannerRequestError extends Error {
 }
 
 function resultIdentity(result: ScannerCatalogItem | undefined): string {
-    if (!result?.match) {
+    if (!result?.match || !result.selectedOption) {
         return '';
     }
 
-    const option = result.selectedOption ?? result.match.options[0];
-
-    if (!option) {
-        return result.match.productPublicId;
-    }
+    const option = result.selectedOption;
 
     return [
-        result.match.productPublicId,
+        option.productPublicId || result.match.productPublicId,
         option.variantPublicId ?? 'base',
         option.unitId,
     ].join(':');

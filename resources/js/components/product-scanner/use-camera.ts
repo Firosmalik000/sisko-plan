@@ -178,43 +178,53 @@ export function useCamera(
             // keeps barcode mode useful without changing the default photo mode.
         }
 
-        const timer = window.setInterval(async () => {
-            const video = videoRef.current;
+        const timer = window.setInterval(
+            async () => {
+                const video = videoRef.current;
 
-            if (!video || video.readyState < 2 || cancelled || detectionBusy) {
-                return;
-            }
+                if (
+                    !video ||
+                    video.readyState < 2 ||
+                    cancelled ||
+                    detectionBusy
+                ) {
+                    return;
+                }
 
-            detectionBusy = true;
-            let value = '';
+                detectionBusy = true;
+                let value = '';
 
-            try {
-                value = detector
-                    ? (await detector.detect(video))[0]?.rawValue ?? ''
-                    : await decodeBarcodeImage(await captureVideoFrame(video));
-            } catch {
-                value = '';
-            } finally {
-                detectionBusy = false;
-            }
+                try {
+                    value = detector
+                        ? ((await detector.detect(video))[0]?.rawValue ?? '')
+                        : await decodeBarcodeImage(
+                              await captureVideoFrame(video),
+                          );
+                } catch {
+                    value = '';
+                } finally {
+                    detectionBusy = false;
+                }
 
-            if (!value) {
-                return;
-            }
+                if (!value) {
+                    return;
+                }
 
-            const agreement = agreementRef.current;
-            agreement.count =
-                agreement.value === value ? agreement.count + 1 : 1;
-            agreement.value = value;
+                const agreement = agreementRef.current;
+                agreement.count =
+                    agreement.value === value ? agreement.count + 1 : 1;
+                agreement.value = value;
 
-            if (
-                agreement.count >= 2 &&
-                Date.now() - agreement.lastSent > 1800
-            ) {
-                agreement.lastSent = Date.now();
-                onBarcode(value);
-            }
-        }, detector ? 260 : 900);
+                if (
+                    agreement.count >= 2 &&
+                    Date.now() - agreement.lastSent > 1800
+                ) {
+                    agreement.lastSent = Date.now();
+                    onBarcode(value);
+                }
+            },
+            detector ? 260 : 900,
+        );
 
         return () => {
             cancelled = true;
@@ -222,28 +232,31 @@ export function useCamera(
         };
     }, [barcodeEnabled, open, ready, onBarcode]);
 
-    const capture = useCallback(async (): Promise<Blob | null> => {
-        const video = videoRef.current;
+    const capture = useCallback(
+        async (maxDimension = 1280, quality = 0.82): Promise<Blob | null> => {
+            const video = videoRef.current;
 
-        if (!video || video.readyState < 2) {
-            return null;
-        }
+            if (!video || video.readyState < 2) {
+                return null;
+            }
 
-        const canvas = document.createElement('canvas');
-        const scale = Math.min(
-            1,
-            1280 / Math.max(video.videoWidth, video.videoHeight),
-        );
-        canvas.width = Math.round(video.videoWidth * scale);
-        canvas.height = Math.round(video.videoHeight * scale);
-        canvas
-            .getContext('2d')
-            ?.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(
+                1,
+                maxDimension / Math.max(video.videoWidth, video.videoHeight),
+            );
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            canvas
+                .getContext('2d')
+                ?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        return new Promise((resolve) =>
-            canvas.toBlob(resolve, 'image/jpeg', 0.82),
-        );
-    }, []);
+            return new Promise((resolve) =>
+                canvas.toBlob(resolve, 'image/jpeg', quality),
+            );
+        },
+        [],
+    );
 
     const toggleTorch = useCallback(async () => {
         const track = streamRef.current?.getVideoTracks()[0];

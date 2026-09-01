@@ -111,6 +111,26 @@ class ProductController extends Controller
         return back();
     }
 
+    public function deactivate(CurrentStore $currentStore, string $product): RedirectResponse
+    {
+        Gate::authorize('manageMasterData', $currentStore->get());
+
+        $model = Product::query()
+            ->where('store_id', $currentStore->id())
+            ->where('public_id', $product)
+            ->firstOrFail();
+
+        DB::transaction(function () use ($model): void {
+            $model->update(['is_active' => false]);
+            $model->variants()->update(['is_active' => false]);
+            $model->productUnits()->update(['is_active' => false]);
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Produk dinonaktifkan. Riwayat transaksi tetap aman.']);
+
+        return back();
+    }
+
     public function photo(CurrentStore $currentStore, string $product): StreamedResponse
     {
         Gate::authorize('viewMasterData', $currentStore->get());

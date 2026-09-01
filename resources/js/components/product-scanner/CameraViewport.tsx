@@ -4,6 +4,7 @@ import {
     Pause,
     Play,
     Sparkles,
+    ScanLine,
     SwitchCamera,
     X,
     Zap,
@@ -34,6 +35,8 @@ export function CameraViewport({
     scanMode,
     barcodeError,
     barcodeStatus,
+    photoStatus,
+    photoError,
     onToggleScanMode,
 }: {
     videoRef: RefObject<HTMLVideoElement | null>;
@@ -56,8 +59,12 @@ export function CameraViewport({
     scanMode: 'photo' | 'barcode';
     barcodeError: string;
     barcodeStatus: 'idle' | 'reading' | 'success' | 'not_found';
+    photoStatus: 'idle' | 'reading' | 'success' | 'not_found' | 'failed';
+    photoError: string;
     onToggleScanMode: () => void;
 }) {
+    const photoProcessing = photoStatus === 'reading';
+
     return (
         <div className="relative flex h-svh w-full flex-col overflow-hidden bg-[#102a25] text-white">
             <video
@@ -81,11 +88,13 @@ export function CameraViewport({
                 <div className="rounded-xl bg-[#102a25]/75 px-3 py-2 text-center backdrop-blur-sm">
                     <p className="text-sm font-black">
                         {scanMode === 'photo'
-                            ? 'Arahkan, lalu foto'
+                            ? 'Arahkan, tahan stabil'
                             : 'Arahkan ke barcode'}
                     </p>
                     <p className="text-[11px] text-[#d5e4df]">
-                        Satu atau banyak produk—kamu yang tentukan
+                        {scanMode === 'photo'
+                            ? 'Foto otomatis setelah stabil 1,5 detik'
+                            : 'Hasil terbaca langsung diperiksa'}
                     </p>
                 </div>
                 <button
@@ -191,6 +200,22 @@ export function CameraViewport({
                         {barcodeError}
                     </p>
                 )}
+                {scanMode === 'photo' && photoStatus !== 'idle' && (
+                    <p
+                        role={photoStatus === 'failed' ? 'alert' : 'status'}
+                        aria-live="polite"
+                        className={`mx-5 mb-3 rounded-xl px-3 py-2 text-center text-xs font-black ${photoStatus === 'success' ? 'bg-[#d6f4df] text-[#17633d]' : photoStatus === 'not_found' ? 'bg-[#fff0d9] text-[#87531a]' : photoStatus === 'failed' ? 'bg-red-950/75 text-red-100' : 'bg-white/15 text-[#e5f1ed]'}`}
+                    >
+                        {photoStatus === 'reading'
+                            ? 'Foto diambil. Sedang mengenali produk…'
+                            : photoStatus === 'success'
+                              ? 'Produk dikenali. Membuka hasil…'
+                              : photoStatus === 'not_found'
+                                ? 'Produk belum dikenali. Ubah posisi, lalu tahan stabil.'
+                                : photoError ||
+                                  'Foto gagal diproses. Ubah posisi, lalu coba lagi.'}
+                    </p>
+                )}
                 {scanMode === 'barcode' && (
                     <p
                         role="status"
@@ -200,10 +225,10 @@ export function CameraViewport({
                         {barcodeStatus === 'idle'
                             ? 'Mode barcode aktif. Arahkan kode ke kamera.'
                             : barcodeStatus === 'reading'
-                            ? 'Barcode terbaca, mencari produk…'
-                            : barcodeStatus === 'success'
-                              ? 'Berhasil. Produk masuk ke hasil scan.'
-                              : 'Kode terbaca, tetapi produk belum ada di katalog.'}
+                              ? 'Barcode terbaca, mencari produk…'
+                              : barcodeStatus === 'success'
+                                ? 'Berhasil. Produk masuk ke hasil scan.'
+                                : 'Kode terbaca, tetapi produk belum ada di katalog.'}
                     </p>
                 )}
                 <div className="flex items-center justify-between gap-4 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
@@ -221,7 +246,7 @@ export function CameraViewport({
                     <button
                         type="button"
                         onClick={onCapture}
-                        disabled={!ready}
+                        disabled={!ready || photoProcessing}
                         className="grid size-[4.5rem] place-items-center rounded-full border-[5px] border-white bg-[#e2793c] shadow-[0_12px_30px_-12px_rgba(226,121,60,.8)] transition active:scale-95 disabled:opacity-40 motion-reduce:transition-none"
                         aria-label="Ambil foto"
                     >
@@ -230,7 +255,7 @@ export function CameraViewport({
                     <button
                         type="button"
                         onClick={onFinish}
-                        disabled={captures.length === 0}
+                        disabled={captures.length === 0 || photoProcessing}
                         className="min-h-12 min-w-24 rounded-2xl bg-white px-3 text-sm font-black text-[#173c35] disabled:opacity-40"
                     >
                         Tinjau hasil · {captures.length}
@@ -239,15 +264,25 @@ export function CameraViewport({
                 <button
                     type="button"
                     onClick={onToggleAuto}
+                    disabled={scanMode === 'barcode'}
                     className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.4rem)] left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#102a25]/75 px-3 text-[11px] font-bold text-[#e2eee9] backdrop-blur-sm"
                 >
-                    {autoPaused ? (
-                        <Play className="size-3.5" />
+                    {scanMode === 'barcode' ? (
+                        <>
+                            <ScanLine className="size-3.5 text-[#82d4a7]" />
+                            Barcode otomatis
+                        </>
                     ) : (
-                        <Pause className="size-3.5" />
+                        <>
+                            {autoPaused ? (
+                                <Play className="size-3.5" />
+                            ) : (
+                                <Pause className="size-3.5" />
+                            )}
+                            <Sparkles className="size-3.5 text-[#f0a35d]" />
+                            Auto foto {autoPaused ? 'dijeda' : 'aktif'}
+                        </>
                     )}
-                    <Sparkles className="size-3.5 text-[#f0a35d]" />
-                    Auto {autoPaused ? 'dijeda' : 'aktif'}
                 </button>
             </div>
         </div>
