@@ -1,11 +1,51 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+export type DiscoverySuggestion = {
+    item_type: string;
+    identity: {
+        brand: string | null;
+        product_name: string;
+        model: string | null;
+        variant: string | null;
+        display_name: string;
+        description: string | null;
+    };
+    classification: {
+        department_code: string;
+        category_suggestion: string | null;
+    };
+    quantity: {
+        mode: string | null;
+        sale_unit_code: string | null;
+        net_content: {
+            value: string;
+            unit_code: string;
+            display: string;
+        } | null;
+        larger_unit_code: string | null;
+        conversion_factor: string | null;
+    };
+    pricing: {
+        estimated_purchase_price: string | null;
+        recommended_selling_price: string | null;
+        currency: string;
+        basis: string;
+        confidence: number | null;
+    };
+    quality: {
+        confidence: number | null;
+        uncertain_fields: string[];
+        issues: string[];
+        warnings: string[];
+    };
+};
+
 export type ProductDraft = {
     id: string;
     file: File;
     previewUrl: string;
     status: 'waiting' | 'analyzing' | 'ready' | 'failed';
-    suggestion: Record<string, unknown> | null;
+    suggestion: DiscoverySuggestion | null;
     error: string | null;
     applied: boolean;
 };
@@ -68,7 +108,7 @@ export function useProductDrafts() {
                 },
             });
             const payload = (await response.json()) as {
-                data?: Record<string, unknown>;
+                data?: DiscoverySuggestion;
                 message?: string;
             };
 

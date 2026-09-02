@@ -42,7 +42,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useProductDrafts } from './use-product-drafts';
-import type { ProductDraft } from './use-product-drafts';
+import type { DiscoverySuggestion, ProductDraft } from './use-product-drafts';
 
 type Option = {
     public_id: string;
@@ -846,37 +846,23 @@ export default function ProductsIndex({
         value: ProductVariant[keyof ProductVariant],
     ) => updateVariantFields(index, { [key]: value });
     const suggestionValues = useCallback(
-        (suggestion: Record<string, unknown>) => {
-            const text = (key: string) =>
-                typeof suggestion[key] === 'string'
-                    ? String(suggestion[key]).trim()
-                    : '';
-            const suggestedName = text('name');
-            const parts = [
-                text('brand'),
-                text('model'),
-                text('variant'),
-                text('size'),
-            ].filter(Boolean);
-            const name =
-                suggestedName ||
-                parts
-                    .filter(
-                        (part, index) =>
-                            parts.findIndex(
-                                (candidate) =>
-                                    candidate.toLocaleLowerCase('id-ID') ===
-                                    part.toLocaleLowerCase('id-ID'),
-                            ) === index,
-                    )
-                    .join(' ');
+        (suggestion: DiscoverySuggestion) => {
             const category = categories.find(
                 (item) =>
                     item.is_active &&
                     item.name.toLocaleLowerCase('id-ID') ===
-                        text('category').toLocaleLowerCase('id-ID'),
+                        suggestion.classification.category_suggestion?.toLocaleLowerCase(
+                            'id-ID',
+                        ),
             );
-            const findUnit = (code: string, type: UnitOption['unit_type']) => {
+            const findUnit = (
+                code: string | null,
+                type: UnitOption['unit_type'],
+            ) => {
+                if (!code) {
+                    return undefined;
+                }
+
                 const acceptedLabels = new Set(
                     (
                         unitCodeAliases[type][normalizeUnitLabel(code)] ?? [
@@ -894,20 +880,27 @@ export default function ProductsIndex({
                         ),
                 );
             };
-            const retailUnit = findUnit(text('retail_unit_code'), 'retail');
-            const largeUnit = findUnit(text('large_unit_code'), 'large');
+            const retailUnit = findUnit(
+                suggestion.quantity.sale_unit_code,
+                'retail',
+            );
+            const largeUnit = findUnit(
+                suggestion.quantity.larger_unit_code,
+                'large',
+            );
 
             return {
-                name,
-                barcode: text('barcode') || text('gtin') || text('ean'),
+                name: suggestion.identity.display_name,
+                description: suggestion.identity.description ?? '',
+                barcode: '',
                 category_public_id: category?.public_id ?? '',
                 retail_unit_public_id: retailUnit?.public_id ?? '',
                 large_unit_public_id: largeUnit?.public_id ?? '',
                 purchase_price: String(
-                    suggestion.estimated_purchase_price ?? '',
+                    suggestion.pricing.estimated_purchase_price ?? '',
                 ),
                 selling_price: String(
-                    suggestion.recommended_selling_price ?? '',
+                    suggestion.pricing.recommended_selling_price ?? '',
                 ),
             };
         },
@@ -1000,12 +993,14 @@ export default function ProductsIndex({
             return;
         }
 
+        const discoverySuggestion = active.suggestion;
         queueMicrotask(() => {
-            const suggestion = suggestionValues(active.suggestion ?? {});
+            const suggestion = suggestionValues(discoverySuggestion);
 
             form.setData({
                 ...form.data,
                 name: form.data.name || suggestion.name,
+                description: form.data.description || suggestion.description,
                 category_public_id:
                     form.data.category_public_id ||
                     suggestion.category_public_id,
@@ -1407,13 +1402,13 @@ export default function ProductsIndex({
                                                         <span className="min-w-0 flex-1">
                                                             <span className="block truncate text-xs font-black text-slate-800">
                                                                 {draft.suggestion &&
-                                                                typeof draft
-                                                                    .suggestion
-                                                                    .name ===
-                                                                    'string'
+                                                                draft.suggestion
+                                                                    .identity
+                                                                    .display_name
                                                                     ? draft
                                                                           .suggestion
-                                                                          .name
+                                                                          .identity
+                                                                          .display_name
                                                                     : `Produk ${index + 1}`}
                                                             </span>
                                                             <span
