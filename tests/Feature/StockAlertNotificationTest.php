@@ -9,12 +9,32 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class StockAlertNotificationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_pages_remain_available_during_deployment_before_alert_read_migration(): void
+    {
+        [$owner, $store] = $this->criticalBalance('2.500000', '5.000000');
+        Schema::rename('stock_alert_reads', 'stock_alert_reads_pending');
+
+        try {
+            $this->actingAs($owner)
+                ->withSession(['active_store_id' => $store->id])
+                ->get(route('dashboard'))
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->where('stockAlerts.count', 0)
+                    ->where('stockAlerts.unread_count', 0)
+                    ->where('stockAlerts.items', []));
+        } finally {
+            Schema::rename('stock_alert_reads_pending', 'stock_alert_reads');
+        }
+    }
 
     public function test_critical_stock_is_shared_as_an_unread_notification(): void
     {

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class StockAlertNotifications
 {
@@ -16,6 +17,10 @@ class StockAlertNotifications
      */
     public function summary(User $user, Store $store): array
     {
+        if (! Schema::hasTable('stock_alert_reads')) {
+            return $this->emptySummary();
+        }
+
         $query = $this->criticalBalances($store)
             ->leftJoin('stock_alert_reads', function (JoinClause $join) use ($store, $user): void {
                 $join->on('stock_alert_reads.inventory_balance_id', '=', 'inventory_balances.id')
@@ -61,6 +66,10 @@ class StockAlertNotifications
 
     public function markCurrentAsRead(User $user, Store $store): void
     {
+        if (! Schema::hasTable('stock_alert_reads')) {
+            return;
+        }
+
         $now = now();
         $rows = $this->criticalBalances($store)
             ->get([
@@ -123,5 +132,13 @@ class StockAlertNotifications
             .' OR stock_alert_reads.minimum_quantity <> inventory_balances.minimum_quantity'
             .' OR inventory_balances.updated_at > stock_alert_reads.balance_updated_at'
             .' THEN 1 ELSE 0 END';
+    }
+
+    /**
+     * @return array{count: int, unread_count: int, items: array<int, array<string, mixed>>}
+     */
+    private function emptySummary(): array
+    {
+        return ['count' => 0, 'unread_count' => 0, 'items' => []];
     }
 }
