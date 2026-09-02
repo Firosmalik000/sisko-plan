@@ -9,8 +9,30 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+type LocaleCode = 'id' | 'ms';
+type LocaleOption = { code: LocaleCode; label: string };
+
+const fallbackLocales: LocaleOption[] = [
+    { code: 'id', label: 'Bahasa Indonesia' },
+    { code: 'ms', label: 'Bahasa Melayu' },
+];
+
+const isLocaleOption = (value: unknown): value is LocaleOption =>
+    typeof value === 'object' &&
+    value !== null &&
+    'code' in value &&
+    (value.code === 'id' || value.code === 'ms') &&
+    'label' in value &&
+    typeof value.label === 'string';
+
 export default function LanguageSwitcher() {
-    const { locale, locales } = usePage().props;
+    const pageProps = usePage().props;
+    const locale: LocaleCode = pageProps.locale === 'ms' ? 'ms' : 'id';
+    const configuredLocales = Array.isArray(pageProps.locales)
+        ? pageProps.locales.filter(isLocaleOption)
+        : [];
+    const locales =
+        configuredLocales.length > 0 ? configuredLocales : fallbackLocales;
     const [isChanging, setIsChanging] = useState(false);
 
     const changeLocale = (nextLocale: string) => {

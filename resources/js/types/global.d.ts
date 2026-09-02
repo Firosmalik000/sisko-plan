@@ -25,8 +25,8 @@ declare module '@inertiajs/core' {
                 social_image_url: string | null;
                 robots_index: boolean;
             };
-            locale: 'id' | 'ms';
-            locales: Array<{ code: 'id' | 'ms'; label: string }>;
+            locale?: 'id' | 'ms';
+            locales?: Array<{ code: 'id' | 'ms'; label: string }>;
             auth: Auth;
             sidebarOpen: boolean;
             [key: string]: unknown;

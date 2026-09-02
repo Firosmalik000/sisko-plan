@@ -19,6 +19,8 @@ let appName =
     'Laravel';
 let localeListenerRegistered = false;
 const pages = import.meta.glob<{ default: ComponentType }>('./pages/**/*.tsx');
+const normalizeLocale = (locale: unknown): 'id' | 'ms' =>
+    locale === 'ms' ? 'ms' : 'id';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -52,11 +54,13 @@ createInertiaApp({
             }
         }
 
-        setActiveLocale(page.props.locale as 'id' | 'ms');
+        setActiveLocale(normalizeLocale(page.props.locale));
 
         if (!ssr && !localeListenerRegistered) {
             router.on('navigate', (event) => {
-                setActiveLocale(event.detail.page.props.locale as 'id' | 'ms');
+                setActiveLocale(
+                    normalizeLocale(event.detail.page.props.locale),
+                );
             });
             localeListenerRegistered = true;
         }
