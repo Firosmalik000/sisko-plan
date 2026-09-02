@@ -36,11 +36,12 @@ export default defineConfig(({ command }) => ({
     server: {
         host: '0.0.0.0',
         port: devPort,
-        strictPort: true,
+        // A stale Vite process should not prevent local development from
+        // starting; Vite will select the next available port instead.
+        strictPort: false,
         ws: {
             host: 'sisko-plan.test',
             protocol: 'wss',
-            clientPort: devPort,
         },
     },
     plugins: [
