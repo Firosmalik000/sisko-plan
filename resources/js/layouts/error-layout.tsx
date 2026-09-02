@@ -1,12 +1,15 @@
 import { Link, usePage } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import LanguageSwitcher from '@/components/language-switcher';
+import { useTranslation } from '@/lib/i18n';
 
 export default function ErrorLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    useTranslation();
+
     const { appName = 'Sisko Plan' } = usePage<{ appName?: string }>().props;
 
     return (

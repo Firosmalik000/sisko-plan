@@ -50,6 +50,7 @@ import {
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { formatQuantity } from '@/lib/currency';
+import { useTranslation } from '@/lib/i18n';
 import { storeThemeVariables } from '@/lib/store-theme';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
@@ -297,6 +298,7 @@ export default function AppMobileLayout({
 }
 
 function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
+    const { t } = useTranslation();
     const {
         name,
         branding,
@@ -574,7 +576,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                                 </span>
                                                 <span className="min-w-0 flex-1">
                                                     <span className="block truncate text-xs font-bold text-[var(--app-ink)]">
-                                                        {item.title}
+                                                        {t(item.title)}
                                                     </span>
                                                 </span>
                                                 <ChevronRight className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
@@ -740,6 +742,7 @@ function StoreMenu({
 }
 
 function BottomNavigation() {
+    useTranslation();
     const { currentUrl } = useCurrentUrl();
     const { activeStore } = usePage<CustomerPageProps>().props;
 
@@ -799,6 +802,7 @@ function BottomNavLink({
     active: boolean;
     disabled: boolean;
 }) {
+    const { t } = useTranslation();
     const Icon = item.icon;
 
     return (
@@ -828,7 +832,7 @@ function BottomNavLink({
                     <span className="absolute -top-1 size-1 rounded-full bg-[#e2793c]" />
                 )}
             </span>
-            <span className="truncate">{item.title}</span>
+            <span className="truncate">{t(item.title)}</span>
         </Link>
     );
 }
@@ -840,6 +844,7 @@ function CashierMenu({
     active: boolean;
     disabled: boolean;
 }) {
+    const { t } = useTranslation();
     const [cashierMode, setCashierMode] = useState<'scan' | 'manual'>('scan');
 
     return (
@@ -944,10 +949,10 @@ function CashierMenu({
                                     </span>
                                     <span className="min-w-0 flex-1">
                                         <span className="block text-sm font-black text-[var(--app-ink)]">
-                                            {item.title}
+                                            {t(item.title)}
                                         </span>
                                         <span className="block text-xs font-semibold text-[var(--muted-foreground)]">
-                                            {item.description}
+                                            {t(item.description)}
                                         </span>
                                     </span>
                                     <ChevronRight className="size-4 shrink-0 text-[var(--muted-foreground)] transition group-hover:translate-x-0.5" />
@@ -968,6 +973,8 @@ function MoreMenu({
     active: boolean;
     disabled: boolean;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -1018,7 +1025,7 @@ function MoreMenu({
                         <div key={section.title}>
                             <div className="mb-3 flex items-center justify-between">
                                 <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
-                                    {section.title}
+                                    {t(section.title)}
                                 </p>
                             </div>
                             <div className="space-y-2">
@@ -1033,7 +1040,7 @@ function MoreMenu({
                                             </span>
                                             <span className="min-w-0 flex-1">
                                                 <span className="block text-sm font-black text-[var(--app-ink)]">
-                                                    {item.title}
+                                                    {t(item.title)}
                                                 </span>
                                             </span>
                                             <ChevronRight className="size-4 shrink-0 text-[var(--muted-foreground)] transition group-hover:translate-x-0.5" />

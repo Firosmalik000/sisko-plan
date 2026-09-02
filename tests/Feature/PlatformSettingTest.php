@@ -122,10 +122,15 @@ class PlatformSettingTest extends TestCase
         Storage::disk('local')->assertExists($firstPath);
 
         $this->get(route('platform.logo'))->assertOk();
-        $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
-            ->where('branding.logo_url', route('platform.logo', [
-                'v' => substr(hash('sha256', $firstPath), 0, 12),
-            ])));
+        $logoUrl = route('platform.logo', [
+            'v' => substr(hash('sha256', $firstPath), 0, 12),
+        ]);
+        $this->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('branding.logo_url', $logoUrl))
+            ->assertSee('<link rel="icon" href="'.$logoUrl.'">', false)
+            ->assertSee('<link rel="apple-touch-icon" href="'.$logoUrl.'">', false)
+            ->assertSee('<meta property="og:image" content="'.$logoUrl.'">', false);
 
         $this->actingAs($admin)
             ->post(route('super-admin.brand-seo.logo.update'), [

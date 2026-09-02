@@ -2,9 +2,30 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
+const babel = require('@babel/core');
+const translateUiLiterals = require('./translate-ui.cjs');
 
 const root = process.cwd();
 const sourceRoot = path.join(root, 'resources', 'js');
+
+const transformProbe = babel.transformSync(
+    "const menu = [{ title: 'Beranda', description: 'Ringkasan usaha' }];",
+    {
+        configFile: false,
+        babelrc: false,
+        plugins: [translateUiLiterals],
+    },
+)?.code;
+
+if (
+    !transformProbe?.includes('get title()') ||
+    !transformProbe.includes('get description()') ||
+    transformProbe.includes('title: __translateUi')
+) {
+    throw new Error(
+        'UI metadata translations must be resolved dynamically when properties are read.',
+    );
+}
 const catalogPath = path.join(sourceRoot, 'lib', 'i18n.ts');
 const translatedProps = new Set([
     'aria-label',

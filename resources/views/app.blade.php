@@ -4,12 +4,17 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         @php($publicSeo = request()->routeIs('home') || request()->routeIs('pricing*'))
+        @php($brandName = $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan'))
+        @php($brandLogoUrl = $page['props']['branding']['logo_url'] ?? null)
+        @php($socialImageUrl = $page['props']['branding']['social_image_url'] ?? $brandLogoUrl)
+        <meta name="application-name" content="{{ $brandName }}">
+        <meta name="apple-mobile-web-app-title" content="{{ $brandName }}">
         <meta name="description" content="{{ $page['props']['branding']['seo_description'] ?? '' }}">
         @if (! empty($page['props']['branding']['seo_keywords']))
             <meta name="keywords" content="{{ $page['props']['branding']['seo_keywords'] }}">
         @endif
         <meta name="robots" content="{{ $publicSeo && ($page['props']['branding']['robots_index'] ?? true) ? 'index, follow' : 'noindex, nofollow' }}">
-        <meta property="og:site_name" content="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
+        <meta property="og:site_name" content="{{ $brandName }}">
         <meta property="og:title" content="{{ $page['props']['branding']['seo_title'] ?? config('app.name', 'Sisko Plan') }}">
         <meta property="og:description" content="{{ $page['props']['branding']['seo_description'] ?? '' }}">
         <meta property="og:type" content="website">
@@ -17,9 +22,10 @@
             <meta property="og:url" content="{{ url()->current() }}">
             <link rel="canonical" href="{{ url()->current() }}">
         @endif
-        @if (! empty($page['props']['branding']['social_image_url']))
-            <meta property="og:image" content="{{ $page['props']['branding']['social_image_url'] }}">
-            <meta name="twitter:card" content="summary_large_image">
+        @if (! empty($socialImageUrl))
+            <meta property="og:image" content="{{ $socialImageUrl }}">
+            <meta name="twitter:image" content="{{ $socialImageUrl }}">
+            <meta name="twitter:card" content="{{ ! empty($page['props']['branding']['social_image_url']) ? 'summary_large_image' : 'summary' }}">
         @endif
 
         {{-- The application currently ships with one consistent light theme. --}}
@@ -37,16 +43,22 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @if ($brandLogoUrl)
+            <link rel="icon" href="{{ $brandLogoUrl }}">
+            <link rel="shortcut icon" href="{{ $brandLogoUrl }}">
+            <link rel="apple-touch-icon" href="{{ $brandLogoUrl }}">
+        @else
+            <link rel="icon" href="/favicon.ico" sizes="any">
+            <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @endif
 
         @fonts
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
-            <title>{{ $page['props']['branding']['seo_title'] ?? config('app.name', 'Laravel') }} - {{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Laravel') }}</title>
+            <title>{{ $page['props']['branding']['seo_title'] ?? $brandName }} - {{ $brandName }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

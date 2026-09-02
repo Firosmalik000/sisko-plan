@@ -21,6 +21,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTranslation } from '@/lib/i18n';
 import type { PlatformAdmin } from '@/types';
 
 type NavigationItem = {
@@ -100,6 +101,8 @@ export default function SuperAdminLayout({
 }: {
     children: React.ReactNode;
 }) {
+    useTranslation();
+
     const { platformAdmin, name, branding } = usePage<{
         platformAdmin: PlatformAdmin;
         name: string;
@@ -175,6 +178,7 @@ export default function SuperAdminLayout({
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
+                                                prefetch
                                                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition ${active ? 'bg-white text-[#b83219] shadow-lg shadow-[#9f2f19]/20' : 'text-white/80 hover:bg-white/12 hover:text-white'}`}
                                             >
                                                 <item.icon className="size-4" />

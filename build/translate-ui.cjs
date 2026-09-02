@@ -127,7 +127,25 @@ module.exports = function translateUiLiterals({ types: t }) {
                     t.isStringLiteral(path.node.value) &&
                     isHumanText(path.node.value.value)
                 ) {
-                    path.node.value = translationCall(path.node.value.value);
+                    const translatedValue = translationCall(
+                        path.node.value.value,
+                    );
+
+                    // Navigation and form metadata commonly live at module
+                    // scope. Resolve their copy when React reads the property
+                    // so an Inertia locale switch does not retain stale text.
+                    path.replaceWith(
+                        t.objectMethod(
+                            'get',
+                            path.node.key,
+                            [],
+                            t.blockStatement([
+                                t.returnStatement(translatedValue),
+                            ]),
+                            path.node.computed,
+                        ),
+                    );
+                    path.skip();
                 }
             },
             StringLiteral(path) {

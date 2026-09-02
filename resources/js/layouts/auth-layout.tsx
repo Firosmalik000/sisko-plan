@@ -1,4 +1,5 @@
 import AuthLayoutTemplate from '@/layouts/auth/auth-simple-layout';
+import { useTranslation } from '@/lib/i18n';
 
 export default function AuthLayout({
     title = '',
@@ -9,6 +10,8 @@ export default function AuthLayout({
     description?: string;
     children: React.ReactNode;
 }) {
+    useTranslation();
+
     return (
         <AuthLayoutTemplate title={title} description={description}>
             {children}

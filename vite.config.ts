@@ -58,12 +58,10 @@ export default defineConfig(({ command }) => ({
         inertia({ ssr: command === 'serve' ? false : undefined }),
         react({
             babel: {
-                plugins: [
-                    translateUiLiterals,
-                    ...(command === 'build'
-                        ? ['babel-plugin-react-compiler']
-                        : []),
-                ],
+                // Runtime translations depend on locale-aware metadata
+                // getters. React Compiler can memoize those getter results
+                // across an Inertia locale switch and retain stale copy.
+                plugins: [translateUiLiterals],
             },
         }),
         tailwindcss(),

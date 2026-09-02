@@ -130,6 +130,7 @@ Every frontend change must be verified at all of these viewport widths:
 - 2026-09-02: Added secure logo upload/replacement/removal, managed logo rendering, 40+ channel choices, custom platform input, and a 25-link limit.
 - 2026-09-02: Verified focused feature and permission tests, PHPStan, TypeScript, ESLint, Prettier, PHP lint, and additive migration up/rollback/up.
 - 2026-09-02: Connected the managed logo to the tenant mobile header, standard dashboard drawer, and super-admin shell; desktop tenant sidebar already used the dynamic logo component.
+- 2026-09-02: Replaced static Laravel favicon metadata with the managed logo for browser icons, Apple touch icon, application naming, and social-image fallback.
 
 ## Discoveries and Deviations
 
