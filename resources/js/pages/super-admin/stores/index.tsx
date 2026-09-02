@@ -44,7 +44,7 @@ export default function AdminStores({
             <div className="platform-enter flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
                     <p className="platform-kicker">Tenant management</p>
-                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#0b292f]">
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">
                         Toko terdaftar
                     </h1>
                     <p className="mt-1 text-xs font-medium text-slate-500">
@@ -119,7 +119,7 @@ export default function AdminStores({
                                     />
                                     <td className="px-5 py-4">
                                         <div className="flex items-center gap-3">
-                                            <span className="flex size-9 items-center justify-center rounded-lg bg-[#d7a941]/20 text-[#725515]">
+                                            <span className="flex size-9 items-center justify-center rounded-lg bg-[#ff7a59]/20 text-[#9f2f19]">
                                                 <Building2 className="size-4" />
                                             </span>
                                             <div>

@@ -66,7 +66,7 @@ class StoreController extends Controller
             ]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Status toko berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Store status updated successfully.')]);
 
         return back();
     }

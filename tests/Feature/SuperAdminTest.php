@@ -320,6 +320,10 @@ class SuperAdminTest extends TestCase
             ['POST', route('super-admin.platform-admins.store')],
             ['PATCH', route('super-admin.platform-admins.status', $targetAdmin)],
             ['PUT', route('super-admin.platform-admins.permissions.update', $targetAdmin)],
+            ['GET', route('super-admin.brand-seo.index')],
+            ['PATCH', route('super-admin.brand-seo.update')],
+            ['POST', route('super-admin.brand-seo.logo.update')],
+            ['DELETE', route('super-admin.brand-seo.logo.destroy')],
         ];
 
         foreach ($requests as [$method, $url]) {

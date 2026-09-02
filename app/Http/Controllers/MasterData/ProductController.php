@@ -67,7 +67,7 @@ class ProductController extends Controller
     public function store(ProductRequest $request, CurrentStore $currentStore, SaveProduct $saveProduct): RedirectResponse
     {
         $saveProduct->handle(AuthenticatedUser::get($request), $currentStore->get(), $request->productData(), null, $request->file('photo'), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Produk berhasil ditambahkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Product added successfully.')]);
 
         return back();
     }
@@ -76,7 +76,7 @@ class ProductController extends Controller
     {
         $model = Product::query()->where('store_id', $currentStore->id())->where('public_id', $product)->firstOrFail();
         $saveProduct->handle(AuthenticatedUser::get($request), $currentStore->get(), $request->productData(), $model, $request->file('photo'), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Produk berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Product updated successfully.')]);
 
         return back();
     }
@@ -106,7 +106,7 @@ class ProductController extends Controller
             Storage::disk('local')->delete($photoPath);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Produk berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Product deleted successfully.')]);
 
         return back();
     }
@@ -126,7 +126,7 @@ class ProductController extends Controller
             $model->productUnits()->update(['is_active' => false]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Produk dinonaktifkan. Riwayat transaksi tetap aman.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Product deactivated. Transaction history is safe.')]);
 
         return back();
     }

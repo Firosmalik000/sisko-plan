@@ -3,11 +3,13 @@
 use App\Http\Controllers\Auth\GoogleAuthenticationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Expenses\ExpenseController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MasterData\CategoryController;
 use App\Http\Controllers\MasterData\FinancialAccountController;
 use App\Http\Controllers\MasterData\ProductController;
 use App\Http\Controllers\MasterData\SupplierController;
 use App\Http\Controllers\MasterData\UnitController;
+use App\Http\Controllers\Notifications\StockAlertNotificationController;
 use App\Http\Controllers\Operations\LedgerController;
 use App\Http\Controllers\Operations\StockCountController;
 use App\Http\Controllers\PricingController;
@@ -20,10 +22,13 @@ use App\Http\Controllers\StoreController;
 use App\Http\Controllers\StoreMemberController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\ImpersonationController;
+use App\Http\Controllers\SuperAdmin\PlatformSettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+Route::get('brand/logo', [PlatformSettingController::class, 'logo'])->name('platform.logo');
 Route::get('pricing', PricingController::class)->name('pricing');
+Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::middleware(['guest', 'throttle:10,1'])->group(function () {
     Route::get('auth/google/redirect', [GoogleAuthenticationController::class, 'redirect'])->name('auth.google.redirect');
@@ -44,6 +49,8 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
     Route::post('stores/{store}/switch', [StoreController::class, 'switch'])->name('stores.switch');
     Route::post('stores/{store}/members', [StoreMemberController::class, 'store'])->name('stores.members.store');
     Route::patch('stores/{store}/members/{member}', [StoreMemberController::class, 'update'])->name('stores.members.update');
+
+    Route::middleware('active.store')->post('notifications/stock-alerts/read', [StockAlertNotificationController::class, 'read'])->name('notifications.stock-alerts.read');
 
     Route::middleware(['active.store', 'subscription.access'])->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');

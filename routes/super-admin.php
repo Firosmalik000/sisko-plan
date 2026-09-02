@@ -5,6 +5,7 @@ use App\Http\Controllers\SuperAdmin\DashboardController;
 use App\Http\Controllers\SuperAdmin\ImpersonationController;
 use App\Http\Controllers\SuperAdmin\PaymentController;
 use App\Http\Controllers\SuperAdmin\PlatformAdminController;
+use App\Http\Controllers\SuperAdmin\PlatformSettingController;
 use App\Http\Controllers\SuperAdmin\SecurityController;
 use App\Http\Controllers\SuperAdmin\StoreController;
 use App\Http\Controllers\SuperAdmin\SubscriptionController;
@@ -44,6 +45,10 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::post('platform-admins', [PlatformAdminController::class, 'store'])->middleware('can:'.PlatformPermission::ADMINS_MANAGE)->name('platform-admins.store');
             Route::patch('platform-admins/{platformAdmin}/status', [PlatformAdminController::class, 'updateStatus'])->middleware('can:'.PlatformPermission::ADMINS_MANAGE)->name('platform-admins.status');
             Route::put('platform-admins/{platformAdmin}/permissions', [PlatformAdminController::class, 'updatePermissions'])->middleware('can:'.PlatformPermission::ADMINS_MANAGE)->name('platform-admins.permissions.update');
+            Route::get('brand-seo', [PlatformSettingController::class, 'index'])->middleware('can:'.PlatformPermission::BRANDING_VIEW)->name('brand-seo.index');
+            Route::patch('brand-seo', [PlatformSettingController::class, 'update'])->middleware('can:'.PlatformPermission::BRANDING_MANAGE)->name('brand-seo.update');
+            Route::post('brand-seo/logo', [PlatformSettingController::class, 'updateLogo'])->middleware('can:'.PlatformPermission::BRANDING_MANAGE)->name('brand-seo.logo.update');
+            Route::delete('brand-seo/logo', [PlatformSettingController::class, 'destroyLogo'])->middleware('can:'.PlatformPermission::BRANDING_MANAGE)->name('brand-seo.logo.destroy');
         });
     });
 });

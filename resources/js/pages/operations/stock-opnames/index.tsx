@@ -122,11 +122,11 @@ export default function StockOpnameIndex({
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="flex min-w-0 items-center gap-3">
-                                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e7f1ec] text-[#286451]">
+                                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                                                     <ClipboardList className="size-5" />
                                                 </span>
                                                 <div className="min-w-0">
-                                                    <p className="truncate font-black text-[#173c35]">
+                                                    <p className="truncate font-black text-[var(--app-ink)]">
                                                         {count.document_number}
                                                     </p>
                                                     <p className="mt-0.5 truncate text-xs text-stone-500">
@@ -188,7 +188,7 @@ export default function StockOpnameIndex({
                         </div>
                     ) : (
                         <div className="flex min-h-48 flex-col items-center justify-center text-center">
-                            <span className="flex size-12 items-center justify-center rounded-2xl bg-[#e7f1ec] text-[#286451]">
+                            <span className="flex size-12 items-center justify-center rounded-2xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                                 <PackageCheck className="size-6" />
                             </span>
                             <p className="mt-3 font-black text-stone-700">
@@ -216,13 +216,13 @@ function Metric({
 }) {
     return (
         <div
-            className={`rounded-xl px-3 py-2 ${danger ? 'bg-orange-50' : 'bg-[#f2f6f3]'}`}
+            className={`rounded-xl px-3 py-2 ${danger ? 'bg-orange-50' : 'bg-[#fff3ef]'}`}
         >
             <p className="text-[9px] font-bold tracking-wide text-stone-500 uppercase">
                 {label}
             </p>
             <p
-                className={`mt-0.5 text-sm font-black tabular-nums ${danger ? 'text-orange-700' : 'text-[#173c35]'}`}
+                className={`mt-0.5 text-sm font-black tabular-nums ${danger ? 'text-orange-700' : 'text-[var(--app-ink)]'}`}
             >
                 {value}
             </p>

@@ -163,7 +163,7 @@ export default function SaleShow({
                 }
             />
             <style>{`@page { size: ${paperWidth} auto; margin: 3mm; } @media print { body * { visibility: hidden !important; } .print-receipt, .print-receipt * { visibility: visible !important; } .print-receipt { position: absolute; inset: 0; width: ${paperWidth}; max-width: ${paperWidth}; padding: 2mm !important; box-shadow: none !important; border: 0 !important; font-size: 10px !important; } }`}</style>
-            <div className="min-h-full bg-[linear-gradient(145deg,#edf5f2,#fff8ef)] p-4 md:p-8">
+            <div className="min-h-full bg-[linear-gradient(145deg,var(--app-soft),#fff8ef)] p-4 md:p-8">
                 <div className="mx-auto grid max-w-6xl gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
                     <div className="space-y-5">
                         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -177,7 +177,7 @@ export default function SaleShow({
                             <button
                                 type="button"
                                 onClick={() => window.print()}
-                                className="inline-flex items-center gap-2 rounded-full bg-[#173c39] px-5 py-2.5 text-sm font-bold text-white"
+                                className="inline-flex items-center gap-2 rounded-full bg-[var(--app-primary)] px-5 py-2.5 text-sm font-bold text-[var(--app-primary-foreground)]"
                             >
                                 <Printer className="size-4" />
                                 Cetak struk
@@ -252,7 +252,7 @@ export default function SaleShow({
                                         )}
                                     </span>
                                 </div>
-                                <div className="flex justify-between pt-2 text-xl font-black text-[#173c39]">
+                                <div className="flex justify-between pt-2 text-xl font-black text-[var(--app-ink)]">
                                     <span>Total</span>
                                     <span>{money(sale.total_amount)}</span>
                                 </div>
@@ -280,7 +280,7 @@ export default function SaleShow({
                         </section>
                         {canViewProfit && (
                             <section className="grid gap-3 sm:grid-cols-2 print:hidden">
-                                <div className="rounded-2xl bg-[#173c39] p-5 text-white">
+                                <div className="rounded-2xl bg-[var(--app-primary)] p-5 text-[var(--app-primary-foreground)]">
                                     <p className="text-xs text-teal-50/60">
                                         HPP penjualan
                                     </p>

@@ -82,20 +82,23 @@ class PricingController extends Controller
         ]);
         $plan = Plan::query()->where('public_id', $validated['plan_id'])->where('is_active', true)->first();
         if ($plan === null) {
-            throw ValidationException::withMessages(['plan_id' => 'Paket tidak tersedia.']);
+            throw ValidationException::withMessages(['plan_id' => __('Plan is unavailable.')]);
         }
 
         $result = $action->handle($user, $plan, $request->ip());
         if ($result['scheduled']) {
             Inertia::flash('toast', [
                 'type' => 'success',
-                'message' => "Paket {$plan->name} dijadwalkan mulai {$result['period']->period_start->translatedFormat('d M Y')}.",
+                'message' => __('Plan :name is scheduled to start on :date.', [
+                    'name' => $plan->name,
+                    'date' => $result['period']->period_start->translatedFormat('d M Y'),
+                ]),
             ]);
 
             return to_route('subscription.index');
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => "Paket {$plan->name} berhasil diaktifkan."]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Plan :name activated successfully.', ['name' => $plan->name])]);
 
         return to_route('dashboard');
     }

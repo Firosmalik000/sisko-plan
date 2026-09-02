@@ -27,6 +27,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { currencySymbol, localeTag } from '@/lib/currency';
 
 type Category = {
     public_id: string;
@@ -125,7 +126,7 @@ export default function ExpensesPage({
             <Head title="Biaya" />
             <main className="min-h-full bg-[linear-gradient(180deg,#f7faf8_0%,#f1f5f3_100%)] px-3 py-3 sm:px-5 lg:px-6">
                 <div className="mx-auto max-w-7xl space-y-3">
-                    <header className="relative overflow-hidden rounded-2xl border border-teal-950/10 bg-[#123d36] px-4 py-4 text-white shadow-[0_12px_32px_rgba(18,61,54,0.13)] sm:px-5">
+                    <header className="relative overflow-hidden rounded-2xl border border-teal-950/10 bg-[var(--app-ink)] px-4 py-4 text-white shadow-[0_12px_32px_rgba(18,61,54,0.13)] sm:px-5">
                         <div className="absolute -top-16 right-0 size-44 rounded-full bg-teal-300/15 blur-2xl" />
                         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
@@ -146,7 +147,7 @@ export default function ExpensesPage({
                                 </button>
                                 <button
                                     type="button"
-                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 text-sm font-black text-[#173c35] transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 text-sm font-black text-[var(--app-ink)] transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
                                     disabled={!canPost}
                                     onClick={() => setExpenseOpen(true)}
                                 >
@@ -166,7 +167,7 @@ export default function ExpensesPage({
                         <MetricCard
                             icon={<ReceiptText className="size-5" />}
                             label="Transaksi"
-                            value={summary.count.toLocaleString('id-ID')}
+                            value={summary.count.toLocaleString(localeTag())}
                             tone="teal"
                         />
                         <MetricCard
@@ -296,7 +297,7 @@ export default function ExpensesPage({
                                     Riwayat biaya
                                 </h2>
                                 <p className="text-xs font-semibold text-stone-500">
-                                    {expenses.total.toLocaleString('id-ID')}{' '}
+                                    {expenses.total.toLocaleString(localeTag())}{' '}
                                     dokumen
                                 </p>
                             </div>
@@ -412,7 +413,7 @@ export default function ExpensesPage({
             <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
                 <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-stone-200 bg-white p-0 shadow-2xl sm:max-w-lg">
                     <DialogHeader className="border-b border-stone-200 px-4 py-4 pr-12 text-left sm:px-5">
-                        <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#173c35]">
+                        <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
                             Catat biaya
                         </DialogTitle>
                     </DialogHeader>
@@ -427,7 +428,7 @@ export default function ExpensesPage({
                                 </label>
                                 <div className="flex h-12 items-center overflow-hidden rounded-xl border border-stone-300 bg-white focus-within:border-teal-700 focus-within:ring-2 focus-within:ring-teal-700/15">
                                     <span className="border-r border-stone-200 bg-stone-50 px-3 text-sm font-black text-stone-600">
-                                        Rp
+                                        {currencySymbol()}
                                     </span>
                                     <input
                                         className="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-lg font-black text-stone-900 outline-none"
@@ -525,7 +526,7 @@ export default function ExpensesPage({
                                     }
                                 />
                             </label>
-                            <div className="grid grid-cols-1 divide-y divide-teal-900/10 rounded-xl border border-teal-900/10 bg-[#f2f7f4] px-1 py-1 text-[#173c35] min-[375px]:grid-cols-3 min-[375px]:divide-x min-[375px]:divide-y-0 min-[375px]:py-3 sm:col-span-2">
+                            <div className="grid grid-cols-1 divide-y divide-teal-900/10 rounded-xl border border-teal-900/10 bg-[#fff3ef] px-1 py-1 text-[var(--app-ink)] min-[375px]:grid-cols-3 min-[375px]:divide-x min-[375px]:divide-y-0 min-[375px]:py-3 sm:col-span-2">
                                 <Calculation
                                     label="Saldo awal"
                                     value={money(selectedAccount?.balance ?? 0)}
@@ -568,7 +569,7 @@ export default function ExpensesPage({
             <Dialog open={categoryOpen} onOpenChange={setCategoryOpen}>
                 <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-stone-200 bg-white p-0 shadow-2xl sm:max-w-md">
                     <DialogHeader className="border-b border-stone-200 px-4 py-4 pr-12 text-left sm:px-5">
-                        <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#173c35]">
+                        <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
                             Kategori biaya
                         </DialogTitle>
                     </DialogHeader>
@@ -717,7 +718,7 @@ function Calculation({
                 {label}
             </p>
             <p
-                className={`truncate text-xs font-black min-[375px]:mt-1 sm:text-sm ${danger ? 'text-rose-600' : 'text-[#173c35]'}`}
+                className={`truncate text-xs font-black min-[375px]:mt-1 sm:text-sm ${danger ? 'text-rose-600' : 'text-[var(--app-ink)]'}`}
                 title={value}
             >
                 {value}

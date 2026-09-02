@@ -6,17 +6,20 @@ import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/lib/i18n';
 import { login } from '@/routes';
 import { email } from '@/routes/password';
 
 export default function ForgotPassword({ status }: { status?: string }) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Forgot password" />
+            <Head title={t('Lupa kata sandi')} />
 
             {status && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
+                    {t(status)}
                 </div>
             )}
 
@@ -25,7 +28,9 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">
+                                    {t('Alamat email')}
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -47,7 +52,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                     {processing && (
                                         <LoaderCircle className="h-4 w-4 animate-spin" />
                                     )}
-                                    Email password reset link
+                                    {t('Kirim tautan reset kata sandi')}
                                 </Button>
                             </div>
                         </>
@@ -55,8 +60,8 @@ export default function ForgotPassword({ status }: { status?: string }) {
                 </Form>
 
                 <div className="space-x-1 text-center text-sm text-muted-foreground">
-                    <span>Or, return to</span>
-                    <TextLink href={login()}>log in</TextLink>
+                    <span>{t('Atau kembali ke')}</span>
+                    <TextLink href={login()}>{t('masuk')}</TextLink>
                 </div>
             </div>
         </>

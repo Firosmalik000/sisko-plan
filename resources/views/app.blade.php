@@ -1,8 +1,26 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-app-name="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        @php($publicSeo = request()->routeIs('home') || request()->routeIs('pricing*'))
+        <meta name="description" content="{{ $page['props']['branding']['seo_description'] ?? '' }}">
+        @if (! empty($page['props']['branding']['seo_keywords']))
+            <meta name="keywords" content="{{ $page['props']['branding']['seo_keywords'] }}">
+        @endif
+        <meta name="robots" content="{{ $publicSeo && ($page['props']['branding']['robots_index'] ?? true) ? 'index, follow' : 'noindex, nofollow' }}">
+        <meta property="og:site_name" content="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
+        <meta property="og:title" content="{{ $page['props']['branding']['seo_title'] ?? config('app.name', 'Sisko Plan') }}">
+        <meta property="og:description" content="{{ $page['props']['branding']['seo_description'] ?? '' }}">
+        <meta property="og:type" content="website">
+        @if ($publicSeo)
+            <meta property="og:url" content="{{ url()->current() }}">
+            <link rel="canonical" href="{{ url()->current() }}">
+        @endif
+        @if (! empty($page['props']['branding']['social_image_url']))
+            <meta property="og:image" content="{{ $page['props']['branding']['social_image_url'] }}">
+            <meta name="twitter:card" content="summary_large_image">
+        @endif
 
         {{-- The application currently ships with one consistent light theme. --}}
         <script>
@@ -14,7 +32,7 @@
 
         <style>
             html {
-                background-color: #f7f9f5;
+                background-color: #fff8f5;
                 color-scheme: light;
             }
         </style>
@@ -28,7 +46,7 @@
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ $page['props']['branding']['seo_title'] ?? config('app.name', 'Laravel') }} - {{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

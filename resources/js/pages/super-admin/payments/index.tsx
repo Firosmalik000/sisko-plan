@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { localeTag } from '@/lib/currency';
 
 type Payment = {
     public_id: string;
@@ -69,7 +70,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
             <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <p className="platform-kicker">Commercial ledger</p>
-                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#0b292f]">
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">
                         Riwayat pembayaran
                     </h1>
                     <p className="mt-2 text-sm text-slate-600">
@@ -77,7 +78,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                         platform.
                     </p>
                 </div>
-                <Badge className="w-fit bg-[#0b292f] px-3 py-1.5 text-white">
+                <Badge className="w-fit bg-[#d83f22] px-3 py-1.5 text-white">
                     {payments.total} transaksi
                 </Badge>
             </header>
@@ -105,7 +106,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                 <Form
                     action="/super-admin/payments"
                     method="get"
-                    className="grid gap-3 border-b border-[#0b292f]/10 p-4 md:grid-cols-[1.4fr_.7fr_.7fr_.7fr_auto]"
+                    className="grid gap-3 border-b border-[#3b211b]/10 p-4 md:grid-cols-[1.4fr_.7fr_.7fr_.7fr_auto]"
                 >
                     <div className="relative">
                         <Search className="absolute top-3 left-3 size-4 text-slate-400" />
@@ -142,7 +143,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                         className="bg-white"
                         aria-label="Tanggal selesai"
                     />
-                    <Button className="bg-[#0b292f] text-white hover:bg-[#16434c]">
+                    <Button className="bg-[#d83f22] text-white hover:bg-[#b83219]">
                         Terapkan
                     </Button>
                 </Form>
@@ -162,11 +163,11 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#0b292f]/8">
+                        <tbody className="divide-y divide-[#3b211b]/8">
                             {payments.data.map((payment, index) => (
                                 <tr
                                     key={payment.public_id}
-                                    className="transition hover:bg-[#0b292f]/[.025]"
+                                    className="transition hover:bg-[#ee4d2d]/[.025]"
                                 >
                                     <PlatformTableLeadCell
                                         index={paginatedRowNumber(
@@ -177,7 +178,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                                         label={payment.receipt_number}
                                     />
                                     <td className="px-5 py-4">
-                                        <p className="font-mono font-bold text-[#0b292f]">
+                                        <p className="font-mono font-bold text-[#3b211b]">
                                             {payment.receipt_number}
                                         </p>
                                         <p className="mt-1 text-xs text-slate-500">
@@ -218,7 +219,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                                     <td className="px-5 py-4 text-slate-600">
                                         {payment.created_by ?? '-'}
                                     </td>
-                                    <td className="px-5 py-4 text-right text-base font-black text-[#0b292f]">
+                                    <td className="px-5 py-4 text-right text-base font-black text-[#3b211b]">
                                         {money(payment.amount)}
                                     </td>
                                 </tr>
@@ -231,7 +232,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                         Belum ada pembayaran pada filter ini.
                     </div>
                 )}
-                <footer className="flex flex-col gap-3 border-t border-[#0b292f]/8 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                <footer className="flex flex-col gap-3 border-t border-[#3b211b]/8 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
                     <span>
                         Halaman {payments.current_page} dari{' '}
                         {payments.last_page}
@@ -256,16 +257,16 @@ function SummaryCard({
 }) {
     return (
         <article
-            className={`platform-panel flex items-center gap-4 p-4 ${accent ? 'border-[#e3b84f]/60 bg-[#fff9e8]' : ''}`}
+            className={`platform-panel flex items-center gap-4 p-4 ${accent ? 'border-[#ee4d2d]/60 bg-[#fff7f4]' : ''}`}
         >
             <span
-                className={`flex size-11 items-center justify-center rounded-xl ${accent ? 'bg-[#e3b84f] text-[#0b292f]' : 'bg-[#0b292f] text-white'}`}
+                className={`flex size-11 items-center justify-center rounded-xl ${accent ? 'bg-[#ee4d2d] text-[#3b211b]' : 'bg-[#ee4d2d] text-white'}`}
             >
                 <Icon className="size-5" />
             </span>
             <div>
                 <p className="text-xs font-semibold text-slate-500">{label}</p>
-                <p className="mt-1 text-xl font-black tracking-tight text-[#0b292f]">
+                <p className="mt-1 text-xl font-black tracking-tight text-[#3b211b]">
                     {value}
                 </p>
             </div>
@@ -274,12 +275,12 @@ function SummaryCard({
 }
 
 function shortDate(value: string) {
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium' }).format(
+    return new Intl.DateTimeFormat(localeTag(), { dateStyle: 'medium' }).format(
         new Date(value),
     );
 }
 function dateTime(value: string) {
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat(localeTag(), {
         dateStyle: 'medium',
         timeStyle: 'short',
     }).format(new Date(value));

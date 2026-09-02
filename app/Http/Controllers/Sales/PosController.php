@@ -47,6 +47,7 @@ class PosController extends Controller
                 'product_units.conversion_factor', 'product_units.selling_price',
                 DB::raw('CASE WHEN product_units.unit_id = products.base_unit_id THEN 1 ELSE 0 END as is_base_unit'),
                 DB::raw('COALESCE(inventory_balances.quantity, 0) as stock_quantity'),
+                DB::raw('COALESCE(inventory_balances.minimum_quantity, 0) as minimum_quantity'),
             ])->map(function ($product) {
                 $photoPublicId = $product->getAttribute('catalog_product_photo_path')
                     ? $product->getAttribute('catalog_product_id')
@@ -69,7 +70,7 @@ class PosController extends Controller
             ->orderByRaw("CASE WHEN LOWER(name) LIKE '%qris%' THEN 0 WHEN type = ? THEN 1 ELSE 2 END", [FinancialAccountType::EWallet->value])
             ->orderBy('name')->first(['public_id', 'name']);
         $paymentMethods = collect([
-            $cash ? ['method' => 'cash', 'label' => 'Cash', 'account_id' => $cash->public_id] : null,
+            $cash ? ['method' => 'cash', 'label' => __('Cash'), 'account_id' => $cash->public_id] : null,
             $qris ? ['method' => 'qris', 'label' => 'QRIS', 'account_id' => $qris->public_id] : null,
         ])->filter()->values();
 
@@ -103,7 +104,7 @@ class PosController extends Controller
             $data['transaction_discount_amount'], $data['paid_amount'], $data['occurred_at'],
             $data['notes'] ?? null, $data['idempotency_key'], $request->ip(),
         );
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Penjualan berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Sale posted successfully.')]);
 
         return to_route('sales.show', $sale);
     }

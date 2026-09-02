@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import {
     Camera,
     CircleDollarSign,
@@ -20,6 +20,12 @@ import {
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import type { ScannerSelection } from '@/components/product-scanner/types';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 
 type Supplier = {
     public_id: string;
@@ -108,6 +114,8 @@ export default function PurchasingPage({
             new URL(window.location.href).searchParams.get('scan') === '1',
     );
     const [scannerSummary, setScannerSummary] = useState('');
+    const [purchaseOpen, setPurchaseOpen] = useState(false);
+    const [paymentOpen, setPaymentOpen] = useState(false);
     const activeSuppliers = suppliers.filter((supplier) => supplier.is_active);
     const purchase = useForm({
         supplier_id: activeSuppliers[0]?.public_id ?? '',
@@ -203,6 +211,7 @@ export default function PurchasingPage({
                 ? `${added} produk ditambahkan, ${skipped} tidak tersedia di daftar pembelian.`
                 : `${added} produk ditambahkan. Periksa jumlah dan harga sebelum simpan.`,
         );
+        setPurchaseOpen(true);
     };
 
     const chooseProduct = (index: number, composite: string) => {
@@ -243,6 +252,7 @@ export default function PurchasingPage({
         purchase.post('/purchasing', {
             preserveScroll: true,
             onSuccess: () => {
+                setPurchaseOpen(false);
                 purchase.reset(
                     'supplier_invoice_number',
                     'notes',
@@ -264,6 +274,7 @@ export default function PurchasingPage({
         payment.post(`/purchasing/${payment.data.purchase_id}/payments`, {
             preserveScroll: true,
             onSuccess: () => {
+                setPaymentOpen(false);
                 payment.setData({
                     ...payment.data,
                     purchase_id: '',
@@ -278,35 +289,55 @@ export default function PurchasingPage({
     return (
         <>
             <Head title="Pembelian dan utang supplier" />
-            <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+            <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto max-w-7xl space-y-4">
-                    <header className="flex flex-wrap items-center justify-between gap-4 rounded-[1.35rem] border border-[#173c35]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
-                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                    <header className="flex flex-wrap items-center justify-between gap-4 rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
+                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                             Pembelian
                         </h1>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
                             {canManage && (
-                                <button
-                                    type="button"
-                                    onClick={() => setScannerOpen(true)}
-                                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#173c35] px-3 text-sm font-black text-white"
-                                >
-                                    <Camera className="size-4" /> Scan produk
-                                </button>
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => setScannerOpen(true)}
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--app-ink)]/15 bg-white px-3 text-sm font-black text-[var(--app-ink)] transition hover:border-[var(--app-ink)]/30 hover:bg-[#fffaf7] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none"
+                                    >
+                                        <Camera className="size-4" /> Scan
+                                        produk
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaymentOpen(true)}
+                                        disabled={unpaidPurchases.length === 0}
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--app-ink)]/15 bg-white px-3 text-sm font-black text-[var(--app-ink)] transition hover:border-[var(--app-ink)]/30 hover:bg-[#fffaf7] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45"
+                                    >
+                                        <CircleDollarSign className="size-4" />
+                                        Bayar utang
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPurchaseOpen(true)}
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)] transition hover:bg-[var(--app-ink)] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none"
+                                    >
+                                        <Plus className="size-4" /> Tambah
+                                        pembelian
+                                    </button>
+                                </>
                             )}
-                            <div className="rounded-xl bg-[#edf4f0] px-3 py-2">
-                                <p className="text-[10px] font-bold text-[#6d817a] uppercase">
+                            <div className="rounded-xl bg-[var(--app-soft)] px-3 py-2">
+                                <p className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">
                                     Total utang supplier
                                 </p>
-                                <p className="mt-0.5 text-sm font-black text-[#173c35]">
+                                <p className="mt-0.5 text-sm font-black text-[var(--app-ink)]">
                                     {money(totalPayable)}
                                 </p>
                             </div>
-                            <div className="rounded-xl bg-[#edf4f0] px-3 py-2">
-                                <p className="text-[10px] font-bold text-[#6d817a] uppercase">
+                            <div className="rounded-xl bg-[var(--app-soft)] px-3 py-2">
+                                <p className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">
                                     Dokumen pembelian
                                 </p>
-                                <p className="mt-0.5 text-sm font-black text-[#173c35]">
+                                <p className="mt-0.5 text-sm font-black text-[var(--app-ink)]">
                                     {purchases.total}
                                 </p>
                             </div>
@@ -315,309 +346,437 @@ export default function PurchasingPage({
                     {scannerSummary && (
                         <p
                             role="status"
-                            className="rounded-xl bg-[#e8f1ec] px-4 py-3 text-sm font-bold text-[#245c4f]"
+                            className="rounded-xl bg-[var(--app-soft)] px-4 py-3 text-sm font-bold text-[var(--app-primary)]"
                         >
                             {scannerSummary}
                         </p>
                     )}
 
                     {canManage && (
-                        <form onSubmit={submitPurchase} className={cardClass}>
-                            <div className="flex items-start gap-3">
-                                <PackagePlus className="mt-1 size-6 text-teal-700" />
-                                <div>
-                                    <h2 className="font-serif text-2xl text-stone-900">
-                                        Posting pembelian
-                                    </h2>
-                                </div>
-                            </div>
-                            <div className="mt-6 grid gap-4 md:grid-cols-3">
-                                <label className={labelClass}>
-                                    Supplier
-                                    <select
-                                        className={fieldClass}
-                                        value={purchase.data.supplier_id}
-                                        onChange={(event) =>
-                                            purchase.setData(
-                                                'supplier_id',
-                                                event.target.value,
-                                            )
-                                        }
-                                        required
-                                    >
-                                        {activeSuppliers.map((supplier) => (
-                                            <option
-                                                key={supplier.public_id}
-                                                value={supplier.public_id}
-                                            >
-                                                {supplier.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
-                                <label className={labelClass}>
-                                    Nomor invoice supplier
-                                    <input
-                                        className={fieldClass}
-                                        value={
-                                            purchase.data
-                                                .supplier_invoice_number
-                                        }
-                                        onChange={(event) =>
-                                            purchase.setData(
-                                                'supplier_invoice_number',
-                                                event.target.value,
-                                            )
-                                        }
-                                        maxLength={100}
-                                    />
-                                </label>
-                                <label className={labelClass}>
-                                    Waktu transaksi
-                                    <input
-                                        className={fieldClass}
-                                        type="datetime-local"
-                                        value={purchase.data.occurred_at}
-                                        onChange={(event) =>
-                                            purchase.setData(
-                                                'occurred_at',
-                                                event.target.value,
-                                            )
-                                        }
-                                        required
-                                    />
-                                </label>
-                            </div>
-                            <div className="mt-5 space-y-3">
-                                {purchase.data.items.map((item, index) => (
-                                    <div
-                                        key={index}
-                                        className="grid gap-3 rounded-2xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,2fr)_1fr_1fr_auto]"
-                                    >
-                                        <label className={labelClass}>
-                                            Produk / satuan
-                                            <select
-                                                className={fieldClass}
-                                                value={`${item.product_id}:${item.unit_id}`}
-                                                onChange={(event) =>
-                                                    chooseProduct(
-                                                        index,
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                required
-                                            >
-                                                {products.map((option) => (
-                                                    <option
-                                                        key={`${option.product_id}:${option.unit_id}`}
-                                                        value={`${option.product_id}:${option.unit_id}`}
-                                                    >
-                                                        {option.product_name} ·{' '}
-                                                        {option.unit_symbol} (x
-                                                        {quantity(
-                                                            option.conversion_factor,
-                                                        )}
+                        <Sheet
+                            open={purchaseOpen}
+                            onOpenChange={(open) => {
+                                setPurchaseOpen(open);
+
+                                if (!open) {
+                                    purchase.clearErrors();
+                                }
+                            }}
+                        >
+                            <SheetContent className="w-full gap-0 overflow-hidden border-stone-200 bg-white p-0 sm:max-w-2xl lg:max-w-4xl">
+                                <form
+                                    onSubmit={submitPurchase}
+                                    className="flex min-h-0 flex-1 flex-col"
+                                >
+                                    <SheetHeader className="border-b border-stone-200 px-4 py-4 pr-12 sm:px-6">
+                                        <SheetTitle className="flex items-center gap-2 text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
+                                            <PackagePlus className="size-5" />
+                                            Tambah pembelian
+                                        </SheetTitle>
+                                    </SheetHeader>
+                                    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">
+                                        <div className="mt-5 grid gap-4 md:grid-cols-3">
+                                            <div className={labelClass}>
+                                                <div className="flex min-h-6 items-center justify-between gap-2">
+                                                    <label htmlFor="purchase-supplier">
+                                                        Supplier
+                                                    </label>
+                                                    <span className="flex items-center gap-2 text-xs font-black">
+                                                        <Link
+                                                            href="/master-data/suppliers?create=1"
+                                                            className="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-900 focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:outline-none"
+                                                        >
+                                                            Tambah
+                                                        </Link>
+                                                        <Link
+                                                            href="/master-data/suppliers"
+                                                            className="text-stone-500 underline decoration-stone-400/30 underline-offset-4 hover:text-stone-800 focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:outline-none"
+                                                        >
+                                                            Kelola
+                                                        </Link>
+                                                    </span>
+                                                </div>
+                                                <select
+                                                    id="purchase-supplier"
+                                                    className={fieldClass}
+                                                    value={
+                                                        purchase.data
+                                                            .supplier_id
+                                                    }
+                                                    onChange={(event) =>
+                                                        purchase.setData(
+                                                            'supplier_id',
+                                                            event.target.value,
                                                         )
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                        <label className={labelClass}>
-                                            Jumlah
-                                            <input
-                                                className={fieldClass}
-                                                type="number"
-                                                min="0.000001"
-                                                step="0.000001"
-                                                value={item.quantity}
-                                                onChange={(event) =>
-                                                    updateItem(
-                                                        index,
-                                                        'quantity',
-                                                        event.target.value,
-                                                    )
+                                                    }
+                                                    required
+                                                >
+                                                    {activeSuppliers.map(
+                                                        (supplier) => (
+                                                            <option
+                                                                key={
+                                                                    supplier.public_id
+                                                                }
+                                                                value={
+                                                                    supplier.public_id
+                                                                }
+                                                            >
+                                                                {supplier.name}
+                                                            </option>
+                                                        ),
+                                                    )}
+                                                </select>
+                                            </div>
+                                            <label className={labelClass}>
+                                                Nomor invoice supplier
+                                                <input
+                                                    className={fieldClass}
+                                                    value={
+                                                        purchase.data
+                                                            .supplier_invoice_number
+                                                    }
+                                                    onChange={(event) =>
+                                                        purchase.setData(
+                                                            'supplier_invoice_number',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    maxLength={100}
+                                                />
+                                            </label>
+                                            <label className={labelClass}>
+                                                Waktu transaksi
+                                                <input
+                                                    className={fieldClass}
+                                                    type="datetime-local"
+                                                    value={
+                                                        purchase.data
+                                                            .occurred_at
+                                                    }
+                                                    onChange={(event) =>
+                                                        purchase.setData(
+                                                            'occurred_at',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+                                        </div>
+                                        <div className="mt-5 space-y-3">
+                                            {purchase.data.items.map(
+                                                (item, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="grid gap-3 rounded-2xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,2fr)_1fr_1fr_auto]"
+                                                    >
+                                                        <label
+                                                            className={
+                                                                labelClass
+                                                            }
+                                                        >
+                                                            Produk / satuan
+                                                            <select
+                                                                className={
+                                                                    fieldClass
+                                                                }
+                                                                value={`${item.product_id}:${item.unit_id}`}
+                                                                onChange={(
+                                                                    event,
+                                                                ) =>
+                                                                    chooseProduct(
+                                                                        index,
+                                                                        event
+                                                                            .target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                required
+                                                            >
+                                                                {products.map(
+                                                                    (
+                                                                        option,
+                                                                    ) => (
+                                                                        <option
+                                                                            key={`${option.product_id}:${option.unit_id}`}
+                                                                            value={`${option.product_id}:${option.unit_id}`}
+                                                                        >
+                                                                            {
+                                                                                option.product_name
+                                                                            }{' '}
+                                                                            ·{' '}
+                                                                            {
+                                                                                option.unit_symbol
+                                                                            }{' '}
+                                                                            (x
+                                                                            {quantity(
+                                                                                option.conversion_factor,
+                                                                            )}
+                                                                            )
+                                                                        </option>
+                                                                    ),
+                                                                )}
+                                                            </select>
+                                                        </label>
+                                                        <label
+                                                            className={
+                                                                labelClass
+                                                            }
+                                                        >
+                                                            Jumlah
+                                                            <input
+                                                                className={
+                                                                    fieldClass
+                                                                }
+                                                                type="number"
+                                                                min="0.000001"
+                                                                step="0.000001"
+                                                                value={
+                                                                    item.quantity
+                                                                }
+                                                                onChange={(
+                                                                    event,
+                                                                ) =>
+                                                                    updateItem(
+                                                                        index,
+                                                                        'quantity',
+                                                                        event
+                                                                            .target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                required
+                                                            />
+                                                        </label>
+                                                        <label
+                                                            className={
+                                                                labelClass
+                                                            }
+                                                        >
+                                                            Harga / satuan
+                                                            <input
+                                                                className={
+                                                                    fieldClass
+                                                                }
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.0001"
+                                                                value={
+                                                                    item.unit_price
+                                                                }
+                                                                onChange={(
+                                                                    event,
+                                                                ) =>
+                                                                    updateItem(
+                                                                        index,
+                                                                        'unit_price',
+                                                                        event
+                                                                            .target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                required
+                                                            />
+                                                        </label>
+                                                        <button
+                                                            type="button"
+                                                            aria-label="Hapus item"
+                                                            className="mt-6 grid size-11 place-items-center rounded-xl border border-red-200 text-red-700 disabled:opacity-30"
+                                                            disabled={
+                                                                purchase.data
+                                                                    .items
+                                                                    .length ===
+                                                                1
+                                                            }
+                                                            onClick={() =>
+                                                                purchase.setData(
+                                                                    'items',
+                                                                    purchase.data.items.filter(
+                                                                        (
+                                                                            _,
+                                                                            itemIndex,
+                                                                        ) =>
+                                                                            itemIndex !==
+                                                                            index,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </button>
+                                                    </div>
+                                                ),
+                                            )}
+                                            <button
+                                                type="button"
+                                                className="inline-flex items-center gap-2 rounded-xl border border-teal-700 px-4 py-2 text-sm font-bold text-teal-800"
+                                                onClick={() =>
+                                                    purchase.setData('items', [
+                                                        ...purchase.data.items,
+                                                        defaultItem(
+                                                            products[0],
+                                                        ),
+                                                    ])
                                                 }
-                                                required
-                                            />
-                                        </label>
-                                        <label className={labelClass}>
-                                            Harga / satuan
-                                            <input
-                                                className={fieldClass}
-                                                type="number"
-                                                min="0"
-                                                step="0.0001"
-                                                value={item.unit_price}
-                                                onChange={(event) =>
-                                                    updateItem(
-                                                        index,
-                                                        'unit_price',
-                                                        event.target.value,
-                                                    )
-                                                }
-                                                required
-                                            />
-                                        </label>
+                                            >
+                                                <Plus className="size-4" />
+                                                Tambah item
+                                            </button>
+                                        </div>
+                                        <div className="mt-6 grid gap-4 md:grid-cols-3">
+                                            <label className={labelClass}>
+                                                Diskon transaksi
+                                                <input
+                                                    className={fieldClass}
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.0001"
+                                                    value={
+                                                        purchase.data
+                                                            .discount_amount
+                                                    }
+                                                    onChange={(event) =>
+                                                        purchase.setData(
+                                                            'discount_amount',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+                                            <label className={labelClass}>
+                                                Biaya tambahan
+                                                <input
+                                                    className={fieldClass}
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.0001"
+                                                    value={
+                                                        purchase.data
+                                                            .additional_cost
+                                                    }
+                                                    onChange={(event) =>
+                                                        purchase.setData(
+                                                            'additional_cost',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+                                            <div className="rounded-2xl bg-[var(--app-ink)] px-4 py-3 text-white">
+                                                <p className="text-xs text-teal-100/70">
+                                                    Estimasi total
+                                                </p>
+                                                <p className="mt-1 text-xl font-bold text-amber-300">
+                                                    {money(grandTotal)}
+                                                </p>
+                                            </div>
+                                            <label className={labelClass}>
+                                                Bayar sekarang
+                                                <input
+                                                    className={fieldClass}
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.0001"
+                                                    value={
+                                                        purchase.data
+                                                            .paid_amount
+                                                    }
+                                                    onChange={(event) =>
+                                                        purchase.setData(
+                                                            'paid_amount',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    required
+                                                />
+                                            </label>
+                                            <label className={labelClass}>
+                                                Akun pembayaran
+                                                <select
+                                                    className={fieldClass}
+                                                    value={
+                                                        purchase.data.account_id
+                                                    }
+                                                    onChange={(event) =>
+                                                        purchase.setData(
+                                                            'account_id',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        Number(
+                                                            purchase.data
+                                                                .paid_amount,
+                                                        ) <= 0
+                                                    }
+                                                >
+                                                    {accounts.map((account) => (
+                                                        <option
+                                                            key={
+                                                                account.public_id
+                                                            }
+                                                            value={
+                                                                account.public_id
+                                                            }
+                                                        >
+                                                            {account.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </label>
+                                            <label className={labelClass}>
+                                                Catatan
+                                                <input
+                                                    className={fieldClass}
+                                                    value={purchase.data.notes}
+                                                    onChange={(event) =>
+                                                        purchase.setData(
+                                                            'notes',
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    maxLength={500}
+                                                />
+                                            </label>
+                                        </div>
+                                        {Object.keys(purchase.errors).length >
+                                            0 && (
+                                            <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                                                Periksa kembali input pembelian.
+                                                Beberapa nilai belum valid.
+                                            </p>
+                                        )}
                                         <button
-                                            type="button"
-                                            aria-label="Hapus item"
-                                            className="mt-6 grid size-11 place-items-center rounded-xl border border-red-200 text-red-700 disabled:opacity-30"
+                                            className={`${buttonClass} mt-5`}
                                             disabled={
-                                                purchase.data.items.length === 1
-                                            }
-                                            onClick={() =>
-                                                purchase.setData(
-                                                    'items',
-                                                    purchase.data.items.filter(
-                                                        (_, itemIndex) =>
-                                                            itemIndex !== index,
-                                                    ),
-                                                )
+                                                purchase.processing ||
+                                                products.length === 0 ||
+                                                activeSuppliers.length === 0
                                             }
                                         >
-                                            <Trash2 className="size-4" />
+                                            Posting pembelian
                                         </button>
                                     </div>
-                                ))}
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center gap-2 rounded-xl border border-teal-700 px-4 py-2 text-sm font-bold text-teal-800"
-                                    onClick={() =>
-                                        purchase.setData('items', [
-                                            ...purchase.data.items,
-                                            defaultItem(products[0]),
-                                        ])
-                                    }
-                                >
-                                    <Plus className="size-4" />
-                                    Tambah item
-                                </button>
-                            </div>
-                            <div className="mt-6 grid gap-4 md:grid-cols-3">
-                                <label className={labelClass}>
-                                    Diskon transaksi
-                                    <input
-                                        className={fieldClass}
-                                        type="number"
-                                        min="0"
-                                        step="0.0001"
-                                        value={purchase.data.discount_amount}
-                                        onChange={(event) =>
-                                            purchase.setData(
-                                                'discount_amount',
-                                                event.target.value,
-                                            )
-                                        }
-                                        required
-                                    />
-                                </label>
-                                <label className={labelClass}>
-                                    Biaya tambahan
-                                    <input
-                                        className={fieldClass}
-                                        type="number"
-                                        min="0"
-                                        step="0.0001"
-                                        value={purchase.data.additional_cost}
-                                        onChange={(event) =>
-                                            purchase.setData(
-                                                'additional_cost',
-                                                event.target.value,
-                                            )
-                                        }
-                                        required
-                                    />
-                                </label>
-                                <div className="rounded-2xl bg-[#12332f] px-4 py-3 text-white">
-                                    <p className="text-xs text-teal-100/70">
-                                        Estimasi total
-                                    </p>
-                                    <p className="mt-1 text-xl font-bold text-amber-300">
-                                        {money(grandTotal)}
-                                    </p>
-                                </div>
-                                <label className={labelClass}>
-                                    Bayar sekarang
-                                    <input
-                                        className={fieldClass}
-                                        type="number"
-                                        min="0"
-                                        step="0.0001"
-                                        value={purchase.data.paid_amount}
-                                        onChange={(event) =>
-                                            purchase.setData(
-                                                'paid_amount',
-                                                event.target.value,
-                                            )
-                                        }
-                                        required
-                                    />
-                                </label>
-                                <label className={labelClass}>
-                                    Akun pembayaran
-                                    <select
-                                        className={fieldClass}
-                                        value={purchase.data.account_id}
-                                        onChange={(event) =>
-                                            purchase.setData(
-                                                'account_id',
-                                                event.target.value,
-                                            )
-                                        }
-                                        disabled={
-                                            Number(purchase.data.paid_amount) <=
-                                            0
-                                        }
-                                    >
-                                        {accounts.map((account) => (
-                                            <option
-                                                key={account.public_id}
-                                                value={account.public_id}
-                                            >
-                                                {account.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
-                                <label className={labelClass}>
-                                    Catatan
-                                    <input
-                                        className={fieldClass}
-                                        value={purchase.data.notes}
-                                        onChange={(event) =>
-                                            purchase.setData(
-                                                'notes',
-                                                event.target.value,
-                                            )
-                                        }
-                                        maxLength={500}
-                                    />
-                                </label>
-                            </div>
-                            {Object.keys(purchase.errors).length > 0 && (
-                                <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-                                    Periksa kembali input pembelian. Beberapa
-                                    nilai belum valid.
-                                </p>
-                            )}
-                            <button
-                                className={`${buttonClass} mt-5`}
-                                disabled={
-                                    purchase.processing ||
-                                    products.length === 0 ||
-                                    activeSuppliers.length === 0
-                                }
-                            >
-                                Posting pembelian
-                            </button>
-                        </form>
+                                </form>
+                            </SheetContent>
+                        </Sheet>
                     )}
 
-                    <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+                    <div className="grid gap-6">
                         <section className={cardClass}>
-                            <h2 className="font-serif text-2xl text-stone-900">
-                                Posisi utang supplier
-                            </h2>
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <h2 className="font-serif text-2xl text-stone-900">
+                                    Posisi utang supplier
+                                </h2>
+                                <Link
+                                    href="/master-data/suppliers"
+                                    className="inline-flex min-h-10 items-center rounded-xl border border-stone-200 px-3 text-sm font-bold text-stone-700 transition hover:border-teal-700 hover:text-teal-800 focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                >
+                                    Kelola supplier
+                                </Link>
+                            </div>
                             <div className="mt-5 divide-y divide-stone-100">
                                 {suppliers.map((supplier) => (
                                     <div
@@ -648,154 +807,226 @@ export default function PurchasingPage({
                                     </div>
                                 ))}
                             </div>
+                            {suppliers.length === 0 && (
+                                <div className="mt-5 rounded-2xl border border-dashed border-stone-300 px-4 py-8 text-center">
+                                    <p className="text-sm font-semibold text-stone-600">
+                                        Belum ada supplier.
+                                    </p>
+                                    {canManage && (
+                                        <Link
+                                            href="/master-data/suppliers?create=1"
+                                            className="mt-3 inline-flex min-h-10 items-center rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none"
+                                        >
+                                            Tambah supplier
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
                         </section>
                         {canManage && (
-                            <form
-                                onSubmit={submitPayment}
-                                className={cardClass}
-                            >
-                                <div className="flex items-start gap-3">
-                                    <CircleDollarSign className="mt-1 size-6 text-teal-700" />
-                                    <div>
-                                        <h2 className="font-serif text-2xl text-stone-900">
-                                            Bayar utang pembelian
-                                        </h2>
-                                        <p className="text-sm text-stone-500">
-                                            Pembayaran tidak dapat melebihi sisa
-                                            dokumen dan harus tersedia pada akun
-                                            kas.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                                    <label
-                                        className={`${labelClass} md:col-span-2`}
-                                    >
-                                        Dokumen
-                                        <select
-                                            className={fieldClass}
-                                            value={payment.data.purchase_id}
-                                            onChange={(event) => {
-                                                const selected =
-                                                    unpaidPurchases.find(
-                                                        (entry) =>
-                                                            entry.public_id ===
-                                                            event.target.value,
-                                                    );
-                                                payment.setData((data) => ({
-                                                    ...data,
-                                                    purchase_id:
-                                                        event.target.value,
-                                                    amount:
-                                                        selected?.outstanding_amount ??
-                                                        '',
-                                                }));
-                                            }}
-                                            required
-                                        >
-                                            <option value="">
-                                                Pilih dokumen
-                                            </option>
-                                            {unpaidPurchases.map((entry) => (
-                                                <option
-                                                    key={entry.public_id}
-                                                    value={entry.public_id}
-                                                >
-                                                    {entry.document_number} ·{' '}
-                                                    {entry.supplier_name} · sisa{' '}
-                                                    {money(
-                                                        entry.outstanding_amount,
-                                                    )}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <label className={labelClass}>
-                                        Akun
-                                        <select
-                                            className={fieldClass}
-                                            value={payment.data.account_id}
-                                            onChange={(event) =>
-                                                payment.setData(
-                                                    'account_id',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            required
-                                        >
-                                            {accounts.map((account) => (
-                                                <option
-                                                    key={account.public_id}
-                                                    value={account.public_id}
-                                                >
-                                                    {account.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <label className={labelClass}>
-                                        Nominal
-                                        <input
-                                            className={fieldClass}
-                                            type="number"
-                                            min="0.0001"
-                                            step="0.0001"
-                                            value={payment.data.amount}
-                                            onChange={(event) =>
-                                                payment.setData(
-                                                    'amount',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            required
-                                        />
-                                    </label>
-                                    <label className={labelClass}>
-                                        Waktu
-                                        <input
-                                            className={fieldClass}
-                                            type="datetime-local"
-                                            value={payment.data.occurred_at}
-                                            onChange={(event) =>
-                                                payment.setData(
-                                                    'occurred_at',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            required
-                                        />
-                                    </label>
-                                    <label className={labelClass}>
-                                        Catatan
-                                        <input
-                                            className={fieldClass}
-                                            value={payment.data.notes}
-                                            onChange={(event) =>
-                                                payment.setData(
-                                                    'notes',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            maxLength={500}
-                                        />
-                                    </label>
-                                </div>
-                                {Object.keys(payment.errors).length > 0 && (
-                                    <p className="mt-4 text-sm text-red-700">
-                                        Pembayaran belum valid. Periksa nominal,
-                                        akun, dan waktu.
-                                    </p>
-                                )}
-                                <button
-                                    className={`${buttonClass} mt-5`}
-                                    disabled={
-                                        payment.processing ||
-                                        !payment.data.purchase_id
+                            <Sheet
+                                open={paymentOpen}
+                                onOpenChange={(open) => {
+                                    setPaymentOpen(open);
+
+                                    if (!open) {
+                                        payment.clearErrors();
                                     }
-                                >
-                                    Posting pembayaran
-                                </button>
-                            </form>
+                                }}
+                            >
+                                <SheetContent className="w-full gap-0 overflow-hidden border-stone-200 bg-white p-0 sm:max-w-xl">
+                                    <form
+                                        onSubmit={submitPayment}
+                                        className="flex min-h-0 flex-1 flex-col"
+                                    >
+                                        <SheetHeader className="border-b border-stone-200 px-4 py-4 pr-12 sm:px-6">
+                                            <SheetTitle className="flex items-center gap-2 text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
+                                                <CircleDollarSign className="size-5" />
+                                                Bayar utang pembelian
+                                            </SheetTitle>
+                                        </SheetHeader>
+                                        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">
+                                            <p className="mt-4 text-sm text-stone-600">
+                                                Nominal tidak boleh melebihi
+                                                sisa utang atau saldo akun.
+                                            </p>
+                                            <div className="mt-5 grid gap-4 md:grid-cols-2">
+                                                <label
+                                                    className={`${labelClass} md:col-span-2`}
+                                                >
+                                                    Dokumen
+                                                    <select
+                                                        className={fieldClass}
+                                                        value={
+                                                            payment.data
+                                                                .purchase_id
+                                                        }
+                                                        onChange={(event) => {
+                                                            const selected =
+                                                                unpaidPurchases.find(
+                                                                    (entry) =>
+                                                                        entry.public_id ===
+                                                                        event
+                                                                            .target
+                                                                            .value,
+                                                                );
+                                                            payment.setData(
+                                                                (data) => ({
+                                                                    ...data,
+                                                                    purchase_id:
+                                                                        event
+                                                                            .target
+                                                                            .value,
+                                                                    amount:
+                                                                        selected?.outstanding_amount ??
+                                                                        '',
+                                                                }),
+                                                            );
+                                                        }}
+                                                        required
+                                                    >
+                                                        <option value="">
+                                                            Pilih dokumen
+                                                        </option>
+                                                        {unpaidPurchases.map(
+                                                            (entry) => (
+                                                                <option
+                                                                    key={
+                                                                        entry.public_id
+                                                                    }
+                                                                    value={
+                                                                        entry.public_id
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        entry.document_number
+                                                                    }{' '}
+                                                                    ·{' '}
+                                                                    {
+                                                                        entry.supplier_name
+                                                                    }{' '}
+                                                                    · sisa{' '}
+                                                                    {money(
+                                                                        entry.outstanding_amount,
+                                                                    )}
+                                                                </option>
+                                                            ),
+                                                        )}
+                                                    </select>
+                                                </label>
+                                                <label className={labelClass}>
+                                                    Akun
+                                                    <select
+                                                        className={fieldClass}
+                                                        value={
+                                                            payment.data
+                                                                .account_id
+                                                        }
+                                                        onChange={(event) =>
+                                                            payment.setData(
+                                                                'account_id',
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        required
+                                                    >
+                                                        {accounts.map(
+                                                            (account) => (
+                                                                <option
+                                                                    key={
+                                                                        account.public_id
+                                                                    }
+                                                                    value={
+                                                                        account.public_id
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        account.name
+                                                                    }
+                                                                </option>
+                                                            ),
+                                                        )}
+                                                    </select>
+                                                </label>
+                                                <label className={labelClass}>
+                                                    Nominal
+                                                    <input
+                                                        className={fieldClass}
+                                                        type="number"
+                                                        min="0.0001"
+                                                        step="0.0001"
+                                                        value={
+                                                            payment.data.amount
+                                                        }
+                                                        onChange={(event) =>
+                                                            payment.setData(
+                                                                'amount',
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        required
+                                                    />
+                                                </label>
+                                                <label className={labelClass}>
+                                                    Waktu
+                                                    <input
+                                                        className={fieldClass}
+                                                        type="datetime-local"
+                                                        value={
+                                                            payment.data
+                                                                .occurred_at
+                                                        }
+                                                        onChange={(event) =>
+                                                            payment.setData(
+                                                                'occurred_at',
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        required
+                                                    />
+                                                </label>
+                                                <label className={labelClass}>
+                                                    Catatan
+                                                    <input
+                                                        className={fieldClass}
+                                                        value={
+                                                            payment.data.notes
+                                                        }
+                                                        onChange={(event) =>
+                                                            payment.setData(
+                                                                'notes',
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        maxLength={500}
+                                                    />
+                                                </label>
+                                            </div>
+                                            {Object.keys(payment.errors)
+                                                .length > 0 && (
+                                                <p className="mt-4 text-sm text-red-700">
+                                                    Pembayaran belum valid.
+                                                    Periksa nominal, akun, dan
+                                                    waktu.
+                                                </p>
+                                            )}
+                                            <button
+                                                className={`${buttonClass} mt-5`}
+                                                disabled={
+                                                    payment.processing ||
+                                                    !payment.data.purchase_id
+                                                }
+                                            >
+                                                Posting pembayaran
+                                            </button>
+                                        </div>
+                                    </form>
+                                </SheetContent>
+                            </Sheet>
                         )}
                     </div>
 

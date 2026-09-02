@@ -25,7 +25,7 @@ export function CaptureTray({
             {visibleCaptures.map((capture, index) => (
                 <div
                     key={capture.id}
-                    className={`relative size-16 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-2 ${capture.status === 'recognized' && capture.results.some((result) => result.match !== null) ? 'ring-[#82d4a7]' : capture.status === 'failed' || capture.status === 'recognized' ? 'ring-[#f0a35d]' : 'ring-white/20'}`}
+                    className={`relative size-16 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-2 ${capture.status === 'recognized' && capture.results.some((result) => result.match !== null) ? 'ring-[var(--workspace-400)]' : capture.status === 'failed' || capture.status === 'recognized' ? 'ring-[#f0a35d]' : 'ring-white/20'}`}
                 >
                     {capture.previewUrl ? (
                         <img
@@ -34,9 +34,9 @@ export function CaptureTray({
                             className="size-full object-cover"
                         />
                     ) : (
-                        <div className="size-full bg-[#274d44]" />
+                        <div className="size-full bg-[var(--app-ink)]" />
                     )}
-                    <span className="absolute bottom-1 left-1 grid size-5 place-items-center rounded-md bg-[#102a25]/85 text-[10px] font-black text-white">
+                    <span className="absolute bottom-1 left-1 grid size-5 place-items-center rounded-md bg-[var(--app-ink)]/85 text-[10px] font-black text-white">
                         {capture.status === 'recognizing' ? (
                             <LoaderCircle className="size-3 animate-spin" />
                         ) : capture.status === 'recognized' &&
@@ -60,7 +60,7 @@ export function CaptureTray({
                     <button
                         type="button"
                         onClick={() => onRemove(capture.id)}
-                        className="absolute top-1 right-1 grid size-7 place-items-center rounded-full bg-[#102a25]/80 text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        className="absolute top-1 right-1 grid size-7 place-items-center rounded-full bg-[var(--app-ink)]/80 text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                         aria-label={`Hapus foto ${index + 1}`}
                     >
                         <X className="size-3.5" />

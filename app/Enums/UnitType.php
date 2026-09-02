@@ -9,9 +9,9 @@ enum UnitType: string
 
     public function label(): string
     {
-        return match ($this) {
+        return __(match ($this) {
             self::Large => 'Besar',
             self::Retail => 'Ecer',
-        };
+        });
     }
 }

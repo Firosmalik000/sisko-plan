@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { localeTag } from '@/lib/currency';
 import type { PlatformAdmin } from '@/types';
 
 type AdminItem = {
@@ -52,7 +53,7 @@ export default function PlatformAdmins({
             <Head title="Admin Platform" />
             <div className="platform-enter mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                    <h1 className="text-3xl font-black tracking-tight text-[#0b292f]">
+                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">
                         Admin Platform
                     </h1>
                     <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -61,7 +62,7 @@ export default function PlatformAdmins({
                 </div>
                 {can_manage && (
                     <Button
-                        className="min-h-11 bg-[#0b292f] px-4 text-white hover:bg-[#16434c]"
+                        className="min-h-11 bg-[#d83f22] px-4 text-white hover:bg-[#b83219]"
                         onClick={() => setCreateOpen(true)}
                     >
                         <Plus className="size-4" />
@@ -140,7 +141,7 @@ export default function PlatformAdmins({
                                         {admin.last_login_at
                                             ? new Date(
                                                   admin.last_login_at,
-                                              ).toLocaleString('id-ID', {
+                                              ).toLocaleString(localeTag(), {
                                                   dateStyle: 'medium',
                                                   timeStyle: 'short',
                                               })
@@ -198,7 +199,7 @@ function AddAdminDialog({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="w-[calc(100%-1rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
                 <DialogHeader className="border-b border-slate-200 px-4 py-4 pr-12 text-left sm:px-5">
-                    <DialogTitle className="text-lg font-black text-[#0b292f]">
+                    <DialogTitle className="text-lg font-black text-[#3b211b]">
                         Tambah admin platform
                     </DialogTitle>
                     <DialogDescription className="text-sm text-slate-500">
@@ -253,7 +254,7 @@ function AddAdminDialog({
                                     Batal
                                 </Button>
                                 <Button
-                                    className="bg-[#0b292f] text-white hover:bg-[#16434c]"
+                                    className="bg-[#d83f22] text-white hover:bg-[#b83219]"
                                     disabled={processing}
                                 >
                                     {processing
@@ -309,7 +310,7 @@ function PermissionDialog({
             </button>
             <DialogContent className="flex max-h-[92svh] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-2xl">
                 <DialogHeader className="border-b border-slate-200 px-4 py-4 pr-12 text-left sm:px-5">
-                    <DialogTitle className="text-lg font-black text-[#0b292f]">
+                    <DialogTitle className="text-lg font-black text-[#3b211b]">
                         Akses {admin.name}
                     </DialogTitle>
                 </DialogHeader>
@@ -343,7 +344,7 @@ function PermissionDialog({
                                         >
                                             <input
                                                 type="checkbox"
-                                                className="size-4 rounded border-slate-300 text-[#0b292f] focus:ring-[#0b292f]"
+                                                className="size-4 rounded border-slate-300 text-[#3b211b] focus:ring-[#3b211b]"
                                                 checked={form.data.permissions.includes(
                                                     permission.name,
                                                 )}
@@ -373,7 +374,7 @@ function PermissionDialog({
                             Batal
                         </Button>
                         <Button
-                            className="bg-[#0b292f] text-white hover:bg-[#16434c]"
+                            className="bg-[#d83f22] text-white hover:bg-[#b83219]"
                             disabled={form.processing}
                         >
                             {form.processing ? 'Menyimpan...' : 'Simpan akses'}

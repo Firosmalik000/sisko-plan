@@ -32,7 +32,7 @@ class SupplierController extends Controller
     public function store(SupplierRequest $request, CurrentStore $currentStore): RedirectResponse
     {
         Supplier::create(['store_id' => $currentStore->id(), ...$request->validated()]);
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Supplier berhasil ditambahkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Supplier added successfully.')]);
 
         return back();
     }
@@ -40,7 +40,7 @@ class SupplierController extends Controller
     public function update(SupplierRequest $request, CurrentStore $currentStore, string $supplier): RedirectResponse
     {
         Supplier::query()->where('store_id', $currentStore->id())->where('public_id', $supplier)->firstOrFail()->update($request->validated());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Supplier berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Supplier updated successfully.')]);
 
         return back();
     }

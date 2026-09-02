@@ -11,6 +11,7 @@ use App\Models\InventoryBalance;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Store;
+use App\Models\Supplier;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\Operations\ProductionReadiness;
@@ -85,6 +86,22 @@ class MasterDataTest extends TestCase
         $this->assertDatabaseHas('units', ['store_id' => $store->id, 'symbol' => 'pcs']);
         $this->assertDatabaseHas('suppliers', ['store_id' => $store->id, 'name' => 'PT Sumber Makmur']);
         $this->assertDatabaseHas('financial_accounts', ['store_id' => $store->id, 'name' => 'Kas Toko', 'type' => 'cash']);
+    }
+
+    public function test_supplier_page_lists_only_the_active_store_suppliers(): void
+    {
+        [$owner, $store] = $this->ownerAndStore();
+        Supplier::factory()->for($store)->create(['name' => 'Supplier Aktif']);
+        Supplier::factory()->for(Store::factory()->create())->create(['name' => 'Supplier Toko Lain']);
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('master-data.suppliers.index', ['create' => '1']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('master-data/suppliers/index')
+                ->where('canManage', true)
+                ->where('suppliers.total', 1)
+                ->where('suppliers.data.0.name', 'Supplier Aktif'));
     }
 
     public function test_product_is_created_atomically_with_codes_on_its_sellable_unit(): void

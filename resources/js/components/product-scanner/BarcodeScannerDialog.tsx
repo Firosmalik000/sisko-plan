@@ -108,7 +108,7 @@ export default function BarcodeScannerDialog({
 
     return (
         <Dialog open={open} onOpenChange={changeOpen}>
-            <DialogContent className="inset-0 top-0 left-0 z-[80] block h-svh w-screen max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 bg-[#092a25] p-0 text-white shadow-none [&>button]:hidden">
+            <DialogContent className="inset-0 top-0 left-0 z-[80] block h-svh w-screen max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 bg-[var(--app-ink)] p-0 text-white shadow-none [&>button]:hidden">
                 <DialogTitle className="sr-only">{title}</DialogTitle>
                 <video
                     ref={videoRef}
@@ -123,14 +123,14 @@ export default function BarcodeScannerDialog({
                     <button
                         type="button"
                         onClick={() => changeOpen(false)}
-                        className="grid size-11 place-items-center rounded-full bg-[#092a25]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        className="grid size-11 place-items-center rounded-full bg-[var(--app-ink)]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                         aria-label="Tutup scanner barcode"
                     >
                         <X className="size-5" />
                     </button>
-                    <div className="min-w-0 rounded-xl bg-[#092a25]/80 px-4 py-2 text-center backdrop-blur-sm">
+                    <div className="min-w-0 rounded-xl bg-[var(--app-ink)]/80 px-4 py-2 text-center backdrop-blur-sm">
                         <p className="truncate text-sm font-black">{title}</p>
-                        <p className="text-[11px] text-[#d5e4df]">
+                        <p className="text-[11px] text-[var(--app-soft-strong)]">
                             Barcode atau QR akan terbaca otomatis
                         </p>
                     </div>
@@ -138,7 +138,7 @@ export default function BarcodeScannerDialog({
                         type="button"
                         onClick={() => void toggleTorch()}
                         disabled={!torchAvailable}
-                        className="grid size-11 place-items-center rounded-full bg-[#092a25]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
+                        className="grid size-11 place-items-center rounded-full bg-[var(--app-ink)]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
                         aria-label={
                             torchOn ? 'Matikan lampu' : 'Nyalakan lampu'
                         }
@@ -153,18 +153,18 @@ export default function BarcodeScannerDialog({
 
                 <div className="relative z-10 flex h-[calc(100svh-7rem)] items-center justify-center px-5 pb-24">
                     {cameraError ? (
-                        <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center text-[#173c35] shadow-[0_20px_60px_-24px_rgba(0,0,0,.8)]">
+                        <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center text-[var(--app-ink)] shadow-[0_20px_60px_-24px_rgba(0,0,0,.8)]">
                             <Camera className="mx-auto size-8 text-[#c75d32]" />
                             <p className="mt-3 font-black">
                                 Scanner belum tersedia
                             </p>
-                            <p className="mt-1 text-sm leading-6 text-[#58736a]">
+                            <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">
                                 {cameraError}
                             </p>
                             <button
                                 type="button"
                                 onClick={retry}
-                                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#bfd1cb] font-bold"
+                                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] font-bold"
                             >
                                 <RefreshCw className="size-4" /> Coba lagi
                             </button>
@@ -182,7 +182,7 @@ export default function BarcodeScannerDialog({
                             <div className="relative mx-auto aspect-[2.25/1] w-full overflow-hidden rounded-2xl border border-white/80 shadow-[0_24px_70px_-28px_rgba(0,0,0,.9)]">
                                 <span className="absolute top-1/2 right-5 left-5 h-px bg-[#f3a15e] shadow-[0_0_16px_2px_rgba(243,161,94,.7)] motion-safe:animate-pulse" />
                             </div>
-                            <div className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-[#e5f0ed]">
+                            <div className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-[var(--app-soft-strong)]">
                                 <ScanBarcode className="size-5 text-[#f3a15e]" />
                                 {detectorAvailable
                                     ? 'Arahkan kode ke dalam bingkai'
@@ -216,7 +216,7 @@ export default function BarcodeScannerDialog({
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={processingPhoto}
-                            className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/40 bg-[#173c35]/90 px-3 text-sm font-black text-white disabled:opacity-45"
+                            className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/40 bg-[var(--app-primary)]/90 px-3 text-sm font-black text-[var(--app-primary-foreground)] disabled:opacity-45"
                         >
                             <ImageUp className="size-4" />
                             Pilih foto
@@ -225,7 +225,7 @@ export default function BarcodeScannerDialog({
                             type="button"
                             onClick={() => void readFromCamera()}
                             disabled={!ready || processingPhoto}
-                            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-black text-[#173c35] shadow-[0_16px_40px_-18px_rgba(0,0,0,.8)] disabled:opacity-45"
+                            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-black text-[var(--app-ink)] shadow-[0_16px_40px_-18px_rgba(0,0,0,.8)] disabled:opacity-45"
                         >
                             {processingPhoto ? (
                                 <LoaderCircle className="size-4 animate-spin" />

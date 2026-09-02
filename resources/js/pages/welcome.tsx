@@ -32,6 +32,7 @@ import {
     staggerGroup,
     staggerItem,
 } from '@/components/public-motion';
+import { translate } from '@/lib/i18n';
 import { dashboard, register } from '@/routes';
 
 const features = [
@@ -272,7 +273,7 @@ function ProductGallery() {
                     <div className="scan-product-row" key={name}>
                         <span>{index + 1}</span>
                         <p>{name}</p>
-                        <strong>{price}</strong>
+                        <strong>{translate(price)}</strong>
                         <i>+</i>
                     </div>
                 ))}
@@ -323,18 +324,15 @@ function ProductGallery() {
 }
 
 export default function Welcome() {
-    const { auth } = usePage().props;
+    const { auth, branding } = usePage().props;
     const primaryHref = auth.user ? dashboard() : register();
-    const primaryLabel = auth.user ? 'Buka dashboard' : 'Mulai kelola toko';
+    const primaryLabel = translate(
+        auth.user ? 'Buka dashboard' : 'Mulai kelola toko',
+    );
 
     return (
         <>
-            <Head title="Scan Barang, Kelola Toko Lebih Cepat">
-                <meta
-                    name="description"
-                    content="Scan barang, catat transaksi, perbarui stok, dan pantau laporan toko dalam satu alur bersama Sisko Plan."
-                />
-            </Head>
+            <Head title={translate(branding.seo_title)} />
 
             <section className="scan-hero">
                 <div className="ledger-container scan-hero-grid">
@@ -352,9 +350,9 @@ export default function Welcome() {
                             <span>Sisanya langsung tercatat.</span>
                         </m.h1>
                         <m.p variants={staggerItem}>
-                            Dari transaksi ke stok, kas, dan laporan. Sisko Plan
-                            menyatukan semuanya agar toko bergerak lebih cepat
-                            tanpa catatan yang tercecer.
+                            Dari transaksi ke stok, kas, dan laporan.{' '}
+                            {branding.brand_name} menyatukan semuanya agar toko
+                            bergerak lebih cepat tanpa catatan yang tercecer.
                         </m.p>
                         <m.div
                             className="scan-hero-actions"
@@ -386,7 +384,10 @@ export default function Welcome() {
                 </div>
             </section>
 
-            <section className="scan-flow" aria-label="Alur utama Sisko Plan">
+            <section
+                className="scan-flow"
+                aria-label={`Alur utama ${branding.brand_name}`}
+            >
                 <m.div
                     className="ledger-container"
                     initial="hidden"
@@ -439,8 +440,8 @@ export default function Welcome() {
                         variants={revealRight}
                     >
                         <p>
-                            Sisko Plan dibuat untuk pemilik toko yang ingin
-                            bekerja cepat sekaligus tetap memahami kondisi
+                            {branding.brand_name} dibuat untuk pemilik toko yang
+                            ingin bekerja cepat sekaligus tetap memahami kondisi
                             usahanya.
                         </p>
                         <div>
@@ -487,8 +488,8 @@ export default function Welcome() {
                             <m.article key={title} variants={staggerItem}>
                                 <span>0{index + 1}</span>
                                 <Icon />
-                                <h3>{title}</h3>
-                                <p>{copy}</p>
+                                <h3>{translate(title)}</h3>
+                                <p>{translate(copy)}</p>
                             </m.article>
                         ))}
                     </m.div>
@@ -573,8 +574,8 @@ export default function Welcome() {
                                     {number}
                                 </span>
                                 <Icon />
-                                <h3>{title}</h3>
-                                <p>{copy}</p>
+                                <h3>{translate(title)}</h3>
+                                <p>{translate(copy)}</p>
                                 <ArrowRight />
                             </m.article>
                         ))}
@@ -637,7 +638,7 @@ export default function Welcome() {
                             [BarChart3, 'Laporan operasional'],
                         ].map(([Icon, label]) => (
                             <m.span key={String(label)} variants={staggerItem}>
-                                <Icon /> {String(label)}
+                                <Icon /> {translate(String(label))}
                             </m.span>
                         ))}
                     </m.div>
@@ -667,7 +668,7 @@ export default function Welcome() {
                     <m.div
                         className="scan-comparison-table"
                         role="table"
-                        aria-label="Perbandingan Sisko Plan dan pencatatan manual"
+                        aria-label={`Perbandingan ${branding.brand_name} dan pencatatan manual`}
                         initial="hidden"
                         whileInView="visible"
                         viewport={publicViewport}
@@ -680,7 +681,7 @@ export default function Welcome() {
                         >
                             <span role="columnheader">Pekerjaan</span>
                             <strong role="columnheader">
-                                <ScanLine /> Sisko Plan
+                                <ScanLine /> {branding.brand_name}
                             </strong>
                             <strong role="columnheader">
                                 <BookOpen /> Cara manual
@@ -693,11 +694,11 @@ export default function Welcome() {
                                 key={task}
                                 variants={staggerItem}
                             >
-                                <span role="cell">{task}</span>
+                                <span role="cell">{translate(task)}</span>
                                 <strong role="cell">
-                                    <Check /> {sisko}
+                                    <Check /> {translate(sisko)}
                                 </strong>
-                                <p role="cell">{manual}</p>
+                                <p role="cell">{translate(manual)}</p>
                             </m.div>
                         ))}
                     </m.div>
@@ -725,10 +726,10 @@ export default function Welcome() {
                         {faqs.map(([question, answer]) => (
                             <m.details key={question} variants={staggerItem}>
                                 <summary>
-                                    {question}
+                                    {translate(question)}
                                     <span>+</span>
                                 </summary>
-                                <p>{answer}</p>
+                                <p>{translate(answer)}</p>
                             </m.details>
                         ))}
                     </m.div>

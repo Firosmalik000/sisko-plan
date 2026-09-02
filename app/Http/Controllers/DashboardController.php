@@ -166,7 +166,7 @@ class DashboardController extends Controller
             'end' => $end,
             'previous_start' => $previousStart,
             'previous_end' => $previousEnd,
-            'label' => $labels[$period] ?? $labels['month'],
+            'label' => __($labels[$period] ?? $labels['month']),
         ];
     }
 

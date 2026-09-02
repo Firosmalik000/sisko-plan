@@ -4,14 +4,15 @@ import {
     ChevronUp,
     CreditCard,
     Gauge,
+    Globe2,
     LogOut,
     LockKeyhole,
     ReceiptText,
-    ShieldCheck,
     UserCog,
     Users,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import LanguageSwitcher from '@/components/language-switcher';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -79,6 +80,12 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
         label: 'Platform',
         items: [
             {
+                label: 'Brand & SEO',
+                href: '/super-admin/brand-seo',
+                icon: Globe2,
+                permission: 'platform.branding.view',
+            },
+            {
                 label: 'Admin platform',
                 href: '/super-admin/platform-admins',
                 icon: UserCog,
@@ -93,30 +100,43 @@ export default function SuperAdminLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const { platformAdmin } = usePage<{ platformAdmin: PlatformAdmin }>().props;
+    const { platformAdmin, name, branding } = usePage<{
+        platformAdmin: PlatformAdmin;
+        name: string;
+        branding: { logo_url: string | null };
+    }>().props;
     const path = window.location.pathname;
 
     return (
         <div className="platform-shell min-h-screen text-slate-950 md:flex">
-            <aside className="border-b border-white/10 bg-[#0b292f] text-white shadow-2xl shadow-[#0b292f]/10 md:sticky md:top-0 md:flex md:h-screen md:w-72 md:shrink-0 md:flex-col md:border-r md:border-b-0">
+            <aside className="border-b border-white/20 bg-[#d83f22] text-white shadow-2xl shadow-[#b83219]/15 md:sticky md:top-0 md:flex md:h-screen md:w-72 md:shrink-0 md:flex-col md:border-r md:border-b-0">
                 <div className="flex items-center justify-between px-4 py-4 md:px-5 md:py-5">
                     <Link
                         href={platformAdmin.home_url}
                         className="flex items-center gap-3"
                     >
-                        <span className="flex size-9 items-center justify-center rounded-lg bg-[#d7a941] text-[#102b31]">
-                            <ShieldCheck className="size-5" />
+                        <span className="flex size-9 items-center justify-center overflow-hidden rounded-lg bg-white text-[#ee4d2d] shadow-sm">
+                            {branding.logo_url ? (
+                                <img
+                                    src={branding.logo_url}
+                                    alt=""
+                                    className="size-full object-contain"
+                                />
+                            ) : (
+                                <Globe2 className="size-5" />
+                            )}
                         </span>
                         <span>
                             <span className="block text-sm font-black tracking-[0.12em]">
-                                SISKO CONTROL
+                                {name.toUpperCase()} CONTROL
                             </span>
-                            <span className="block text-[11px] text-slate-400">
+                            <span className="block text-[11px] text-white/70">
                                 SaaS administration
                             </span>
                         </span>
                     </Link>
-                    <div className="md:hidden">
+                    <div className="flex items-center gap-2 md:hidden">
+                        <LanguageSwitcher />
                         <AccountMenu admin={platformAdmin} compact />
                     </div>
                 </div>
@@ -141,7 +161,7 @@ export default function SuperAdminLayout({
                                 key={group.label}
                                 className="contents md:block"
                             >
-                                <p className="mb-1 hidden px-2 text-[10px] font-bold tracking-[0.16em] text-slate-500 uppercase md:block">
+                                <p className="mb-1 hidden px-2 text-[10px] font-bold tracking-[0.16em] text-white/55 uppercase md:block">
                                     {group.label}
                                 </p>
                                 <div className="flex shrink-0 gap-1 md:block md:space-y-1">
@@ -155,7 +175,7 @@ export default function SuperAdminLayout({
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
-                                                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition ${active ? 'bg-[#e3b84f] text-[#0b292f] shadow-lg shadow-black/10' : 'text-slate-300 hover:bg-white/8 hover:text-white'}`}
+                                                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition ${active ? 'bg-white text-[#b83219] shadow-lg shadow-[#9f2f19]/20' : 'text-white/80 hover:bg-white/12 hover:text-white'}`}
                                             >
                                                 <item.icon className="size-4" />
                                                 {item.label}
@@ -168,7 +188,8 @@ export default function SuperAdminLayout({
                     })}
                 </nav>
 
-                <div className="hidden border-t border-white/10 p-3 md:block">
+                <div className="hidden items-center gap-2 border-t border-white/10 p-3 md:flex">
+                    <LanguageSwitcher />
                     <AccountMenu admin={platformAdmin} />
                 </div>
             </aside>
@@ -197,7 +218,7 @@ function AccountMenu({
                 {compact ? (
                     <button
                         type="button"
-                        className="flex size-10 items-center justify-center rounded-xl bg-white/10 text-xs font-black text-[#e9c96f] transition outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-[#e9c96f]"
+                        className="flex size-10 items-center justify-center rounded-xl bg-white/15 text-xs font-black text-white transition outline-none hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white"
                         aria-label="Buka menu akun"
                     >
                         {initials}
@@ -205,22 +226,22 @@ function AccountMenu({
                 ) : (
                     <button
                         type="button"
-                        className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-[#e9c96f]"
+                        className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition outline-none hover:bg-white/12 focus-visible:ring-2 focus-visible:ring-white"
                     >
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-black text-[#e9c96f]">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-black text-white">
                             {initials}
                         </span>
                         <span className="min-w-0 flex-1">
                             <span className="block truncate text-xs font-semibold">
                                 {admin.name}
                             </span>
-                            <span className="block truncate text-[10px] text-slate-400">
+                            <span className="block truncate text-[10px] text-white/65">
                                 {admin.role === 'super_admin'
                                     ? 'Super Admin'
                                     : 'Admin Platform'}
                             </span>
                         </span>
-                        <ChevronUp className="size-4 text-slate-400" />
+                        <ChevronUp className="size-4 text-white/65" />
                     </button>
                 )}
             </DropdownMenuTrigger>
@@ -231,7 +252,7 @@ function AccountMenu({
                 className="w-64 rounded-xl border-slate-200 p-1.5 shadow-xl"
             >
                 <DropdownMenuLabel className="px-3 py-2">
-                    <span className="block truncate text-sm font-bold text-[#0b292f]">
+                    <span className="block truncate text-sm font-bold text-[#3b211b]">
                         {admin.name}
                     </span>
                     <span className="mt-0.5 block truncate text-xs font-normal text-slate-500">

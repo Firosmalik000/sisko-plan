@@ -20,6 +20,7 @@ import {
     quantity,
 } from '@/components/operations-shell';
 import type { ScannerSelection } from '@/components/product-scanner/types';
+import { formatCompactMoney, localeTag } from '@/lib/currency';
 import { decimalInput } from '@/lib/decimal-input';
 
 type Item = {
@@ -127,7 +128,7 @@ export default function StockOpnameShow({
     }, [stockCount.items, values]);
 
     const visibleItems = stockCount.items.filter((item) => {
-        const query = search.trim().toLocaleLowerCase('id-ID');
+        const query = search.trim().toLocaleLowerCase(localeTag());
         const matchesSearch =
             query === '' ||
             [
@@ -137,7 +138,7 @@ export default function StockOpnameShow({
                 item.sku,
                 item.barcode,
             ].some((value) =>
-                value?.toLocaleLowerCase('id-ID').includes(query),
+                value?.toLocaleLowerCase(localeTag()).includes(query),
             );
         const value = values[item.product_id];
         const matchesFilter =
@@ -250,11 +251,11 @@ export default function StockOpnameShow({
                 title={stockCount.document_number}
                 description=""
             >
-                <section className="overflow-hidden rounded-[1.2rem] border border-[#173c35]/10 bg-white shadow-sm">
-                    <div className="flex items-center gap-2 border-b border-[#173c35]/8 px-3 py-2.5 sm:px-4">
+                <section className="overflow-hidden rounded-[1.2rem] border border-[var(--app-ink)]/10 bg-white shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-[var(--app-ink)]/8 px-3 py-2.5 sm:px-4">
                         <Link
                             href="/operations/stock-opnames"
-                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[#eef3ef] px-2.5 text-xs font-black text-[#365f53]"
+                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--app-soft)] px-2.5 text-xs font-black text-[var(--app-ink)]"
                         >
                             <ArrowLeft className="size-3.5" /> Kembali
                         </Link>
@@ -270,12 +271,12 @@ export default function StockOpnameShow({
                                 {stockCount.notes && ` · ${stockCount.notes}`}
                             </p>
                         </div>
-                        <span className="shrink-0 rounded-lg bg-[#e7f1ec] px-2 py-1.5 text-[10px] font-black text-[#286451] ring-1 ring-[#286451]/15 sm:text-xs">
+                        <span className="shrink-0 rounded-lg bg-[var(--app-soft)] px-2 py-1.5 text-[10px] font-black text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/15 sm:text-xs">
                             {statusLabels[stockCount.status]}
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-4 divide-x divide-[#173c35]/8 py-2.5">
+                    <div className="grid grid-cols-4 divide-x divide-[var(--app-ink)]/8 py-2.5">
                         <Summary
                             label="Dihitung"
                             value={`${stats.counted}/${stockCount.items.length}`}
@@ -337,7 +338,7 @@ export default function StockOpnameShow({
                             <button
                                 type="button"
                                 onClick={() => setScannerOpen(true)}
-                                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#173c35] px-3 text-xs font-black text-white sm:text-sm"
+                                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] sm:text-sm"
                             >
                                 <Camera className="size-4" /> Scan produk
                             </button>
@@ -346,7 +347,7 @@ export default function StockOpnameShow({
                     {scannerMessage && (
                         <p
                             role="status"
-                            className="mt-2 rounded-xl bg-[#edf4f0] px-3 py-2 text-xs font-bold text-[#286451]"
+                            className="mt-2 rounded-xl bg-[var(--app-soft)] px-3 py-2 text-xs font-bold text-[var(--app-primary)]"
                         >
                             {scannerMessage}
                         </p>
@@ -380,7 +381,7 @@ export default function StockOpnameShow({
                                                 {item.variant_name ?? item.name}
                                             </p>
                                             {item.parent_name && (
-                                                <p className="truncate text-xs font-bold text-[#477065]">
+                                                <p className="truncate text-xs font-bold text-[var(--app-primary)]">
                                                     {item.parent_name}
                                                 </p>
                                             )}
@@ -480,7 +481,7 @@ export default function StockOpnameShow({
                     </div>
                 </section>
 
-                <div className="sticky bottom-20 z-20 rounded-xl border border-[#173c35]/10 bg-white/95 p-2.5 shadow-xl backdrop-blur md:bottom-4">
+                <div className="sticky bottom-20 z-20 rounded-xl border border-[var(--app-ink)]/10 bg-white/95 p-2.5 shadow-xl backdrop-blur md:bottom-4">
                     {stockCount.status === 'draft' && editable && (
                         <div>
                             <p className="mb-1.5 text-[10px] font-semibold text-stone-500 sm:text-right sm:text-xs">
@@ -510,7 +511,7 @@ export default function StockOpnameShow({
                                     type="button"
                                     disabled={processing || dirty.size === 0}
                                     onClick={save}
-                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[#e7f1ec] px-2 text-xs font-black text-[#286451] disabled:opacity-50 sm:px-4 sm:text-sm"
+                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[var(--app-soft)] px-2 text-xs font-black text-[var(--app-primary)] disabled:opacity-50 sm:px-4 sm:text-sm"
                                 >
                                     <Save className="hidden size-4 sm:block" />{' '}
                                     Simpan
@@ -605,11 +606,11 @@ function Summary({
 }) {
     return (
         <div className="min-w-0 px-1.5 text-center sm:px-3">
-            <p className="truncate text-[8px] font-bold tracking-wide text-[#72837d] uppercase sm:text-[10px]">
+            <p className="truncate text-[8px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">
                 {label}
             </p>
             <p
-                className={`mt-0.5 truncate text-sm font-black tabular-nums sm:text-base ${danger ? 'text-red-700' : 'text-[#173c35]'}`}
+                className={`mt-0.5 truncate text-sm font-black tabular-nums sm:text-base ${danger ? 'text-red-700' : 'text-[var(--app-ink)]'}`}
             >
                 {value}
             </p>
@@ -618,10 +619,5 @@ function Summary({
 }
 
 function compactMoney(value: number) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        notation: 'compact',
-        maximumFractionDigits: 1,
-    }).format(value);
+    return formatCompactMoney(value);
 }

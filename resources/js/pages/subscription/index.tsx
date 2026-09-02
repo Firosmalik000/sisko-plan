@@ -12,6 +12,7 @@ import {
 import { money } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import { localeTag } from '@/lib/currency';
 
 type Subscription = {
     public_id: string;
@@ -87,23 +88,23 @@ export default function StoreSubscriptionPage({
     return (
         <>
             <Head title="Paket & Langganan" />
-            <main className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+            <main className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto max-w-6xl space-y-4">
-                    <header className="rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+                    <header className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
                         <div className="flex items-center justify-between gap-4">
                             <div className="min-w-0">
-                                <p className="text-[10px] font-bold tracking-[0.14em] text-[#6d817a] uppercase">
+                                <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--muted-foreground)] uppercase">
                                     Paket aktif
                                 </p>
-                                <h1 className="mt-0.5 truncate text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                                <h1 className="mt-0.5 truncate text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                                     {subscription.plan.name}
                                 </h1>
                             </div>
-                            <div className="shrink-0 rounded-xl bg-[#edf4f0] px-3 py-2 text-right">
-                                <p className="text-[10px] font-bold text-[#6d817a] uppercase">
+                            <div className="shrink-0 rounded-xl bg-[var(--app-soft)] px-3 py-2 text-right">
+                                <p className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">
                                     Harga per bulan
                                 </p>
-                                <p className="mt-0.5 text-sm font-black text-[#173c35] sm:text-base">
+                                <p className="mt-0.5 text-sm font-black text-[var(--app-ink)] sm:text-base">
                                     {money(subscription.plan.monthly_price)}
                                 </p>
                             </div>
@@ -144,7 +145,7 @@ export default function StoreSubscriptionPage({
                             </h2>
                             <p className="mt-1 text-sm">{usage.reason}</p>
                             <Link
-                                className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#173c35] px-4 text-sm font-bold text-white"
+                                className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--app-primary)] px-4 text-sm font-bold text-[var(--app-primary-foreground)]"
                                 href="/pricing"
                             >
                                 Lihat paket
@@ -179,10 +180,10 @@ export default function StoreSubscriptionPage({
                     <section className="overflow-hidden rounded-[1.35rem] border border-slate-900/10 bg-white shadow-sm">
                         <div className="flex items-center justify-between gap-4 border-b border-slate-900/8 p-4 sm:p-5">
                             <div className="flex min-w-0 items-center gap-3">
-                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f1ec] text-[#173c35]">
+                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-soft)] text-[var(--app-ink)]">
                                     <History className="size-5" />
                                 </span>
-                                <h2 className="truncate text-lg font-black tracking-[-0.025em] text-[#173c35]">
+                                <h2 className="truncate text-lg font-black tracking-[-0.025em] text-[var(--app-ink)]">
                                     Riwayat langganan
                                 </h2>
                             </div>
@@ -198,7 +199,7 @@ export default function StoreSubscriptionPage({
                                 >
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <h3 className="truncate font-black text-[#173c35]">
+                                            <h3 className="truncate font-black text-[var(--app-ink)]">
                                                 {period.plan_name}
                                             </h3>
                                             <PeriodStatus
@@ -212,7 +213,7 @@ export default function StoreSubscriptionPage({
                                         </p>
                                     </div>
                                     <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700">
-                                        <CalendarDays className="size-4 shrink-0 text-[#28705d]" />
+                                        <CalendarDays className="size-4 shrink-0 text-[var(--app-primary)]" />
                                         <span className="break-words">
                                             {date(period.period_start)} –{' '}
                                             {period.period_end
@@ -220,7 +221,7 @@ export default function StoreSubscriptionPage({
                                                 : 'Tanpa batas'}
                                         </span>
                                     </div>
-                                    <p className="font-black text-[#173c35] tabular-nums md:text-right">
+                                    <p className="font-black text-[var(--app-ink)] tabular-nums md:text-right">
                                         {money(period.monthly_price)}
                                     </p>
                                 </article>
@@ -367,7 +368,7 @@ function UsageCard({
     return (
         <div className="rounded-3xl border border-slate-900/10 bg-white/85 p-6 shadow-sm">
             <div className="flex items-center gap-3">
-                <span className="rounded-xl bg-[#102b31] p-3 text-white">
+                <span className="rounded-xl bg-[var(--app-ink)] p-3 text-white">
                     <Icon className="size-5" />
                 </span>
                 <div>
@@ -392,7 +393,7 @@ function percentage(used: number, limit: number) {
 }
 
 function date(value: string) {
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium' }).format(
+    return new Intl.DateTimeFormat(localeTag(), { dateStyle: 'medium' }).format(
         new Date(value),
     );
 }

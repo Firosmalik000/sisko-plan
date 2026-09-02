@@ -32,6 +32,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { localeTag } from '@/lib/currency';
 
 type ProductOption = {
     catalog_product_id: string;
@@ -48,6 +49,7 @@ type ProductOption = {
     conversion_factor: string;
     selling_price: string;
     stock_quantity: string;
+    minimum_quantity: string;
     is_base_unit: boolean | number;
 };
 type CatalogProduct = {
@@ -142,30 +144,33 @@ export default function PosPage({
             ).map(([, product]) => product),
         [products],
     );
-    const normalizedSearch = search.trim().toLocaleLowerCase('id-ID');
+    const normalizedSearch = search.trim().toLocaleLowerCase(localeTag());
     const visibleProducts = catalog.filter(
         (product) =>
             !normalizedSearch ||
             product.name
-                .toLocaleLowerCase('id-ID')
+                .toLocaleLowerCase(localeTag())
                 .includes(normalizedSearch) ||
             product.sku
-                ?.toLocaleLowerCase('id-ID')
+                ?.toLocaleLowerCase(localeTag())
                 .includes(normalizedSearch) ||
             product.barcode?.includes(normalizedSearch) ||
             product.options.some(
                 (option) =>
                     option.variant_name
-                        ?.toLocaleLowerCase('id-ID')
+                        ?.toLocaleLowerCase(localeTag())
                         .includes(normalizedSearch) ||
                     option.sku
-                        ?.toLocaleLowerCase('id-ID')
+                        ?.toLocaleLowerCase(localeTag())
                         .includes(normalizedSearch) ||
                     option.barcode?.includes(normalizedSearch),
             ),
     );
     const available = (product: ProductOption) =>
         Number(product.stock_quantity) / Number(product.conversion_factor);
+    const isCritical = (product: ProductOption) =>
+        available(product) <=
+        Number(product.minimum_quantity) / Number(product.conversion_factor);
     const scannerProducts = useMemo<ScannerProductCandidate[]>(
         () =>
             catalog.map((product) => ({
@@ -362,7 +367,8 @@ export default function PosPage({
         const exactMatches = products.filter(
             (product) =>
                 product.barcode === search ||
-                product.sku?.toLocaleLowerCase('id-ID') === normalizedSearch,
+                product.sku?.toLocaleLowerCase(localeTag()) ===
+                    normalizedSearch,
         );
         const exact =
             exactMatches.find((product) => Boolean(product.is_base_unit)) ??
@@ -439,26 +445,26 @@ export default function PosPage({
     return (
         <>
             <Head title="Kasir POS" />
-            <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] p-3 sm:p-4 lg:p-5">
+            <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] p-3 sm:p-4 lg:p-5">
                 <div className="mx-auto grid max-w-[1500px] gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,0.75fr)]">
                     <section className="min-w-0 space-y-4">
-                        <header className="rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm">
+                        <header className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm">
                             <div className="flex items-center justify-between gap-3">
-                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                                     Kasir
                                 </h1>
                                 <div className="flex gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setScannerOpen(true)}
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#173c35] px-3 text-xs font-black text-white hover:bg-[#255d4e]"
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] hover:bg-[var(--workspace-700)]"
                                     >
                                         <Camera className="size-4" />
                                         Scan kamera
                                     </button>
                                     <Link
                                         href="/sales"
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#edf4f0] px-3 text-xs font-bold text-[#245c4f] hover:bg-[#e2ece7]"
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--app-soft)] px-3 text-xs font-bold text-[var(--app-primary)] hover:bg-[var(--app-soft-strong)]"
                                     >
                                         <ReceiptText className="size-4" />
                                         Riwayat & retur
@@ -468,12 +474,12 @@ export default function PosPage({
                             {scannerSummary && (
                                 <p
                                     role="status"
-                                    className="mt-3 rounded-xl bg-[#edf4f0] px-3 py-2 text-xs font-bold text-[#245c4f]"
+                                    className="mt-3 rounded-xl bg-[var(--app-soft)] px-3 py-2 text-xs font-bold text-[var(--app-primary)]"
                                 >
                                     {scannerSummary}
                                 </p>
                             )}
-                            <div className="mt-4 rounded-2xl bg-[#edf3ef] p-1.5 shadow-inner shadow-[#173c35]/5">
+                            <div className="mt-4 rounded-2xl bg-[var(--app-soft)] p-1.5 shadow-[var(--app-ink)]/5 shadow-inner">
                                 <div
                                     className="grid grid-cols-2 gap-1"
                                     role="tablist"
@@ -485,10 +491,10 @@ export default function PosPage({
                                         aria-selected={entryMode === 'input'}
                                         aria-controls="input-product-panel"
                                         onClick={() => selectEntryMode('input')}
-                                        className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none ${
+                                        className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none ${
                                             entryMode === 'input'
-                                                ? 'bg-white text-[#173c35] shadow-sm'
-                                                : 'text-[#58736a] hover:bg-white/60'
+                                                ? 'bg-white text-[var(--app-ink)] shadow-sm'
+                                                : 'text-[var(--muted-foreground)] hover:bg-white/60'
                                         }`}
                                     >
                                         <Keyboard className="size-4" />
@@ -500,10 +506,10 @@ export default function PosPage({
                                         aria-selected={entryMode === 'scan'}
                                         aria-controls="scan-barcode-panel"
                                         onClick={() => selectEntryMode('scan')}
-                                        className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none ${
+                                        className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none ${
                                             entryMode === 'scan'
-                                                ? 'bg-white text-[#173c35] shadow-sm'
-                                                : 'text-[#58736a] hover:bg-white/60'
+                                                ? 'bg-white text-[var(--app-ink)] shadow-sm'
+                                                : 'text-[var(--muted-foreground)] hover:bg-white/60'
                                         }`}
                                     >
                                         <Barcode className="size-4" />
@@ -529,18 +535,18 @@ export default function PosPage({
                                         onKeyDown={onSearchKeyDown}
                                         placeholder="Cari nama produk atau SKU"
                                         aria-label="Cari produk"
-                                        className="h-11 w-full rounded-xl border border-[#173c35]/10 bg-[#f7f9f6] pr-4 pl-11 text-sm text-slate-950 outline-none focus:border-[#34765f] focus:ring-2 focus:ring-[#34765f]/15"
+                                        className="h-11 w-full rounded-xl border border-[var(--app-ink)]/10 bg-[#fffaf7] pr-4 pl-11 text-sm text-slate-950 outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15"
                                     />
                                 </div>
                             ) : (
                                 <div
                                     id="scan-barcode-panel"
                                     role="tabpanel"
-                                    className="mt-3 rounded-2xl border border-[#173c35]/10 bg-[#f7f9f6] p-3"
+                                    className="mt-3 rounded-2xl border border-[var(--app-ink)]/10 bg-[#fffaf7] p-3"
                                 >
                                     <div className="flex gap-2">
                                         <div className="relative min-w-0 flex-1">
-                                            <Barcode className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-[#34765f]" />
+                                            <Barcode className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-[var(--app-primary)]" />
                                             <input
                                                 ref={scanRef}
                                                 value={barcode}
@@ -556,14 +562,14 @@ export default function PosPage({
                                                 aria-invalid={Boolean(
                                                     scanError,
                                                 )}
-                                                className="h-12 w-full rounded-xl border border-[#173c35]/10 bg-white pr-3 pl-11 text-base font-bold text-slate-950 outline-none focus:border-[#34765f] focus:ring-2 focus:ring-[#34765f]/15"
+                                                className="h-12 w-full rounded-xl border border-[var(--app-ink)]/10 bg-white pr-3 pl-11 text-base font-bold text-slate-950 outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15"
                                             />
                                         </div>
                                         <button
                                             type="button"
                                             onClick={scanBarcode}
                                             disabled={!barcode.trim()}
-                                            className="min-h-12 shrink-0 rounded-xl bg-[#173c35] px-4 text-sm font-black text-white transition hover:bg-[#245c4f] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="min-h-12 shrink-0 rounded-xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)] transition hover:bg-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             Tambah
                                         </button>
@@ -586,6 +592,8 @@ export default function PosPage({
                                     );
                                     const minimumPrice = Math.min(...prices);
                                     const maximumPrice = Math.max(...prices);
+                                    const criticalStock =
+                                        product.options.some(isCritical);
 
                                     return (
                                         <button
@@ -594,9 +602,9 @@ export default function PosPage({
                                             onClick={() =>
                                                 chooseProduct(product)
                                             }
-                                            className="group min-w-0 overflow-hidden rounded-2xl border border-[#173c35]/10 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#34765f]/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                                            className="group min-w-0 overflow-hidden rounded-2xl border border-[var(--app-ink)]/10 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--app-primary)]/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                         >
-                                            <div className="aspect-[4/3] overflow-hidden bg-[#eef4f0]">
+                                            <div className="aspect-[4/3] overflow-hidden bg-[var(--app-soft)]">
                                                 {product.photo_url ? (
                                                     <img
                                                         src={product.photo_url}
@@ -605,7 +613,7 @@ export default function PosPage({
                                                         className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                                                     />
                                                 ) : (
-                                                    <span className="grid h-full place-items-center text-[#6f8d82]">
+                                                    <span className="grid h-full place-items-center text-[var(--muted-foreground)]">
                                                         <PackageOpen className="size-8" />
                                                     </span>
                                                 )}
@@ -614,7 +622,7 @@ export default function PosPage({
                                                 <p className="line-clamp-2 text-sm leading-snug font-bold text-slate-900 sm:text-base">
                                                     {product.name}
                                                 </p>
-                                                <p className="text-base font-black tracking-[-0.02em] text-[#245c4f] sm:text-lg">
+                                                <p className="text-base font-black tracking-[-0.02em] text-[var(--app-primary)] sm:text-lg">
                                                     {money(minimumPrice)}
                                                     {maximumPrice !==
                                                         minimumPrice && (
@@ -626,6 +634,26 @@ export default function PosPage({
                                                         </span>
                                                     )}
                                                 </p>
+                                                <div className="flex items-center gap-2">
+                                                    {criticalStock && (
+                                                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-black text-red-700">
+                                                            Kritis
+                                                        </span>
+                                                    )}
+                                                    <p
+                                                        className={`text-[11px] font-bold ${criticalStock ? 'text-red-600' : 'text-slate-500'}`}
+                                                    >
+                                                        Stok tersisa{' '}
+                                                        {Math.min(
+                                                            ...product.options.map(
+                                                                (option) =>
+                                                                    available(
+                                                                        option,
+                                                                    ),
+                                                            ),
+                                                        )}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </button>
                                     );
@@ -698,10 +726,17 @@ export default function PosPage({
                                                             item.selling_price,
                                                         )}
                                                     </span>
+                                                    <span
+                                                        className={`font-bold ${isCritical(item) ? 'text-red-600' : 'text-slate-500'}`}
+                                                    >
+                                                        {isCritical(item) &&
+                                                            'Kritis · '}
+                                                        Stok {available(item)}
+                                                    </span>
                                                 </div>
                                             </div>
                                             <div className="flex shrink-0 items-start gap-2">
-                                                <strong className="pt-1 text-sm text-[#173c39]">
+                                                <strong className="pt-1 text-sm text-[var(--app-ink)]">
                                                     {money(lineTotal)}
                                                 </strong>
                                                 <button
@@ -860,7 +895,7 @@ export default function PosPage({
                                     }
                                 />
                             </label>
-                            <div className="flex items-end justify-between gap-3 rounded-2xl bg-[#173c39] p-4 text-white">
+                            <div className="flex items-end justify-between gap-3 rounded-2xl bg-[var(--app-primary)] p-4 text-[var(--app-primary-foreground)]">
                                 <span className="text-sm text-teal-50/70">
                                     Total
                                 </span>
@@ -879,7 +914,7 @@ export default function PosPage({
                                             method.account_id ===
                                             sale.data.account_id;
                                         const pillClass = active
-                                            ? 'border-[#173c39] bg-[#173c39] text-white shadow-sm'
+                                            ? 'border-[var(--app-ink)] bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-sm'
                                             : 'border-slate-300 bg-white text-slate-700 hover:border-teal-500 hover:bg-teal-50';
 
                                         return (
@@ -1024,7 +1059,7 @@ export default function PosPage({
                 }}
             >
                 <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] gap-0 overflow-hidden rounded-3xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-xl">
-                    <DialogHeader className="border-b border-slate-200 bg-[#f5f8f5] p-4 pr-12 text-left sm:p-5 sm:pr-12">
+                    <DialogHeader className="border-b border-slate-200 bg-[#fffaf7] p-4 pr-12 text-left sm:p-5 sm:pr-12">
                         <div className="flex min-w-0 items-center gap-3">
                             {selectedProduct?.photo_url && (
                                 <img
@@ -1034,7 +1069,7 @@ export default function PosPage({
                                 />
                             )}
                             <div className="min-w-0">
-                                <DialogTitle className="text-xl leading-tight font-black tracking-[-0.03em] text-[#173c35] sm:text-2xl">
+                                <DialogTitle className="text-xl leading-tight font-black tracking-[-0.03em] text-[var(--app-ink)] sm:text-2xl">
                                     {selectedProduct?.name}
                                 </DialogTitle>
                                 {(selectedProduct?.sku ||
@@ -1068,7 +1103,7 @@ export default function PosPage({
                                     key={`${option.product_id}:${option.unit_id}`}
                                     onClick={() => addProduct(option)}
                                     disabled={stock <= 0}
-                                    className="flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-[#34765f]/50 hover:bg-[#f4f8f5] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
+                                    className="flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-[var(--app-primary)]/50 hover:bg-[#fffaf7] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
                                 >
                                     <div className="min-w-0">
                                         <p className="font-black text-slate-900">
@@ -1078,7 +1113,7 @@ export default function PosPage({
                                         <p
                                             className={`mt-1 text-xs font-bold ${
                                                 stock > 0
-                                                    ? 'text-[#34765f]'
+                                                    ? 'text-[var(--app-primary)]'
                                                     : 'text-red-600'
                                             }`}
                                         >
@@ -1088,10 +1123,10 @@ export default function PosPage({
                                         </p>
                                     </div>
                                     <div className="flex shrink-0 items-center gap-2">
-                                        <strong className="text-sm font-black text-[#173c35] sm:text-base">
+                                        <strong className="text-sm font-black text-[var(--app-ink)] sm:text-base">
                                             {money(option.selling_price)}
                                         </strong>
-                                        <span className="grid size-9 place-items-center rounded-xl bg-[#e7f1ec] text-[#245c4f]">
+                                        <span className="grid size-9 place-items-center rounded-xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                                             <Plus className="size-4" />
                                         </span>
                                     </div>

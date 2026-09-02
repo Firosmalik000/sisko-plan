@@ -67,7 +67,7 @@ class StoreMemberController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => $created ? 'Akun pekerja berhasil dibuat.' : 'Akun berhasil dihubungkan ke toko.',
+            'message' => $created ? __('Staff account created successfully.') : __('Account connected to store successfully.'),
         ]);
 
         return back();
@@ -93,7 +93,7 @@ class StoreMemberController extends Controller
 
             if ($member->id === $lockedStore->owner_user_id) {
                 throw ValidationException::withMessages([
-                    'status' => 'Pemilik utama toko tidak dapat dinonaktifkan atau diubah perannya.',
+                    'status' => __('The primary store owner cannot be deactivated or have their role changed.'),
                 ]);
             }
 
@@ -110,7 +110,7 @@ class StoreMemberController extends Controller
                 ]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Akses anggota berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Member access updated successfully.')]);
 
         return back();
     }

@@ -29,6 +29,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { currencySymbol, localeTag } from '@/lib/currency';
 
 type CapitalType =
     | 'cash_contribution'
@@ -203,7 +204,7 @@ export default function CapitalPage({
                 title="Modal Pemilik"
                 description=""
             >
-                <section className="overflow-hidden rounded-[1.35rem] bg-[#123d36] text-white shadow-[0_12px_32px_rgba(18,61,54,0.13)]">
+                <section className="overflow-hidden rounded-[1.35rem] bg-[var(--app-ink)] text-white shadow-[0_12px_32px_rgba(18,61,54,0.13)]">
                     <div className="relative px-4 py-5 sm:px-6">
                         <div className="absolute -top-20 right-0 size-52 rounded-full bg-teal-300/15 blur-3xl" />
                         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -219,7 +220,7 @@ export default function CapitalPage({
                             {canManage && (
                                 <button
                                     type="button"
-                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-black text-[#173c35] transition hover:bg-amber-300 sm:w-auto"
+                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 text-sm font-black text-[var(--app-ink)] transition hover:bg-amber-300 sm:w-auto"
                                     onClick={() => setDialogOpen(true)}
                                 >
                                     <Plus className="size-4" /> Catat modal
@@ -241,7 +242,9 @@ export default function CapitalPage({
                         <HeroMetric
                             icon={<ReceiptText className="size-4" />}
                             label="Dokumen"
-                            value={transactions.total.toLocaleString('id-ID')}
+                            value={transactions.total.toLocaleString(
+                                localeTag(),
+                            )}
                         />
                     </div>
                 </section>
@@ -253,7 +256,7 @@ export default function CapitalPage({
                                 Riwayat modal
                             </h2>
                             <p className="text-xs font-semibold text-stone-500">
-                                {transactions.total.toLocaleString('id-ID')}{' '}
+                                {transactions.total.toLocaleString(localeTag())}{' '}
                                 dokumen
                             </p>
                         </div>
@@ -329,7 +332,7 @@ export default function CapitalPage({
 
                     {transactions.data.length === 0 && (
                         <div className="px-4 py-12 text-center">
-                            <div className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-[#eef4f0] text-teal-700">
+                            <div className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-[var(--app-soft)] text-teal-700">
                                 <WalletCards className="size-5" />
                             </div>
                             <p className="mt-3 text-sm font-bold text-stone-700">
@@ -358,7 +361,7 @@ export default function CapitalPage({
             <Dialog open={dialogOpen} onOpenChange={changeDialog}>
                 <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-stone-200 bg-white p-0 shadow-2xl sm:max-w-xl">
                     <DialogHeader className="border-b border-stone-200 px-4 py-4 pr-12 text-left sm:px-5">
-                        <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#173c35]">
+                        <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
                             Catat modal
                         </DialogTitle>
                         <DialogDescription className="sr-only">
@@ -382,7 +385,7 @@ export default function CapitalPage({
                                             type="button"
                                             className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-2 text-sm font-bold transition ${
                                                 form.data.type === option.value
-                                                    ? 'border-teal-700 bg-[#e8f1ed] text-[#173c35] ring-2 ring-teal-700/10'
+                                                    ? 'border-teal-700 bg-[var(--app-soft)] text-[var(--app-ink)] ring-2 ring-teal-700/10'
                                                     : 'border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:bg-stone-50'
                                             }`}
                                             aria-pressed={
@@ -459,7 +462,7 @@ export default function CapitalPage({
                                     <Field label="Nominal">
                                         <div className="flex h-10 items-center overflow-hidden rounded-xl border border-stone-300 bg-white focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/15">
                                             <span className="border-r border-stone-200 bg-stone-50 px-3 text-sm font-black text-stone-600">
-                                                Rp
+                                                {currencySymbol()}
                                             </span>
                                             <input
                                                 className="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-sm font-bold text-stone-900 outline-none"
@@ -509,7 +512,7 @@ export default function CapitalPage({
                                     <Field label="Biaya per barang">
                                         <div className="flex h-10 items-center overflow-hidden rounded-xl border border-stone-300 bg-white focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/15">
                                             <span className="border-r border-stone-200 bg-stone-50 px-3 text-sm font-black text-stone-600">
-                                                Rp
+                                                {currencySymbol()}
                                             </span>
                                             <input
                                                 className="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-sm font-bold text-stone-900 outline-none"
@@ -573,7 +576,7 @@ export default function CapitalPage({
                             </div>
 
                             {hasReferenceOptions && (
-                                <div className="grid grid-cols-2 divide-x divide-teal-900/10 rounded-xl border border-teal-900/10 bg-[#f2f7f4] py-3 text-[#173c35]">
+                                <div className="grid grid-cols-2 divide-x divide-teal-900/10 rounded-xl border border-teal-900/10 bg-[#fff3ef] py-3 text-[var(--app-ink)]">
                                     <Calculation
                                         label={
                                             isCash

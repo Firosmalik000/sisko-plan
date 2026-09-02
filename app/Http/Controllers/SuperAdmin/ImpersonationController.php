@@ -76,7 +76,7 @@ class ImpersonationController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => 'Mode impersonasi dihentikan.',
+            'message' => __('Impersonation mode stopped.'),
         ]);
 
         return to_route('super-admin.users.index');

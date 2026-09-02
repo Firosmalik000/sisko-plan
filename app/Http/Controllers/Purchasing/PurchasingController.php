@@ -116,7 +116,7 @@ class PurchasingController extends Controller
             $accountId, $data['paid_amount'], $data['occurred_at'], $data['supplier_invoice_number'] ?? null, $data['notes'] ?? null,
             $data['idempotency_key'], $request->ip(),
         );
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Pembelian berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Purchase posted successfully.')]);
 
         return back();
     }
@@ -127,7 +127,7 @@ class PurchasingController extends Controller
         abort_unless($purchase->store_id === $currentStore->id(), 404);
         $accountId = FinancialAccount::query()->where(['store_id' => $currentStore->id(), 'public_id' => $data['account_id']])->valueOrFail('id');
         $action->handle($currentStore->get(), $this->actor($request), $purchase->id, $accountId, $data['amount'], $data['occurred_at'], $data['notes'] ?? null, $data['idempotency_key'], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Pembayaran utang supplier berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Supplier debt payment posted successfully.')]);
 
         return back();
     }

@@ -38,8 +38,8 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
     return (
         <>
             <Head title={store.name} />
-            <div className="flex flex-1 flex-col gap-4 bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
-                <div className="rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-1 flex-col gap-4 bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
+                <div className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
                     <Link
                         href="/stores"
                         className="mb-3 inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground"
@@ -48,7 +48,7 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
                         Kembali ke daftar toko
                     </Link>
                     <div className="flex items-center justify-between gap-3">
-                        <h1 className="truncate text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                        <h1 className="truncate text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                             {store.name}
                         </h1>
                         <Badge
@@ -66,9 +66,9 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
                 </div>
 
                 {store.can_manage && (
-                    <Card className="rounded-[1.25rem] border-[#173c35]/8 py-5 shadow-sm">
+                    <Card className="rounded-[1.25rem] border-[var(--app-ink)]/8 py-5 shadow-sm">
                         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-sm font-black text-[#173c35]">
+                            <p className="text-sm font-black text-[var(--app-ink)]">
                                 Kelola toko
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -215,7 +215,7 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
                         {({ processing, errors }) => (
                             <>
                                 <DialogHeader className="border-b border-stone-200 px-4 py-4 pr-12 text-left sm:px-5">
-                                    <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#173c35]">
+                                    <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
                                         Ubah identitas toko
                                     </DialogTitle>
                                 </DialogHeader>
@@ -264,7 +264,7 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
                         {({ processing, errors }) => (
                             <>
                                 <DialogHeader className="border-b border-stone-200 px-4 py-4 pr-12 text-left sm:px-5">
-                                    <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#173c35]">
+                                    <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
                                         Tambah Anggota
                                     </DialogTitle>
                                 </DialogHeader>
@@ -285,7 +285,7 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
                                             }
                                             className={`min-h-10 rounded-lg px-3 text-sm font-bold transition-colors ${
                                                 memberMode === 'create'
-                                                    ? 'bg-white text-[#173c35] shadow-sm'
+                                                    ? 'bg-white text-[var(--app-ink)] shadow-sm'
                                                     : 'text-stone-500'
                                             }`}
                                         >
@@ -299,7 +299,7 @@ export default function StoreShow({ store }: { store: StoreDetail }) {
                                             }
                                             className={`min-h-10 rounded-lg px-3 text-sm font-bold transition-colors ${
                                                 memberMode === 'link'
-                                                    ? 'bg-white text-[#173c35] shadow-sm'
+                                                    ? 'bg-white text-[var(--app-ink)] shadow-sm'
                                                     : 'text-stone-500'
                                             }`}
                                         >

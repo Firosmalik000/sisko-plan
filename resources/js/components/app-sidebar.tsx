@@ -4,6 +4,7 @@ import {
     ChartNoAxesCombined,
     CircleDollarSign,
     CreditCard,
+    Handshake,
     LayoutGrid,
     PackageSearch,
     ShoppingCart,
@@ -11,6 +12,7 @@ import {
     Truck,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
+import LanguageSwitcher from '@/components/language-switcher';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { StoreSwitcher } from '@/components/store-switcher';
@@ -41,6 +43,11 @@ const mainNavItems: NavItem[] = [
         title: 'Master Data',
         href: '/master-data/products',
         icon: PackageSearch,
+    },
+    {
+        title: 'Supplier',
+        href: '/master-data/suppliers',
+        icon: Handshake,
     },
     {
         title: 'Stok, Kas & Modal',
@@ -88,6 +95,9 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
                 <StoreSwitcher />
+                <div className="px-2 group-data-[collapsible=icon]:hidden">
+                    <LanguageSwitcher />
+                </div>
             </SidebarHeader>
 
             <SidebarContent>

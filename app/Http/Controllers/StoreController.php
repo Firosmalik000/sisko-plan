@@ -55,7 +55,7 @@ class StoreController extends Controller
         );
         $request->session()->put('active_store_id', $store->id);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Toko berhasil dibuat.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Store created successfully.')]);
 
         return to_route('dashboard');
     }
@@ -93,7 +93,7 @@ class StoreController extends Controller
             $lockedStore->update($request->validated());
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Nama toko berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Store name updated successfully.')]);
 
         return back();
     }

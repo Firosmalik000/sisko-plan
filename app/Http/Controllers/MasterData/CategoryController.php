@@ -33,7 +33,7 @@ class CategoryController extends Controller
     public function store(CategoryRequest $request, CurrentStore $currentStore): RedirectResponse
     {
         Category::create(['store_id' => $currentStore->id(), ...$request->validated()]);
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Kategori berhasil ditambahkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Category added successfully.')]);
 
         return back();
     }
@@ -41,7 +41,7 @@ class CategoryController extends Controller
     public function update(CategoryRequest $request, CurrentStore $currentStore, string $category): RedirectResponse
     {
         Category::query()->where('store_id', $currentStore->id())->where('public_id', $category)->firstOrFail()->update($request->validated());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Kategori berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Category updated successfully.')]);
 
         return back();
     }

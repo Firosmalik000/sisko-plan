@@ -42,7 +42,7 @@ class FinancialAccountController extends Controller
     public function store(FinancialAccountRequest $request, CurrentStore $currentStore): RedirectResponse
     {
         FinancialAccount::create(['store_id' => $currentStore->id(), ...$request->validated()]);
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Akun keuangan berhasil ditambahkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Financial account added successfully.')]);
 
         return back();
     }
@@ -50,7 +50,7 @@ class FinancialAccountController extends Controller
     public function update(FinancialAccountRequest $request, CurrentStore $currentStore, string $financialAccount): RedirectResponse
     {
         FinancialAccount::query()->where('store_id', $currentStore->id())->where('public_id', $financialAccount)->firstOrFail()->update($request->validated());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Akun keuangan berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Financial account updated successfully.')]);
 
         return back();
     }

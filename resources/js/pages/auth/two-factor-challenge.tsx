@@ -10,9 +10,11 @@ import {
     InputOTPSlot,
 } from '@/components/ui/input-otp';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
+import { useTranslation } from '@/lib/i18n';
 import { store } from '@/routes/two-factor/login';
 
 export default function TwoFactorChallenge() {
+    const { t } = useTranslation();
     const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
     const [code, setCode] = useState<string>('');
 
@@ -23,18 +25,20 @@ export default function TwoFactorChallenge() {
     }>(() => {
         if (showRecoveryInput) {
             return {
-                title: 'Recovery code',
-                description:
-                    'Please confirm access to your account by entering one of your emergency recovery codes.',
-                toggleText: 'login using an authentication code',
+                title: t('Kode pemulihan'),
+                description: t(
+                    'Konfirmasi akses akun dengan memasukkan salah satu kode pemulihan darurat.',
+                ),
+                toggleText: t('masuk menggunakan kode autentikasi'),
             };
         }
 
         return {
-            title: 'Authentication code',
-            description:
-                'Enter the authentication code provided by your authenticator application.',
-            toggleText: 'login using a recovery code',
+            title: t('Kode autentikasi'),
+            description: t(
+                'Masukkan kode autentikasi dari aplikasi autentikator Anda.',
+            ),
+            toggleText: t('masuk menggunakan kode pemulihan'),
         };
     }, [showRecoveryInput]);
 
@@ -51,7 +55,7 @@ export default function TwoFactorChallenge() {
 
     return (
         <>
-            <Head title="Two-factor authentication" />
+            <Head title={t('Autentikasi dua faktor')} />
 
             <div className="space-y-6">
                 <Form
@@ -67,7 +71,9 @@ export default function TwoFactorChallenge() {
                                     <Input
                                         name="recovery_code"
                                         type="text"
-                                        placeholder="Enter recovery code"
+                                        placeholder={t(
+                                            'Masukkan kode pemulihan',
+                                        )}
                                         autoFocus={showRecoveryInput}
                                         required
                                     />
@@ -109,11 +115,11 @@ export default function TwoFactorChallenge() {
                                 className="w-full"
                                 disabled={processing}
                             >
-                                Continue
+                                {t('Lanjutkan')}
                             </Button>
 
                             <div className="text-center text-sm text-muted-foreground">
-                                <span>or you can </span>
+                                <span>{t('atau Anda dapat')} </span>
                                 <button
                                     type="button"
                                     className="cursor-pointer text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"

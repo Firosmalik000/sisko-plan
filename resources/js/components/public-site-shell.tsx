@@ -3,6 +3,8 @@ import { domAnimation, LazyMotion, MotionConfig } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { useRef } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import LanguageSwitcher from '@/components/language-switcher';
+import { useTranslation } from '@/lib/i18n';
 import { dashboard, home, login, register } from '@/routes';
 
 export default function PublicSiteLayout({
@@ -11,7 +13,8 @@ export default function PublicSiteLayout({
     children: React.ReactNode;
 }) {
     const page = usePage();
-    const { auth, name } = page.props;
+    const { auth, name, branding } = page.props;
+    const { t } = useTranslation();
     const subscriptionState = page.props.subscriptionState as
         { can_write: boolean } | null | undefined;
     const portalHref =
@@ -19,7 +22,7 @@ export default function PublicSiteLayout({
             ? '/pricing'
             : dashboard();
     const portalLabel =
-        portalHref === '/pricing' ? 'Pilih paket' : 'Buka dashboard';
+        portalHref === '/pricing' ? t('Pilih paket') : t('Buka dashboard');
     const activePage = page.url.startsWith('/pricing') ? 'pricing' : 'home';
     const menu = useRef<HTMLDetailsElement>(null);
     const closeMenu = () => menu.current?.removeAttribute('open');
@@ -34,14 +37,14 @@ export default function PublicSiteLayout({
                 >
                     <header className="ledger-header">
                         <div className="ledger-container ledger-nav">
-                            <Brand name={name} />
+                            <Brand name={name} logoUrl={branding.logo_url} />
                             <nav
                                 className="ledger-desktop-nav"
-                                aria-label="Navigasi utama"
+                                aria-label={t('Navigasi utama')}
                             >
-                                <a href={sectionHref('fitur')}>Fitur</a>
+                                <a href={sectionHref('fitur')}>{t('Fitur')}</a>
                                 <a href={sectionHref('cara-kerja')}>
-                                    Cara kerja
+                                    {t('Cara kerja')}
                                 </a>
                                 <Link
                                     href="/pricing"
@@ -51,11 +54,12 @@ export default function PublicSiteLayout({
                                             : undefined
                                     }
                                 >
-                                    Paket
+                                    {t('Paket')}
                                 </Link>
-                                <a href={sectionHref('faq')}>FAQ</a>
+                                <a href={sectionHref('faq')}>{t('FAQ')}</a>
                             </nav>
                             <div className="ledger-nav-actions">
+                                <LanguageSwitcher />
                                 {auth.user ? (
                                     <Link
                                         className="ledger-button ledger-button-dark"
@@ -69,13 +73,13 @@ export default function PublicSiteLayout({
                                             className="ledger-login"
                                             href={login()}
                                         >
-                                            Masuk
+                                            {t('Masuk')}
                                         </Link>
                                         <Link
                                             className="ledger-button ledger-button-dark"
                                             href={register()}
                                         >
-                                            Buat akun
+                                            {t('Buat akun')}
                                         </Link>
                                     </>
                                 )}
@@ -85,39 +89,40 @@ export default function PublicSiteLayout({
                                     <Menu className="menu-open" />
                                     <X className="menu-close" />
                                     <span className="menu-label-open sr-only">
-                                        Buka navigasi
+                                        {t('Buka navigasi')}
                                     </span>
                                     <span className="menu-label-close sr-only">
-                                        Tutup navigasi
+                                        {t('Tutup navigasi')}
                                     </span>
                                 </summary>
                                 <div>
+                                    <LanguageSwitcher />
                                     <a
                                         href={sectionHref('fitur')}
                                         onClick={closeMenu}
                                     >
-                                        Fitur
+                                        {t('Fitur')}
                                     </a>
                                     <a
                                         href={sectionHref('cara-kerja')}
                                         onClick={closeMenu}
                                     >
-                                        Cara kerja
+                                        {t('Cara kerja')}
                                     </a>
                                     <Link href="/pricing" onClick={closeMenu}>
-                                        Paket
+                                        {t('Paket')}
                                     </Link>
                                     <a
                                         href={sectionHref('faq')}
                                         onClick={closeMenu}
                                     >
-                                        FAQ
+                                        {t('FAQ')}
                                     </a>
                                     <Link
                                         href={auth.user ? portalHref : login()}
                                         onClick={closeMenu}
                                     >
-                                        {auth.user ? portalLabel : 'Masuk'}
+                                        {auth.user ? portalLabel : t('Masuk')}
                                     </Link>
                                     {!auth.user && (
                                         <Link
@@ -125,7 +130,7 @@ export default function PublicSiteLayout({
                                             href={register()}
                                             onClick={closeMenu}
                                         >
-                                            Buat akun
+                                            {t('Buat akun')}
                                         </Link>
                                     )}
                                 </div>
@@ -138,15 +143,34 @@ export default function PublicSiteLayout({
                     <footer className="ledger-footer">
                         <div className="ledger-container">
                             <div className="ledger-footer-brand">
-                                <Brand name={name} />
+                                <Brand
+                                    name={name}
+                                    logoUrl={branding.logo_url}
+                                />
                                 <p>
-                                    Scan barangnya. Sisanya langsung tercatat.
+                                    {t(
+                                        branding.tagline ||
+                                            'Scan barangnya. Sisanya langsung tercatat.',
+                                    )}
                                 </p>
                             </div>
-                            <nav aria-label="Navigasi footer">
-                                <a href="/#fitur">Fitur</a>
-                                <Link href="/pricing">Paket</Link>
-                                <a href="/#faq">FAQ</a>
+                            <nav
+                                aria-label="Navigasi footer"
+                                className="flex-wrap"
+                            >
+                                <a href="/#fitur">{t('Fitur')}</a>
+                                <Link href="/pricing">{t('Paket')}</Link>
+                                <a href="/#faq">{t('FAQ')}</a>
+                                {branding.social_links.map((social) => (
+                                    <a
+                                        key={`${social.platform}-${social.url}`}
+                                        href={social.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        {social.platform}
+                                    </a>
+                                ))}
                             </nav>
                             <span>
                                 © {new Date().getFullYear()} {name}
@@ -159,17 +183,32 @@ export default function PublicSiteLayout({
     );
 }
 
-function Brand({ name }: { name: string }) {
+function Brand({ name, logoUrl }: { name: string; logoUrl: string | null }) {
     return (
         <Link
             className="ledger-brand"
             href={home()}
-            aria-label={`${name}, beranda`}
+            aria-label={`${name}, ${translateHomeLabel()}`}
         >
             <span className="ledger-brand-mark">
-                <AppLogoIcon className="size-5 fill-current" />
+                {logoUrl ? (
+                    <img
+                        src={logoUrl}
+                        alt=""
+                        className="size-full object-contain"
+                    />
+                ) : (
+                    <AppLogoIcon className="size-5 fill-current" />
+                )}
             </span>
             <span>{name}</span>
         </Link>
     );
+}
+
+function translateHomeLabel() {
+    return typeof document !== 'undefined' &&
+        document.documentElement.lang === 'ms'
+        ? 'laman utama'
+        : 'beranda';
 }

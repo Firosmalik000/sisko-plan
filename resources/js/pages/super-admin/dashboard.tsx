@@ -9,6 +9,7 @@ import {
     Store,
     Users,
 } from 'lucide-react';
+import { formatMoney, localeTag } from '@/lib/currency';
 
 type Metrics = {
     users: number;
@@ -41,11 +42,6 @@ type Security = {
     two_factor_enabled: number;
 };
 
-const currency = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-});
 const statusLabels: Record<string, string> = {
     trialing: 'Trial',
     active: 'Aktif',
@@ -130,7 +126,7 @@ export default function SuperAdminDashboard({
         },
         {
             label: 'MRR terhitung',
-            value: currency.format(Number(metrics.monthly_recurring_revenue)),
+            value: formatMoney(metrics.monthly_recurring_revenue),
             meta: 'Internal projection',
             icon: Store,
             href: '/super-admin/subscriptions',
@@ -140,12 +136,12 @@ export default function SuperAdminDashboard({
     return (
         <div className="platform-enter">
             <Head title="Dashboard Platform" />
-            <section className="relative overflow-hidden rounded-2xl bg-[#0b292f] p-6 text-white shadow-xl shadow-[#0b292f]/15 sm:p-8">
+            <section className="relative overflow-hidden rounded-2xl bg-[#d83f22] p-6 text-white shadow-xl shadow-[#3b211b]/15 sm:p-8">
                 <div className="absolute -top-24 -right-20 size-72 rounded-full border border-white/10" />
-                <div className="absolute -right-8 -bottom-24 size-52 rounded-full bg-[#e3b84f]/10" />
+                <div className="absolute -right-8 -bottom-24 size-52 rounded-full bg-white/10" />
                 <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                     <div>
-                        <p className="text-[11px] font-black tracking-[0.2em] text-[#e3b84f] uppercase">
+                        <p className="text-[11px] font-black tracking-[0.2em] text-[#ffd5ca] uppercase">
                             Platform command center
                         </p>
                         <h1 className="mt-3 max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
@@ -159,9 +155,7 @@ export default function SuperAdminDashboard({
                     <div className="grid grid-cols-2 gap-3 sm:flex">
                         <HeroMetric
                             label="Penerimaan bulan ini"
-                            value={currency.format(
-                                Number(metrics.payments_this_month),
-                            )}
+                            value={formatMoney(metrics.payments_this_month)}
                         />
                         <HeroMetric
                             label="2FA admin"
@@ -176,15 +170,15 @@ export default function SuperAdminDashboard({
                     <Link
                         key={card.label}
                         href={card.href}
-                        className="platform-panel group p-4 transition hover:-translate-y-0.5 hover:border-[#e3b84f]/60 sm:p-5"
+                        className="platform-panel group p-4 transition hover:-translate-y-0.5 hover:border-[#ee4d2d]/60 sm:p-5"
                     >
                         <div className="flex items-start justify-between">
-                            <span className="flex size-10 items-center justify-center rounded-xl bg-[#0b292f] text-white">
+                            <span className="flex size-10 items-center justify-center rounded-xl bg-[#ee4d2d] text-white">
                                 <card.icon className="size-5" />
                             </span>
-                            <ArrowUpRight className="size-4 text-slate-300 transition group-hover:text-[#9b741e]" />
+                            <ArrowUpRight className="size-4 text-slate-300 transition group-hover:text-[#c43b21]" />
                         </div>
-                        <p className="mt-5 truncate text-2xl font-black tracking-tight text-[#0b292f]">
+                        <p className="mt-5 truncate text-2xl font-black tracking-tight text-[#3b211b]">
                             {card.value}
                         </p>
                         <p className="mt-1 text-xs font-bold text-slate-600">
@@ -204,7 +198,7 @@ export default function SuperAdminDashboard({
                         title="Tren penerimaan 6 bulan"
                         href="/super-admin/payments"
                     />
-                    <div className="mt-6 flex h-52 items-end gap-3 border-b border-[#0b292f]/10 px-1">
+                    <div className="mt-6 flex h-52 items-end gap-3 border-b border-[#3b211b]/10 px-1">
                         {payment_trend.map((item) => {
                             const height = Math.max(
                                 (Number(item.amount) / maxTrend) * 100,
@@ -216,11 +210,11 @@ export default function SuperAdminDashboard({
                                     key={item.label}
                                     className="group flex h-full flex-1 flex-col items-center justify-end gap-2"
                                 >
-                                    <span className="hidden text-[10px] font-bold text-[#0b292f] group-hover:block">
-                                        {currency.format(Number(item.amount))}
+                                    <span className="hidden text-[10px] font-bold text-[#3b211b] group-hover:block">
+                                        {formatMoney(item.amount)}
                                     </span>
                                     <div
-                                        className="w-full max-w-14 rounded-t-lg bg-[#0b292f] transition group-hover:bg-[#e3b84f]"
+                                        className="w-full max-w-14 rounded-t-lg bg-[#3b211b] transition group-hover:bg-[#ee4d2d]"
                                         style={{ height: `${height}%` }}
                                     />
                                     <span className="pb-3 text-[11px] font-bold text-slate-500">
@@ -252,7 +246,7 @@ export default function SuperAdminDashboard({
                                             <span className="font-semibold text-slate-600">
                                                 {statusLabels[status] ?? status}
                                             </span>
-                                            <span className="font-black text-[#0b292f]">
+                                            <span className="font-black text-[#3b211b]">
                                                 {count}
                                             </span>
                                         </div>
@@ -282,7 +276,7 @@ export default function SuperAdminDashboard({
                     {recent_payments.length === 0 ? (
                         <EmptyState text="Belum ada pembayaran." />
                     ) : (
-                        <div className="divide-y divide-[#0b292f]/8">
+                        <div className="divide-y divide-[#3b211b]/8">
                             {recent_payments.map((payment) => (
                                 <div
                                     key={payment.public_id}
@@ -299,10 +293,8 @@ export default function SuperAdminDashboard({
                                             {payment.receipt_number}
                                         </p>
                                     </div>
-                                    <p className="text-sm font-black text-[#0b292f]">
-                                        {currency.format(
-                                            Number(payment.amount),
-                                        )}
+                                    <p className="text-sm font-black text-[#3b211b]">
+                                        {formatMoney(payment.amount)}
                                     </p>
                                 </div>
                             ))}
@@ -320,13 +312,13 @@ export default function SuperAdminDashboard({
                     {recent_activity.length === 0 ? (
                         <EmptyState text="Belum ada aktivitas." />
                     ) : (
-                        <div className="divide-y divide-[#0b292f]/8">
+                        <div className="divide-y divide-[#3b211b]/8">
                             {recent_activity.slice(0, 5).map((item) => (
                                 <div
                                     key={item.id}
                                     className="flex items-center gap-3 px-5 py-3.5"
                                 >
-                                    <span className="size-2 rounded-full bg-[#e3b84f]" />
+                                    <span className="size-2 rounded-full bg-[#ee4d2d]" />
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm font-bold">
                                             {actionLabels[item.action] ??
@@ -343,19 +335,19 @@ export default function SuperAdminDashboard({
                     )}
                 </article>
 
-                <article className="overflow-hidden rounded-2xl bg-[#0b292f] p-5 text-white shadow-lg shadow-[#0b292f]/10">
-                    <p className="text-[10px] font-black tracking-[.18em] text-[#e3b84f] uppercase">
+                <article className="overflow-hidden rounded-2xl bg-[#d83f22] p-5 text-white shadow-lg shadow-[#3b211b]/10">
+                    <p className="text-[10px] font-black tracking-[.18em] text-[#ee4d2d] uppercase">
                         Security posture
                     </p>
                     <div className="mt-5 flex items-center justify-between">
-                        <ShieldCheck className="size-9 text-[#e3b84f]" />
+                        <ShieldCheck className="size-9 text-[#ee4d2d]" />
                         <span className="text-3xl font-black">
                             {securityCoverage}%
                         </span>
                     </div>
                     <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
                         <div
-                            className="h-full rounded-full bg-[#e3b84f]"
+                            className="h-full rounded-full bg-white/80"
                             style={{ width: `${securityCoverage}%` }}
                         />
                     </div>
@@ -415,14 +407,14 @@ function PanelHeader({
         <div className="flex items-end justify-between gap-3">
             <div>
                 <p className="platform-kicker">{kicker}</p>
-                <h2 className="mt-1 text-lg font-black tracking-tight text-[#0b292f]">
+                <h2 className="mt-1 text-lg font-black tracking-tight text-[#3b211b]">
                     {title}
                 </h2>
             </div>
             {href && (
                 <Link
                     href={href}
-                    className="text-xs font-bold text-[#8a681e] hover:underline"
+                    className="text-xs font-bold text-[#b83219] hover:underline"
                 >
                     Lihat semua
                 </Link>
@@ -436,7 +428,7 @@ function EmptyState({ text }: { text: string }) {
     );
 }
 function relativeDate(value: string) {
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat(localeTag(), {
         dateStyle: 'medium',
         timeStyle: 'short',
     }).format(new Date(value));

@@ -78,11 +78,15 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => in_array(env('APP_LOCALE', 'id'), ['id', 'ms'], true)
+        ? env('APP_LOCALE', 'id')
+        : 'id',
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => in_array(env('APP_FALLBACK_LOCALE', 'id'), ['id', 'ms'], true)
+        ? env('APP_FALLBACK_LOCALE', 'id')
+        : 'id',
 
-    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+    'faker_locale' => env('APP_FAKER_LOCALE', 'id_ID'),
 
     /*
     |--------------------------------------------------------------------------

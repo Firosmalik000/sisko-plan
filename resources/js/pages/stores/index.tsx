@@ -34,9 +34,9 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
     return (
         <>
             <Head title="Toko & Anggota" />
-            <div className="flex flex-1 flex-col gap-4 bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
-                <div className="flex flex-row items-center justify-between gap-3 rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
-                    <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+            <div className="flex flex-1 flex-col gap-4 bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
+                <div className="flex flex-row items-center justify-between gap-3 rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
+                    <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                         Toko & Anggota
                     </h1>
                     {storeCreation.can_create ? (

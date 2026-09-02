@@ -1,16 +1,16 @@
 ---
-name: Sisko Plan Public Landing
-description: A scan-first Indonesian retail landing built from ivory paper, forest ink, ruled records, and one orange action color.
+name: Sisko Plan Orange Retail System
+description: A bright scan-first retail system built from white surfaces, graphite text, peach rules, and Shopee-inspired orange.
 colors:
-    primary-action: '#f05a16'
-    primary-action-hover: '#db4909'
-    forest-ink: '#063f35'
-    forest-ink-deep: '#022e27'
-    ivory-paper: '#fbf8ef'
-    ivory-paper-strong: '#f2ecdc'
-    ruled-line: '#d8cebb'
-    muted-copy: '#5e6964'
-    mint-status: '#e8f1d3'
+    primary-action: '#ee4d2d'
+    primary-action-hover: '#d83f22'
+    graphite-ink: '#2d2928'
+    graphite-ink-deep: '#211e1d'
+    ivory-paper: '#fffdfc'
+    ivory-paper-strong: '#fff3ef'
+    ruled-line: '#f0d8d1'
+    muted-copy: '#6f6764'
+    orange-soft: '#fff0eb'
 typography:
     display:
         fontFamily: "Bahnschrift, 'Trebuchet MS', sans-serif"
@@ -64,7 +64,7 @@ components:
         textColor: '#ffffff'
         rounded: '{rounded.control}'
     button-dark:
-        backgroundColor: '{colors.forest-ink}'
+        backgroundColor: '{colors.graphite-ink}'
         textColor: '#ffffff'
         typography: '{typography.body}'
         rounded: '{rounded.control}'
@@ -72,12 +72,12 @@ components:
         height: '46px'
     operations-board:
         backgroundColor: '{colors.ivory-paper}'
-        textColor: '{colors.forest-ink-deep}'
+        textColor: '{colors.graphite-ink-deep}'
         rounded: '{rounded.record}'
         padding: '1.2rem 1rem'
     status-live:
-        backgroundColor: '{colors.mint-status}'
-        textColor: '{colors.forest-ink}'
+        backgroundColor: '{colors.orange-soft}'
+        textColor: '{colors.graphite-ink}'
         typography: '{typography.label}'
         rounded: '{rounded.record}'
         padding: '0.22rem 0.4rem'
@@ -89,14 +89,14 @@ components:
 
 **Creative North Star: "The Scan-First Retail Ledger"**
 
-The public landing page feels like an orderly worktable for a real Indonesian shop: warm ivory paper, dark forest ink, fine ruled divisions, receipts, and compact operational figures. Its confidence comes from a visible scan interaction rather than generic SaaS decoration. A product moves from scan to cart while stock and sales updates show how kasir, stok, kas, and laporan remain connected.
+The public landing page feels like a bright, orderly worktable for a real Indonesian shop: clean white paper, neutral graphite text, fine peach divisions, receipts, and compact operational figures. Its confidence comes from a visible scan interaction rather than generic SaaS decoration. A product moves from scan to cart while stock and sales updates show how kasir, stok, kas, and laporan remain connected.
 
-The world is professional, compact, and direct. Large editorial headings create persuasion while small tables, totals, status labels, and chart marks supply believable operational texture. Orange is reserved for decisive action and small points of attention; the rest of the interface stays calm and readable. The public experience is light-only.
+The world is professional, compact, direct, and energetic. Large editorial headings create persuasion while small tables, totals, status labels, and chart marks supply believable operational texture. `#EE4D2D` orange visibly dominates the hero, workflow strip, gallery, closing actions, and footer; clean white cards and graphite copy preserve readability. The public experience is light-only.
 
 **Key Characteristics:**
 
 - Warm ivory paper rather than pure-white software chrome.
-- Forest ink carries brand, structure, and high-contrast content.
+- Graphite carries structure and high-contrast operational content without making the page feel brown or heavy.
 - Ruled rows and columns organize information before cards or decoration.
 - Compact scan and operations data is always identified as synthetic proof.
 - Direct Indonesian labels and actions avoid marketing filler.
@@ -104,17 +104,17 @@ The world is professional, compact, and direct. Large editorial headings create 
 
 ## Colors
 
-The palette combines warm paper neutrals with credible forest greens, then uses vivid orange as a deliberately scarce action signal.
+The palette combines clean white and peach neutrals with graphite contrast and vivid orange as the unmistakable brand signal.
 
 ### Primary
 
-- **Action Orange:** The sole high-energy action color for primary calls to action, directional arrows, focus emphasis, chart highlights, and the hero rule.
+- **Action Orange:** The dominant brand color for primary calls to action, navigation identity, focus emphasis, chart highlights, and selected high-impact surfaces.
 - **Pressed Orange:** The darker hover state keeps the primary action tactile without introducing a new hue.
 
 ### Secondary
 
-- **Forest Ink:** Brand marks, dark buttons, icons, charts, and major operational surfaces.
-- **Deep Forest Ink:** Primary text and the full dark setup section, providing the strongest contrast in the system.
+- **Graphite Ink:** Primary text, icons, charts, and dense operational content.
+- **Deep Graphite:** Reserved for limited contrast moments; orange or white should own most public surfaces.
 
 ### Neutral
 
@@ -155,7 +155,7 @@ The palette combines warm paper neutrals with credible forest greens, then uses 
 
 ## Layout
 
-The system uses a centered fluid container capped at 1480px with 1rem side gutters at wide widths. The hero is an asymmetric two-column composition: an editorial scan promise sits beside a live scanner-and-cart proof. Subsequent sections move through a connected workflow strip, familiar operational problems, a dark three-step sequence, ruled feature rows, horizontally adaptable product views, operational coverage, a comparison with manual recording, FAQ, and a full-width closing action. The pricing surface inherits the same world through an ivory hero, forest workflow proof, ruled package records, and dark closing action. Section spacing is generous and fluid, while product surfaces remain compact.
+The system uses a centered fluid container capped at 1480px with 1rem side gutters at wide widths. The hero is an asymmetric two-column composition: an editorial scan promise sits beside a live scanner-and-cart proof. Subsequent sections move through a connected workflow strip, familiar operational problems, an orange three-step sequence, ruled feature rows, horizontally adaptable product views, operational coverage, a comparison with manual recording, FAQ, and a full-width closing action. The pricing surface inherits the same world through a clean-white hero, orange workflow proof, ruled package records, and an orange closing action. Section spacing is generous and fluid, while product surfaces remain compact.
 
 At 1279px and below, the hero columns tighten and the scan proof reduces its peripheral annotations. At 1023px and below, desktop navigation is removed, the hero becomes a single vertical flow, and the scan proof follows the copy. At 767px and below, a 44px menu control replaces desktop actions, primary hero and closing actions span the available width, the workflow and product gallery become horizontally scrollable with snap points, and the cart detail is removed from the scanner proof rather than compressed past legibility. Split layouts stack. At 374px and below, gutters, brand scale, headings, workflow widths, and proof padding tighten again for a 320px viewport.
 
@@ -167,14 +167,14 @@ Verify every public-page change at 320px, 375px, 640px, 768px, 1024px, 1280px, a
 
 ## Elevation & Depth
 
-The system is flat by default. Depth comes first from paper-tone changes, fine rules, dark field reversals, and dense internal alignment. Shadows are reserved for the large operations board, the mobile navigation popover, action affordances, and the dark operational summary; they are low, broad, and tinted toward forest or orange rather than neutral black.
+The system is flat by default. Depth comes first from white-to-peach tone changes, fine rules, orange field reversals, and dense internal alignment. Shadows are reserved for the large operations board, the mobile navigation popover, action affordances, and signature summaries; they are low, broad, and tinted toward orange rather than brown or neutral black.
 
 ### Shadow Vocabulary
 
-- **Board lift:** A broad forest-tinted shadow under the hero operations board separates the proof surface from the paper without making it float like a generic card.
-- **Action lift:** Tight tinted shadows support orange and forest buttons and strengthen slightly on hover.
+- **Board lift:** A broad orange-tinted shadow under the hero operations board separates the proof surface from the paper without making it float like a generic card.
+- **Action lift:** Tight orange-tinted shadows support primary buttons and strengthen slightly on hover.
 - **Popover lift:** A deeper compact shadow identifies the mobile navigation as a temporary layer.
-- **Summary lift:** A directional forest shadow gives the dark business summary physical weight.
+- **Summary lift:** A directional orange shadow gives the business summary physical weight.
 
 ### Named Rules
 
@@ -206,24 +206,24 @@ Corners are compact and practical. Operational records use a small 0.35rem radiu
 
 - **Shape:** Compact rectangular controls with gently rounded corners and a minimum 46px height.
 - **Primary:** Action Orange with white text, bold labeling, and a directional arrow when advancing the user.
-- **Dark:** Forest Ink with white text for header account creation or dashboard access.
+- **Brand:** Action Orange with white text for header account creation or dashboard access.
 - **Hover / Focus:** Lift by 2px, deepen the fill or shadow, and shift directional icons by 3px. Keyboard focus uses a visible orange 3px outline with a 4px offset.
 - **Responsive:** Primary calls to action become full width below 768px.
 
 ### Text Links
 
-- **Style:** Bold forest text with a fine underline and a compact directional icon.
+- **Style:** Bold graphite text with a fine underline and a compact directional icon.
 - **State:** The link lifts by 2px and its icon advances by 3px; it never competes with the orange primary action.
 
 ### Status Labels
 
-- **Style:** Compact text-bearing chips with a small radius. Mint with forest text communicates `Live`; pale orange with dark orange text communicates an alert count.
+- **Style:** Compact text-bearing chips with a small radius. Green remains reserved for explicit successful or live states; pale orange with dark orange text communicates an alert count.
 - **Accessibility:** Status is always stated in text and never communicated by color alone.
 
 ### Cards / Containers
 
 - **Corner Style:** Tight record corners for the board and modest surface corners for the dark summary.
-- **Background:** Ivory paper or Forest Ink, selected by information role rather than decorative alternation.
+- **Background:** Clean white, soft peach, or Action Orange, selected by information role rather than decorative alternation.
 - **Shadow Strategy:** Flat and ruled by default; only signature proof, popover, action, and summary surfaces receive elevation.
 - **Border:** Fine warm rules divide sections, rows, and columns.
 - **Internal Padding:** Compact within data boards and more generous around persuasive section content.
@@ -231,7 +231,7 @@ Corners are compact and practical. Operational records use a small 0.35rem radiu
 ### Navigation
 
 - **Desktop:** Uppercase wordmark, centered section links, and account actions in a 76px header with translucent ivory and blur. Hover uses orange text or a short orange underline.
-- **Mobile:** At widths below 768px, use a native `details` disclosure with a 44px square trigger and a ruled ivory popover. Each menu row is at least 46px high; the account-creation row receives a Forest Ink fill.
+- **Mobile:** At widths below 768px, use a native `details` disclosure with a 44px square trigger and a ruled warm-white popover. Each menu row is at least 46px high; the account-creation row receives an Action Orange fill.
 
 ### Scanner Proof
 
@@ -245,8 +245,8 @@ Feature coverage is presented as full-width rows rather than a gallery of cards.
 
 ### Do:
 
-- **Do** use warm ivory paper, forest ink, and fine ruled divisions as the default visual grammar.
-- **Do** reserve orange for primary action, focus, direction, and small operational highlights.
+- **Do** use clean white paper, graphite text, orange brand fields, and fine peach divisions as the default visual grammar.
+- **Do** let orange dominate major public storytelling surfaces while keeping operational cards white and readable.
 - **Do** use a compact, explicitly labeled scan interaction to demonstrate the product flow.
 - **Do** keep Indonesian copy direct, concise, and grounded in real store work.
 - **Do** preserve visible keyboard focus, comfortable touch targets, reduced-motion behavior, and light color scheme at the document root.
@@ -258,7 +258,7 @@ Feature coverage is presented as full-width rows rather than a gallery of cards.
 - **Don't** add dark mode to the public surface; the root contract and landing implementation are light-only.
 - **Don't** fabricate testimonials, adoption figures, pricing, awards, customer logos, or formal audit claims.
 - **Don't** replace ruled operational structure with a generic rounded-card grid, glassmorphism, or broad decorative gradients.
-- **Don't** use orange as a large background field or introduce competing accent hues.
+- **Don't** use orange on every surface or introduce competing accent hues; reserve large orange fields for navigation, authentication, and decisive moments.
 - **Don't** add helper text, marketing paragraphs, or repeated instructions when a clear label or direct action is enough.
 - **Don't** hide the primary action, `Data contoh` disclosure, or Scan-to-Laporan story at any supported viewport.
 - **Don't** add bounce, infinite decorative motion, or the same fade-and-rise treatment to every section.

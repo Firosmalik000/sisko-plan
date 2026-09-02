@@ -10,6 +10,8 @@ use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetActiveStore;
+use App\Http\Middleware\SetApplicationLocale;
+use App\Http\Middleware\TranslateValidationExceptions;
 use App\Models\User;
 use App\Support\PlatformPermission;
 use Illuminate\Foundation\Application;
@@ -48,6 +50,8 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $middleware->web(append: [
+            SetApplicationLocale::class,
+            TranslateValidationExceptions::class,
             HandleAppearance::class,
             EnsureUserIsActive::class,
             HandleInertiaRequests::class,

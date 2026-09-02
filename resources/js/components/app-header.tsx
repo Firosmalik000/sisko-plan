@@ -4,6 +4,7 @@ import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
+import LanguageSwitcher from '@/components/language-switcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -65,6 +66,7 @@ const activeItemStyles =
     'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
+    const { branding } = usePage().props;
     const page = usePage();
     const { auth } = page.props;
     const getInitials = useInitials();
@@ -95,7 +97,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     Navigation menu
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
+                                    {branding.logo_url ? (
+                                        <img
+                                            src={branding.logo_url}
+                                            alt=""
+                                            className="size-8 rounded-md object-contain"
+                                        />
+                                    ) : (
+                                        <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
+                                    )}
                                 </SheetHeader>
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
@@ -179,6 +189,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
+                        <LanguageSwitcher />
                         <div className="relative flex items-center space-x-1">
                             <Button
                                 variant="ghost"

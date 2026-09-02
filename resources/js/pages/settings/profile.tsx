@@ -66,11 +66,11 @@ type Subscription = {
 type PageProps = { auth: { user: User } };
 
 const themePresets = [
-    { name: 'Hutan', color: '#1f6653' },
-    { name: 'Samudra', color: '#176b87' },
-    { name: 'Nila', color: '#4f46a5' },
-    { name: 'Anggur', color: '#7c3f72' },
-    { name: 'Terakota', color: '#a34f32' },
+    { name: 'Sisko Orange', color: '#ee4d2d' },
+    { name: 'Coral', color: '#f35d3d' },
+    { name: 'Samudra', color: '#147d92' },
+    { name: 'Nila', color: '#5753c9' },
+    { name: 'Anggur', color: '#a34888' },
     { name: 'Arang', color: '#334155' },
 ];
 
@@ -89,7 +89,7 @@ export default function Profile({
     const settings = store?.settings;
     const [avatarPreview, setAvatarPreview] = useState<string>();
     const [themeColor, setThemeColor] = useState(
-        settings?.theme_color ?? '#1f6653',
+        settings?.theme_color ?? '#ee4d2d',
     );
     const [paperSize, setPaperSize] = useState<'58mm' | '80mm'>(
         settings?.receipt_paper_size ?? '58mm',

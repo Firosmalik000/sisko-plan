@@ -31,9 +31,9 @@ class SubscriptionAccess
         if ($subscription === null) {
             return [
                 'can_write' => false,
-                'reason' => 'Akun belum memiliki subscription.',
+                'reason' => __('Akun belum memiliki subscription.'),
                 'status' => 'missing',
-                'plan_name' => 'Belum ada paket',
+                'plan_name' => __('Belum ada paket'),
                 'max_stores' => 0,
                 'max_products' => 0,
                 'max_members' => 0,
@@ -47,7 +47,7 @@ class SubscriptionAccess
 
         return [
             'can_write' => $reason === null,
-            'reason' => $reason,
+            'reason' => $reason === null ? null : __($reason),
             'status' => $subscription->status->value,
             'plan_name' => $subscription->plan->name,
             'max_stores' => $subscription->plan->max_stores,
@@ -110,7 +110,7 @@ class SubscriptionAccess
 
         return [
             'can_create' => $reason === null,
-            'reason' => $reason,
+            'reason' => $reason === null ? null : __($reason),
             'plan_name' => $plan->name,
             'stores_used' => $storesUsed,
             'max_stores' => $limit,

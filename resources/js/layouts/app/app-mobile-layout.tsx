@@ -1,13 +1,17 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
+    AlertTriangle,
     BarChart3,
+    Bell,
     Boxes,
     CircleDollarSign,
     Check,
+    CheckCheck,
     ClipboardCheck,
     ChevronDown,
     ChevronRight,
     CreditCard,
+    Handshake,
     LockKeyhole,
     Home,
     LogOut,
@@ -23,6 +27,7 @@ import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
+import LanguageSwitcher from '@/components/language-switcher';
 import { SubscriptionBanner } from '@/components/subscription-banner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -44,6 +49,7 @@ import {
 } from '@/components/ui/sheet';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
+import { formatQuantity } from '@/lib/currency';
 import { storeThemeVariables } from '@/lib/store-theme';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
@@ -58,10 +64,24 @@ import type {
 
 type CustomerPageProps = {
     name: string;
+    branding: { logo_url: string | null };
     auth: { user: User | null };
     stores: StoreSummary[];
     activeStore: StoreSummary | null;
     storeCreation: StoreCreationState;
+    stockAlerts?: {
+        count: number;
+        unread_count: number;
+        items: Array<{
+            id: number;
+            name: string;
+            variant_name: string | null;
+            unit: string;
+            quantity: string;
+            minimum_quantity: string;
+            unread: boolean;
+        }>;
+    };
 };
 
 const primaryItems = [
@@ -118,6 +138,12 @@ const quickMenuItems = [
         href: '/purchasing',
         icon: Truck,
         description: 'Kulakan dan supplier',
+    },
+    {
+        title: 'Supplier',
+        href: '/master-data/suppliers',
+        icon: Handshake,
+        description: 'Kontak pemasok',
     },
     {
         title: 'Kas & Bank',
@@ -221,6 +247,12 @@ const moreMenuSections = [
                 icon: CircleDollarSign,
                 description: 'Pengeluaran harian',
             },
+            {
+                title: 'Supplier',
+                href: '/master-data/suppliers',
+                icon: Handshake,
+                description: 'Kelola pemasok toko',
+            },
         ],
     },
     {
@@ -250,7 +282,7 @@ export default function AppMobileLayout({
 
     return (
         <div
-            className="customer-workspace min-h-svh bg-[#f4f6f1] text-[var(--app-ink)]"
+            className="customer-workspace min-h-svh bg-background text-[var(--app-ink)]"
             style={storeThemeVariables(activeStore?.theme_color)}
         >
             <ImpersonationBanner />
@@ -265,20 +297,68 @@ export default function AppMobileLayout({
 }
 
 function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
-    const { name, auth, stores, activeStore, storeCreation } =
-        usePage<CustomerPageProps>().props;
+    const {
+        name,
+        branding,
+        auth,
+        stores,
+        activeStore,
+        storeCreation,
+        stockAlerts,
+    } = usePage<CustomerPageProps>().props;
     const getInitials = useInitials();
     const landingHref = activeStore ? '/dashboard' : '/stores';
+    const [stockNoticeOpen, setStockNoticeOpen] = useState(false);
+    const [acknowledgedUnreadKey, setAcknowledgedUnreadKey] = useState<
+        string | null
+    >(null);
+    const stockAlertCount = stockAlerts?.count ?? 0;
+    const serverUnreadCount = stockAlerts?.unread_count ?? 0;
+    const unreadKey =
+        stockAlerts?.items
+            .filter((item) => item.unread)
+            .map((item) => item.id)
+            .join(':') ?? '';
+    const unreadCount =
+        acknowledgedUnreadKey === unreadKey ? 0 : serverUnreadCount;
+
+    const handleStockNoticeOpen = (open: boolean) => {
+        setStockNoticeOpen(open);
+
+        if (!open || unreadCount === 0) {
+            return;
+        }
+
+        setAcknowledgedUnreadKey(unreadKey);
+        router.post(
+            '/notifications/stock-alerts/read',
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['stockAlerts'],
+                onError: () => setAcknowledgedUnreadKey(null),
+            },
+        );
+    };
 
     return (
-        <header className="sticky top-0 z-40 border-b border-[var(--app-ink)]/8 bg-[#fbfcf8]/92 backdrop-blur-xl">
+        <header className="sticky top-0 z-40 border-b border-[var(--app-ink)]/8 bg-[#fffdfc]/92 backdrop-blur-xl">
             <div className="mx-auto flex h-16 max-w-7xl items-center gap-2.5 px-3 sm:px-5 lg:px-8">
                 <Link
                     href={landingHref}
                     aria-label={name}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-ink)] text-white shadow-lg"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[var(--app-shadow)] shadow-lg"
                 >
-                    <AppLogoIcon className="size-5 fill-current" />
+                    {branding.logo_url ? (
+                        <img
+                            src={branding.logo_url}
+                            alt=""
+                            className="size-full rounded-xl object-contain"
+                        />
+                    ) : (
+                        <AppLogoIcon className="size-5 fill-current" />
+                    )}
                 </Link>
 
                 <StoreMenu
@@ -287,20 +367,175 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                     storeCreation={storeCreation}
                 />
 
+                <LanguageSwitcher />
+
+                <DropdownMenu
+                    open={stockNoticeOpen}
+                    onOpenChange={handleStockNoticeOpen}
+                >
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            aria-label={
+                                unreadCount > 0
+                                    ? `${unreadCount} notifikasi belum dibaca`
+                                    : 'Buka notifikasi'
+                            }
+                            className={cn(
+                                'relative ml-auto grid size-9 place-items-center rounded-full transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/30 focus-visible:outline-none',
+                                unreadCount > 0
+                                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                    : 'text-[var(--app-primary)] hover:bg-[var(--app-soft-strong)]',
+                            )}
+                        >
+                            <Bell className="size-[18px]" />
+                            {unreadCount > 0 && (
+                                <span className="absolute top-0 right-0 grid min-w-4 translate-x-1/4 -translate-y-1/4 place-items-center rounded-full bg-red-600 px-1 text-[10px] leading-4 font-black text-white ring-2 ring-[#fffdfc]">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        align="end"
+                        sideOffset={10}
+                        className="w-[min(23rem,calc(100vw-1.25rem))] overflow-hidden rounded-[1.4rem] border-[var(--app-ink)]/10 bg-[#fffdfc] p-0 shadow-xl"
+                    >
+                        <div className="flex items-center justify-between border-b border-[var(--app-ink)]/8 px-4 py-3.5">
+                            <div>
+                                <p className="text-sm font-black text-[var(--app-ink)]">
+                                    Notifikasi
+                                </p>
+                                <p className="mt-0.5 text-[11px] font-semibold text-[var(--muted-foreground)]">
+                                    {stockAlertCount > 0
+                                        ? `${stockAlertCount} stok perlu perhatian`
+                                        : 'Semua stok dalam kondisi aman'}
+                                </p>
+                            </div>
+                            {unreadCount === 0 && stockAlertCount > 0 && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--app-soft)] px-2 py-1 text-[10px] font-bold text-[var(--app-primary)]">
+                                    <CheckCheck className="size-3" />
+                                    Sudah dibaca
+                                </span>
+                            )}
+                        </div>
+
+                        {stockAlertCount === 0 ? (
+                            <div className="grid place-items-center px-6 py-9 text-center">
+                                <span className="grid size-11 place-items-center rounded-2xl bg-[var(--app-soft)] text-[var(--app-primary)]">
+                                    <CheckCheck className="size-5" />
+                                </span>
+                                <p className="mt-3 text-sm font-black text-[var(--app-ink)]">
+                                    Tidak ada notifikasi
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="max-h-[min(25rem,calc(100svh-11rem))] overflow-y-auto p-2">
+                                {stockAlerts?.items.map((item) => {
+                                    const empty = Number(item.quantity) <= 0;
+                                    const itemUnread =
+                                        item.unread &&
+                                        acknowledgedUnreadKey !== unreadKey;
+
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className={cn(
+                                                'relative flex gap-3 rounded-2xl px-3 py-3',
+                                                itemUnread
+                                                    ? 'bg-red-50/90'
+                                                    : 'bg-transparent',
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    'grid size-9 shrink-0 place-items-center rounded-xl',
+                                                    empty
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : 'bg-amber-100 text-amber-700',
+                                                )}
+                                            >
+                                                <AlertTriangle className="size-4" />
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-start gap-2">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-xs font-black text-[var(--app-ink)]">
+                                                            {item.name}
+                                                        </p>
+                                                        {item.variant_name && (
+                                                            <p className="truncate text-[10px] font-semibold text-[var(--muted-foreground)]">
+                                                                {
+                                                                    item.variant_name
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    {itemUnread && (
+                                                        <span
+                                                            aria-label="Belum dibaca"
+                                                            className="mt-1 size-2 shrink-0 rounded-full bg-red-600"
+                                                        />
+                                                    )}
+                                                </div>
+                                                <p
+                                                    className={cn(
+                                                        'mt-1.5 text-[11px] font-bold',
+                                                        empty
+                                                            ? 'text-red-700'
+                                                            : 'text-amber-700',
+                                                    )}
+                                                >
+                                                    {empty
+                                                        ? 'Stok habis'
+                                                        : `Sisa ${formatQuantity(item.quantity)} ${item.unit}`}
+                                                    <span className="font-medium text-[var(--muted-foreground)]">
+                                                        {' '}
+                                                        · Batas{' '}
+                                                        {formatQuantity(
+                                                            item.minimum_quantity,
+                                                        )}{' '}
+                                                        {item.unit}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {stockAlertCount > 0 && (
+                            <DropdownMenuItem
+                                asChild
+                                className="m-2 mt-0 rounded-xl p-0 focus:bg-[var(--app-soft)]"
+                            >
+                                <Link
+                                    href="/operations/inventory"
+                                    className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-black text-[var(--app-primary)]"
+                                >
+                                    Lihat inventori
+                                    <ChevronRight className="size-3.5" />
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
                 {auth.user && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button
                                 type="button"
                                 aria-label="Buka menu akun"
-                                className="ml-auto rounded-full ring-[var(--app-primary)]/30 transition outline-none focus-visible:ring-4"
+                                className="rounded-full ring-[var(--app-primary)]/30 transition outline-none focus-visible:ring-4"
                             >
                                 <Avatar className="size-9 border-2 border-white shadow-sm">
                                     <AvatarImage
                                         src={auth.user.avatar}
                                         alt={auth.user.name}
                                     />
-                                    <AvatarFallback className="bg-[#e5f1eb] text-xs font-bold text-[#245c4f]">
+                                    <AvatarFallback className="bg-[var(--app-soft-strong)] text-xs font-bold text-[var(--app-primary)]">
                                         {getInitials(auth.user.name)}
                                     </AvatarFallback>
                                 </Avatar>
@@ -309,18 +544,18 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                         <DropdownMenuContent
                             align="end"
                             sideOffset={10}
-                            className="max-h-[min(38rem,calc(100svh-6rem))] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-[1.5rem] border-[var(--app-ink)]/10 bg-[#fbfcf9] p-2 shadow-xl"
+                            className="max-h-[min(38rem,calc(100svh-6rem))] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-[1.5rem] border-[var(--app-ink)]/10 bg-[#fffdfc] p-2 shadow-xl"
                         >
-                            <DropdownMenuLabel className="rounded-2xl bg-[#edf4f0] px-3.5 py-3 font-normal">
+                            <DropdownMenuLabel className="rounded-2xl bg-[var(--app-soft)] px-3.5 py-3 font-normal">
                                 <p className="truncate text-sm font-black text-[var(--app-ink)]">
                                     {auth.user.name}
                                 </p>
-                                <p className="mt-0.5 truncate text-[11px] text-[#6f817b]">
+                                <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">
                                     {auth.user.email}
                                 </p>
                             </DropdownMenuLabel>
                             <div className="px-1 py-3">
-                                <p className="px-2 pb-2 text-[10px] font-bold tracking-[0.16em] text-[#6d817a] uppercase">
+                                <p className="px-2 pb-2 text-[10px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                                     Menu cepat
                                 </p>
                                 <div className="space-y-1">
@@ -334,7 +569,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                                 href={item.href}
                                                 className="group flex min-w-0 items-center gap-3 rounded-2xl px-2.5 py-2"
                                             >
-                                                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#edf4f0] text-[#2b6657] transition group-hover:bg-white">
+                                                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-soft)] text-[var(--app-primary)] transition group-hover:bg-white">
                                                     <item.icon className="size-4" />
                                                 </span>
                                                 <span className="min-w-0 flex-1">
@@ -342,7 +577,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                                         {item.title}
                                                     </span>
                                                 </span>
-                                                <ChevronRight className="size-3.5 shrink-0 text-[#91a09b]" />
+                                                <ChevronRight className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
                                             </Link>
                                         </DropdownMenuItem>
                                     ))}
@@ -379,7 +614,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
 
             {breadcrumbs.length > 0 && (
                 <div className="border-t border-[var(--app-ink)]/6 px-4 py-2.5 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-7xl overflow-x-auto text-xs text-[#6c817a] [&_ol]:flex-nowrap [&_ol]:whitespace-nowrap">
+                    <div className="mx-auto max-w-7xl overflow-x-auto text-xs text-[var(--muted-foreground)] [&_ol]:flex-nowrap [&_ol]:whitespace-nowrap">
                         <Breadcrumbs breadcrumbs={breadcrumbs} />
                     </div>
                 </div>
@@ -403,14 +638,14 @@ function StoreMenu({
                 href="/stores/create"
                 className="flex min-w-0 items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm ring-1 ring-[var(--app-ink)]/8"
             >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f5b942] text-[#153f36]">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f5b942] text-[var(--app-ink)]">
                     <Plus className="size-4" />
                 </span>
                 <span className="min-w-0">
                     <span className="block truncate text-xs font-bold">
                         Buat toko
                     </span>
-                    <span className="block truncate text-[10px] text-[#778a84]">
+                    <span className="block truncate text-[10px] text-[var(--muted-foreground)]">
                         Mulai operasional
                     </span>
                 </span>
@@ -428,7 +663,7 @@ function StoreMenu({
                     <span className="block truncate text-xs font-bold">
                         Toko terkunci
                     </span>
-                    <span className="block truncate text-xs text-[#778a84]">
+                    <span className="block truncate text-xs text-[var(--muted-foreground)]">
                         Batas paket tercapai
                     </span>
                 </span>
@@ -443,7 +678,7 @@ function StoreMenu({
                     type="button"
                     className="flex max-w-[14rem] min-w-0 items-center gap-2 rounded-xl bg-white px-2.5 py-1.5 text-left shadow-sm ring-1 ring-[var(--app-ink)]/8 transition hover:ring-[var(--app-primary)]/25 sm:max-w-xs"
                 >
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#e5f1eb] text-[#256451]">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--app-soft-strong)] text-[var(--app-primary)]">
                         <Store className="size-4" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -451,7 +686,7 @@ function StoreMenu({
                             {activeStore.name}
                         </span>
                     </span>
-                    <ChevronDown className="size-3.5 shrink-0 text-[#82928d]" />
+                    <ChevronDown className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
                 </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -523,6 +758,7 @@ function BottomNavigation() {
         '/operations/cash',
         '/operations/capital',
         '/operations/stock-opnames',
+        '/master-data/suppliers',
         '/subscription',
     ].some((href) => isActive(href));
 
@@ -571,7 +807,9 @@ function BottomNavLink({
             aria-current={active ? 'page' : undefined}
             className={cn(
                 'group flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-[10px] font-semibold transition sm:text-xs',
-                active ? 'text-[var(--app-primary)]' : 'text-[#7a8a85]',
+                active
+                    ? 'text-[var(--app-primary)]'
+                    : 'text-[var(--muted-foreground)]',
             )}
         >
             <span
@@ -611,17 +849,17 @@ function CashierMenu({
                     type="button"
                     className={cn(
                         'group relative flex min-w-0 flex-col items-center gap-1 rounded-3xl px-1 py-0 text-[10px] font-semibold transition sm:text-xs',
-                        active ? 'text-[var(--app-primary)]' : 'text-[#7a8a85]',
+                        active
+                            ? 'text-[var(--app-primary)]'
+                            : 'text-[var(--muted-foreground)]',
                         disabled && 'opacity-60',
                     )}
                     disabled={disabled}
                 >
                     <span
                         className={cn(
-                            'relative flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full border-4 border-white shadow-[0_14px_28px_-16px_rgba(21,63,54,.75)] transition',
-                            active
-                                ? 'bg-[#173f35] text-white'
-                                : 'bg-[#255d4e] text-white group-hover:bg-[#1f5446]',
+                            'relative flex h-14 w-14 -translate-y-5 items-center justify-center rounded-full border-4 border-white bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[0_14px_28px_-16px_var(--app-shadow)] transition group-hover:bg-[var(--workspace-700)]',
+                            active && 'ring-4 ring-[var(--app-soft-strong)]',
                         )}
                     >
                         <ShoppingCart className="size-6" />
@@ -637,14 +875,14 @@ function CashierMenu({
 
             <SheetContent
                 side="bottom"
-                className="max-h-[90svh] overflow-y-auto rounded-t-[2rem] border-0 bg-[#f5f7f2] p-0 text-[#173c35] shadow-[0_-24px_70px_-20px_rgba(21,63,54,.45)] [&>button]:top-5 [&>button]:right-5 [&>button]:rounded-full [&>button]:bg-white [&>button]:p-2"
+                className="max-h-[90svh] overflow-y-auto rounded-t-[2rem] border-0 bg-[#fff3ef] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] [&>button]:top-5 [&>button]:right-5 [&>button]:rounded-full [&>button]:bg-white [&>button]:p-2"
             >
                 <SheetHeader className="mx-auto w-full max-w-xl px-4 pt-6 pb-2 text-left sm:px-6">
-                    <div className="mb-2 h-1.5 w-12 self-center rounded-full bg-[#173c35]/15" />
-                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[#173c35]">
+                    <div className="mb-2 h-1.5 w-12 self-center rounded-full bg-[var(--app-primary)]/15" />
+                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                         Kasir cepat
                     </SheetTitle>
-                    <SheetDescription className="text-sm text-[#71817c]">
+                    <SheetDescription className="text-sm text-[var(--muted-foreground)]">
                         Pilih alur kerja. Kamera akan terbuka langsung di
                         halaman tujuan.
                     </SheetDescription>
@@ -654,7 +892,7 @@ function CashierMenu({
                     <div
                         role="tablist"
                         aria-label="Mode kasir"
-                        className="mb-4 grid grid-cols-2 rounded-[1.1rem] bg-[#e7ece8] p-1"
+                        className="mb-4 grid grid-cols-2 rounded-[1.1rem] bg-[var(--app-soft)] p-1"
                     >
                         <button
                             type="button"
@@ -662,10 +900,10 @@ function CashierMenu({
                             aria-selected={cashierMode === 'scan'}
                             onClick={() => setCashierMode('scan')}
                             className={cn(
-                                'min-h-11 rounded-[.9rem] px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[#2e705e]/35 focus-visible:outline-none',
+                                'min-h-11 rounded-[.9rem] px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/35 focus-visible:outline-none',
                                 cashierMode === 'scan'
-                                    ? 'bg-white text-[#173c35] shadow-sm'
-                                    : 'text-[#71817c]',
+                                    ? 'bg-white text-[var(--app-ink)] shadow-sm'
+                                    : 'text-[var(--muted-foreground)]',
                             )}
                         >
                             Scan produk
@@ -676,10 +914,10 @@ function CashierMenu({
                             aria-selected={cashierMode === 'manual'}
                             onClick={() => setCashierMode('manual')}
                             className={cn(
-                                'min-h-11 rounded-[.9rem] px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[#2e705e]/35 focus-visible:outline-none',
+                                'min-h-11 rounded-[.9rem] px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/35 focus-visible:outline-none',
                                 cashierMode === 'manual'
-                                    ? 'bg-white text-[#173c35] shadow-sm'
-                                    : 'text-[#71817c]',
+                                    ? 'bg-white text-[var(--app-ink)] shadow-sm'
+                                    : 'text-[var(--muted-foreground)]',
                             )}
                         >
                             Tanpa scan
@@ -699,20 +937,20 @@ function CashierMenu({
                                             ? `${item.href}?scan=1`
                                             : item.href
                                     }
-                                    className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[#173c35]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[#2e705e]/20 hover:bg-[#fbfdfb] hover:shadow-md"
+                                    className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[var(--app-ink)]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[var(--app-primary)]/20 hover:bg-[#fffdfc] hover:shadow-md"
                                 >
-                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[#eaf2ee] text-[#285f50]">
+                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[var(--app-soft)] text-[var(--app-primary)]">
                                         <item.icon className="size-[1.1rem]" />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="block text-sm font-black text-[#173c35]">
+                                        <span className="block text-sm font-black text-[var(--app-ink)]">
                                             {item.title}
                                         </span>
-                                        <span className="block text-xs font-semibold text-[#71817c]">
+                                        <span className="block text-xs font-semibold text-[var(--muted-foreground)]">
                                             {item.description}
                                         </span>
                                     </span>
-                                    <ChevronRight className="size-4 shrink-0 text-[#8b9b95] transition group-hover:translate-x-0.5" />
+                                    <ChevronRight className="size-4 shrink-0 text-[var(--muted-foreground)] transition group-hover:translate-x-0.5" />
                                 </Link>
                             </SheetClose>
                         ))}
@@ -738,7 +976,9 @@ function MoreMenu({
                     disabled={disabled}
                     className={cn(
                         'group flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-[10px] font-semibold transition sm:text-xs',
-                        active ? 'text-[var(--app-primary)]' : 'text-[#7a8a85]',
+                        active
+                            ? 'text-[var(--app-primary)]'
+                            : 'text-[var(--muted-foreground)]',
                         disabled && 'opacity-60',
                     )}
                 >
@@ -761,11 +1001,11 @@ function MoreMenu({
 
             <SheetContent
                 side="bottom"
-                className="max-h-[88svh] overflow-y-auto rounded-t-[2rem] border-0 bg-[#f5f7f2] p-0 text-[#173c35] shadow-[0_-24px_70px_-20px_rgba(21,63,54,.45)] [&>button]:top-5 [&>button]:right-5 [&>button]:rounded-full [&>button]:bg-white [&>button]:p-2"
+                className="max-h-[88svh] overflow-y-auto rounded-t-[2rem] border-0 bg-[#fff3ef] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] [&>button]:top-5 [&>button]:right-5 [&>button]:rounded-full [&>button]:bg-white [&>button]:p-2"
             >
                 <SheetHeader className="mx-auto w-full max-w-xl px-4 pt-6 pb-2 text-left sm:px-6">
-                    <div className="mb-2 h-1.5 w-12 self-center rounded-full bg-[#173c35]/15" />
-                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[#173c35]">
+                    <div className="mb-2 h-1.5 w-12 self-center rounded-full bg-[var(--app-primary)]/15" />
+                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                         Menu lainnya
                     </SheetTitle>
                     <SheetDescription className="sr-only">
@@ -777,7 +1017,7 @@ function MoreMenu({
                     {moreMenuSections.map((section) => (
                         <div key={section.title}>
                             <div className="mb-3 flex items-center justify-between">
-                                <p className="text-[11px] font-bold tracking-[0.16em] text-[#6d817a] uppercase">
+                                <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                                     {section.title}
                                 </p>
                             </div>
@@ -786,17 +1026,17 @@ function MoreMenu({
                                     <SheetClose asChild key={item.title}>
                                         <Link
                                             href={item.href}
-                                            className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[#173c35]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[#2e705e]/20 hover:bg-[#fbfdfb] hover:shadow-md"
+                                            className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[var(--app-ink)]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[var(--app-primary)]/20 hover:bg-[#fffdfc] hover:shadow-md"
                                         >
-                                            <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[#eaf2ee] text-[#285f50]">
+                                            <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[var(--app-soft)] text-[var(--app-primary)]">
                                                 <item.icon className="size-[1.1rem]" />
                                             </span>
                                             <span className="min-w-0 flex-1">
-                                                <span className="block text-sm font-black text-[#173c35]">
+                                                <span className="block text-sm font-black text-[var(--app-ink)]">
                                                     {item.title}
                                                 </span>
                                             </span>
-                                            <ChevronRight className="size-4 shrink-0 text-[#8b9b95] transition group-hover:translate-x-0.5" />
+                                            <ChevronRight className="size-4 shrink-0 text-[var(--muted-foreground)] transition group-hover:translate-x-0.5" />
                                         </Link>
                                     </SheetClose>
                                 ))}

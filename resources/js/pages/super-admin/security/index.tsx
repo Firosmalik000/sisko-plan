@@ -43,7 +43,7 @@ export default function PlatformSecurity({
             <Head title="Pengaturan Akun" />
             <div className="platform-enter mx-auto max-w-6xl">
                 <header className="mb-5">
-                    <h1 className="text-3xl font-black tracking-tight text-[#0b292f]">
+                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">
                         Pengaturan akun
                     </h1>
                 </header>
@@ -52,13 +52,13 @@ export default function PlatformSecurity({
                     <aside className="platform-panel overflow-hidden lg:sticky lg:top-8">
                         <div className="border-b border-slate-900/8 p-4">
                             <div className="flex items-center gap-3">
-                                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#0b292f] text-sm font-black text-[#e9c96f]">
+                                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#ee4d2d] text-sm font-black text-[#ffd5ca]">
                                     {platformAdmin.name
                                         .slice(0, 2)
                                         .toUpperCase()}
                                 </span>
                                 <div className="min-w-0">
-                                    <p className="truncate text-sm font-black text-[#0b292f]">
+                                    <p className="truncate text-sm font-black text-[#3b211b]">
                                         {platformAdmin.name}
                                     </p>
                                     <p className="truncate text-xs text-slate-500">
@@ -131,11 +131,11 @@ function SettingsNavItem({
     return (
         <button
             type="button"
-            className={`flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3 text-sm font-bold transition outline-none focus-visible:ring-2 focus-visible:ring-[#d7a941] ${active ? 'bg-[#0b292f] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-[#0b292f]'}`}
+            className={`flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3 text-sm font-bold transition outline-none focus-visible:ring-2 focus-visible:ring-[#ff7a59] ${active ? 'bg-[#d83f22] text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-[#3b211b]'}`}
             aria-current={active ? 'page' : undefined}
             onClick={onClick}
         >
-            <Icon className={`size-4 ${active ? 'text-[#e9c96f]' : ''}`} />
+            <Icon className={`size-4 ${active ? 'text-[#ffd5ca]' : ''}`} />
             {label}
         </button>
     );
@@ -187,7 +187,7 @@ function ProfileSettings({
                         <div className="flex flex-wrap items-center gap-3 pt-1">
                             <Button
                                 disabled={processing}
-                                className="bg-[#0b292f] text-white hover:bg-[#16434c]"
+                                className="bg-[#d83f22] text-white hover:bg-[#b83219]"
                             >
                                 {processing ? <Spinner /> : null}
                                 Simpan profil
@@ -257,7 +257,7 @@ function PasswordSettings() {
                         <div className="flex flex-wrap items-center gap-3 pt-1">
                             <Button
                                 disabled={processing}
-                                className="bg-[#0b292f] text-white hover:bg-[#16434c]"
+                                className="bg-[#d83f22] text-white hover:bg-[#b83219]"
                             >
                                 {processing ? <Spinner /> : null}
                                 Perbarui kata sandi
@@ -300,11 +300,11 @@ function SecuritySettings({
             >
                 <div className="grid gap-5 p-4 sm:p-5 md:grid-cols-[minmax(170px,220px)_minmax(0,1fr)] md:gap-8">
                     <div className="flex items-start gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#0b292f]">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#3b211b]">
                             <KeyRound className="size-4" />
                         </span>
                         <div>
-                            <h3 className="text-sm font-black text-[#0b292f]">
+                            <h3 className="text-sm font-black text-[#3b211b]">
                                 Autentikasi dua langkah
                             </h3>
                             <p className="mt-1 text-xs font-semibold text-slate-500">
@@ -347,11 +347,11 @@ function SettingsPanel({
         <section className="platform-panel overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-900/8 px-4 py-4 sm:px-5">
                 <div className="flex items-center gap-3">
-                    <span className="flex size-10 items-center justify-center rounded-xl bg-[#0b292f] text-white">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-[#ee4d2d] text-white">
                         <Icon className="size-5" />
                     </span>
                     <div>
-                        <h2 className="font-black text-[#0b292f]">{title}</h2>
+                        <h2 className="font-black text-[#3b211b]">{title}</h2>
                         {status && (
                             <p className="text-xs font-semibold text-slate-500">
                                 {status}
@@ -414,7 +414,7 @@ function TwoFactorControl({
                         <PasswordField error={errors.current_password} />
                         <Button
                             disabled={processing}
-                            className="w-full bg-[#0b292f] text-white hover:bg-[#16434c] sm:w-fit"
+                            className="w-full bg-[#d83f22] text-white hover:bg-[#b83219] sm:w-fit"
                         >
                             {processing ? <Spinner /> : <KeyRound />}
                             Aktifkan 2FA
@@ -433,7 +433,7 @@ function TwoFactorControl({
                     dangerouslySetInnerHTML={{ __html: qrCodeSvg }}
                 />
                 <div>
-                    <h4 className="text-sm font-black text-[#0b292f]">
+                    <h4 className="text-sm font-black text-[#3b211b]">
                         Pindai dan konfirmasi
                     </h4>
                     <p className="mt-1 text-sm leading-5 text-slate-600">
@@ -461,7 +461,7 @@ function TwoFactorControl({
                                 </div>
                                 <Button
                                     disabled={processing}
-                                    className="bg-[#0b292f] text-white hover:bg-[#16434c]"
+                                    className="bg-[#d83f22] text-white hover:bg-[#b83219]"
                                 >
                                     {processing ? (
                                         <Spinner />
@@ -497,7 +497,7 @@ function TwoFactorControl({
                 {({ processing, errors }) => (
                     <>
                         <div>
-                            <h4 className="text-sm font-black text-[#0b292f]">
+                            <h4 className="text-sm font-black text-[#3b211b]">
                                 Recovery code
                             </h4>
                             <p className="mt-1 text-sm text-slate-600">
@@ -523,10 +523,10 @@ function TwoFactorControl({
 
 function RecoveryCodes({ codes }: { codes: string[] }) {
     return (
-        <section className="overflow-hidden rounded-2xl bg-[#0b292f] text-white shadow-lg shadow-[#0b292f]/10">
+        <section className="overflow-hidden rounded-2xl bg-[#d83f22] text-white shadow-lg shadow-[#3b211b]/10">
             <div className="border-b border-white/10 px-4 py-4 sm:px-5">
                 <div className="flex items-center gap-3">
-                    <ShieldAlert className="size-5 text-[#e9c96f]" />
+                    <ShieldAlert className="size-5 text-[#ffd5ca]" />
                     <div>
                         <h2 className="font-black">Simpan recovery code</h2>
                         <p className="mt-0.5 text-xs text-slate-300">

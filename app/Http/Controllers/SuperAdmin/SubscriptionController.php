@@ -80,7 +80,7 @@ class SubscriptionController extends Controller
     public function storePlan(Request $request, SavePlan $action): RedirectResponse
     {
         $action->handle(AuthenticatedPlatformAdmin::get($request), $this->planData($request), null, $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Paket berhasil dibuat.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Plan created successfully.')]);
 
         return back();
     }
@@ -88,7 +88,7 @@ class SubscriptionController extends Controller
     public function updatePlan(Request $request, Plan $plan, SavePlan $action): RedirectResponse
     {
         $action->handle(AuthenticatedPlatformAdmin::get($request), $this->planData($request, $plan), $plan, $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Paket berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Plan updated successfully.')]);
 
         return back();
     }
@@ -114,10 +114,10 @@ class SubscriptionController extends Controller
         $plan = Plan::query()->where('public_id', $validated['plan_id'])->firstOrFail();
         $status = SubscriptionStatus::from($validated['status']);
         if ($plan->is_trial && $status !== SubscriptionStatus::Trialing) {
-            throw ValidationException::withMessages(['status' => 'Paket trial harus menggunakan status Trial.']);
+            throw ValidationException::withMessages(['status' => __('A trial plan must use Trial status.')]);
         }
         if (! $plan->is_trial && $status === SubscriptionStatus::Trialing) {
-            throw ValidationException::withMessages(['status' => 'Status Trial hanya dapat digunakan oleh paket trial.']);
+            throw ValidationException::withMessages(['status' => __('Trial status can only be used by a trial plan.')]);
         }
         $action->handle(AuthenticatedPlatformAdmin::get($request), $subscription, [
             'plan_id' => $plan->id,
@@ -134,7 +134,7 @@ class SubscriptionController extends Controller
                 : ($validated['current_period_end'] ?? null),
             'notes' => $validated['notes'] ?? null,
         ], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Subscription akun berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Account subscription updated successfully.')]);
 
         return back();
     }
@@ -154,7 +154,7 @@ class SubscriptionController extends Controller
             'idempotency_key' => ['required', 'uuid'],
         ]);
         $action->handle(AuthenticatedPlatformAdmin::get($request), $subscription, $validated['amount'], $validated['period_start'], $validated['period_end'], $validated['payment_method'], $validated['external_reference'] ?? null, $validated['paid_at'], $validated['notes'] ?? null, $validated['idempotency_key'], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Pembayaran subscription berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Subscription payment posted successfully.')]);
 
         return back();
     }
@@ -162,7 +162,7 @@ class SubscriptionController extends Controller
     public function activateAll(Request $request, ActivateAllSubscriptions $action): RedirectResponse
     {
         $count = $action->handle(AuthenticatedPlatformAdmin::get($request), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => "{$count} subscription aktif mulai hari ini."]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __(':count subscriptions are active starting today.', ['count' => $count])]);
 
         return back();
     }

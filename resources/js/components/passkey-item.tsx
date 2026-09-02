@@ -10,6 +10,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { useTranslation } from '@/lib/i18n';
 import type { Passkey } from '@/types/auth';
 
 type Props = {
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export default function PasskeyItem({ passkey, onDelete }: Props) {
+    const { t } = useTranslation();
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDelete = () => {
@@ -70,9 +72,9 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
                 <DialogContent>
                     <DialogTitle>Remove passkey</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to remove the "{passkey.name}"
-                        passkey? You will no longer be able to use it to sign
-                        in.
+                        {t(
+                            `Are you sure you want to remove the "${passkey.name}" passkey? You will no longer be able to use it to sign in.`,
+                        )}
                     </DialogDescription>
                     <DialogFooter className="gap-2">
                         <DialogClose asChild>

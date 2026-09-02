@@ -41,6 +41,14 @@ class ProfileUpdateTest extends TestCase
                 ->where('subscription.plan_name', $store->subscription->plan->name));
     }
 
+    public function test_new_store_uses_the_orange_portal_theme_by_default(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+
+        $this->assertSame('#ee4d2d', $store->settings()->value('theme_color'));
+    }
+
     public function test_owner_can_update_store_receipt_printer_and_theme_preferences(): void
     {
         $owner = User::factory()->create();

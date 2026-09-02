@@ -11,9 +11,9 @@ export default function CreateStore() {
     return (
         <>
             <Head title="Buat Toko" />
-            <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+            <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto w-full max-w-xl">
-                    <Card className="rounded-[1.35rem] border-[#173c35]/8 py-5 shadow-sm">
+                    <Card className="rounded-[1.35rem] border-[var(--app-ink)]/8 py-5 shadow-sm">
                         <CardContent className="space-y-5 px-4 sm:px-5">
                             <div>
                                 <Link
@@ -23,7 +23,7 @@ export default function CreateStore() {
                                     <ArrowLeft className="size-4" />
                                     Daftar toko
                                 </Link>
-                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                                     Buat Toko
                                 </h1>
                             </div>

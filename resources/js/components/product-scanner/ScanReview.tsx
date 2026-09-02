@@ -13,6 +13,7 @@ import {
     X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { formatMoney, localeTag } from '@/lib/currency';
 import type {
     ScannerCapture,
     ScannerProductCandidate,
@@ -28,11 +29,7 @@ const actionLabels: Record<ScannerPurpose, string> = {
     product: 'Periksa produk',
 };
 
-const money = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-});
+const money = { format: formatMoney };
 
 export function ScanReview({
     captures,
@@ -126,7 +123,7 @@ export function ScanReview({
         return total + Number(unitPrice) * item.quantity;
     }, 0);
     const manualResults = useMemo(() => {
-        const query = manualQuery.trim().toLocaleLowerCase('id-ID');
+        const query = manualQuery.trim().toLocaleLowerCase(localeTag());
 
         if (!query) {
             return manualProducts;
@@ -134,14 +131,14 @@ export function ScanReview({
 
         return manualProducts.filter(
             (product) =>
-                product.name.toLocaleLowerCase('id-ID').includes(query) ||
+                product.name.toLocaleLowerCase(localeTag()).includes(query) ||
                 product.options.some((option) =>
                     [
                         option.variantName,
                         option.unitName,
                         option.unitSymbol,
                     ].some((value) =>
-                        value?.toLocaleLowerCase('id-ID').includes(query),
+                        value?.toLocaleLowerCase(localeTag()).includes(query),
                     ),
                 ),
         );
@@ -153,12 +150,12 @@ export function ScanReview({
     };
 
     return (
-        <div className="relative flex h-svh flex-col bg-[#f5f7f2] text-[#173c35]">
-            <header className="flex items-center gap-3 border-b border-[#173c35]/10 bg-[#fbfcf8] px-4 pt-[calc(env(safe-area-inset-top)+.75rem)] pb-3">
+        <div className="relative flex h-svh flex-col bg-[#fff3ef] text-[var(--app-ink)]">
+            <header className="flex items-center gap-3 border-b border-[var(--app-ink)]/10 bg-[#fffdfc] px-4 pt-[calc(env(safe-area-inset-top)+.75rem)] pb-3">
                 <button
                     type="button"
                     onClick={onBack}
-                    className="grid size-11 place-items-center rounded-xl bg-[#e8efeb] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                    className="grid size-11 place-items-center rounded-xl bg-[var(--app-soft)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                     aria-label="Kembali ke kamera"
                 >
                     <ChevronLeft className="size-5" />
@@ -167,7 +164,7 @@ export function ScanReview({
                     <h2 className="text-xl font-black tracking-[-0.03em]">
                         Periksa hasil
                     </h2>
-                    <p className="text-xs font-semibold text-[#687d76]">
+                    <p className="text-xs font-semibold text-[var(--muted-foreground)]">
                         {confirmed.length} siap
                         {unresolved > 0 ? ` · ${unresolved} perlu dipilih` : ''}
                         {skipped > 0 ? ` · ${skipped} dilewati` : ''}
@@ -176,7 +173,7 @@ export function ScanReview({
                 <button
                     type="button"
                     onClick={onScanAgain}
-                    className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-[#173c35] px-3 text-xs font-black text-white focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:ring-offset-2 focus-visible:outline-none"
+                    className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                     <Camera className="size-4" />
                     Scan lagi
@@ -202,7 +199,7 @@ export function ScanReview({
                                     <p className="font-black">
                                         Mencari produk…
                                     </p>
-                                    <p className="mt-1 text-xs leading-5 text-[#687d76]">
+                                    <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
                                         Foto {captureIndex + 1} sedang
                                         dicocokkan dengan katalog.
                                     </p>
@@ -233,7 +230,7 @@ export function ScanReview({
                                         <button
                                             type="button"
                                             onClick={() => onRetry(capture.id)}
-                                            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#173c35] px-3 text-sm font-black text-white"
+                                            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)]"
                                         >
                                             <RefreshCw className="size-4" />
                                             Coba lagi
@@ -242,7 +239,7 @@ export function ScanReview({
                                     <button
                                         type="button"
                                         onClick={() => onRetake(capture.id)}
-                                        className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#173c35]/15 px-3 text-sm font-black text-[#286450] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                                        className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-ink)]/15 px-3 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                     >
                                         <RotateCcw className="size-4" />
                                         Foto ulang
@@ -258,7 +255,7 @@ export function ScanReview({
                     return capture.results.map((result) => (
                         <div
                             key={`${capture.id}-${result.itemIndex}`}
-                            className="rounded-2xl bg-white p-3 shadow-[0_8px_24px_-18px_rgba(23,60,53,.55)]"
+                            className="rounded-2xl bg-white p-3 shadow-[0_8px_24px_-18px_var(--app-shadow)]"
                         >
                             <div className="flex items-start gap-3">
                                 <CaptureImage previewUrl={capture.previewUrl} />
@@ -299,12 +296,12 @@ export function ScanReview({
                                             false,
                                         )
                                     }
-                                    className="mt-2 min-h-11 text-sm font-black text-[#286450] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                                    className="mt-2 min-h-11 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                 >
                                     Batalkan lewati
                                 </button>
                             ) : (
-                                <div className="mt-3 border-t border-[#173c35]/10 pt-3">
+                                <div className="mt-3 border-t border-[var(--app-ink)]/10 pt-3">
                                     {result.match ? (
                                         <MatchedProduct
                                             captureId={capture.id}
@@ -391,13 +388,13 @@ export function ScanReview({
                 })}
             </div>
 
-            <footer className="border-t border-[#173c35]/10 bg-[#fbfcf8] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+.75rem)]">
+            <footer className="border-t border-[var(--app-ink)]/10 bg-[#fffdfc] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+.75rem)]">
                 {purpose === 'purchase' && confirmed.length > 0 && (
-                    <div className="mb-3 flex items-center justify-between rounded-xl bg-[#e8f1ec] px-3 py-2.5">
-                        <span className="text-xs font-bold text-[#58736a]">
+                    <div className="mb-3 flex items-center justify-between rounded-xl bg-[var(--app-soft)] px-3 py-2.5">
+                        <span className="text-xs font-bold text-[var(--muted-foreground)]">
                             Estimasi total beli
                         </span>
-                        <strong className="text-base font-black text-[#173c35]">
+                        <strong className="text-base font-black text-[var(--app-ink)]">
                             {money.format(estimatedTotal)}
                         </strong>
                     </div>
@@ -406,7 +403,7 @@ export function ScanReview({
                     type="button"
                     disabled={!canConfirm}
                     onClick={() => onConfirm(confirmed)}
-                    className="min-h-12 w-full rounded-2xl bg-[#173c35] px-4 text-sm font-black text-white shadow-[0_10px_24px_-14px_rgba(23,60,53,.8)] disabled:opacity-40"
+                    className="min-h-12 w-full rounded-2xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)] shadow-[0_10px_24px_-14px_var(--app-shadow)] disabled:opacity-40"
                 >
                     {pending
                         ? 'Menunggu hasil…'
@@ -486,10 +483,10 @@ function MatchedProduct({
         <>
             {selectedOption && !editingOptions && (
                 <div className="flex items-center justify-between gap-3">
-                    <p className="min-w-0 truncate text-sm font-bold text-[#58736a]">
+                    <p className="min-w-0 truncate text-sm font-bold text-[var(--muted-foreground)]">
                         {optionName(selectedOption)}
                     </p>
-                    <span className="shrink-0 text-sm font-black text-[#173c35]">
+                    <span className="shrink-0 text-sm font-black text-[var(--app-ink)]">
                         {money.format(unitPrice)} / unit
                     </span>
                 </div>
@@ -498,7 +495,7 @@ function MatchedProduct({
             {product.options.length > 1 &&
                 (selectedOption === null || editingOptions) && (
                     <fieldset className="mt-3">
-                        <legend className="text-xs font-black text-[#58736a]">
+                        <legend className="text-xs font-black text-[var(--muted-foreground)]">
                             Pilih ukuran/satuan
                         </legend>
                         <div className="mt-2 space-y-2">
@@ -509,10 +506,10 @@ function MatchedProduct({
                                 return (
                                     <label
                                         key={option.id}
-                                        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 focus-within:ring-2 focus-within:ring-[#34765f] ${
+                                        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 focus-within:ring-2 focus-within:ring-[var(--app-primary)] ${
                                             checked
-                                                ? 'border-[#34765f] bg-[#e8f1ec]'
-                                                : 'border-[#173c35]/12 bg-[#f8faf7]'
+                                                ? 'border-[var(--app-primary)] bg-[var(--app-soft)]'
+                                                : 'border-[var(--app-ink)]/12 bg-[#fffaf7]'
                                         }`}
                                     >
                                         <input
@@ -527,18 +524,20 @@ function MatchedProduct({
                                                 );
                                                 setEditingOptions(false);
                                             }}
-                                            className="size-4 accent-[#28735b]"
+                                            className="size-4 accent-[var(--app-primary)]"
                                         />
                                         <span className="min-w-0 flex-1">
                                             <span className="block text-sm font-black">
                                                 {optionName(option)}
                                             </span>
                                             {purpose === 'sale' && (
-                                                <span className="block text-xs text-[#687d76]">
+                                                <span className="block text-xs text-[var(--muted-foreground)]">
                                                     Stok{' '}
                                                     {Number(
                                                         option.stockQuantity,
-                                                    ).toLocaleString('id-ID')}
+                                                    ).toLocaleString(
+                                                        localeTag(),
+                                                    )}
                                                 </span>
                                             )}
                                         </span>
@@ -564,7 +563,7 @@ function MatchedProduct({
                     <button
                         type="button"
                         onClick={() => setEditingOptions(true)}
-                        className="mt-2 min-h-10 text-sm font-black text-[#286450] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                        className="mt-2 min-h-10 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                     >
                         Ubah ukuran/satuan
                     </button>
@@ -572,7 +571,7 @@ function MatchedProduct({
 
             {selectedOption && (
                 <div className="mt-3 space-y-2">
-                    <label className="flex items-center justify-between gap-3 text-xs font-bold text-[#58736a]">
+                    <label className="flex items-center justify-between gap-3 text-xs font-bold text-[var(--muted-foreground)]">
                         Jumlah
                         <input
                             type="number"
@@ -587,16 +586,16 @@ function MatchedProduct({
                                     ),
                                 )
                             }
-                            className="h-10 w-24 rounded-xl border border-[#173c35]/15 px-3 text-right text-sm font-black outline-none focus:border-[#34765f]"
+                            className="h-10 w-24 rounded-xl border border-[var(--app-ink)]/15 px-3 text-right text-sm font-black outline-none focus:border-[var(--app-primary)]"
                         />
                     </label>
-                    <div className="flex items-center justify-between rounded-xl bg-[#f3f7f3] px-3 py-2 text-xs">
-                        <span className="font-bold text-[#58736a]">
+                    <div className="flex items-center justify-between rounded-xl bg-[#fffaf7] px-3 py-2 text-xs">
+                        <span className="font-bold text-[var(--muted-foreground)]">
                             {purpose === 'purchase'
                                 ? 'Subtotal beli'
                                 : 'Subtotal'}
                         </span>
-                        <strong className="text-sm font-black text-[#173c35]">
+                        <strong className="text-sm font-black text-[var(--app-ink)]">
                             {money.format(subtotal)}
                         </strong>
                     </div>
@@ -607,7 +606,7 @@ function MatchedProduct({
                 <button
                     type="button"
                     onClick={() => onClearProduct(captureId, itemIndex)}
-                    className="mt-2 min-h-10 text-sm font-black text-[#286450] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                    className="mt-2 min-h-10 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                 >
                     Ganti produk
                 </button>
@@ -617,7 +616,7 @@ function MatchedProduct({
                 <button
                     type="button"
                     onClick={onSkip}
-                    className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 text-sm font-black text-[#687d76] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                    className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 text-sm font-black text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                 >
                     <SkipForward className="size-4" />
                     Lewati produk ini
@@ -661,7 +660,7 @@ function UncertainProduct({
                         onClick={() =>
                             onSelectProduct(captureId, itemIndex, candidate)
                         }
-                        className="flex min-h-12 w-full items-center gap-3 rounded-xl bg-[#edf3ef] px-3 py-2 text-left hover:bg-[#e3ece7] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                        className="flex min-h-12 w-full items-center gap-3 rounded-xl bg-[var(--app-soft)] px-3 py-2 text-left hover:bg-[var(--app-soft-strong)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                     >
                         {candidate.photoUrl && (
                             <img
@@ -672,7 +671,7 @@ function UncertainProduct({
                         )}
                         <span className="min-w-0 flex-1">
                             {index === 0 && (
-                                <span className="block text-[11px] font-bold text-[#58736a]">
+                                <span className="block text-[11px] font-bold text-[var(--muted-foreground)]">
                                     Paling cocok
                                 </span>
                             )}
@@ -734,7 +733,7 @@ function RecoveryActions({
             <button
                 type="button"
                 onClick={onRetake}
-                className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#173c35]/15 px-3 text-sm font-black text-[#286450] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-ink)]/15 px-3 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
             >
                 <RotateCcw className="size-4" />
                 Foto ulang
@@ -742,7 +741,7 @@ function RecoveryActions({
             <button
                 type="button"
                 onClick={onSkip}
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-black text-[#687d76] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-black text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
             >
                 <SkipForward className="size-4" />
                 Lewati produk ini
@@ -756,7 +755,7 @@ function ManualButton({ onClick }: { onClick: () => void }) {
         <button
             type="button"
             onClick={onClick}
-            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#173c35]/15 px-3 text-sm font-black text-[#286450] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+            className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-ink)]/15 px-3 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
         >
             <PackageSearch className="size-4" />
             Cari manual
@@ -773,7 +772,7 @@ function ResultStatus({
 }) {
     if (skipped) {
         return (
-            <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[#687d76]">
+            <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[var(--muted-foreground)]">
                 <SkipForward className="size-3.5" />
                 Dilewati
             </span>
@@ -782,7 +781,7 @@ function ResultStatus({
 
     if (ready) {
         return (
-            <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[#28735b]">
+            <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[var(--app-primary)]">
                 <Check className="size-3.5" />
                 Siap
             </span>
@@ -810,12 +809,12 @@ function ManualProductPicker({
     onSelect: (product: ScannerProductCandidate) => void;
 }) {
     return (
-        <section className="absolute inset-0 z-20 flex flex-col bg-[#f5f7f2]">
-            <header className="flex items-center gap-3 border-b border-[#173c35]/10 bg-[#fbfcf8] px-4 pt-[calc(env(safe-area-inset-top)+.75rem)] pb-3">
+        <section className="absolute inset-0 z-20 flex flex-col bg-[#fff3ef]">
+            <header className="flex items-center gap-3 border-b border-[var(--app-ink)]/10 bg-[#fffdfc] px-4 pt-[calc(env(safe-area-inset-top)+.75rem)] pb-3">
                 <button
                     type="button"
                     onClick={onClose}
-                    className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e8efeb] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                    className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--app-soft)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                     aria-label="Kembali ke hasil scan"
                 >
                     <ChevronLeft className="size-5" />
@@ -824,30 +823,30 @@ function ManualProductPicker({
                     <h2 className="text-xl font-black tracking-[-0.03em]">
                         Cari produk
                     </h2>
-                    <p className="text-xs font-semibold text-[#687d76]">
+                    <p className="text-xs font-semibold text-[var(--muted-foreground)]">
                         Pilih untuk foto ini
                     </p>
                 </div>
                 <button
                     type="button"
                     onClick={onClose}
-                    className="grid size-11 shrink-0 place-items-center rounded-xl focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                    className="grid size-11 shrink-0 place-items-center rounded-xl focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                     aria-label="Tutup pencarian"
                 >
                     <X className="size-5" />
                 </button>
             </header>
 
-            <div className="border-b border-[#173c35]/10 bg-[#fbfcf8] p-3 sm:p-4">
+            <div className="border-b border-[var(--app-ink)]/10 bg-[#fffdfc] p-3 sm:p-4">
                 <label className="relative block">
                     <span className="sr-only">Cari nama produk</span>
-                    <Search className="absolute top-1/2 left-3 size-5 -translate-y-1/2 text-[#687d76]" />
+                    <Search className="absolute top-1/2 left-3 size-5 -translate-y-1/2 text-[var(--muted-foreground)]" />
                     <input
                         autoFocus
                         value={query}
                         onChange={(event) => onQueryChange(event.target.value)}
                         placeholder="Cari nama produk atau varian"
-                        className="h-12 w-full rounded-xl border border-[#173c35]/15 bg-white pr-3 pl-11 text-base outline-none focus:border-[#34765f] focus:ring-2 focus:ring-[#34765f]/15"
+                        className="h-12 w-full rounded-xl border border-[var(--app-ink)]/15 bg-white pr-3 pl-11 text-base outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15"
                     />
                 </label>
             </div>
@@ -858,14 +857,14 @@ function ManualProductPicker({
                         type="button"
                         key={product.productPublicId}
                         onClick={() => onSelect(product)}
-                        className="flex min-h-16 w-full items-center gap-3 rounded-xl bg-white p-3 text-left shadow-[0_8px_24px_-18px_rgba(23,60,53,.55)] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                        className="flex min-h-16 w-full items-center gap-3 rounded-xl bg-white p-3 text-left shadow-[0_8px_24px_-18px_var(--app-shadow)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                     >
                         <CaptureImage previewUrl={product.photoUrl ?? ''} />
                         <span className="min-w-0 flex-1">
                             <span className="line-clamp-2 text-sm font-black">
                                 {product.name}
                             </span>
-                            <span className="mt-1 block text-xs font-semibold text-[#687d76]">
+                            <span className="mt-1 block text-xs font-semibold text-[var(--muted-foreground)]">
                                 {product.options.length > 1
                                     ? `${product.options.length} pilihan`
                                     : optionName(product.options[0])}
@@ -877,11 +876,11 @@ function ManualProductPicker({
                 {products.length === 0 && (
                     <div className="grid min-h-40 place-items-center px-6 text-center">
                         <div>
-                            <PackageSearch className="mx-auto size-7 text-[#687d76]" />
+                            <PackageSearch className="mx-auto size-7 text-[var(--muted-foreground)]" />
                             <p className="mt-2 text-sm font-black">
                                 Produk tidak ditemukan
                             </p>
-                            <p className="mt-1 text-xs text-[#687d76]">
+                            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                                 Coba kata pencarian lain.
                             </p>
                         </div>
@@ -900,7 +899,7 @@ function CaptureImage({
     loading?: boolean;
 }) {
     return (
-        <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-[#e8efeb]">
+        <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-[var(--app-soft)]">
             {previewUrl && (
                 <img
                     src={previewUrl}
@@ -909,7 +908,7 @@ function CaptureImage({
                 />
             )}
             {loading && (
-                <span className="absolute inset-0 grid place-items-center bg-[#173c35]/20">
+                <span className="absolute inset-0 grid place-items-center bg-[var(--app-primary)]/20">
                     <LoaderCircle className="size-6 animate-spin text-white" />
                 </span>
             )}

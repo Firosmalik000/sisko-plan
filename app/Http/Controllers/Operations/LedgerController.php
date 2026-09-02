@@ -153,7 +153,7 @@ class LedgerController extends Controller
         $data = $request->validated();
         $items = $this->resolveItems($request, $currentStore);
         $action->handle($currentStore->get(), $this->actor($request), $data['type'], $items, $data['occurred_at'], $data['notes'] ?? null, $data['idempotency_key'], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Pergerakan stok berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Stock movement posted successfully.')]);
 
         return back();
     }
@@ -172,7 +172,7 @@ class LedgerController extends Controller
             InventoryBalance::query()->where(['store_id' => $currentStore->id(), 'stock_key' => $identity['stock_key']])
                 ->lockForUpdate()->update(['minimum_quantity' => $data['minimum_quantity']]);
         });
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Batas stok minimum berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Minimum stock limit updated successfully.')]);
 
         return back();
     }
@@ -182,7 +182,7 @@ class LedgerController extends Controller
         $data = $request->validated();
         $accountId = FinancialAccount::query()->where(['store_id' => $currentStore->id(), 'public_id' => $data['account_id']])->valueOrFail('id');
         $action->handle($currentStore->get(), $this->actor($request), $accountId, $data['amount'], $data['occurred_at'], $data['notes'] ?? null, $data['idempotency_key'], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Saldo awal akun berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Opening account balance posted successfully.')]);
 
         return back();
     }
@@ -192,7 +192,7 @@ class LedgerController extends Controller
         $data = $request->validated();
         $accounts = FinancialAccount::query()->where('store_id', $currentStore->id())->whereIn('public_id', [$data['from_account_id'], $data['to_account_id']])->pluck('id', 'public_id');
         $action->handle($currentStore->get(), $this->actor($request), $accounts[$data['from_account_id']], $accounts[$data['to_account_id']], $data['amount'], $data['occurred_at'], $data['notes'] ?? null, $data['idempotency_key'], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Transfer antar-akun berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Account transfer posted successfully.')]);
 
         return back();
     }
@@ -203,7 +203,7 @@ class LedgerController extends Controller
         $accountId = isset($data['account_id']) ? FinancialAccount::query()->where(['store_id' => $currentStore->id(), 'public_id' => $data['account_id']])->valueOrFail('id') : null;
         $items = $this->resolveItems($request, $currentStore);
         $action->handle($currentStore->get(), $this->actor($request), $data['type'], $accountId, $data['amount'] ?? null, $items, $data['occurred_at'], $data['notes'] ?? null, $data['idempotency_key'], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Transaksi modal berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Capital transaction posted successfully.')]);
 
         return back();
     }

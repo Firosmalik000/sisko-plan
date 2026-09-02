@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Edit3, Plus, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import { MasterDataNav } from '@/components/master-data-nav';
@@ -60,14 +60,29 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
     details: Array<{ key: string; label: string }>;
     canManage: boolean;
 }) {
+    const [openCreateFromQuery] = useState(
+        () =>
+            typeof window !== 'undefined' &&
+            new URL(window.location.href).searchParams.get('create') === '1',
+    );
     const [editing, setEditing] = useState<T | null>(null);
-    const [formOpen, setFormOpen] = useState(false);
+    const [formOpen, setFormOpen] = useState(openCreateFromQuery);
     const [search, setSearch] = useState(initialSearch);
     const [status, setStatus] = useState(initialStatus);
     const form = useForm<Record<string, FormValue>>({
         ...initialValues,
         is_active: true,
     });
+
+    useEffect(() => {
+        if (!openCreateFromQuery) {
+            return;
+        }
+
+        const url = new URL(window.location.href);
+        url.searchParams.delete('create');
+        window.history.replaceState({}, '', url);
+    }, [openCreateFromQuery]);
 
     const openCreate = () => {
         setEditing(null);
@@ -116,15 +131,15 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
     return (
         <>
             <Head title={title} />
-            <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+            <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto flex max-w-7xl flex-col gap-4">
-                    <header className="flex flex-col gap-3 rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+                    <header className="flex flex-col gap-3 rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
                         <div className="flex items-center justify-between gap-3">
-                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                                 {title}
                             </h1>
                             <div className="flex items-center gap-2">
-                                <div className="rounded-xl bg-[#edf4f0] px-3 py-2 text-xs text-emerald-950">
+                                <div className="rounded-xl bg-[var(--app-soft)] px-3 py-2 text-xs text-emerald-950">
                                     <strong>{items.total}</strong> data
                                 </div>
                                 {canManage && (
@@ -274,7 +289,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                         className="flex min-h-0 flex-col"
                                     >
                                         <DialogHeader className="border-b border-stone-200 px-4 py-4 pr-12 text-left sm:px-5">
-                                            <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#173c35]">
+                                            <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
                                                 {editing
                                                     ? `Edit ${singular}`
                                                     : `Tambah ${singular}`}

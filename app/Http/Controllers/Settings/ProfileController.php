@@ -84,7 +84,7 @@ class ProfileController extends Controller
             Storage::disk('local')->delete($oldPath);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Foto profil berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile photo updated successfully.')]);
 
         return back();
     }
@@ -114,7 +114,7 @@ class ProfileController extends Controller
             $store->settings()->updateOrCreate(['store_id' => $store->id], $validated);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengaturan toko berhasil disimpan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Store settings saved successfully.')]);
 
         return back();
     }

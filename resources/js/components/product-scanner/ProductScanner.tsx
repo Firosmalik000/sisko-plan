@@ -464,7 +464,7 @@ export default function ProductScanner({
         <Dialog open={open} onOpenChange={(next) => !next && dismiss()}>
             <DialogContent
                 aria-describedby={undefined}
-                className="inset-0 top-0 left-0 z-[70] block h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[#102a25] p-0 shadow-none duration-300 [&>button]:hidden"
+                className="inset-0 top-0 left-0 z-[70] block h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[var(--app-ink)] p-0 shadow-none duration-300 [&>button]:hidden"
             >
                 <DialogTitle className="sr-only">{title}</DialogTitle>
                 {scanner.reviewing ? (

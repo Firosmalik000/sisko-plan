@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/lib/i18n';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
@@ -26,17 +27,22 @@ export default function Login({
     googleAuthEnabled,
     oauthError,
 }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Masuk" />
+            <Head title={t('Masuk')} />
 
             {oauthError && (
-                <InputError message={oauthError} className="mb-4 text-center" />
+                <InputError
+                    message={t(oauthError)}
+                    className="mb-4 text-center"
+                />
             )}
 
             {googleAuthEnabled && (
                 <>
-                    <GoogleAuthButton label="Masuk dengan Google" />
+                    <GoogleAuthButton label={t('Masuk dengan Google')} />
                     <AuthDivider />
                 </>
             )}
@@ -50,7 +56,9 @@ export default function Login({
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Alamat email</Label>
+                                <Label htmlFor="email">
+                                    {t('Alamat email')}
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -66,14 +74,16 @@ export default function Login({
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">Kata sandi</Label>
+                                    <Label htmlFor="password">
+                                        {t('Kata sandi')}
+                                    </Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
                                             className="ml-auto text-sm"
                                             tabIndex={5}
                                         >
-                                            Lupa kata sandi?
+                                            {t('Lupa kata sandi?')}
                                         </TextLink>
                                     )}
                                 </div>
@@ -83,7 +93,7 @@ export default function Login({
                                     required
                                     tabIndex={2}
                                     autoComplete="current-password"
-                                    placeholder="Kata sandi"
+                                    placeholder={t('Kata sandi')}
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -94,7 +104,9 @@ export default function Login({
                                     name="remember"
                                     tabIndex={3}
                                 />
-                                <Label htmlFor="remember">Ingat saya</Label>
+                                <Label htmlFor="remember">
+                                    {t('Ingat saya')}
+                                </Label>
                             </div>
 
                             <Button
@@ -105,14 +117,14 @@ export default function Login({
                                 data-test="login-button"
                             >
                                 {processing && <Spinner />}
-                                Masuk
+                                {t('Masuk')}
                             </Button>
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            Belum memiliki akun?{' '}
+                            {t('Belum memiliki akun?')}{' '}
                             <TextLink href={register()} tabIndex={5}>
-                                Daftar
+                                {t('Daftar')}
                             </TextLink>
                         </div>
                     </>
@@ -121,7 +133,7 @@ export default function Login({
 
             {status && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
+                    {t(status)}
                 </div>
             )}
         </>

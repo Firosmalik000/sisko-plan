@@ -80,7 +80,7 @@ class ExpenseController extends Controller
     public function storeCategory(ExpenseCategoryRequest $request, CurrentStore $currentStore): RedirectResponse
     {
         ExpenseCategory::create(['store_id' => $currentStore->id(), ...$request->validated()]);
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Kategori biaya berhasil ditambahkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Expense category added successfully.')]);
 
         return back();
     }
@@ -89,7 +89,7 @@ class ExpenseController extends Controller
     {
         abort_unless($expenseCategory->store_id === $currentStore->id(), 404);
         $expenseCategory->update($request->validated());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Kategori biaya berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Expense category updated successfully.')]);
 
         return back();
     }
@@ -100,7 +100,7 @@ class ExpenseController extends Controller
         $categoryId = ExpenseCategory::query()->where(['store_id' => $currentStore->id(), 'public_id' => $data['category_id']])->valueOrFail('id');
         $accountId = FinancialAccount::query()->where(['store_id' => $currentStore->id(), 'public_id' => $data['account_id']])->valueOrFail('id');
         $action->handle($currentStore->get(), $this->actor($request), $categoryId, $accountId, $data['amount'], $data['occurred_at'], $data['notes'] ?? null, $data['idempotency_key'], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Biaya toko berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Store expense posted successfully.')]);
 
         return back();
     }

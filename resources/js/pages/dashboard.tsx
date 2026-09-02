@@ -21,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { formatCompactMoney, localeTag } from '@/lib/currency';
 import type { StoreSummary } from '@/types';
 
 type Performance = {
@@ -95,13 +96,7 @@ const periodOptions: { key: PeriodKey; label: string }[] = [
     { key: 'year', label: 'Tahunan' },
 ];
 
-const compactMoney = (value: string | number) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        notation: 'compact',
-        maximumFractionDigits: 1,
-    }).format(Number(value));
+const compactMoney = formatCompactMoney;
 
 export default function Dashboard(props: DashboardProps) {
     const { activeStore } = usePage<{ activeStore: StoreSummary }>().props;
@@ -136,17 +131,17 @@ export default function Dashboard(props: DashboardProps) {
     return (
         <>
             <Head title="Beranda" />
-            <main className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 text-[#173c35] sm:px-5 sm:py-5 lg:px-8">
+            <main className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 text-[var(--app-ink)] sm:px-5 sm:py-5 lg:px-8">
                 <div className="mx-auto max-w-7xl space-y-4">
                     <header className="flex flex-wrap items-end justify-between gap-3 px-1">
                         <div>
-                            <h1 className="text-2xl font-black tracking-[-0.045em] text-[#123a34]">
+                            <h1 className="text-2xl font-black tracking-[-0.045em] text-[var(--app-ink)]">
                                 Ringkasan Bisnis
                             </h1>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="hidden items-center gap-2 rounded-full border border-[#173c35]/8 bg-white px-3 py-2 text-xs font-bold shadow-sm sm:flex">
-                                <Building2 className="size-3.5 text-[#2f725e]" />
+                            <div className="hidden items-center gap-2 rounded-full border border-[var(--app-ink)]/8 bg-white px-3 py-2 text-xs font-bold shadow-sm sm:flex">
+                                <Building2 className="size-3.5 text-[var(--app-primary)]" />
                                 {storeCount} toko
                             </div>
                         </div>
@@ -203,11 +198,11 @@ function CashflowHighlight({
     ];
 
     return (
-        <section className="overflow-hidden rounded-[1.4rem] border border-[#173c35]/10 bg-white p-4 shadow-sm sm:p-5 lg:grid lg:grid-cols-[1.15fr_.85fr] lg:items-stretch lg:gap-5">
-            <div className="relative overflow-hidden rounded-[1.1rem] bg-[linear-gradient(135deg,#e5f1eb,#f2f7f3)] p-4 text-[#173c35] sm:p-5">
+        <section className="overflow-hidden rounded-[1.4rem] border border-[var(--app-ink)]/10 bg-white p-4 shadow-sm sm:p-5 lg:grid lg:grid-cols-[1.15fr_.85fr] lg:items-stretch lg:gap-5">
+            <div className="relative overflow-hidden rounded-[1.1rem] bg-[linear-gradient(135deg,var(--app-soft-strong),#fff3ef)] p-4 text-[var(--app-ink)] sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <p className="text-[10px] font-bold tracking-[0.16em] text-[#56746a] uppercase">
+                        <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                             Uang Masuk
                         </p>
                     </div>
@@ -227,7 +222,7 @@ function CashflowHighlight({
                                 )
                             }
                         >
-                            <SelectTrigger className="h-9 w-[9.5rem] rounded-xl border-[#173c35]/10 bg-white px-3 text-xs font-bold text-[#173c35] shadow-none focus:ring-[#34765f]/20">
+                            <SelectTrigger className="h-9 w-[9.5rem] rounded-xl border-[var(--app-ink)]/10 bg-white px-3 text-xs font-bold text-[var(--app-ink)] shadow-none focus:ring-[var(--app-primary)]/20">
                                 <SelectValue placeholder="Pilih periode" />
                             </SelectTrigger>
                             <SelectContent>
@@ -246,18 +241,18 @@ function CashflowHighlight({
                 <p className="mt-5 text-3xl font-black tracking-[-0.055em] sm:text-4xl">
                     {money(performance.net_revenue)}
                 </p>
-                <div className="mt-2 flex items-center gap-2 text-[11px] font-bold text-[#56746a]">
+                <div className="mt-2 flex items-center gap-2 text-[11px] font-bold text-[var(--muted-foreground)]">
                     <CircleDollarSign className="size-4" />
                     Penjualan bersih
                 </div>
             </div>
-            <div className="mt-3 grid grid-cols-3 divide-x divide-[#173c35]/10 rounded-[1.1rem] bg-[#f5f7f4] px-1 py-3 text-[#173c35] lg:mt-0 lg:items-center lg:px-2">
+            <div className="mt-3 grid grid-cols-3 divide-x divide-[var(--app-ink)]/10 rounded-[1.1rem] bg-[#fff3ef] px-1 py-3 text-[var(--app-ink)] lg:mt-0 lg:items-center lg:px-2">
                 {cards.map((card) => (
                     <div
                         key={card.label}
                         className="min-w-0 px-2 text-center sm:px-4 lg:text-left"
                     >
-                        <p className="truncate text-[9px] font-bold tracking-wide text-[#71827c] uppercase sm:text-[10px]">
+                        <p className="truncate text-[9px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">
                             {card.label}
                         </p>
                         <p className="mt-1.5 truncate text-sm font-black tracking-[-0.035em] sm:text-lg">
@@ -290,7 +285,7 @@ function ChangeBadge({
 
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-black ${change.direction === 'down' ? 'bg-[#f6e4da] text-[#9b5535]' : 'bg-white text-[#34715f]'}`}
+            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-black ${change.direction === 'down' ? 'bg-[#f6e4da] text-[#9b5535]' : 'bg-white text-[var(--app-primary)]'}`}
         >
             <Icon className="size-3" /> {label} {change.percentage}%
         </span>
@@ -325,10 +320,10 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
     );
 
     return (
-        <article className="overflow-hidden rounded-[1.5rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-6">
+        <article className="overflow-hidden rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                    <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                         {label}
                     </p>
                     <h2 className="mt-1 text-lg font-black tracking-[-0.03em] sm:text-xl">
@@ -336,10 +331,10 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
                     </h2>
                 </div>
                 <div className="text-right">
-                    <p className="text-base font-black text-[#235f4f] sm:text-lg">
+                    <p className="text-base font-black text-[var(--app-primary)] sm:text-lg">
                         {compactMoney(total)}
                     </p>
-                    <p className="text-[11px] font-semibold text-[#7b8c86]">
+                    <p className="text-[11px] font-semibold text-[var(--muted-foreground)]">
                         {totalTransactions} transaksi
                     </p>
                 </div>
@@ -363,12 +358,12 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
                         >
                             <stop
                                 offset="0%"
-                                stopColor="#3e8a70"
+                                stopColor="var(--app-primary)"
                                 stopOpacity="0.3"
                             />
                             <stop
                                 offset="100%"
-                                stopColor="#3e8a70"
+                                stopColor="var(--app-primary)"
                                 stopOpacity="0.02"
                             />
                         </linearGradient>
@@ -380,7 +375,7 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
                             x2={chartWidth}
                             y1={y}
                             y2={y}
-                            stroke="#dfe9e3"
+                            stroke="var(--app-soft-strong)"
                             strokeDasharray="5 8"
                         />
                     ))}
@@ -389,7 +384,7 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
                         <path
                             d={linePath}
                             fill="none"
-                            stroke="#296b58"
+                            stroke="var(--app-primary)"
                             strokeWidth="4"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -404,7 +399,7 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
                                 cy={point.y}
                                 r="4"
                                 fill="#fff"
-                                stroke="#296b58"
+                                stroke="var(--app-primary)"
                                 strokeWidth="3"
                                 vectorEffect="non-scaling-stroke"
                             >
@@ -413,7 +408,7 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
                         ))}
                 </svg>
             </div>
-            <div className="mt-[-1rem] flex justify-between text-[10px] font-bold text-[#809089] sm:text-[11px]">
+            <div className="mt-[-1rem] flex justify-between text-[10px] font-bold text-[var(--muted-foreground)] sm:text-[11px]">
                 <span>{data[0] ? dateLabel(data[0].date) : '-'}</span>
                 <span>
                     {data.length
@@ -428,17 +423,17 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
 
 function BusinessPosition({ position }: { position: Position }) {
     return (
-        <article className="rounded-[1.5rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-6">
+        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <p className="text-[11px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                    <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                         Operasional Terkini
                     </p>
                     <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">
                         Posisi Usaha
                     </h2>
                 </div>
-                <BarChart3 className="size-5 text-[#367761]" />
+                <BarChart3 className="size-5 text-[var(--app-primary)]" />
             </div>
             <div className="mt-5 space-y-1">
                 <PositionRow label="Kas & bank" value={position.cash_balance} />
@@ -451,19 +446,19 @@ function BusinessPosition({ position }: { position: Position }) {
                     value={position.supplier_payable}
                 />
             </div>
-            <div className="mt-4 rounded-2xl bg-[#e9f2ed] p-4">
+            <div className="mt-4 rounded-2xl bg-[var(--app-soft)] p-4">
                 <div className="flex items-center justify-between gap-4">
-                    <span className="text-xs font-bold text-[#59736a]">
+                    <span className="text-xs font-bold text-[var(--muted-foreground)]">
                         Stok kritis
                     </span>
-                    <span className="text-lg font-black tracking-[-0.04em] text-[#173f35]">
+                    <span className="text-lg font-black tracking-[-0.04em] text-[var(--app-ink)]">
                         {position.low_stock_count} produk
                     </span>
                 </div>
             </div>
             <Link
                 href="/reports"
-                className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-[#245f50]/12 px-4 py-2.5 text-xs font-bold text-[#245f50] transition hover:bg-[#f1f6f3]"
+                className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-[var(--app-primary)]/12 px-4 py-2.5 text-xs font-bold text-[var(--app-primary)] transition hover:bg-[var(--app-soft)]"
             >
                 Laporan lengkap <ArrowUpRight className="size-3.5" />
             </Link>
@@ -473,20 +468,24 @@ function BusinessPosition({ position }: { position: Position }) {
 
 function PositionRow({ label, value }: { label: string; value: string }) {
     return (
-        <div className="flex items-center justify-between gap-4 border-b border-[#173c35]/6 py-2.5 text-xs">
-            <span className="font-semibold text-[#697d76]">{label}</span>
-            <span className="font-black text-[#244f44]">{money(value)}</span>
+        <div className="flex items-center justify-between gap-4 border-b border-[var(--app-ink)]/6 py-2.5 text-xs">
+            <span className="font-semibold text-[var(--muted-foreground)]">
+                {label}
+            </span>
+            <span className="font-black text-[var(--app-ink)]">
+                {money(value)}
+            </span>
         </div>
     );
 }
 
 function CategoryChart({ categories }: { categories: CategorySale[] }) {
     const colors = [
-        '#225f4e',
-        '#3f836c',
-        '#70a58f',
-        '#a9caba',
-        '#d8e8df',
+        'var(--app-primary)',
+        'var(--workspace-500)',
+        'var(--workspace-400)',
+        'var(--workspace-300)',
+        'var(--workspace-200)',
         '#c47a4b',
     ];
     const total = categories.reduce(
@@ -504,12 +503,12 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
         return `${colors[index % colors.length]} ${start}% ${progress}%`;
     });
     const background =
-        total > 0 ? `conic-gradient(${stops.join(',')})` : '#e6eee9';
+        total > 0 ? `conic-gradient(${stops.join(',')})` : 'var(--app-soft)';
 
     return (
-        <article className="rounded-[1.5rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-6">
+        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
             <div>
-                <p className="text-[11px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                     Penjualan per Kategori
                 </p>
                 <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">
@@ -524,7 +523,7 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
                     aria-label="Diagram penjualan per kategori"
                 >
                     <div className="absolute inset-[1.15rem] flex flex-col items-center justify-center rounded-full bg-white text-center shadow-inner">
-                        <span className="text-[10px] font-bold text-[#778a83] uppercase">
+                        <span className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">
                             Total
                         </span>
                         <span className="mt-1 text-lg font-black tracking-[-0.04em]">
@@ -536,7 +535,7 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
                     {categories.map((category, index) => (
                         <div
                             key={category.category_name}
-                            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-[#f5f7f4] px-3 py-2.5"
+                            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-[#fff3ef] px-3 py-2.5"
                         >
                             <span
                                 className="size-2.5 rounded-full"
@@ -549,7 +548,7 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
                                 <p className="truncate text-xs font-black">
                                     {category.category_name}
                                 </p>
-                                <p className="text-[10px] font-semibold text-[#7b8b85]">
+                                <p className="text-[10px] font-semibold text-[var(--muted-foreground)]">
                                     {quantity(category.quantity_sold)} item
                                 </p>
                             </div>
@@ -557,7 +556,7 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
                                 <p className="text-xs font-black">
                                     {compactMoney(category.net_revenue)}
                                 </p>
-                                <p className="text-[10px] font-bold text-[#6f847c]">
+                                <p className="text-[10px] font-bold text-[var(--muted-foreground)]">
                                     {total > 0
                                         ? Math.round(
                                               (Number(category.net_revenue) /
@@ -584,26 +583,26 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
 
 function TopProducts({ products }: { products: TopProduct[] }) {
     return (
-        <article className="rounded-[1.5rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-6">
+        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                    <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                         Produk Terlaris
                     </p>
                     <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">
                         Top 3 Produk
                     </h2>
                 </div>
-                <Boxes className="size-5 text-[#367761]" />
+                <Boxes className="size-5 text-[var(--app-primary)]" />
             </div>
             <div className="mt-5 space-y-3">
                 {products.map((product, index) => (
                     <div
                         key={`${product.store_name}-${product.product_name}-${index}`}
-                        className="grid grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#173c35]/6 p-3"
+                        className="grid grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[var(--app-ink)]/6 p-3"
                     >
                         <span
-                            className={`flex size-9 items-center justify-center rounded-xl text-sm font-black ${index === 0 ? 'bg-[#173f35] text-white' : 'bg-[#e8f1ec] text-[#296b58]'}`}
+                            className={`flex size-9 items-center justify-center rounded-xl text-sm font-black ${index === 0 ? 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)]' : 'bg-[var(--app-soft)] text-[var(--app-primary)]'}`}
                         >
                             {index + 1}
                         </span>
@@ -611,7 +610,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
                             <p className="truncate text-sm font-black">
                                 {product.product_name}
                             </p>
-                            <p className="mt-0.5 truncate text-[10px] font-semibold text-[#7a8b84]">
+                            <p className="mt-0.5 truncate text-[10px] font-semibold text-[var(--muted-foreground)]">
                                 {product.store_name} ·{' '}
                                 {quantity(
                                     Number(product.quantity_sold) -
@@ -624,7 +623,7 @@ function TopProducts({ products }: { products: TopProduct[] }) {
                             <p className="text-xs font-black">
                                 {compactMoney(product.net_revenue)}
                             </p>
-                            <p className="mt-0.5 text-[10px] font-bold text-[#43806c]">
+                            <p className="mt-0.5 text-[10px] font-bold text-[var(--app-primary)]">
                                 {compactMoney(product.gross_profit)} laba
                             </p>
                         </div>
@@ -645,17 +644,17 @@ function StoreRanking({ stores }: { stores: StorePerformance[] }) {
     );
 
     return (
-        <article className="rounded-[1.5rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-6">
+        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                    <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                         Performa Toko
                     </p>
                     <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">
                         Kontribusi Penjualan
                     </h2>
                 </div>
-                <span className="rounded-full bg-[#edf4f0] px-3 py-1.5 text-[11px] font-bold text-[#346b5b]">
+                <span className="rounded-full bg-[var(--app-soft)] px-3 py-1.5 text-[11px] font-bold text-[var(--app-primary)]">
                     {stores.length} toko
                 </span>
             </div>
@@ -663,9 +662,9 @@ function StoreRanking({ stores }: { stores: StorePerformance[] }) {
                 {stores.map((store, index) => (
                     <div
                         key={store.public_id}
-                        className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[#173c35]/6 p-3"
+                        className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[var(--app-ink)]/6 p-3"
                     >
-                        <span className="flex size-8 items-center justify-center rounded-xl bg-[#e6f1eb] text-xs font-black text-[#296b58]">
+                        <span className="flex size-8 items-center justify-center rounded-xl bg-[var(--app-soft-strong)] text-xs font-black text-[var(--app-primary)]">
                             {index + 1}
                         </span>
                         <div className="min-w-0">
@@ -677,15 +676,15 @@ function StoreRanking({ stores }: { stores: StorePerformance[] }) {
                                     {compactMoney(store.net_revenue)}
                                 </p>
                             </div>
-                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e9efeb]">
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--app-soft)]">
                                 <div
-                                    className="h-full rounded-full bg-[#34765f]"
+                                    className="h-full rounded-full bg-[var(--app-primary)]"
                                     style={{
                                         width: `${Math.max(3, (Number(store.net_revenue) / highestRevenue) * 100)}%`,
                                     }}
                                 />
                             </div>
-                            <div className="mt-1.5 flex gap-3 text-[10px] font-semibold text-[#758780]">
+                            <div className="mt-1.5 flex gap-3 text-[10px] font-semibold text-[var(--muted-foreground)]">
                                 <span>{store.transactions} transaksi</span>
                                 <span>{store.low_stock_count} stok kritis</span>
                             </div>
@@ -695,7 +694,7 @@ function StoreRanking({ stores }: { stores: StorePerformance[] }) {
                                 {compactMoney(store.net_revenue)}
                             </p>
                             <p
-                                className={`mt-1 text-[10px] font-bold ${Number(store.estimated_profit) >= 0 ? 'text-[#397763]' : 'text-[#a55b3a]'}`}
+                                className={`mt-1 text-[10px] font-bold ${Number(store.estimated_profit) >= 0 ? 'text-[var(--app-primary)]' : 'text-[#a55b3a]'}`}
                             >
                                 {compactMoney(store.estimated_profit)} laba
                             </p>
@@ -712,10 +711,10 @@ function StoreRanking({ stores }: { stores: StorePerformance[] }) {
 
 function LowStockPanel({ items }: { items: LowStock[] }) {
     return (
-        <article className="rounded-[1.5rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-6">
+        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                    <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                         Persediaan
                     </p>
                     <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">
@@ -728,7 +727,7 @@ function LowStockPanel({ items }: { items: LowStock[] }) {
                 {items.map((item, index) => (
                     <div
                         key={`${item.store_name}-${item.product_name}-${index}`}
-                        className="flex items-center gap-3 rounded-2xl bg-[#f5f7f3] p-3"
+                        className="flex items-center gap-3 rounded-2xl bg-[#fff3ef] p-3"
                     >
                         <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#a75d39] shadow-sm">
                             <Boxes className="size-4" />
@@ -737,7 +736,7 @@ function LowStockPanel({ items }: { items: LowStock[] }) {
                             <p className="truncate text-xs font-black">
                                 {item.product_name}
                             </p>
-                            <p className="mt-0.5 truncate text-[10px] font-semibold text-[#7a8b84]">
+                            <p className="mt-0.5 truncate text-[10px] font-semibold text-[var(--muted-foreground)]">
                                 {item.store_name ?? 'Toko aktif'} · min.{' '}
                                 {quantity(item.minimum_quantity)}{' '}
                                 {item.unit_symbol}
@@ -754,7 +753,7 @@ function LowStockPanel({ items }: { items: LowStock[] }) {
             </div>
             <Link
                 href="/operations/inventory"
-                className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#173f35] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#215748]"
+                className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-4 py-2.5 text-xs font-bold text-[var(--app-primary-foreground)] transition hover:bg-[var(--workspace-700)]"
             >
                 Kelola stok <ArrowUpRight className="size-3.5" />
             </Link>
@@ -773,10 +772,10 @@ function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
     return (
         <>
             <Head title="Beranda" />
-            <main className="min-h-full bg-[linear-gradient(180deg,#f8faf6,#f1f5ef)] px-4 py-5 text-[#173c35] sm:px-6 lg:px-8">
+            <main className="min-h-full bg-[linear-gradient(180deg,#fffaf7,#fff3ef)] px-4 py-5 text-[var(--app-ink)] sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-5xl space-y-4">
-                    <section className="overflow-hidden rounded-[1.7rem] bg-[#173f35] p-6 text-white shadow-xl shadow-[#173f35]/10 sm:p-8">
-                        <p className="text-[11px] font-bold tracking-[0.18em] text-[#a9d3c0] uppercase">
+                    <section className="overflow-hidden rounded-[1.7rem] bg-[var(--app-primary)] p-6 text-[var(--app-primary-foreground)] shadow-[var(--app-ink)]/10 shadow-xl sm:p-8">
+                        <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--app-primary-foreground)]/70 uppercase">
                             Toko Aktif
                         </p>
                         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
@@ -785,7 +784,7 @@ function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
                             </h1>
                             <Link
                                 href="/pos"
-                                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-[#173f35]"
+                                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-[var(--app-ink)]"
                             >
                                 Transaksi baru{' '}
                                 <ArrowUpRight className="size-4" />
@@ -797,9 +796,9 @@ function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className="rounded-[1.3rem] border border-[#173c35]/8 bg-white p-4 shadow-sm transition hover:-translate-y-0.5"
+                                className="rounded-[1.3rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm transition hover:-translate-y-0.5"
                             >
-                                <span className="flex size-9 items-center justify-center rounded-xl bg-[#e6f1eb] text-[#296b58]">
+                                <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--app-soft-strong)] text-[var(--app-primary)]">
                                     <item.icon className="size-4" />
                                 </span>
                                 <p className="mt-5 text-sm font-black">
@@ -816,9 +815,11 @@ function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
 
 function EmptyState({ icon: Icon, label }: { icon: IconType; label: string }) {
     return (
-        <div className="flex min-h-28 flex-col items-center justify-center rounded-2xl border border-dashed border-[#173c35]/12 text-center">
-            <Icon className="size-5 text-[#759087]" />
-            <p className="mt-2 text-xs font-bold text-[#6f837b]">{label}</p>
+        <div className="flex min-h-28 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--app-ink)]/12 text-center">
+            <Icon className="size-5 text-[var(--muted-foreground)]" />
+            <p className="mt-2 text-xs font-bold text-[var(--muted-foreground)]">
+                {label}
+            </p>
         </div>
     );
 }
@@ -848,7 +849,7 @@ function comparisonChange(current: string, previous: string) {
 }
 
 function dateLabel(value: string) {
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat(localeTag(), {
         day: 'numeric',
         month: 'short',
         timeZone: 'UTC',

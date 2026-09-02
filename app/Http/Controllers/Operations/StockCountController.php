@@ -58,7 +58,7 @@ class StockCountController extends Controller
     public function store(StartStockCountRequest $request, CurrentStore $currentStore, StartStockCount $action): RedirectResponse
     {
         $stockCount = $action->handle($currentStore->get(), $this->actor($request), $request->validated('notes'), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Sesi stock opname berhasil dimulai.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Stock count session started successfully.')]);
 
         return to_route('operations.stock-opnames.show', $stockCount);
     }
@@ -125,7 +125,7 @@ class StockCountController extends Controller
     public function update(SaveStockCountRequest $request, CurrentStore $currentStore, StockCount $stockCount, UpdateStockCount $action): RedirectResponse
     {
         $action->save($currentStore->get(), $this->scoped($currentStore, $stockCount), $this->actor($request), $request->validated('items'), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Hasil hitung berhasil disimpan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Count result saved successfully.')]);
 
         return back();
     }
@@ -133,7 +133,7 @@ class StockCountController extends Controller
     public function complete(CompleteStockCountRequest $request, CurrentStore $currentStore, StockCount $stockCount, UpdateStockCount $action): RedirectResponse
     {
         $action->complete($currentStore->get(), $this->scoped($currentStore, $stockCount), $this->actor($request), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Penghitungan selesai dan siap diperiksa.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Counting completed and ready for review.')]);
 
         return back();
     }
@@ -141,7 +141,7 @@ class StockCountController extends Controller
     public function reopen(ManageStockCountRequest $request, CurrentStore $currentStore, StockCount $stockCount, UpdateStockCount $action): RedirectResponse
     {
         $action->reopen($currentStore->get(), $this->scoped($currentStore, $stockCount), $this->actor($request), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Stock opname dibuka kembali.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Stock count reopened successfully.')]);
 
         return back();
     }
@@ -149,7 +149,7 @@ class StockCountController extends Controller
     public function cancel(ManageStockCountRequest $request, CurrentStore $currentStore, StockCount $stockCount, UpdateStockCount $action): RedirectResponse
     {
         $action->cancel($currentStore->get(), $this->scoped($currentStore, $stockCount), $this->actor($request), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Stock opname dibatalkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Stock count cancelled successfully.')]);
 
         return to_route('operations.stock-opnames.index');
     }
@@ -157,7 +157,7 @@ class StockCountController extends Controller
     public function post(ManageStockCountRequest $request, CurrentStore $currentStore, StockCount $stockCount, PostStockCount $action): RedirectResponse
     {
         $action->handle($currentStore->get(), $this->scoped($currentStore, $stockCount), $this->actor($request), $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Hasil stock opname berhasil diposting ke persediaan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Stock count result posted to inventory successfully.')]);
 
         return back();
     }

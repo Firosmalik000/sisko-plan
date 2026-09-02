@@ -28,6 +28,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { formatMoney, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 type Plan = {
     public_id: string;
@@ -92,11 +94,11 @@ type PlanData = {
 };
 
 const inputClass =
-    'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#8a681e] focus:ring-2 focus:ring-[#d7a941]/20 sm:text-sm';
+    'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#b83219] focus:ring-2 focus:ring-[#ff7a59]/20 sm:text-sm';
 const primaryButton =
-    'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#102b31] px-4 text-sm font-bold text-white transition hover:bg-[#173e46] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a681e] disabled:cursor-not-allowed disabled:opacity-50';
+    'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#ee4d2d] px-4 text-sm font-bold text-white transition hover:bg-[#d83f22] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b83219] disabled:cursor-not-allowed disabled:opacity-50';
 const secondaryButton =
-    'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a681e] disabled:cursor-not-allowed disabled:opacity-50';
+    'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b83219] disabled:cursor-not-allowed disabled:opacity-50';
 const dialogClass =
     'flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-2xl';
 const statusLabels: Record<string, string> = {
@@ -113,11 +115,6 @@ const statusClasses: Record<string, string> = {
     suspended: 'bg-rose-100 text-rose-800',
     cancelled: 'bg-slate-200 text-slate-700',
 };
-const currency = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-});
 
 export default function AdminSubscriptions({
     plans,
@@ -150,7 +147,7 @@ export default function AdminSubscriptions({
             <Head title="Subscription & Paket" />
             <header className="platform-enter flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                    <h1 className="text-3xl font-black tracking-tight text-[#0b292f]">
+                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">
                         Subscription & paket
                     </h1>
                     <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -195,7 +192,7 @@ export default function AdminSubscriptions({
             <section className="platform-panel mt-5 overflow-hidden">
                 <div className="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <h2 className="text-lg font-black text-[#0b292f]">
+                        <h2 className="text-lg font-black text-[#3b211b]">
                             Subscription akun
                         </h2>
                         <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -298,7 +295,7 @@ export default function AdminSubscriptions({
 function SectionHeader({ title, count }: { title: string; count: string }) {
     return (
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
-            <h2 className="text-lg font-black text-[#0b292f]">{title}</h2>
+            <h2 className="text-lg font-black text-[#3b211b]">{title}</h2>
             <span className="text-sm font-bold text-slate-500">{count}</span>
         </div>
     );
@@ -330,7 +327,7 @@ function ActivateAllDialog() {
             </DialogTrigger>
             <DialogContent className="gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
                 <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 text-left">
-                    <DialogTitle className="text-lg font-black text-[#0b292f]">
+                    <DialogTitle className="text-lg font-black text-[#3b211b]">
                         Aktifkan semua subscription?
                     </DialogTitle>
                     <DialogDescription className="mt-2 text-sm text-slate-600">
@@ -435,11 +432,11 @@ function PlanRow({ plan, canManage }: { plan: Plan; canManage: boolean }) {
         <div className="grid gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5">
             <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate text-base font-black text-[#0b292f]">
+                    <h3 className="truncate text-base font-black text-[#3b211b]">
                         {plan.name}
                     </h3>
                     {plan.is_default && (
-                        <Badge className="bg-[#f5e6b9] text-[#725515]">
+                        <Badge className="bg-[#ffe1d8] text-[#9f2f19]">
                             Default
                         </Badge>
                     )}
@@ -454,7 +451,7 @@ function PlanRow({ plan, canManage }: { plan: Plan; canManage: boolean }) {
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                     <span className="font-semibold">
-                        {currency.format(Number(plan.monthly_price))}/bulan
+                        {formatMoney(plan.monthly_price)}/bulan
                     </span>
                     <span>{planTerm(plan)}</span>
                     <span>{plan.subscriptions_count} akun</span>
@@ -733,7 +730,7 @@ function SubscriptionRow({
                 ]}
             />
             <td className="px-5 py-4">
-                <p className="max-w-64 truncate font-black text-[#0b292f]">
+                <p className="max-w-64 truncate font-black text-[#3b211b]">
                     {subscription.account.name}
                 </p>
                 <p className="mt-1 max-w-64 truncate text-xs text-slate-500">
@@ -1087,7 +1084,7 @@ function ModalHeader({
 }) {
     return (
         <DialogHeader className="border-b border-slate-200 px-4 py-4 pr-12 text-left sm:px-5">
-            <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#0b292f]">
+            <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#3b211b]">
                 {title}
             </DialogTitle>
             <DialogDescription className="sr-only">
@@ -1167,7 +1164,7 @@ function Check({
         <label className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-slate-700">
             <input
                 type="checkbox"
-                className="size-4 accent-[#102b31]"
+                className="size-4 accent-[#ee4d2d]"
                 checked={checked}
                 onChange={(event) => change(event.target.checked)}
             />
@@ -1263,7 +1260,7 @@ function formatDate(value: string | null) {
         return '—';
     }
 
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat(localeTag(), {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -1271,14 +1268,18 @@ function formatDate(value: string | null) {
 }
 function periodLabel(start: string | null, end: string | null) {
     if (!start && !end) {
-        return 'Belum ditetapkan';
+        return translate('Belum ditetapkan');
     }
 
-    return `${formatDate(start)} – ${end ? formatDate(end) : 'tanpa batas akhir'}`;
+    return `${formatDate(start)} – ${end ? formatDate(end) : translate('tanpa batas akhir')}`;
 }
 function limit(value: number) {
-    return value === 0 ? 'Tak terbatas' : value.toLocaleString('id-ID');
+    return value === 0
+        ? translate('Tak terbatas')
+        : value.toLocaleString(localeTag());
 }
 function planTerm(plan: Pick<Plan, 'is_trial' | 'duration_months'>) {
-    return plan.is_trial ? '30 hari' : `${plan.duration_months} bulan`;
+    return plan.is_trial
+        ? translate('30 hari')
+        : translate(`${plan.duration_months} bulan`);
 }

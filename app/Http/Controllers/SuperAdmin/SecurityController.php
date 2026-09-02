@@ -60,7 +60,7 @@ class SecurityController extends Controller
             );
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Profil akun berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Account profile updated successfully.')]);
 
         return back();
     }
@@ -76,7 +76,7 @@ class SecurityController extends Controller
             $audit->handle($admin, 'admin.password_updated', $admin, $request->ip());
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Kata sandi berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 
         return back();
     }
@@ -101,7 +101,7 @@ class SecurityController extends Controller
             $audit->handle($admin, 'admin.2fa_enabled', $admin, $request->ip());
         });
         $request->session()->flash('platform_admin_recovery_codes', $admin->recoveryCodes());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Autentikasi dua langkah berhasil diaktifkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Two-factor authentication enabled successfully.')]);
 
         return back();
     }

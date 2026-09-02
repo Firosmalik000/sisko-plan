@@ -91,7 +91,7 @@ class SalesController extends Controller
             $items[] = ['sale_item_id' => $saleItemId, 'quantity' => $item['quantity']];
         }
         $action->handle($currentStore->get(), $this->actor($request), $sale->id, $accountId, $items, $data['occurred_at'], $data['notes'] ?? null, $data['idempotency_key'], $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Retur dan refund berhasil diposting.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Return and refund posted successfully.')]);
 
         return back();
     }

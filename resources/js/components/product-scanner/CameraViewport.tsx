@@ -66,7 +66,7 @@ export function CameraViewport({
     const photoProcessing = photoStatus === 'reading';
 
     return (
-        <div className="relative flex h-svh w-full flex-col overflow-hidden bg-[#102a25] text-white">
+        <div className="relative flex h-svh w-full flex-col overflow-hidden bg-[var(--app-ink)] text-white">
             <video
                 ref={videoRef}
                 muted
@@ -80,18 +80,18 @@ export function CameraViewport({
                 <button
                     type="button"
                     onClick={onClose}
-                    className="grid size-11 place-items-center rounded-full bg-[#102a25]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                    className="grid size-11 place-items-center rounded-full bg-[var(--app-ink)]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                     aria-label="Tutup kamera"
                 >
                     <X className="size-5" />
                 </button>
-                <div className="rounded-xl bg-[#102a25]/75 px-3 py-2 text-center backdrop-blur-sm">
+                <div className="rounded-xl bg-[var(--app-ink)]/75 px-3 py-2 text-center backdrop-blur-sm">
                     <p className="text-sm font-black">
                         {scanMode === 'photo'
                             ? 'Arahkan, tahan stabil'
                             : 'Arahkan ke barcode'}
                     </p>
-                    <p className="text-[11px] text-[#d5e4df]">
+                    <p className="text-[11px] text-[var(--app-soft-strong)]">
                         {scanMode === 'photo'
                             ? 'Foto otomatis setelah stabil 1,5 detik'
                             : 'Hasil terbaca langsung diperiksa'}
@@ -101,7 +101,7 @@ export function CameraViewport({
                     type="button"
                     onClick={onToggleTorch}
                     disabled={!torchAvailable}
-                    className="grid size-11 place-items-center rounded-full bg-[#102a25]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
+                    className="grid size-11 place-items-center rounded-full bg-[var(--app-ink)]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
                     aria-label={torchOn ? 'Matikan lampu' : 'Nyalakan lampu'}
                 >
                     {torchOn ? (
@@ -115,7 +115,7 @@ export function CameraViewport({
             <div className="relative z-10 flex flex-1 items-center justify-center px-7 py-4">
                 {error ? (
                     <div
-                        className="max-w-sm rounded-2xl bg-white p-5 text-center text-[#173c35] shadow-xl"
+                        className="max-w-sm rounded-2xl bg-white p-5 text-center text-[var(--app-ink)] shadow-xl"
                         role="status"
                         aria-live="polite"
                     >
@@ -123,13 +123,13 @@ export function CameraViewport({
                         <p className="mt-3 text-base font-black">
                             Kamera belum tersedia
                         </p>
-                        <p className="mt-1 text-sm leading-6 text-[#58736a]">
+                        <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">
                             {error}
                         </p>
                         <button
                             type="button"
                             onClick={onRetry}
-                            className="mt-4 min-h-11 w-full rounded-xl border border-[#bfd1cb] bg-white px-4 text-sm font-black text-[#173c35] focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
+                            className="mt-4 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm font-black text-[var(--app-ink)] focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
                         >
                             Coba lagi
                         </button>
@@ -137,7 +137,7 @@ export function CameraViewport({
                             <button
                                 type="button"
                                 onClick={onManualSearch}
-                                className="mt-2 min-h-11 w-full rounded-xl bg-[#173c35] px-4 text-sm font-black text-white focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
+                                className="mt-2 min-h-11 w-full rounded-xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
                             >
                                 {manualActionLabel ?? 'Cari manual'}
                             </button>
@@ -162,11 +162,11 @@ export function CameraViewport({
             <div className="relative z-10">
                 <CaptureTray captures={captures} onRemove={onRemove} />
                 {captures.length > 0 && (
-                    <p className="mb-2 text-center text-xs font-black text-[#d5e4df]">
+                    <p className="mb-2 text-center text-xs font-black text-[var(--app-soft-strong)]">
                         {captures.length} hasil tersimpan di sesi ini
                     </p>
                 )}
-                <div className="mx-auto mb-3 flex w-fit rounded-full bg-[#102a25]/80 p-1 backdrop-blur-sm">
+                <div className="mx-auto mb-3 flex w-fit rounded-full bg-[var(--app-ink)]/80 p-1 backdrop-blur-sm">
                     <button
                         type="button"
                         onClick={() => {
@@ -174,7 +174,7 @@ export function CameraViewport({
                                 onToggleScanMode();
                             }
                         }}
-                        className={`min-h-9 rounded-full px-4 text-xs font-black transition ${scanMode === 'photo' ? 'bg-white text-[#173c35]' : 'text-white/70'}`}
+                        className={`min-h-9 rounded-full px-4 text-xs font-black transition ${scanMode === 'photo' ? 'bg-white text-[var(--app-ink)]' : 'text-white/70'}`}
                         aria-pressed={scanMode === 'photo'}
                     >
                         Scan Foto
@@ -186,7 +186,7 @@ export function CameraViewport({
                                 onToggleScanMode();
                             }
                         }}
-                        className={`min-h-9 rounded-full px-4 text-xs font-black transition ${scanMode === 'barcode' ? 'bg-white text-[#173c35]' : 'text-white/70'}`}
+                        className={`min-h-9 rounded-full px-4 text-xs font-black transition ${scanMode === 'barcode' ? 'bg-white text-[var(--app-ink)]' : 'text-white/70'}`}
                         aria-pressed={scanMode === 'barcode'}
                     >
                         Barcode
@@ -204,7 +204,7 @@ export function CameraViewport({
                     <p
                         role={photoStatus === 'failed' ? 'alert' : 'status'}
                         aria-live="polite"
-                        className={`mx-5 mb-3 rounded-xl px-3 py-2 text-center text-xs font-black ${photoStatus === 'success' ? 'bg-[#d6f4df] text-[#17633d]' : photoStatus === 'not_found' ? 'bg-[#fff0d9] text-[#87531a]' : photoStatus === 'failed' ? 'bg-red-950/75 text-red-100' : 'bg-white/15 text-[#e5f1ed]'}`}
+                        className={`mx-5 mb-3 rounded-xl px-3 py-2 text-center text-xs font-black ${photoStatus === 'success' ? 'bg-[#d6f4df] text-[var(--app-primary)]' : photoStatus === 'not_found' ? 'bg-[#fff0d9] text-[#87531a]' : photoStatus === 'failed' ? 'bg-red-950/75 text-red-100' : 'bg-white/15 text-[var(--app-soft-strong)]'}`}
                     >
                         {photoStatus === 'reading'
                             ? 'Foto diambil. Sedang mengenali produk…'
@@ -220,7 +220,7 @@ export function CameraViewport({
                     <p
                         role="status"
                         aria-live="polite"
-                        className={`mx-5 mb-3 rounded-xl px-3 py-2 text-center text-xs font-black ${barcodeStatus === 'success' ? 'bg-[#d6f4df] text-[#17633d]' : barcodeStatus === 'not_found' ? 'bg-[#fff0d9] text-[#87531a]' : 'bg-white/15 text-[#e5f1ed]'}`}
+                        className={`mx-5 mb-3 rounded-xl px-3 py-2 text-center text-xs font-black ${barcodeStatus === 'success' ? 'bg-[#d6f4df] text-[var(--app-primary)]' : barcodeStatus === 'not_found' ? 'bg-[#fff0d9] text-[#87531a]' : 'bg-white/15 text-[var(--app-soft-strong)]'}`}
                     >
                         {barcodeStatus === 'idle'
                             ? 'Mode barcode aktif. Arahkan kode ke kamera.'
@@ -256,7 +256,7 @@ export function CameraViewport({
                         type="button"
                         onClick={onFinish}
                         disabled={captures.length === 0 || photoProcessing}
-                        className="min-h-12 min-w-24 rounded-2xl bg-white px-3 text-sm font-black text-[#173c35] disabled:opacity-40"
+                        className="min-h-12 min-w-24 rounded-2xl bg-white px-3 text-sm font-black text-[var(--app-ink)] disabled:opacity-40"
                     >
                         Tinjau hasil · {captures.length}
                     </button>
@@ -265,11 +265,11 @@ export function CameraViewport({
                     type="button"
                     onClick={onToggleAuto}
                     disabled={scanMode === 'barcode'}
-                    className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.4rem)] left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full bg-[#102a25]/75 px-3 text-[11px] font-bold text-[#e2eee9] backdrop-blur-sm"
+                    className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.4rem)] left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--app-ink)]/75 px-3 text-[11px] font-bold text-[var(--app-soft-strong)] backdrop-blur-sm"
                 >
                     {scanMode === 'barcode' ? (
                         <>
-                            <ScanLine className="size-3.5 text-[#82d4a7]" />
+                            <ScanLine className="size-3.5 text-[var(--workspace-400)]" />
                             Barcode otomatis
                         </>
                     ) : (

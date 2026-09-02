@@ -19,6 +19,7 @@ import {
 } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import { formatCompactMoney, localeTag } from '@/lib/currency';
 
 type Product = {
     public_id: string;
@@ -79,7 +80,7 @@ export default function InventoryPage({
 }) {
     const [search, setSearch] = useState('');
     const [stockStatus, setStockStatus] = useState('all');
-    const normalizedSearch = search.trim().toLocaleLowerCase('id-ID');
+    const normalizedSearch = search.trim().toLocaleLowerCase(localeTag());
     const groups = groupProducts(products);
     const visibleGroups = groups
         .map((group) => ({
@@ -94,7 +95,7 @@ export default function InventoryPage({
                         product.sku,
                     ].some((value) =>
                         value
-                            ?.toLocaleLowerCase('id-ID')
+                            ?.toLocaleLowerCase(localeTag())
                             .includes(normalizedSearch),
                     );
                 const matchesStatus =
@@ -121,7 +122,7 @@ export default function InventoryPage({
                 title="Persediaan"
                 description=""
             >
-                <section className="grid grid-cols-3 divide-x divide-[#173c35]/8 rounded-[1.25rem] border border-[#173c35]/8 bg-white px-1 py-3 shadow-sm sm:px-3">
+                <section className="grid grid-cols-3 divide-x divide-[var(--app-ink)]/8 rounded-[1.25rem] border border-[var(--app-ink)]/8 bg-white px-1 py-3 shadow-sm sm:px-3">
                     <InventoryMetric
                         icon={Boxes}
                         label="Item stok"
@@ -173,7 +174,7 @@ export default function InventoryPage({
                     <div className="overflow-hidden rounded-xl border border-stone-200">
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[880px] text-left text-sm">
-                                <thead className="bg-[#f1f5f2] text-[10px] font-black tracking-[0.1em] text-[#64776f] uppercase">
+                                <thead className="bg-[#fff3ef] text-[10px] font-black tracking-[0.1em] text-[var(--muted-foreground)] uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Produk</th>
                                         <th className="px-3 py-3">SKU</th>
@@ -200,19 +201,19 @@ export default function InventoryPage({
                                         className="divide-y divide-stone-100"
                                     >
                                         {group.grouped && (
-                                            <tr className="border-t border-[#d9e5de] bg-[#f8faf8] first:border-t-0">
+                                            <tr className="border-t border-[var(--app-soft-strong)] bg-[#fffaf7] first:border-t-0">
                                                 <td
                                                     colSpan={7}
                                                     className="px-4 py-2.5"
                                                 >
                                                     <div className="flex items-center gap-2">
-                                                        <span className="flex size-7 items-center justify-center rounded-lg bg-[#e2eee8] text-[#286451]">
+                                                        <span className="flex size-7 items-center justify-center rounded-lg bg-[var(--app-soft-strong)] text-[var(--app-primary)]">
                                                             <Layers3 className="size-3.5" />
                                                         </span>
-                                                        <span className="font-black text-[#173c35]">
+                                                        <span className="font-black text-[var(--app-ink)]">
                                                             {group.name}
                                                         </span>
-                                                        <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-[#657a72] ring-1 ring-[#173c35]/8">
+                                                        <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold text-[var(--muted-foreground)] ring-1 ring-[var(--app-ink)]/8">
                                                             {
                                                                 group.products
                                                                     .length
@@ -229,7 +230,7 @@ export default function InventoryPage({
                                             return (
                                                 <tr
                                                     key={product.public_id}
-                                                    className="bg-white transition hover:bg-[#fbfdfb]"
+                                                    className="bg-white transition hover:bg-[#fffdfc]"
                                                 >
                                                     <td className="px-4 py-3">
                                                         <div
@@ -240,7 +241,7 @@ export default function InventoryPage({
                                                             }
                                                         >
                                                             {group.grouped && (
-                                                                <span className="h-px w-3 bg-[#aac0b5]" />
+                                                                <span className="h-px w-3 bg-[var(--app-soft-strong)]" />
                                                             )}
                                                             <span className="font-bold text-stone-900">
                                                                 {product.variant_name ??
@@ -251,7 +252,7 @@ export default function InventoryPage({
                                                     <td className="px-3 py-3 font-mono text-xs text-stone-500">
                                                         {product.sku || '-'}
                                                     </td>
-                                                    <td className="px-3 py-3 text-right font-black text-[#205f4e] tabular-nums">
+                                                    <td className="px-3 py-3 text-right font-black text-[var(--app-primary)] tabular-nums">
                                                         {quantity(
                                                             product.quantity,
                                                         )}{' '}
@@ -299,7 +300,7 @@ export default function InventoryPage({
                     <div className="overflow-hidden rounded-xl border border-stone-200">
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[820px] text-left text-sm">
-                                <thead className="bg-[#f1f5f2] text-[10px] font-black tracking-[0.1em] text-[#64776f] uppercase">
+                                <thead className="bg-[#fff3ef] text-[10px] font-black tracking-[0.1em] text-[var(--muted-foreground)] uppercase">
                                     <tr>
                                         <th className="px-4 py-3">Produk</th>
                                         <th className="px-3 py-3">Aktivitas</th>
@@ -326,7 +327,7 @@ export default function InventoryPage({
                                         return (
                                             <tr
                                                 key={movement.public_id}
-                                                className="bg-white hover:bg-[#fbfdfb]"
+                                                className="bg-white hover:bg-[#fffdfc]"
                                             >
                                                 <td className="px-4 py-3 font-bold text-stone-900">
                                                     {movement.product_name}
@@ -345,7 +346,7 @@ export default function InventoryPage({
                                                 </td>
                                                 <td className="px-3 py-3 text-right">
                                                     <span
-                                                        className={`inline-flex items-center gap-1 font-black tabular-nums ${positive ? 'text-[#27705b]' : 'text-[#aa5638]'}`}
+                                                        className={`inline-flex items-center gap-1 font-black tabular-nums ${positive ? 'text-[var(--app-primary)]' : 'text-[#aa5638]'}`}
                                                     >
                                                         {positive ? (
                                                             <ArrowUpRight className="size-3.5" />
@@ -409,16 +410,16 @@ function InventoryMetric({
     return (
         <div className="min-w-0 px-2 sm:flex sm:items-center sm:gap-3 sm:px-4">
             <span
-                className={`hidden size-9 shrink-0 items-center justify-center rounded-xl sm:flex ${danger ? 'bg-[#f8e8df] text-[#aa5638]' : 'bg-[#e7f1ec] text-[#286451]'}`}
+                className={`hidden size-9 shrink-0 items-center justify-center rounded-xl sm:flex ${danger ? 'bg-[#f8e8df] text-[#aa5638]' : 'bg-[var(--app-soft)] text-[var(--app-primary)]'}`}
             >
                 <Icon className="size-4" />
             </span>
             <div className="min-w-0 text-center sm:text-left">
-                <p className="truncate text-[9px] font-bold tracking-wide text-[#72837d] uppercase sm:text-[10px]">
+                <p className="truncate text-[9px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">
                     {label}
                 </p>
                 <p
-                    className={`mt-1 truncate text-sm font-black tabular-nums sm:text-lg ${danger ? 'text-[#9c4f34]' : 'text-[#173c35]'}`}
+                    className={`mt-1 truncate text-sm font-black tabular-nums sm:text-lg ${danger ? 'text-[#9c4f34]' : 'text-[var(--app-ink)]'}`}
                 >
                     {value}
                 </p>
@@ -430,7 +431,7 @@ function InventoryMetric({
 function StockBadge({ low }: { low: boolean }) {
     return (
         <span
-            className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-black ${low ? 'bg-[#f8e8df] text-[#9c4f34]' : 'bg-[#e7f1ec] text-[#286451]'}`}
+            className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-black ${low ? 'bg-[#f8e8df] text-[#9c4f34]' : 'bg-[var(--app-soft)] text-[var(--app-primary)]'}`}
         >
             {low ? 'Kritis' : 'Aman'}
         </span>
@@ -464,10 +465,5 @@ function isLowStock(product: Product) {
 }
 
 function compactMoney(value: string | number) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        notation: 'compact',
-        maximumFractionDigits: 1,
-    }).format(Number(value));
+    return formatCompactMoney(value);
 }

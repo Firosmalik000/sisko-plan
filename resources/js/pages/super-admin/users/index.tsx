@@ -54,7 +54,7 @@ export default function AdminUsers({
             <div className="platform-enter flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
                     <p className="platform-kicker">Identity management</p>
-                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#0b292f]">
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">
                         Pengguna platform
                     </h1>
                     <p className="mt-1 text-xs font-medium text-slate-500">

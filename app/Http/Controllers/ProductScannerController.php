@@ -94,7 +94,7 @@ class ProductScannerController extends Controller
         return response()->json([
             'status' => 'error',
             'code' => 'SCANNER_NOT_CONNECTED',
-            'message' => 'Layanan scanner belum terhubung. Hubungi administrator.',
+            'message' => __('Scanner service is not connected. Contact the administrator.'),
             'request_id' => $this->requestId($request),
         ], 503);
     }
@@ -103,11 +103,11 @@ class ProductScannerController extends Controller
     {
         $upstreamStatus = $exception instanceof RequestException ? $exception->response->status() : null;
         if ($upstreamStatus === 429) {
-            [$status, $code, $message] = [429, 'SCANNER_BUSY', 'Scanner sedang sibuk. Coba lagi sebentar.'];
+            [$status, $code, $message] = [429, 'SCANNER_BUSY', __('Scanner is busy. Try again shortly.')];
         } elseif (in_array($upstreamStatus, [401, 403], true)) {
-            [$status, $code, $message] = [503, 'SCANNER_NOT_CONNECTED', 'Layanan scanner belum terhubung. Hubungi administrator.'];
+            [$status, $code, $message] = [503, 'SCANNER_NOT_CONNECTED', __('Scanner service is not connected. Contact the administrator.')];
         } else {
-            [$status, $code, $message] = [503, 'SCANNER_UNAVAILABLE', 'Pengenalan sedang terganggu. Coba lagi atau cari manual.'];
+            [$status, $code, $message] = [503, 'SCANNER_UNAVAILABLE', __('Recognition is unavailable. Try again or search manually.')];
         }
 
         return response()->json([

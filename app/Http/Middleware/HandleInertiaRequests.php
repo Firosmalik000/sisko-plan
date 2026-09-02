@@ -4,7 +4,9 @@ namespace App\Http\Middleware;
 
 use App\Enums\MembershipStatus;
 use App\Enums\StoreStatus;
+use App\Models\PlatformSetting;
 use App\Models\Store;
+use App\Services\Notifications\StockAlertNotifications;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use App\Support\Authentication\AuthenticatedUser;
@@ -48,6 +50,8 @@ class HandleInertiaRequests extends Middleware
         $activeStore = null;
         $subscription = null;
         $storeCreation = null;
+        $stockAlerts = ['count' => 0, 'unread_count' => 0, 'items' => []];
+        $branding = PlatformSetting::current()->publicPayload();
 
         if ($user !== null) {
             $storeModels = $user->stores()
@@ -67,10 +71,11 @@ class HandleInertiaRequests extends Middleware
                 'public_id' => $activeStoreModel->public_id,
                 'name' => $activeStoreModel->name,
                 'role' => $activeStoreModel->pivot->role,
-                'theme_color' => $activeStoreModel->settings()->value('theme_color') ?? '#1f6653',
+                'theme_color' => $activeStoreModel->settings()->value('theme_color') ?? '#ee4d2d',
             ];
             if ($activeStoreModel !== null) {
                 $subscription = app(SubscriptionAccess::class)->summary($activeStoreModel);
+                $stockAlerts = app(StockAlertNotifications::class)->summary($user, $activeStoreModel);
             }
             if (! $user->isPlatformAdmin()) {
                 $storeCreation = app(SubscriptionAccess::class)->storeCreationState($user);
@@ -79,7 +84,13 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => $branding['brand_name'],
+            'branding' => $branding,
+            'locale' => app()->getLocale(),
+            'locales' => [
+                ['code' => 'id', 'label' => 'Bahasa Indonesia'],
+                ['code' => 'ms', 'label' => 'Bahasa Melayu'],
+            ],
             'auth' => [
                 'user' => $user,
             ],
@@ -102,6 +113,7 @@ class HandleInertiaRequests extends Middleware
                     && filled(config('services.catalog_intelligence.token')),
             ],
             'storeCreation' => $storeCreation,
+            'stockAlerts' => $stockAlerts,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

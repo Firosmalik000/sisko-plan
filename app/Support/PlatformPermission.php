@@ -36,6 +36,10 @@ final class PlatformPermission
 
     public const ADMINS_MANAGE = 'platform.admins.manage';
 
+    public const BRANDING_VIEW = 'platform.branding.view';
+
+    public const BRANDING_MANAGE = 'platform.branding.manage';
+
     /** @return list<string> */
     public static function all(): array
     {
@@ -59,6 +63,8 @@ final class PlatformPermission
             self::SUBSCRIPTIONS_MANAGE,
             self::PAYMENTS_CREATE,
             self::PAYMENTS_VIEW,
+            self::BRANDING_VIEW,
+            self::BRANDING_MANAGE,
         ];
     }
 
@@ -93,6 +99,10 @@ final class PlatformPermission
                 ['name' => self::ADMINS_VIEW, 'label' => 'Lihat admin platform'],
                 ['name' => self::ADMINS_MANAGE, 'label' => 'Kelola admin dan akses'],
             ]],
+            ['label' => 'Brand & SEO', 'permissions' => [
+                ['name' => self::BRANDING_VIEW, 'label' => 'Lihat pengaturan brand & SEO'],
+                ['name' => self::BRANDING_MANAGE, 'label' => 'Kelola brand & SEO'],
+            ]],
         ];
     }
 
@@ -105,6 +115,7 @@ final class PlatformPermission
             self::SUBSCRIPTIONS_VIEW => 'super-admin.subscriptions.index',
             self::PAYMENTS_VIEW => 'super-admin.payments.index',
             self::ADMINS_VIEW => 'super-admin.platform-admins.index',
+            self::BRANDING_VIEW => 'super-admin.brand-seo.index',
         ] as $permission => $route) {
             if ($user->can($permission)) {
                 return $route;

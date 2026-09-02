@@ -62,7 +62,7 @@ class PlatformAdminController extends Controller
             $audit->handle($actor, 'platform_admin.created', $admin, $request->ip(), ['email' => $admin->email]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Admin platform berhasil ditambahkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Platform admin added successfully.')]);
 
         return back();
     }
@@ -71,7 +71,7 @@ class PlatformAdminController extends Controller
     {
         abort_unless($platformAdmin->isPlatformAdmin(), 404);
         if ($platformAdmin->platform_role === PlatformAdminRole::SuperAdmin) {
-            throw ValidationException::withMessages(['permissions' => 'Super Admin selalu memiliki akses penuh.']);
+            throw ValidationException::withMessages(['permissions' => __('Super Admin always has full access.')]);
         }
 
         $request->validate([
@@ -90,7 +90,7 @@ class PlatformAdminController extends Controller
             ]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Akses admin berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Admin access updated successfully.')]);
 
         return back();
     }
@@ -123,12 +123,12 @@ class PlatformAdminController extends Controller
         $activate = (bool) $validated['is_active'];
 
         if (! $activate && $actor->is($platformAdmin)) {
-            throw ValidationException::withMessages(['is_active' => 'Anda tidak dapat menonaktifkan akun sendiri.']);
+            throw ValidationException::withMessages(['is_active' => __('You cannot deactivate your own account.')]);
         }
         abort_unless($platformAdmin->isPlatformAdmin(), 404);
         if (! $activate && $platformAdmin->platform_role === PlatformAdminRole::SuperAdmin
             && User::query()->where('platform_role', PlatformAdminRole::SuperAdmin)->where('status', UserStatus::Active)->count() <= 1) {
-            throw ValidationException::withMessages(['is_active' => 'Minimal satu Super Admin harus tetap aktif.']);
+            throw ValidationException::withMessages(['is_active' => __('At least one Super Admin must remain active.')]);
         }
 
         DB::transaction(function () use ($platformAdmin, $activate, $actor, $audit, $request): void {
@@ -136,7 +136,7 @@ class PlatformAdminController extends Controller
             $audit->handle($actor, 'platform_admin.status_updated', $platformAdmin, $request->ip(), ['is_active' => $activate]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => $activate ? 'Admin platform diaktifkan.' : 'Admin platform dinonaktifkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $activate ? __('Platform admin activated.') : __('Platform admin deactivated.')]);
 
         return back();
     }

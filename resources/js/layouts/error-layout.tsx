@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import LanguageSwitcher from '@/components/language-switcher';
 
 export default function ErrorLayout({
     children,
@@ -11,7 +12,7 @@ export default function ErrorLayout({
     return (
         <div className="min-h-screen bg-[#f7f6ef] text-[#0b292f]">
             <header className="border-b border-[#0b292f]/10">
-                <div className="mx-auto flex min-h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
                     <Link
                         href="/"
                         className="inline-flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#d7a941] focus-visible:ring-offset-4"
@@ -24,6 +25,7 @@ export default function ErrorLayout({
                             {appName}
                         </span>
                     </Link>
+                    <LanguageSwitcher />
                 </div>
             </header>
             <main>{children}</main>

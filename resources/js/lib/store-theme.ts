@@ -22,16 +22,54 @@ function mix(hex: string, target: string, amount: number) {
     return `#${channel(from.r, to.r)}${channel(from.g, to.g)}${channel(from.b, to.b)}`;
 }
 
-export function storeThemeVariables(color = '#1f6653'): CSSProperties {
-    const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#1f6653';
+function contrastColor(hex: string) {
+    const { r, g, b } = hexToRgb(hex);
+    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+    return luminance > 0.64 ? '#2d2928' : '#ffffff';
+}
+
+export function storeThemeVariables(color = '#ee4d2d'): CSSProperties {
+    const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#ee4d2d';
+    const foreground = '#2d2928';
+    const surface = '#fffaf7';
+    const soft = mix(safeColor, '#ffffff', 0.9);
+    const softStrong = mix(safeColor, '#ffffff', 0.8);
+    const border = mix(safeColor, '#ffffff', 0.76);
+    const primaryForeground = contrastColor(safeColor);
 
     return {
         '--app-primary': safeColor,
-        '--app-ink': mix(safeColor, '#071b17', 0.52),
-        '--app-soft': mix(safeColor, '#ffffff', 0.87),
-        '--app-soft-strong': mix(safeColor, '#ffffff', 0.76),
+        '--app-primary-foreground': primaryForeground,
+        '--app-shadow': `${safeColor}38`,
+        '--app-ink': foreground,
+        '--app-soft': soft,
+        '--app-soft-strong': softStrong,
+        '--background': surface,
+        '--foreground': foreground,
+        '--card': '#ffffff',
+        '--card-foreground': foreground,
+        '--popover': '#ffffff',
+        '--popover-foreground': foreground,
         '--primary': safeColor,
-        '--ring': mix(safeColor, '#ffffff', 0.35),
+        '--primary-foreground': primaryForeground,
+        '--secondary': soft,
+        '--secondary-foreground': foreground,
+        '--muted': '#f8ede9',
+        '--muted-foreground': '#756d6a',
+        '--accent': softStrong,
+        '--accent-foreground': foreground,
+        '--border': border,
+        '--input': mix(safeColor, '#ffffff', 0.68),
+        '--ring': safeColor,
+        '--sidebar': surface,
+        '--sidebar-foreground': foreground,
+        '--sidebar-primary': safeColor,
+        '--sidebar-primary-foreground': primaryForeground,
+        '--sidebar-accent': soft,
+        '--sidebar-accent-foreground': foreground,
+        '--sidebar-border': border,
+        '--sidebar-ring': safeColor,
         '--workspace-50': mix(safeColor, '#ffffff', 0.94),
         '--workspace-100': mix(safeColor, '#ffffff', 0.88),
         '--workspace-200': mix(safeColor, '#ffffff', 0.74),

@@ -1,17 +1,10 @@
 import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import { formatMoney, formatQuantity, localeTag } from '@/lib/currency';
 
-export const money = (value: string | number) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0,
-    }).format(Number(value));
+export const money = formatMoney;
 
-export const quantity = (value: string | number) =>
-    new Intl.NumberFormat('id-ID', { maximumFractionDigits: 6 }).format(
-        Number(value),
-    );
+export const quantity = formatQuantity;
 
 export const currentDateTime = (timezone: string) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -34,7 +27,7 @@ export const currentDateTime = (timezone: string) => {
 };
 
 export const ledgerDateTime = (value: string, timezone: string) =>
-    new Intl.DateTimeFormat('id-ID', {
+    new Intl.DateTimeFormat(localeTag(), {
         timeZone: timezone,
         dateStyle: 'medium',
         timeStyle: 'short',
@@ -67,11 +60,11 @@ export function OperationsShell({
     children: ReactNode;
 }) {
     return (
-        <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 sm:py-5 lg:px-8">
+        <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 sm:py-5 lg:px-8">
             <div className="mx-auto max-w-7xl space-y-4">
-                <header className="rounded-[1.35rem] border border-[#173c35]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
+                <header className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                             {title}
                         </h1>
                         <nav className="flex max-w-full gap-1.5 overflow-x-auto pb-0.5">
@@ -81,8 +74,8 @@ export function OperationsShell({
                                     href={tab.href}
                                     className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition ${
                                         active === tab.href
-                                            ? 'bg-[#173f35] text-white'
-                                            : 'bg-[#eef3ef] text-[#5f746d] hover:bg-[#e3ece7]'
+                                            ? 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)]'
+                                            : 'bg-[var(--app-soft)] text-[var(--muted-foreground)] hover:bg-[var(--app-soft-strong)]'
                                     }`}
                                 >
                                     {tab.label}

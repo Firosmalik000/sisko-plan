@@ -10,6 +10,7 @@ import {
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { fieldClass, money, quantity } from '@/components/operations-shell';
+import { formatCompactMoney, localeTag } from '@/lib/currency';
 
 type Performance = {
     net_revenue: string;
@@ -40,16 +41,10 @@ type Product = {
     gross_profit: string;
 };
 
-const compactMoney = (value: string | number) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        notation: 'compact',
-        maximumFractionDigits: 1,
-    }).format(Number(value));
+const compactMoney = formatCompactMoney;
 
 const dateLabel = (date: string, includeYear = false) =>
-    new Intl.DateTimeFormat('id-ID', {
+    new Intl.DateTimeFormat(localeTag(), {
         day: 'numeric',
         month: 'short',
         year: includeYear ? 'numeric' : undefined,
@@ -85,15 +80,15 @@ export default function ReportsPage({
     return (
         <>
             <Head title="Laporan Usaha" />
-            <main className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 text-[#173c35] sm:px-5 sm:py-5 lg:px-8">
+            <main className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 text-[var(--app-ink)] sm:px-5 sm:py-5 lg:px-8">
                 <div className="mx-auto max-w-7xl space-y-4">
-                    <header className="rounded-[1.35rem] border border-[#173c35]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
+                    <header className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                             <div className="min-w-0">
                                 <h1 className="text-2xl font-black tracking-[-0.04em]">
                                     Laporan Usaha
                                 </h1>
-                                <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[#6a7f77]">
+                                <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--muted-foreground)]">
                                     <CalendarDays className="size-3.5" />
                                     <span>{selectedPeriod}</span>
                                 </div>
@@ -102,7 +97,7 @@ export default function ReportsPage({
                                 onSubmit={submit}
                                 className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
                             >
-                                <label className="space-y-1 text-xs font-bold text-[#5f746d]">
+                                <label className="space-y-1 text-xs font-bold text-[var(--muted-foreground)]">
                                     Mulai
                                     <input
                                         type="date"
@@ -113,7 +108,7 @@ export default function ReportsPage({
                                         }
                                     />
                                 </label>
-                                <label className="space-y-1 text-xs font-bold text-[#5f746d]">
+                                <label className="space-y-1 text-xs font-bold text-[var(--muted-foreground)]">
                                     Sampai
                                     <input
                                         type="date"
@@ -124,7 +119,7 @@ export default function ReportsPage({
                                         }
                                     />
                                 </label>
-                                <button className="h-10 self-end rounded-xl bg-[#173f35] px-4 text-sm font-bold text-white transition hover:bg-[#245c4f]">
+                                <button className="h-10 self-end rounded-xl bg-[var(--app-primary)] px-4 text-sm font-bold text-[var(--app-primary-foreground)] transition hover:bg-[var(--app-primary)]">
                                     Tampilkan
                                 </button>
                             </form>
@@ -203,10 +198,10 @@ function SummaryCard({
 
     return (
         <article
-            className={`min-w-0 rounded-[1.15rem] border p-3 shadow-sm sm:p-4 ${featured ? 'col-span-2 border-[#173f35] bg-[#173f35] text-white lg:col-span-1' : 'border-[#173c35]/8 bg-white'}`}
+            className={`min-w-0 rounded-[1.15rem] border p-3 shadow-sm sm:p-4 ${featured ? 'col-span-2 border-[var(--app-ink)] bg-[var(--app-primary)] text-[var(--app-primary-foreground)] lg:col-span-1' : 'border-[var(--app-ink)]/8 bg-white'}`}
         >
             <p
-                className={`truncate text-[10px] font-black tracking-wide uppercase ${featured ? 'text-[#b9d4c8]' : 'text-[#71827c]'}`}
+                className={`truncate text-[10px] font-black tracking-wide uppercase ${featured ? 'text-[var(--app-soft-strong)]' : 'text-[var(--muted-foreground)]'}`}
                 title={label}
             >
                 {label}
@@ -231,16 +226,16 @@ function PositionCard({
     value: string;
 }) {
     return (
-        <article className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[#173c35]/8 bg-white p-3 shadow-sm">
-            <div className="shrink-0 rounded-lg bg-[#e8f1ec] p-2 text-[#286653]">
+        <article className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[var(--app-ink)]/8 bg-white p-3 shadow-sm">
+            <div className="shrink-0 rounded-lg bg-[var(--app-soft)] p-2 text-[var(--app-primary)]">
                 <Icon className="size-4" />
             </div>
             <div className="min-w-0">
-                <p className="truncate text-[10px] font-bold text-[#71827c] sm:text-xs">
+                <p className="truncate text-[10px] font-bold text-[var(--muted-foreground)] sm:text-xs">
                     {label}
                 </p>
                 <p
-                    className="truncate text-xs font-black text-[#203f37] sm:text-sm"
+                    className="truncate text-xs font-black text-[var(--app-ink)] sm:text-sm"
                     title={value}
                 >
                     {value}
@@ -281,22 +276,22 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
             .join(' ');
 
     return (
-        <article className="overflow-hidden rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+        <article className="overflow-hidden rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <p className="text-[10px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                    <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                         Tren Kinerja
                     </p>
                     <h2 className="mt-1 text-lg font-black tracking-[-0.03em] sm:text-xl">
                         Penjualan dan estimasi laba
                     </h2>
-                    <p className="mt-0.5 text-[11px] font-semibold text-[#7b8c86]">
+                    <p className="mt-0.5 text-[11px] font-semibold text-[var(--muted-foreground)]">
                         {period}
                     </p>
                 </div>
-                <div className="flex items-center gap-4 text-[10px] font-bold text-[#61746d] sm:text-xs">
+                <div className="flex items-center gap-4 text-[10px] font-bold text-[var(--muted-foreground)] sm:text-xs">
                     <span className="inline-flex items-center gap-1.5">
-                        <span className="size-2 rounded-full bg-[#2c705c]" />
+                        <span className="size-2 rounded-full bg-[var(--app-primary)]" />
                         Penjualan
                     </span>
                     <span className="inline-flex items-center gap-1.5">
@@ -323,7 +318,7 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                                     x2={chartWidth}
                                     y1={lineY}
                                     y2={lineY}
-                                    stroke="#dfe9e3"
+                                    stroke="var(--app-soft-strong)"
                                     strokeDasharray="5 8"
                                 />
                             ))}
@@ -333,14 +328,14 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                                     x2={chartWidth}
                                     y1={y(0)}
                                     y2={y(0)}
-                                    stroke="#a7b8b0"
+                                    stroke="var(--muted-foreground)"
                                     strokeWidth="1.5"
                                 />
                             )}
                             <path
                                 d={path(revenuePoints)}
                                 fill="none"
-                                stroke="#2c705c"
+                                stroke="var(--app-primary)"
                                 strokeWidth="4"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -363,7 +358,7 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                                         cy={point.y}
                                         r="3.5"
                                         fill="#fff"
-                                        stroke="#2c705c"
+                                        stroke="var(--app-primary)"
                                         strokeWidth="2.5"
                                         vectorEffect="non-scaling-stroke"
                                     >
@@ -372,7 +367,7 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                                 ))}
                         </svg>
                     </div>
-                    <div className="mt-[-0.5rem] flex justify-between text-[10px] font-bold text-[#809089] sm:text-[11px]">
+                    <div className="mt-[-0.5rem] flex justify-between text-[10px] font-bold text-[var(--muted-foreground)] sm:text-[11px]">
                         <span>{data[0] ? dateLabel(data[0].date) : '-'}</span>
                         <span>
                             {data.length
@@ -387,9 +382,9 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                     </div>
                 </>
             ) : (
-                <div className="mt-4 flex min-h-40 flex-col items-center justify-center rounded-xl bg-[#f5f7f4] px-4 text-center">
-                    <LineChart className="size-6 text-[#7d9189]" />
-                    <p className="mt-2 text-sm font-bold text-[#50675f]">
+                <div className="mt-4 flex min-h-40 flex-col items-center justify-center rounded-xl bg-[#fff3ef] px-4 text-center">
+                    <LineChart className="size-6 text-[var(--muted-foreground)]" />
+                    <p className="mt-2 text-sm font-bold text-[var(--muted-foreground)]">
                         Belum ada transaksi pada periode ini
                     </p>
                 </div>
@@ -400,31 +395,31 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
 
 function ProductPerformance({ products }: { products: Product[] }) {
     return (
-        <article className="overflow-hidden rounded-[1.35rem] border border-[#173c35]/8 bg-white shadow-sm">
-            <div className="flex items-center justify-between gap-3 border-b border-[#173c35]/8 px-4 py-4 sm:px-5">
+        <article className="overflow-hidden rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--app-ink)]/8 px-4 py-4 sm:px-5">
                 <div>
-                    <p className="text-[10px] font-bold tracking-[0.16em] text-[#647b72] uppercase">
+                    <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
                         Performa Produk
                     </p>
                     <h2 className="mt-1 text-lg font-black tracking-[-0.03em] sm:text-xl">
                         Produk terlaris
                     </h2>
                 </div>
-                <span className="rounded-lg bg-[#eef3ef] px-2.5 py-1.5 text-[10px] font-black text-[#61746d]">
+                <span className="rounded-lg bg-[var(--app-soft)] px-2.5 py-1.5 text-[10px] font-black text-[var(--muted-foreground)]">
                     Maks. 20
                 </span>
             </div>
 
             {products.length > 0 ? (
                 <>
-                    <div className="divide-y divide-[#173c35]/6 md:hidden">
+                    <div className="divide-y divide-[var(--app-ink)]/6 md:hidden">
                         {products.map((item) => (
                             <div key={item.product_name} className="p-4">
                                 <div className="flex items-start justify-between gap-3">
-                                    <p className="min-w-0 truncate text-sm font-black text-[#203f37]">
+                                    <p className="min-w-0 truncate text-sm font-black text-[var(--app-ink)]">
                                         {item.product_name}
                                     </p>
-                                    <p className="shrink-0 text-sm font-black text-[#286653]">
+                                    <p className="shrink-0 text-sm font-black text-[var(--app-primary)]">
                                         {money(item.gross_profit)}
                                     </p>
                                 </div>
@@ -448,7 +443,7 @@ function ProductPerformance({ products }: { products: Product[] }) {
                     </div>
                     <div className="hidden overflow-x-auto md:block">
                         <table className="w-full min-w-[760px] text-left text-sm">
-                            <thead className="bg-[#f7f9f7] text-[10px] tracking-wide text-[#71827c] uppercase">
+                            <thead className="bg-[#fffaf7] text-[10px] tracking-wide text-[var(--muted-foreground)] uppercase">
                                 <tr>
                                     <th className="px-5 py-3">Produk</th>
                                     <th className="px-3 py-3 text-right">
@@ -468,13 +463,13 @@ function ProductPerformance({ products }: { products: Product[] }) {
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-[#173c35]/6">
+                            <tbody className="divide-y divide-[var(--app-ink)]/6">
                                 {products.map((item) => (
                                     <tr
                                         key={item.product_name}
-                                        className="hover:bg-[#fafcfb]"
+                                        className="hover:bg-[#fffdfc]"
                                     >
-                                        <td className="px-5 py-3 font-bold text-[#203f37]">
+                                        <td className="px-5 py-3 font-bold text-[var(--app-ink)]">
                                             {item.product_name}
                                         </td>
                                         <td className="px-3 py-3 text-right font-semibold">
@@ -486,10 +481,10 @@ function ProductPerformance({ products }: { products: Product[] }) {
                                         <td className="px-3 py-3 text-right">
                                             {money(item.net_revenue)}
                                         </td>
-                                        <td className="px-3 py-3 text-right text-[#6f7f79]">
+                                        <td className="px-3 py-3 text-right text-[var(--muted-foreground)]">
                                             {money(item.net_cogs)}
                                         </td>
-                                        <td className="px-5 py-3 text-right font-black text-[#286653]">
+                                        <td className="px-5 py-3 text-right font-black text-[var(--app-primary)]">
                                             {money(item.gross_profit)}
                                         </td>
                                     </tr>
@@ -500,8 +495,8 @@ function ProductPerformance({ products }: { products: Product[] }) {
                 </>
             ) : (
                 <div className="flex min-h-36 flex-col items-center justify-center px-4 text-center">
-                    <PackageSearch className="size-6 text-[#7d9189]" />
-                    <p className="mt-2 text-sm font-bold text-[#50675f]">
+                    <PackageSearch className="size-6 text-[var(--muted-foreground)]" />
+                    <p className="mt-2 text-sm font-bold text-[var(--muted-foreground)]">
                         Belum ada produk terjual pada periode ini
                     </p>
                 </div>
@@ -520,12 +515,12 @@ function ProductStat({
     danger?: boolean;
 }) {
     return (
-        <div className="min-w-0 rounded-lg bg-[#f5f7f4] px-2.5 py-2">
-            <p className="truncate text-[9px] font-bold tracking-wide text-[#71827c] uppercase">
+        <div className="min-w-0 rounded-lg bg-[#fff3ef] px-2.5 py-2">
+            <p className="truncate text-[9px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase">
                 {label}
             </p>
             <p
-                className={`mt-0.5 truncate font-black ${danger ? 'text-[#a5533b]' : 'text-[#29483f]'}`}
+                className={`mt-0.5 truncate font-black ${danger ? 'text-[#a5533b]' : 'text-[var(--app-ink)]'}`}
                 title={value}
             >
                 {value}

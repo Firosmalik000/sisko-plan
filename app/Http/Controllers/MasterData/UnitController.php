@@ -36,7 +36,7 @@ class UnitController extends Controller
     public function store(UnitRequest $request, CurrentStore $currentStore): RedirectResponse
     {
         Unit::create(['store_id' => $currentStore->id(), ...$request->validated()]);
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Satuan berhasil ditambahkan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Unit added successfully.')]);
 
         return back();
     }
@@ -44,7 +44,7 @@ class UnitController extends Controller
     public function update(UnitRequest $request, CurrentStore $currentStore, string $unit): RedirectResponse
     {
         Unit::query()->where('store_id', $currentStore->id())->where('public_id', $unit)->firstOrFail()->update($request->validated());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Satuan berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Unit updated successfully.')]);
 
         return back();
     }

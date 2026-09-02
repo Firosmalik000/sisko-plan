@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatMoney, localeTag } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { useProductDrafts } from './use-product-drafts';
 import type { DiscoverySuggestion, ProductDraft } from './use-product-drafts';
@@ -176,7 +177,7 @@ const unitCodeAliases: Record<'large' | 'retail', Record<string, string[]>> = {
 };
 
 const normalizeUnitLabel = (value: string) =>
-    value.trim().toLocaleLowerCase('id-ID');
+    value.trim().toLocaleLowerCase(localeTag());
 
 const createIdempotencyKey = () => {
     if (globalThis.crypto?.randomUUID) {
@@ -228,11 +229,6 @@ const blankForm = (): ProductForm => ({
 const ProductScanner = lazy(
     () => import('@/components/product-scanner/ProductScanner'),
 );
-const money = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-});
 function Field({
     label,
     error,
@@ -268,9 +264,9 @@ function BarcodeField({
 }) {
     return (
         <Field label="Barcode / QR" error={error}>
-            <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-[#0f766e] focus-within:ring-2 focus-within:ring-[#0f766e]/15">
+            <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)]/15">
                 <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
-                    <ScanBarcode className="size-4 shrink-0 text-[#0f766e]" />
+                    <ScanBarcode className="size-4 shrink-0 text-[var(--app-primary)]" />
                     <span
                         className={cn(
                             'truncate text-sm',
@@ -299,8 +295,8 @@ function BarcodeField({
                     className={cn(
                         'h-9 shrink-0 px-3',
                         value
-                            ? 'border-[#b8ccc7] text-[#0f766e]'
-                            : 'bg-[#0f766e] text-white hover:bg-[#0b5f59]',
+                            ? 'border-[var(--app-soft-strong)] text-[var(--app-primary)]'
+                            : 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)] hover:bg-[var(--app-primary)]',
                     )}
                 >
                     <ScanBarcode className="size-4" />
@@ -352,7 +348,7 @@ function VariantPhotoInput({
                 </span>
             )}
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 text-xs font-bold text-[#0f6b63] focus-within:ring-2 focus-within:ring-[#0f766e] hover:bg-[#eef8f5]">
+                <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)] hover:bg-[var(--app-soft)]">
                     <Camera className="size-4" />
                     {previewUrl ? 'Ganti foto' : 'Pilih foto'}
                     <input
@@ -398,7 +394,7 @@ function Section({
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#0f766e] text-xs font-black text-white">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--app-primary)] text-xs font-black text-[var(--app-primary-foreground)]">
                         {number}
                     </span>
                     <h3 className="font-serif text-lg font-bold text-slate-900">
@@ -466,7 +462,7 @@ function ReferenceManager({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[88svh] overflow-y-auto border-slate-200 bg-white p-0 shadow-2xl sm:max-w-xl">
+            <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] overflow-y-auto border-slate-200 bg-white p-0 shadow-2xl sm:max-h-[88svh] sm:w-full sm:max-w-xl">
                 <DialogHeader className="border-b border-slate-200 bg-gradient-to-r from-teal-50 to-white px-5 py-4 text-left">
                     <DialogTitle className="font-serif text-xl text-slate-900">
                         Kelola {isCategory ? 'Kategori' : 'Satuan'}
@@ -538,7 +534,7 @@ function ReferenceManager({
                                         className={cn(
                                             'h-10 rounded-xl border text-sm font-semibold',
                                             unitForm.data.unit_type === group
-                                                ? 'border-[#0f766e] bg-[#e3f3ef] text-[#0f5f59]'
+                                                ? 'border-[var(--app-primary)] bg-[var(--app-soft)] text-[var(--app-primary)]'
                                                 : 'border-slate-200 bg-white text-slate-600',
                                         )}
                                     >
@@ -553,7 +549,7 @@ function ReferenceManager({
                                     ? categoryForm.processing
                                     : unitForm.processing
                             }
-                            className="mt-4 w-full bg-[#0f766e] hover:bg-[#0b5f59]"
+                            className="mt-4 w-full bg-[var(--app-primary)] hover:bg-[var(--app-primary)]"
                         >
                             <Plus className="size-4" /> Tambah
                         </Button>
@@ -590,7 +586,7 @@ function ReferenceManager({
                                     className={cn(
                                         'shrink-0',
                                         !item.is_active &&
-                                            'border-[#0f766e] text-[#0f766e]',
+                                            'border-[var(--app-primary)] text-[var(--app-primary)]',
                                     )}
                                 >
                                     {item.is_active
@@ -850,9 +846,9 @@ export default function ProductsIndex({
             const category = categories.find(
                 (item) =>
                     item.is_active &&
-                    item.name.toLocaleLowerCase('id-ID') ===
+                    item.name.toLocaleLowerCase(localeTag()) ===
                         suggestion.classification.category_suggestion?.toLocaleLowerCase(
-                            'id-ID',
+                            localeTag(),
                         ),
             );
             const findUnit = (
@@ -1111,11 +1107,11 @@ export default function ProductsIndex({
     return (
         <>
             <Head title="Produk" />
-            <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+            <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto max-w-7xl space-y-4">
-                    <div className="rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+                    <div className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
                         <div className="flex items-center justify-between gap-3">
-                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                                 Produk
                             </h1>
                             {canManage && (
@@ -1123,13 +1119,13 @@ export default function ProductsIndex({
                                     <Button
                                         onClick={() => openManualCreate()}
                                         variant="outline"
-                                        className="min-h-11 border-[#b8ccc7] px-4 font-bold text-[#245c4f]"
+                                        className="min-h-11 border-[var(--app-soft-strong)] px-4 font-bold text-[var(--app-primary)]"
                                     >
                                         <Plus className="size-5" /> Isi manual
                                     </Button>
                                     <Button
                                         onClick={openCreate}
-                                        className="min-h-11 bg-[#173f35] px-4 font-bold text-white hover:bg-[#245c4f]"
+                                        className="min-h-11 bg-[var(--app-primary)] px-4 font-bold text-[var(--app-primary-foreground)] hover:bg-[var(--app-primary)]"
                                     >
                                         <Camera className="size-5" /> Scan
                                         produk
@@ -1174,7 +1170,7 @@ export default function ProductsIndex({
 
                     {products.data.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-[#cfc5b8] bg-white/70 py-16 text-center">
-                            <Boxes className="mx-auto size-10 text-[#0f766e]" />
+                            <Boxes className="mx-auto size-10 text-[var(--app-primary)]" />
                             <p className="mt-3 font-serif text-xl font-bold text-slate-800">
                                 Belum ada produk
                             </p>
@@ -1183,13 +1179,13 @@ export default function ProductsIndex({
                                     <Button
                                         onClick={() => openManualCreate()}
                                         variant="outline"
-                                        className="border-[#b8ccc7] text-[#245c4f]"
+                                        className="border-[var(--app-soft-strong)] text-[var(--app-primary)]"
                                     >
                                         Isi manual
                                     </Button>
                                     <Button
                                         onClick={openCreate}
-                                        className="bg-[#0f766e]"
+                                        className="bg-[var(--app-primary)]"
                                     >
                                         <Camera className="size-4" /> Scan
                                         produk
@@ -1199,112 +1195,146 @@ export default function ProductsIndex({
                         </div>
                     ) : (
                         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                            {products.data.map((product) => (
-                                <article
-                                    key={product.public_id}
-                                    className="group overflow-hidden rounded-2xl border border-[#e2dbd1] bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-                                >
-                                    <div className="flex gap-4 p-4">
-                                        <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#edf4f1]">
-                                            {product.photo_url ? (
-                                                <img
-                                                    src={product.photo_url}
-                                                    alt=""
-                                                    className="size-full object-cover"
-                                                />
-                                            ) : (
-                                                <PackagePlus className="size-8 text-[#0f766e]" />
-                                            )}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0">
-                                                    <p className="truncate font-serif text-lg font-bold text-slate-900">
-                                                        {product.name}
-                                                    </p>
-                                                    <p className="truncate text-sm text-slate-500">
-                                                        {product.category
-                                                            ?.name ??
-                                                            'Tanpa kategori'}
-                                                    </p>
+                            {products.data.map((product) =>
+                                (() => {
+                                    const criticalStock =
+                                        product.variant_mode === 'separate'
+                                            ? product.variants.some(
+                                                  (variant) =>
+                                                      Number(
+                                                          variant.current_stock,
+                                                      ) <=
+                                                      Number(
+                                                          variant.minimum_stock,
+                                                      ),
+                                              )
+                                            : Number(product.current_stock) <=
+                                              Number(product.minimum_stock);
+
+                                    return (
+                                        <article
+                                            key={product.public_id}
+                                            className="group overflow-hidden rounded-2xl border border-[#e2dbd1] bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                                        >
+                                            <div className="flex gap-4 p-4">
+                                                <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[var(--app-soft)]">
+                                                    {product.photo_url ? (
+                                                        <img
+                                                            src={
+                                                                product.photo_url
+                                                            }
+                                                            alt=""
+                                                            className="size-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <PackagePlus className="size-8 text-[var(--app-primary)]" />
+                                                    )}
                                                 </div>
-                                                <Badge
-                                                    variant={
-                                                        product.is_active
-                                                            ? 'default'
-                                                            : 'secondary'
-                                                    }
-                                                    className={cn(
-                                                        product.is_active &&
-                                                            'bg-[#dff2eb] text-[#126455]',
-                                                    )}
-                                                >
-                                                    {product.is_active
-                                                        ? 'Aktif'
-                                                        : 'Nonaktif'}
-                                                </Badge>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="min-w-0">
+                                                            <p className="truncate font-serif text-lg font-bold text-slate-900">
+                                                                {product.name}
+                                                            </p>
+                                                            <p className="truncate text-sm text-slate-500">
+                                                                {product
+                                                                    .category
+                                                                    ?.name ??
+                                                                    'Tanpa kategori'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                                                            <Badge
+                                                                variant={
+                                                                    product.is_active
+                                                                        ? 'default'
+                                                                        : 'secondary'
+                                                                }
+                                                                className={cn(
+                                                                    product.is_active &&
+                                                                        'bg-[var(--app-soft)] text-[var(--app-primary)]',
+                                                                )}
+                                                            >
+                                                                {product.is_active
+                                                                    ? 'Aktif'
+                                                                    : 'Nonaktif'}
+                                                            </Badge>
+                                                            {criticalStock && (
+                                                                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                                                                    Kritis
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+                                                        <span className="rounded-full bg-[#fff0e6] px-2.5 py-1 font-semibold text-[#a44b25]">
+                                                            {modeLabel(
+                                                                product.variant_mode,
+                                                            )}
+                                                        </span>
+                                                        {product.variants
+                                                            .length > 0 && (
+                                                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                                                                {
+                                                                    product
+                                                                        .variants
+                                                                        .length
+                                                                }{' '}
+                                                                varian
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-                                                <span className="rounded-full bg-[#fff0e6] px-2.5 py-1 font-semibold text-[#a44b25]">
-                                                    {modeLabel(
-                                                        product.variant_mode,
-                                                    )}
+                                            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-4 py-3">
+                                                <span className="text-sm font-bold text-slate-700">
+                                                    {product.variant_mode ===
+                                                    'none'
+                                                        ? formatMoney(
+                                                              product.selling_price,
+                                                          )
+                                                        : `${product.variants.length} harga`}
                                                 </span>
-                                                {product.variants.length >
-                                                    0 && (
-                                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                                                        {
-                                                            product.variants
-                                                                .length
-                                                        }{' '}
-                                                        varian
-                                                    </span>
+                                                {canManage && (
+                                                    <div className="flex items-center gap-1">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() =>
+                                                                openEdit(
+                                                                    product,
+                                                                )
+                                                            }
+                                                            className="text-[var(--app-primary)] hover:bg-[var(--app-soft)] hover:text-[var(--app-primary)]"
+                                                        >
+                                                            <Edit3 className="size-4" />{' '}
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            aria-label={`Hapus ${product.name}`}
+                                                            title="Hapus produk"
+                                                            onClick={() => {
+                                                                setDeleteError(
+                                                                    '',
+                                                                );
+                                                                setDeleting(
+                                                                    product,
+                                                                );
+                                                            }}
+                                                            className="size-9 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </Button>
+                                                    </div>
                                                 )}
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-4 py-3">
-                                        <span className="text-sm font-bold text-slate-700">
-                                            {product.variant_mode === 'none'
-                                                ? money.format(
-                                                      Number(
-                                                          product.selling_price,
-                                                      ),
-                                                  )
-                                                : `${product.variants.length} harga`}
-                                        </span>
-                                        {canManage && (
-                                            <div className="flex items-center gap-1">
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() =>
-                                                        openEdit(product)
-                                                    }
-                                                    className="text-[#0f766e] hover:bg-[#e3f3ef] hover:text-[#0b5f59]"
-                                                >
-                                                    <Edit3 className="size-4" />{' '}
-                                                    Edit
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    aria-label={`Hapus ${product.name}`}
-                                                    title="Hapus produk"
-                                                    onClick={() => {
-                                                        setDeleteError('');
-                                                        setDeleting(product);
-                                                    }}
-                                                    className="size-9 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </article>
-                            ))}
+                                        </article>
+                                    );
+                                })(),
+                            )}
                         </div>
                     )}
                     <Pagination links={products.links} />
@@ -1317,14 +1347,14 @@ export default function ProductsIndex({
                     open ? setFormOpen(true) : closeForm()
                 }
             >
-                <DialogContent className="grid max-h-[94dvh] w-[calc(100%-1rem)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden border-slate-200 bg-white p-0 shadow-[0_28px_80px_rgba(15,23,42,0.24)] sm:w-full sm:max-w-5xl sm:rounded-3xl">
-                    <DialogHeader className="relative overflow-hidden border-b border-slate-200 bg-white px-5 py-5 text-left sm:px-7">
-                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0f766e] via-[#2dd4bf] to-[#f4a261]" />
+                <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-full grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-slate-200 bg-white p-0 shadow-[0_28px_80px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[94dvh] sm:w-full sm:max-w-5xl sm:rounded-3xl">
+                    <DialogHeader className="relative overflow-hidden border-b border-slate-200 bg-white px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pr-14 pb-4 text-left sm:px-7 sm:py-5 sm:pr-14">
+                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--app-primary)] via-[#ff8066] to-[#ffb6a5]" />
                         <div className="absolute top-0 right-8 size-24 rounded-full bg-teal-100/70 blur-2xl" />
                         <p className="relative text-xs font-black tracking-[0.16em] text-[#b4532d] uppercase">
                             {editing ? 'Perbarui katalog' : 'Produk baru'}
                         </p>
-                        <DialogTitle className="relative mt-1 font-serif text-2xl font-black text-[#173c3a] sm:text-3xl">
+                        <DialogTitle className="relative mt-1 font-serif text-2xl font-black text-[var(--app-ink)] sm:text-3xl">
                             {editing ? editing.name : 'Tambah Produk'}
                         </DialogTitle>
                     </DialogHeader>
@@ -1335,18 +1365,18 @@ export default function ProductsIndex({
                     >
                         <div
                             ref={formBodyRef}
-                            className="min-h-0 space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain bg-slate-50/60 p-3 sm:p-5"
+                            className="min-h-0 space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain bg-slate-50/60 p-3 pb-5 sm:p-5"
                         >
                             {productDrafts.drafts.length > 0 && !editing && (
-                                <div className="rounded-2xl border border-[#c9dbd5] bg-white p-3 shadow-sm">
+                                <div className="rounded-2xl border border-[var(--border)] bg-white p-3 shadow-sm">
                                     <div className="mb-3 flex items-center justify-between gap-3">
                                         <div>
-                                            <p className="text-sm font-black text-[#173c35]">
+                                            <p className="text-sm font-black text-[var(--app-ink)]">
                                                 {productDrafts.drafts.length}{' '}
                                                 produk dalam antrean
                                             </p>
                                             {analyzingDrafts > 0 && (
-                                                <p className="mt-0.5 text-xs font-semibold text-[#58736a]">
+                                                <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">
                                                     Menganalisis{' '}
                                                     {analyzingDrafts} dari{' '}
                                                     {
@@ -1366,7 +1396,7 @@ export default function ProductsIndex({
                                                 setFormOpen(false);
                                                 setScannerOpen(true);
                                             }}
-                                            className="border-[#b8ccc7] text-[#245c4f]"
+                                            className="border-[var(--app-soft-strong)] text-[var(--app-primary)]"
                                         >
                                             <Camera className="size-4" /> Tambah
                                             produk lain
@@ -1381,8 +1411,8 @@ export default function ProductsIndex({
                                                         'relative flex min-w-52 items-center rounded-xl border text-left transition',
                                                         draft.id ===
                                                             activeDraftId
-                                                            ? 'border-[#0f766e] bg-[#eef8f5] ring-2 ring-[#0f766e]/10'
-                                                            : 'border-slate-200 bg-white hover:border-[#7aa99b]',
+                                                            ? 'border-[var(--app-primary)] bg-[var(--app-soft)] ring-2 ring-[var(--app-primary)]/10'
+                                                            : 'border-slate-200 bg-white hover:border-[var(--app-primary)]',
                                                     )}
                                                 >
                                                     <button
@@ -1390,7 +1420,7 @@ export default function ProductsIndex({
                                                         onClick={() =>
                                                             openDraft(draft)
                                                         }
-                                                        className="flex min-w-0 flex-1 items-center gap-2 rounded-l-xl p-2 focus-visible:ring-2 focus-visible:ring-[#0f766e] focus-visible:outline-none"
+                                                        className="flex min-w-0 flex-1 items-center gap-2 rounded-l-xl p-2 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                                     >
                                                         <img
                                                             src={
@@ -1419,7 +1449,7 @@ export default function ProductsIndex({
                                                                         ? 'text-amber-700'
                                                                         : draft.status ===
                                                                             'ready'
-                                                                          ? 'text-[#0f766e]'
+                                                                          ? 'text-[var(--app-primary)]'
                                                                           : 'text-slate-500',
                                                                 )}
                                                             >
@@ -1526,7 +1556,7 @@ export default function ProductsIndex({
                                                     )
                                                 }
                                                 rows={3}
-                                                className="w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-[#0f766e] focus:ring-2 focus:ring-[#0f766e]/15"
+                                                className="w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15"
                                             />
                                         </Field>
                                         {form.data.variant_mode === 'none' && (
@@ -1615,7 +1645,7 @@ export default function ProductsIndex({
                                                     onClick={() =>
                                                         setManager('category')
                                                     }
-                                                    className="size-11 shrink-0 border-[#b8ccc7] text-[#0f766e]"
+                                                    className="size-11 shrink-0 border-[var(--app-soft-strong)] text-[var(--app-primary)]"
                                                     aria-label="Kelola kategori"
                                                 >
                                                     <Settings2 className="size-4" />
@@ -1628,7 +1658,7 @@ export default function ProductsIndex({
                                         error={form.errors.photo}
                                         className="mx-auto w-full max-w-[220px] lg:mx-0"
                                     >
-                                        <label className="group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-[#0f766e] hover:bg-teal-50/40">
+                                        <label className="group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-[var(--app-primary)] hover:bg-teal-50/40">
                                             {preview ? (
                                                 <img
                                                     src={preview}
@@ -1637,7 +1667,7 @@ export default function ProductsIndex({
                                                 />
                                             ) : (
                                                 <div className="text-center text-slate-500">
-                                                    <ImagePlus className="mx-auto size-7 text-[#0f766e]" />
+                                                    <ImagePlus className="mx-auto size-7 text-[var(--app-primary)]" />
                                                     <span className="mt-2 block text-xs font-semibold">
                                                         Pilih foto
                                                     </span>
@@ -1667,7 +1697,7 @@ export default function ProductsIndex({
                                                 }}
                                             />
                                             {preview && (
-                                                <span className="absolute right-2 bottom-2 rounded-full bg-white/90 p-2 text-[#0f766e] shadow">
+                                                <span className="absolute right-2 bottom-2 rounded-full bg-white/90 p-2 text-[var(--app-primary)] shadow">
                                                     <Camera className="size-4" />
                                                 </span>
                                             )}
@@ -1681,7 +1711,7 @@ export default function ProductsIndex({
                                                 setFormOpen(false);
                                                 setScannerOpen(true);
                                             }}
-                                            className="mt-2 w-full border-[#b8ccc7] text-[#0f766e] hover:bg-[#edf7f4]"
+                                            className="mt-2 w-full border-[var(--app-soft-strong)] text-[var(--app-primary)] hover:bg-[var(--app-soft)]"
                                         >
                                             <Camera className="size-4" />
                                             {preview
@@ -1717,7 +1747,7 @@ export default function ProductsIndex({
                                         size="sm"
                                         variant="ghost"
                                         onClick={() => setManager('unit')}
-                                        className="text-[#0f766e]"
+                                        className="text-[var(--app-primary)]"
                                     >
                                         <Settings2 className="size-4" />
                                         <span className="hidden sm:inline">
@@ -1823,7 +1853,7 @@ export default function ProductsIndex({
                                             'relative h-7 w-12 rounded-full transition',
                                             form.data.variant_mode === 'none'
                                                 ? 'bg-slate-300'
-                                                : 'bg-[#0f766e]',
+                                                : 'bg-[var(--app-primary)]',
                                         )}
                                     >
                                         <span
@@ -1932,7 +1962,7 @@ export default function ProductsIndex({
                                                         form.data
                                                             .variant_mode ===
                                                             mode
-                                                            ? 'border-[#0f766e] bg-[#e4f3ef] text-[#0d5d57]'
+                                                            ? 'border-[var(--app-primary)] bg-[var(--app-soft)] text-[var(--app-primary)]'
                                                             : 'border-slate-200 bg-white text-slate-700',
                                                     )}
                                                 >
@@ -1942,7 +1972,7 @@ export default function ProductsIndex({
                                                             form.data
                                                                 .variant_mode ===
                                                                 mode
-                                                                ? 'border-[#0f766e] bg-white'
+                                                                ? 'border-[var(--app-primary)] bg-white'
                                                                 : 'border-slate-300',
                                                         )}
                                                     />
@@ -2253,7 +2283,7 @@ export default function ProductsIndex({
                                             type="button"
                                             variant="outline"
                                             onClick={addVariant}
-                                            className="w-full border-dashed border-[#0f766e] text-[#0f766e]"
+                                            className="w-full border-dashed border-[var(--app-primary)] text-[var(--app-primary)]"
                                         >
                                             <Plus className="size-4" /> Tambah
                                             varian
@@ -2264,7 +2294,7 @@ export default function ProductsIndex({
 
                                         {form.data.variant_mode ===
                                             'shared' && (
-                                            <div className="grid gap-4 rounded-2xl border border-[#bcd8d1] bg-[#eff8f5] p-4 sm:grid-cols-2">
+                                            <div className="grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--app-soft)] p-4 sm:grid-cols-2">
                                                 <Field
                                                     label="Stok gabungan saat ini"
                                                     error={
@@ -2285,7 +2315,7 @@ export default function ProductsIndex({
                                                                     .value,
                                                             )
                                                         }
-                                                        className="h-11 border-[#afd0c8] bg-white"
+                                                        className="h-11 border-[var(--app-soft-strong)] bg-white"
                                                     />
                                                 </Field>
                                                 <Field
@@ -2308,7 +2338,7 @@ export default function ProductsIndex({
                                                                     .value,
                                                             )
                                                         }
-                                                        className="h-11 border-[#afd0c8] bg-white"
+                                                        className="h-11 border-[var(--app-soft-strong)] bg-white"
                                                     />
                                                 </Field>
                                             </div>
@@ -2329,13 +2359,13 @@ export default function ProductsIndex({
                                                 event.target.checked,
                                             )
                                         }
-                                        className="size-5 accent-[#0f766e]"
+                                        className="size-5 accent-[var(--app-primary)]"
                                     />
                                 </label>
                             )}
                         </div>
 
-                        <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-10px_30px_rgba(15,23,42,0.04)] sm:flex-row sm:justify-end sm:px-6">
+                        <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+.75rem)] shadow-[0_-10px_30px_rgba(15,23,42,0.04)] sm:flex-row sm:justify-end sm:px-6 sm:py-3">
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -2346,7 +2376,7 @@ export default function ProductsIndex({
                             </Button>
                             <Button
                                 disabled={form.processing}
-                                className="h-11 bg-[#0f766e] px-6 font-bold hover:bg-[#0b5f59] sm:min-w-44"
+                                className="h-11 bg-[var(--app-primary)] px-6 font-bold hover:bg-[var(--app-primary)] sm:min-w-44"
                             >
                                 {form.processing
                                     ? 'Menyimpan...'
@@ -2374,7 +2404,7 @@ export default function ProductsIndex({
                     }
                 }}
             >
-                <DialogContent className="gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
+                <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] gap-0 overflow-y-auto rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
                     <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 text-left">
                         <DialogTitle className="text-lg font-black text-slate-900">
                             Hapus produk {deleting?.name}?

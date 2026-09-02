@@ -33,16 +33,16 @@ export default function SalesIndex({
     return (
         <>
             <Head title="Transaksi penjualan" />
-            <div className="min-h-full bg-[linear-gradient(180deg,#f8faf6_0%,#f2f5f0_100%)] px-3 py-4 sm:px-5 lg:px-8">
+            <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto max-w-6xl space-y-4">
-                    <header className="rounded-[1.35rem] border border-[#173c35]/8 bg-white p-4 shadow-sm sm:p-5">
+                    <header className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[#173c35]">
+                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
                                 Transaksi
                             </h1>
                             <Link
                                 href="/pos"
-                                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#173f35] px-4 text-sm font-black text-white"
+                                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)]"
                             >
                                 <ShoppingCart className="size-4" />
                                 Buka kasir
@@ -72,7 +72,7 @@ export default function SalesIndex({
                                         <p className="text-xs text-slate-500">
                                             Pendapatan neto
                                         </p>
-                                        <p className="font-black text-[#173c39]">
+                                        <p className="font-black text-[var(--app-ink)]">
                                             {money(sale.net_revenue)}
                                         </p>
                                         {Number(sale.refund_amount) > 0 && (

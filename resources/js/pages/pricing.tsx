@@ -31,6 +31,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { formatMoney, localeTag } from '@/lib/currency';
 import { dashboard, register } from '@/routes';
 import stores from '@/routes/stores';
 
@@ -59,12 +60,6 @@ type Account = {
     next_period_start: string | null;
 };
 
-const currency = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-});
-
 export default function Pricing({
     plans,
     account,
@@ -72,7 +67,7 @@ export default function Pricing({
     plans: Plan[];
     account: Account;
 }) {
-    const { auth } = usePage().props;
+    const { auth, branding } = usePage().props;
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const form = useForm({ plan_id: '' });
     const scheduled = Boolean(
@@ -93,12 +88,7 @@ export default function Pricing({
 
     return (
         <>
-            <Head title="Paket untuk Setiap Tahap Toko">
-                <meta
-                    name="description"
-                    content="Pilih paket Sisko Plan berdasarkan jumlah toko, produk, dan anggota yang Anda kelola."
-                />
-            </Head>
+            <Head title="Paket untuk Setiap Tahap Toko" />
             <section className="pricing-hero">
                 <div className="ledger-container">
                     <m.div
@@ -107,7 +97,9 @@ export default function Pricing({
                         animate="visible"
                         variants={revealLeft}
                     >
-                        <span className="scan-kicker">Paket Sisko Plan</span>
+                        <span className="scan-kicker">
+                            Paket {branding.brand_name}
+                        </span>
                         <h1>Pilih ruang tumbuh untuk toko Anda.</h1>
                         <p>
                             Mulai dari kebutuhan hari ini. Tingkatkan kapasitas
@@ -231,9 +223,7 @@ export default function Pricing({
                                     <strong>
                                         {Number(plan.monthly_price) === 0
                                             ? 'Gratis'
-                                            : currency.format(
-                                                  Number(plan.monthly_price),
-                                              )}
+                                            : formatMoney(plan.monthly_price)}
                                     </strong>
                                     {Number(plan.monthly_price) > 0 && (
                                         <span>/ bulan</span>
@@ -318,9 +308,9 @@ export default function Pricing({
                     }
                 }}
             >
-                <DialogContent className="w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-[#d8cebb] bg-[#fffdf8] p-0 sm:max-w-md">
+                <DialogContent className="w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-[#d8cebb] bg-[#fffaf7] p-0 sm:max-w-md">
                     <DialogHeader className="border-b border-[#d8cebb] px-5 py-5 pr-12 text-left">
-                        <DialogTitle className="text-xl font-black tracking-[-0.03em] text-[#022e27]">
+                        <DialogTitle className="text-xl font-black tracking-[-0.03em] text-[#2d2928]">
                             Konfirmasi berlangganan
                         </DialogTitle>
                         <DialogDescription className="text-[#5e6964]">
@@ -332,26 +322,26 @@ export default function Pricing({
                     <form onSubmit={submit}>
                         <div className="space-y-4 px-5 py-5">
                             <div className="flex items-end justify-between gap-4">
-                                <strong className="text-lg text-[#022e27]">
+                                <strong className="text-lg text-[#2d2928]">
                                     {selectedPlan?.name}
                                 </strong>
-                                <span className="font-bold text-[#022e27] tabular-nums">
+                                <span className="font-bold text-[#2d2928] tabular-nums">
                                     {selectedPlan &&
                                     Number(selectedPlan.monthly_price) === 0
                                         ? 'Gratis'
                                         : selectedPlan
-                                          ? `${currency.format(Number(selectedPlan.monthly_price))}/bulan`
+                                          ? `${formatMoney(selectedPlan.monthly_price)}/bulan`
                                           : ''}
                                 </span>
                             </div>
-                            <p className="flex items-center gap-2 text-sm font-semibold text-[#214b43]">
-                                <Clock3 className="size-4 text-[#f05a16]" />
+                            <p className="flex items-center gap-2 text-sm font-semibold text-[#5f5754]">
+                                <Clock3 className="size-4 text-[#ee4d2d]" />
                                 Masa aktif{' '}
                                 {selectedPlan ? planTerm(selectedPlan) : '—'}.
                             </p>
                             {scheduled && account.next_period_start && (
-                                <p className="flex items-center gap-2 text-sm font-semibold text-[#214b43]">
-                                    <CalendarDays className="size-4 text-[#f05a16]" />
+                                <p className="flex items-center gap-2 text-sm font-semibold text-[#5f5754]">
+                                    <CalendarDays className="size-4 text-[#ee4d2d]" />
                                     Mulai {date(account.next_period_start)}
                                 </p>
                             )}
@@ -366,7 +356,7 @@ export default function Pricing({
                         </div>
                         <DialogFooter className="border-t border-[#d8cebb] bg-[#fbf8ef] px-5 py-4 sm:justify-between">
                             <button
-                                className="ledger-button border border-[#d8cebb] bg-white text-[#022e27]"
+                                className="ledger-button border border-[#d8cebb] bg-white text-[#2d2928]"
                                 type="button"
                                 disabled={form.processing}
                                 onClick={() => setSelectedPlan(null)}
@@ -479,7 +469,7 @@ function PlanLimit({ value, label }: { value: number; label: string }) {
 }
 
 function formatLimit(value: number) {
-    return value === 0 ? 'Tak terbatas' : value.toLocaleString('id-ID');
+    return value === 0 ? 'Tak terbatas' : value.toLocaleString(localeTag());
 }
 
 function planTerm(plan: Pick<Plan, 'is_trial' | 'duration_months'>) {
@@ -487,7 +477,7 @@ function planTerm(plan: Pick<Plan, 'is_trial' | 'duration_months'>) {
 }
 
 function date(value: string) {
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(
+    return new Intl.DateTimeFormat(localeTag(), { dateStyle: 'long' }).format(
         new Date(`${value}T00:00:00`),
     );
 }

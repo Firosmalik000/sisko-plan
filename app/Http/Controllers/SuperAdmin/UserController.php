@@ -91,7 +91,7 @@ class UserController extends Controller
             ]);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Status pengguna berhasil diperbarui.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('User status updated successfully.')]);
 
         return back();
     }
@@ -99,7 +99,7 @@ class UserController extends Controller
     public function destroy(Request $request, User $user, DeleteUser $action): RedirectResponse
     {
         $action->handle(AuthenticatedPlatformAdmin::get($request), $user, $request->ip());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Akun pengguna berhasil dihapus.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('User account deleted successfully.')]);
 
         return back();
     }

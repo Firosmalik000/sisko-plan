@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/lib/i18n';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
@@ -17,13 +18,15 @@ type Props = {
 };
 
 export default function Register({ passwordRules, googleAuthEnabled }: Props) {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Daftar" />
+            <Head title={t('Daftar')} />
 
             {googleAuthEnabled && (
                 <>
-                    <GoogleAuthButton label="Daftar dengan Google" />
+                    <GoogleAuthButton label={t('Daftar dengan Google')} />
                     <AuthDivider />
                 </>
             )}
@@ -38,7 +41,9 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Nama lengkap</Label>
+                                <Label htmlFor="name">
+                                    {t('Nama lengkap')}
+                                </Label>
                                 <Input
                                     id="name"
                                     type="text"
@@ -47,7 +52,7 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                     tabIndex={1}
                                     autoComplete="name"
                                     name="name"
-                                    placeholder="Nama lengkap"
+                                    placeholder={t('Nama lengkap')}
                                 />
                                 <InputError
                                     message={errors.name}
@@ -56,7 +61,9 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Alamat email</Label>
+                                <Label htmlFor="email">
+                                    {t('Alamat email')}
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -70,14 +77,16 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password">Kata sandi</Label>
+                                <Label htmlFor="password">
+                                    {t('Kata sandi')}
+                                </Label>
                                 <PasswordInput
                                     id="password"
                                     required
                                     tabIndex={3}
                                     autoComplete="new-password"
                                     name="password"
-                                    placeholder="Kata sandi"
+                                    placeholder={t('Kata sandi')}
                                     passwordrules={passwordRules}
                                 />
                                 <InputError message={errors.password} />
@@ -85,7 +94,7 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password_confirmation">
-                                    Konfirmasi kata sandi
+                                    {t('Konfirmasi kata sandi')}
                                 </Label>
                                 <PasswordInput
                                     id="password_confirmation"
@@ -93,7 +102,7 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                     tabIndex={4}
                                     autoComplete="new-password"
                                     name="password_confirmation"
-                                    placeholder="Konfirmasi kata sandi"
+                                    placeholder={t('Konfirmasi kata sandi')}
                                     passwordrules={passwordRules}
                                 />
                                 <InputError
@@ -108,14 +117,14 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
-                                Buat akun
+                                {t('Buat akun')}
                             </Button>
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            Sudah memiliki akun?{' '}
+                            {t('Sudah memiliki akun?')}{' '}
                             <TextLink href={login()} tabIndex={6}>
-                                Masuk
+                                {t('Masuk')}
                             </TextLink>
                         </div>
                     </>
