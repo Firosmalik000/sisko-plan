@@ -43,6 +43,9 @@ class SaveProduct
             Str::ulid().'.'.$photo->extension(),
             'local',
         );
+        if ($newPhotoPath === false) {
+            throw new UnexpectedValueException('The product photo could not be stored.');
+        }
         $newVariantPhotoPaths = [];
 
         try {

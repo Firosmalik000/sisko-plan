@@ -477,6 +477,14 @@ class MasterDataTest extends TestCase
         ]);
         $this->actingAs($owner)->withSession(['active_store_id' => $otherStore->id])
             ->get(route('master-data.products.photo', $product->public_id))->assertNotFound();
+
+        Storage::disk('local')->delete($product->photo_path);
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('master-data.products.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('products.data.0.photo_url', null));
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('master-data.products.photo', $product->public_id))->assertNotFound();
     }
 
     public function test_changing_variant_mode_does_not_leave_hidden_stock(): void

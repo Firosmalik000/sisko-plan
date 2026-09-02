@@ -202,7 +202,7 @@ class ProductController extends Controller
     /** @param array<string, string> $parameters */
     private function photoUrl(string $route, array $parameters, ?string $path): ?string
     {
-        if ($path === null) {
+        if ($path === null || ! Storage::disk('local')->exists($path)) {
             return null;
         }
 

@@ -60,6 +60,38 @@ type ScannerFlow = 'create' | 'form-photo';
 type BarcodeTarget =
     | { kind: 'product'; label: string }
     | { kind: 'variant'; index: number; label: string };
+
+function ProductPhoto({
+    src,
+    alt,
+    className,
+    fallbackClassName,
+}: {
+    src: string | null | undefined;
+    alt: string;
+    className: string;
+    fallbackClassName: string;
+}) {
+    const [failedSrc, setFailedSrc] = useState<string | null>(null);
+
+    if (!src || failedSrc === src) {
+        return (
+            <span className={fallbackClassName} aria-hidden="true">
+                <PackagePlus className="size-7 text-[var(--app-primary)]" />
+            </span>
+        );
+    }
+
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className={className}
+            onError={() => setFailedSrc(src)}
+        />
+    );
+}
+
 type ProductVariant = {
     client_id?: string;
     public_id?: string;
@@ -336,17 +368,12 @@ function VariantPhotoInput({
 
     return (
         <div className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-white p-2">
-            {previewUrl ? (
-                <img
-                    src={previewUrl}
-                    alt={`Foto ${variantName || 'varian'}`}
-                    className="size-14 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
-                />
-            ) : (
-                <span className="grid size-14 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-400">
-                    <ImagePlus className="size-5" />
-                </span>
-            )}
+            <ProductPhoto
+                src={previewUrl}
+                alt={`Foto ${variantName || 'varian'}`}
+                className="size-14 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
+                fallbackClassName="grid size-14 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-400"
+            />
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                 <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)] hover:bg-[var(--app-soft)]">
                     <Camera className="size-4" />
@@ -1218,17 +1245,12 @@ export default function ProductsIndex({
                                         >
                                             <div className="flex gap-4 p-4">
                                                 <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[var(--app-soft)]">
-                                                    {product.photo_url ? (
-                                                        <img
-                                                            src={
-                                                                product.photo_url
-                                                            }
-                                                            alt=""
-                                                            className="size-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <PackagePlus className="size-8 text-[var(--app-primary)]" />
-                                                    )}
+                                                    <ProductPhoto
+                                                        src={product.photo_url}
+                                                        alt=""
+                                                        className="size-full object-cover"
+                                                        fallbackClassName="grid size-full place-items-center"
+                                                    />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-start justify-between gap-2">
@@ -1422,12 +1444,13 @@ export default function ProductsIndex({
                                                         }
                                                         className="flex min-w-0 flex-1 items-center gap-2 rounded-l-xl p-2 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                                     >
-                                                        <img
+                                                        <ProductPhoto
                                                             src={
                                                                 draft.previewUrl
                                                             }
                                                             alt=""
                                                             className="size-12 rounded-lg object-cover"
+                                                            fallbackClassName="grid size-12 place-items-center rounded-lg bg-slate-100"
                                                         />
                                                         <span className="min-w-0 flex-1">
                                                             <span className="block truncate text-xs font-black text-slate-800">
@@ -1660,10 +1683,11 @@ export default function ProductsIndex({
                                     >
                                         <label className="group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-[var(--app-primary)] hover:bg-teal-50/40">
                                             {preview ? (
-                                                <img
+                                                <ProductPhoto
                                                     src={preview}
                                                     alt="Pratinjau produk"
                                                     className="size-full object-cover"
+                                                    fallbackClassName="grid size-full place-items-center"
                                                 />
                                             ) : (
                                                 <div className="text-center text-slate-500">
