@@ -12,8 +12,11 @@ use App\Support\PlatformPermission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -33,6 +36,7 @@ class PlatformSettingController extends Controller
         UpdatePlatformSettingRequest $request,
         RecordAdminAudit $audit,
     ): RedirectResponse {
+        $this->assertSettingsSchemaReady('brand_name');
         $admin = AuthenticatedPlatformAdmin::get($request);
         $validated = $request->validated();
 
@@ -63,15 +67,30 @@ class PlatformSettingController extends Controller
         UpdatePlatformLogoRequest $request,
         RecordAdminAudit $audit,
     ): RedirectResponse {
+        $this->assertSettingsSchemaReady('logo');
         $admin = AuthenticatedPlatformAdmin::get($request);
         $logo = $request->file('logo');
-        $path = $logo->storeAs(
-            'platform-branding',
-            Str::ulid().'.'.$logo->extension(),
-            'local',
-        );
+        try {
+            $path = $logo->storeAs(
+                'platform-branding',
+                Str::ulid().'.'.$logo->extension(),
+                'local',
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+            $path = false;
+        }
 
-        abort_if($path === false, 500, 'Logo gagal disimpan.');
+        if ($path === false) {
+            Log::error('Platform logo could not be written to the configured private storage.', [
+                'disk' => 'local',
+                'request_id' => $request->attributes->get('request_id'),
+            ]);
+
+            throw ValidationException::withMessages([
+                'logo' => 'Penyimpanan logo di server belum siap. Periksa volume storage aplikasi lalu coba lagi.',
+            ]);
+        }
 
         $oldPath = null;
 
@@ -109,6 +128,7 @@ class PlatformSettingController extends Controller
 
     public function destroyLogo(Request $request, RecordAdminAudit $audit): RedirectResponse
     {
+        $this->assertSettingsSchemaReady('logo');
         $admin = AuthenticatedPlatformAdmin::get($request);
         $oldPath = null;
 
@@ -145,6 +165,17 @@ class PlatformSettingController extends Controller
 
         return Storage::disk('local')->response($path, null, [
             'Cache-Control' => 'public, max-age=86400, immutable',
+        ]);
+    }
+
+    private function assertSettingsSchemaReady(string $errorKey): void
+    {
+        if (Schema::hasColumns('platform_settings', ['logo_path'])) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            $errorKey => 'Database Brand & SEO belum siap. Jalankan migration produksi lalu coba lagi.',
         ]);
     }
 }

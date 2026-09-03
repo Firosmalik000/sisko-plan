@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\PlatformPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -177,6 +178,48 @@ class PlatformSettingTest extends TestCase
             ->assertSessionHasErrors('logo');
 
         $this->assertNull(PlatformSetting::current()->logo_path);
+    }
+
+    public function test_platform_logo_returns_an_actionable_error_when_private_storage_is_not_writable(): void
+    {
+        $admin = User::factory()->platformAdmin()->create();
+        $blockedRoot = storage_path('framework/testing/platform-logo-blocked');
+        File::ensureDirectoryExists(dirname($blockedRoot));
+        File::put($blockedRoot, 'not-a-directory');
+        config(['filesystems.disks.local.root' => $blockedRoot]);
+
+        try {
+            $this->actingAs($admin)
+                ->post(route('super-admin.brand-seo.logo.update'), [
+                    'logo' => $this->pngUpload('logo.png'),
+                ])
+                ->assertRedirect()
+                ->assertSessionHasErrors([
+                    'logo' => 'Penyimpanan logo di server belum siap. Periksa volume storage aplikasi lalu coba lagi.',
+                ]);
+
+            $this->assertNull(PlatformSetting::current()->logo_path);
+            $this->assertDatabaseMissing('admin_audit_logs', [
+                'action' => 'platform_settings.logo_updated',
+            ]);
+        } finally {
+            File::delete($blockedRoot);
+        }
+    }
+
+    public function test_platform_writes_return_an_actionable_error_when_schema_is_pending(): void
+    {
+        $admin = User::factory()->platformAdmin()->create();
+        Schema::drop('platform_settings');
+
+        $this->actingAs($admin)
+            ->post(route('super-admin.brand-seo.logo.update'), [
+                'logo' => $this->pngUpload('logo.png'),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors([
+                'logo' => 'Database Brand & SEO belum siap. Jalankan migration produksi lalu coba lagi.',
+            ]);
     }
 
     public function test_branding_view_and_manage_permissions_are_enforced_separately(): void

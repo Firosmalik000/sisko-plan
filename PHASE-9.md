@@ -131,6 +131,7 @@ Every frontend change must be verified at all of these viewport widths:
 - 2026-09-02: Verified focused feature and permission tests, PHPStan, TypeScript, ESLint, Prettier, PHP lint, and additive migration up/rollback/up.
 - 2026-09-02: Connected the managed logo to the tenant mobile header, standard dashboard drawer, and super-admin shell; desktop tenant sidebar already used the dynamic logo component.
 - 2026-09-02: Replaced static Laravel favicon metadata with the managed logo for browser icons, Apple touch icon, application naming, and social-image fallback.
+- 2026-09-03: Hardened production writes so pending schema and unwritable private storage return actionable form errors instead of generic HTTP 500 responses.
 
 ## Discoveries and Deviations
 
