@@ -269,6 +269,28 @@ class ProductionReadinessTest extends TestCase
         }
     }
 
+    public function test_single_replica_web_image_runs_migrations_before_optimization(): void
+    {
+        $dockerfile = file_get_contents(base_path('Dockerfile'));
+        $entrypoint = file_get_contents(base_path('docker/entrypoint.sh'));
+
+        $this->assertIsString($dockerfile);
+        $this->assertIsString($entrypoint);
+        $this->assertStringContainsString('RUN_MIGRATIONS=true', $dockerfile);
+        $this->assertStringNotContainsString('artisan migrate --force --no-interaction --quiet || true', $dockerfile);
+        $this->assertStringContainsString(
+            'if [ "$role" = "web" ] && [ "${RUN_MIGRATIONS:-true}" = "true" ]; then',
+            $entrypoint,
+        );
+
+        $migrationPosition = strpos($entrypoint, 'php artisan migrate --force --no-interaction');
+        $optimizationPosition = strpos($entrypoint, 'php artisan optimize --no-interaction');
+
+        $this->assertNotFalse($migrationPosition);
+        $this->assertNotFalse($optimizationPosition);
+        $this->assertLessThan($optimizationPosition, $migrationPosition);
+    }
+
     /** @param list<string> $recoveryCodes
      * @return array{User, string}
      */

@@ -49,7 +49,7 @@ LOG_CHANNEL=stderr
 LOG_LEVEL=info
 
 APP_ROLE=web
-RUN_MIGRATIONS=false
+RUN_MIGRATIONS=true
 TRUSTED_PROXIES=YOUR_DOKPLOY_PROXY_CIDR
 
 GOOGLE_AUTH_ENABLED=true
@@ -73,17 +73,28 @@ production domain, and HTTPS callback are configured.
 
 ## Database Migration
 
-The image does not migrate automatically by default. Before routing traffic
-to a release, use the Dokploy terminal to run:
+The default web image runs the following command before Laravel is optimized
+and before the HTTP server starts:
 
 ```sh
-php artisan migrate --force
-php artisan app:production-check
+php artisan migrate --force --no-interaction
 ```
 
-For an initial single-replica deployment only, `RUN_MIGRATIONS=true` can be
-used temporarily. Set it back to `false` after the first successful deploy.
-Never enable automatic migration on multiple web replicas.
+This supports Dokploy auto-deployments with a single web replica. A failed
+migration stops the container instead of serving the release with a partial
+schema. Keep `RUN_MIGRATIONS=false` on workers and schedulers.
+
+Never enable automatic migration on multiple web replicas. For a scaled web
+deployment, set `RUN_MIGRATIONS=false` on every replica and run one migration
+release command before routing traffic. Back up production data before any
+destructive migration.
+
+After deployment, verify the release from the Dokploy terminal:
+
+```sh
+php artisan migrate:status
+php artisan app:production-check
+```
 
 ## Worker And Scheduler
 

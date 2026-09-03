@@ -124,6 +124,8 @@ Every frontend change must be verified at all of these viewport widths:
 
 ## Progress Log
 
+- 2026-09-03: Enabled fail-fast database migrations for single-replica Dokploy web auto-deployments, restricted migration execution to the web role, and moved it ahead of Laravel optimization and server startup.
+
 - 2026-09-01: Audited platform routes, permissions, audit patterns, shared props, public metadata, UI patterns, and tests.
 - 2026-09-01: Added the singleton settings record, platform permissions, audited update flow, responsive admin form, dynamic social links, and public metadata integration.
 - 2026-09-01: Verified focused tests, static analysis, types, formatting, an initial production build, and migration rollback/re-apply.

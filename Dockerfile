@@ -76,12 +76,10 @@ RUN chmod +x /usr/local/bin/app-entrypoint \
     && mkdir -p /config /data \
     && chown -R www-data:www-data /config /data /app/storage /app/bootstrap/cache
 
-RUN php artisan migrate --force --no-interaction --quiet || true
-
 ENV APP_ENV=production \
     APP_DEBUG=false \
     APP_ROLE=web \
-    RUN_MIGRATIONS=false \
+    RUN_MIGRATIONS=true \
     SERVER_NAME=:8080 \
     XDG_CONFIG_HOME=/config \
     XDG_DATA_HOME=/data

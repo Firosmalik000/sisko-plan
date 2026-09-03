@@ -20,20 +20,20 @@ run_as_app() {
     gosu www-data "$@"
 }
 
-if [ ! -e public/storage ] && [ ! -L public/storage ]; then
-    run_as_app php artisan storage:link --no-interaction
-fi
-
-run_as_app php artisan optimize --no-interaction
-
-if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
-    run_as_app php artisan migrate --force --no-interaction
-fi
-
 role="${APP_ROLE:-${1:-web}}"
 if [ "$#" -gt 0 ]; then
     shift
 fi
+
+if [ ! -e public/storage ] && [ ! -L public/storage ]; then
+    run_as_app php artisan storage:link --no-interaction
+fi
+
+if [ "$role" = "web" ] && [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+    run_as_app php artisan migrate --force --no-interaction
+fi
+
+run_as_app php artisan optimize --no-interaction
 
 case "$role" in
     web)
