@@ -63,18 +63,24 @@ export default function LanguageSwitcher() {
                     size="sm"
                     disabled={isChanging}
                     aria-label="Pilih bahasa"
+                    className="border-[#ee4d2d]/20 bg-white font-black text-[#b83219] shadow-sm hover:border-[#ee4d2d]/35 hover:bg-[#fff0eb] hover:text-[#b83219] data-[state=open]:border-[#ee4d2d]/35 data-[state=open]:bg-[#fff0eb] data-[state=open]:text-[#b83219]"
                 >
                     <Globe2 className="size-4" />
-                    {locale.toUpperCase()}
+                    <span>{locale.toUpperCase()}</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent
+                align="end"
+                className="border-[#ee4d2d]/15 bg-white text-[#3b211b]"
+            >
                 {locales.map((language) => (
                     <DropdownMenuItem
                         key={language.code}
                         onClick={() => changeLocale(language.code)}
                         className={
-                            language.code === locale ? 'font-bold' : undefined
+                            language.code === locale
+                                ? 'bg-[#fff0eb] font-bold text-[#b83219] focus:bg-[#ffe2d9] focus:text-[#b83219]'
+                                : 'focus:bg-[#fff0eb] focus:text-[#b83219]'
                         }
                     >
                         {language.label}

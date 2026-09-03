@@ -131,7 +131,7 @@ export default function SuperAdminLayout({
                         </span>
                         <span>
                             <span className="block text-sm font-black tracking-[0.12em]">
-                                {name.toUpperCase()} CONTROL
+                                {name.toUpperCase()}
                             </span>
                             <span className="block text-[11px] text-white/70">
                                 SaaS administration
