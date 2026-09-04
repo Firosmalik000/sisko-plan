@@ -4,6 +4,7 @@ import type { ChangeEvent } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { CameraViewport } from './CameraViewport';
 import { decodeBarcodeImage } from './decode-barcode-image';
+import { playScannerSuccessTone } from './scanner-feedback';
 import { ScanReview } from './ScanReview';
 import type {
     ScannerConfig,
@@ -73,6 +74,7 @@ export default function ProductScanner({
             setBarcodeStatus('reading');
 
             if (purpose === 'product' && onBarcodeDetected) {
+                playScannerSuccessTone();
                 onBarcodeDetected(value);
                 setBarcodeStatus('success');
                 scanner.reset();
@@ -88,6 +90,7 @@ export default function ProductScanner({
                     setBarcodeStatus(found ? 'success' : 'not_found');
 
                     if (found) {
+                        playScannerSuccessTone();
                         scanner.setReviewing(true);
                     }
                 })
@@ -128,6 +131,10 @@ export default function ProductScanner({
                 }
 
                 navigator.vibrate?.(30);
+
+                if (fromAuto && scanMode === 'photo') {
+                    playScannerSuccessTone();
+                }
 
                 if (scanMode === 'barcode') {
                     setBarcodeError('');
