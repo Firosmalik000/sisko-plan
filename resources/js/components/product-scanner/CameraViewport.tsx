@@ -3,7 +3,6 @@ import {
     Images,
     Pause,
     Play,
-    Sparkles,
     ScanLine,
     SwitchCamera,
     X,
@@ -76,7 +75,7 @@ export function CameraViewport({
             />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,28,24,.7)_0%,transparent_25%,transparent_62%,rgba(8,28,24,.9)_100%)]" />
 
-            <header className="relative z-10 flex items-center justify-between gap-3 px-4 pt-[calc(env(safe-area-inset-top)+.75rem)]">
+            <header className="relative z-10 grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-start gap-2 px-[max(1rem,env(safe-area-inset-left))] pt-[calc(env(safe-area-inset-top)+.75rem)] sm:gap-3">
                 <button
                     type="button"
                     onClick={onClose}
@@ -85,7 +84,7 @@ export function CameraViewport({
                 >
                     <X className="size-5" />
                 </button>
-                <div className="rounded-xl bg-[var(--app-ink)]/75 px-3 py-2 text-center backdrop-blur-sm">
+                <div className="min-w-0 rounded-xl bg-[var(--app-ink)]/75 px-2 py-2 text-center backdrop-blur-sm sm:px-3">
                     <p className="text-sm font-black">
                         {scanMode === 'photo'
                             ? 'Arahkan, tahan stabil'
@@ -112,7 +111,7 @@ export function CameraViewport({
                 </button>
             </header>
 
-            <div className="relative z-10 flex flex-1 items-center justify-center px-7 py-4">
+            <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center px-4 py-3 sm:px-7 sm:py-4">
                 {error ? (
                     <div
                         className="max-w-sm rounded-2xl bg-white p-5 text-center text-[var(--app-ink)] shadow-xl"
@@ -145,7 +144,7 @@ export function CameraViewport({
                     </div>
                 ) : (
                     <div
-                        className="relative aspect-[4/3] w-full max-w-xl rounded-[1.75rem] border border-white/70 shadow-[0_16px_50px_-22px_rgba(0,0,0,.8)]"
+                        className="relative aspect-[4/3] w-[min(100%,61svh)] max-w-xl rounded-[1.75rem] border border-white/70 shadow-[0_16px_50px_-22px_rgba(0,0,0,.8)]"
                         aria-hidden="true"
                     >
                         <span className="absolute -top-px -left-px size-14 rounded-tl-[1.75rem] border-t-4 border-l-4 border-[#f0a35d]" />
@@ -166,30 +165,58 @@ export function CameraViewport({
                         {captures.length} hasil tersimpan di sesi ini
                     </p>
                 )}
-                <div className="mx-auto mb-3 flex w-fit rounded-full bg-[var(--app-ink)]/80 p-1 backdrop-blur-sm">
+                <div className="mx-auto mb-3 flex w-full max-w-sm items-center gap-2 px-4">
+                    <div className="flex min-w-0 flex-1 rounded-full bg-[var(--app-ink)]/80 p-1 backdrop-blur-sm">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (scanMode !== 'photo') {
+                                    onToggleScanMode();
+                                }
+                            }}
+                            className={`min-h-10 min-w-0 flex-1 rounded-full px-2 text-xs font-black transition ${scanMode === 'photo' ? 'bg-white text-[var(--app-ink)]' : 'text-white/70'}`}
+                            aria-pressed={scanMode === 'photo'}
+                        >
+                            Foto
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (scanMode !== 'barcode') {
+                                    onToggleScanMode();
+                                }
+                            }}
+                            className={`min-h-10 min-w-0 flex-1 rounded-full px-2 text-xs font-black transition ${scanMode === 'barcode' ? 'bg-white text-[var(--app-ink)]' : 'text-white/70'}`}
+                            aria-pressed={scanMode === 'barcode'}
+                        >
+                            Barcode
+                        </button>
+                    </div>
                     <button
                         type="button"
-                        onClick={() => {
-                            if (scanMode !== 'photo') {
-                                onToggleScanMode();
-                            }
-                        }}
-                        className={`min-h-9 rounded-full px-4 text-xs font-black transition ${scanMode === 'photo' ? 'bg-white text-[var(--app-ink)]' : 'text-white/70'}`}
-                        aria-pressed={scanMode === 'photo'}
+                        onClick={onToggleAuto}
+                        disabled={scanMode === 'barcode'}
+                        className="flex min-h-12 shrink-0 items-center gap-1.5 rounded-full bg-[var(--app-ink)]/80 px-3 text-[11px] font-bold text-[var(--app-soft-strong)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-45"
+                        aria-label={
+                            scanMode === 'barcode'
+                                ? 'Barcode terbaca otomatis'
+                                : `Foto otomatis ${autoPaused ? 'dijeda' : 'aktif'}`
+                        }
                     >
-                        Scan Foto
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (scanMode !== 'barcode') {
-                                onToggleScanMode();
-                            }
-                        }}
-                        className={`min-h-9 rounded-full px-4 text-xs font-black transition ${scanMode === 'barcode' ? 'bg-white text-[var(--app-ink)]' : 'text-white/70'}`}
-                        aria-pressed={scanMode === 'barcode'}
-                    >
-                        Barcode
+                        {scanMode === 'barcode' ? (
+                            <ScanLine className="size-4 text-[var(--workspace-400)]" />
+                        ) : autoPaused ? (
+                            <Play className="size-4" />
+                        ) : (
+                            <Pause className="size-4" />
+                        )}
+                        <span>
+                            {scanMode === 'barcode'
+                                ? 'Otomatis'
+                                : autoPaused
+                                  ? 'Auto jeda'
+                                  : 'Auto aktif'}
+                        </span>
                     </button>
                 </div>
                 {barcodeError && (
@@ -231,7 +258,7 @@ export function CameraViewport({
                                 : 'Kode terbaca, tetapi produk belum ada di katalog.'}
                     </p>
                 )}
-                <div className="flex items-center justify-between gap-4 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+                <div className="flex items-center justify-between gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:gap-4 sm:px-5">
                     <label className="grid size-12 cursor-pointer place-items-center rounded-2xl bg-white/12 text-white focus-within:ring-2 focus-within:ring-white">
                         <Images className="size-5" />
                         <span className="sr-only">Pilih dari galeri</span>
@@ -256,34 +283,11 @@ export function CameraViewport({
                         type="button"
                         onClick={onFinish}
                         disabled={captures.length === 0 || photoProcessing}
-                        className="min-h-12 min-w-24 rounded-2xl bg-white px-3 text-sm font-black text-[var(--app-ink)] disabled:opacity-40"
+                        className="min-h-12 min-w-20 rounded-2xl bg-white px-3 text-sm font-black text-[var(--app-ink)] disabled:opacity-40 sm:min-w-24"
                     >
-                        Tinjau hasil · {captures.length}
+                        Tinjau · {captures.length}
                     </button>
                 </div>
-                <button
-                    type="button"
-                    onClick={onToggleAuto}
-                    disabled={scanMode === 'barcode'}
-                    className="absolute bottom-[calc(env(safe-area-inset-bottom)+5.4rem)] left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--app-ink)]/75 px-3 text-[11px] font-bold text-[var(--app-soft-strong)] backdrop-blur-sm"
-                >
-                    {scanMode === 'barcode' ? (
-                        <>
-                            <ScanLine className="size-3.5 text-[var(--workspace-400)]" />
-                            Barcode otomatis
-                        </>
-                    ) : (
-                        <>
-                            {autoPaused ? (
-                                <Play className="size-3.5" />
-                            ) : (
-                                <Pause className="size-3.5" />
-                            )}
-                            <Sparkles className="size-3.5 text-[#f0a35d]" />
-                            Auto foto {autoPaused ? 'dijeda' : 'aktif'}
-                        </>
-                    )}
-                </button>
             </div>
         </div>
     );

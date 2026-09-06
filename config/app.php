@@ -78,11 +78,11 @@ return [
     |
     */
 
-    'locale' => in_array(env('APP_LOCALE', 'id'), ['id', 'ms'], true)
+    'locale' => in_array(env('APP_LOCALE', 'id'), ['id', 'ms', 'en'], true)
         ? env('APP_LOCALE', 'id')
         : 'id',
 
-    'fallback_locale' => in_array(env('APP_FALLBACK_LOCALE', 'id'), ['id', 'ms'], true)
+    'fallback_locale' => in_array(env('APP_FALLBACK_LOCALE', 'id'), ['id', 'ms', 'en'], true)
         ? env('APP_FALLBACK_LOCALE', 'id')
         : 'id',
 

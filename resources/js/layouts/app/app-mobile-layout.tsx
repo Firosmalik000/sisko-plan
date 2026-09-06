@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
+    ArrowLeft,
     BarChart3,
     Bell,
     Boxes,
@@ -96,121 +97,110 @@ const quickMenuItems = [
         title: 'Dashboard',
         href: '/dashboard',
         icon: Home,
-        description: 'Ringkasan usaha',
     },
     {
         title: 'Produk',
         href: '/master-data/products',
         icon: PackageSearch,
-        description: 'Katalog barang',
     },
     {
         title: 'Kasir',
         href: '/pos',
         icon: ShoppingCart,
-        description: 'Scan jual cepat',
     },
     {
         title: 'Transaksi',
         href: '/sales',
         icon: ReceiptText,
-        description: 'Riwayat penjualan',
     },
     {
         title: 'Laporan',
         href: '/reports',
         icon: BarChart3,
-        description: 'Pantau performa',
     },
     {
         title: 'Stok',
         href: '/operations/inventory',
         icon: Boxes,
-        description: 'Kontrol persediaan',
     },
     {
         title: 'Stock opname',
         href: '/operations/stock-opnames',
         icon: ClipboardCheck,
-        description: 'Hitung stok fisik',
     },
     {
         title: 'Pembelian',
         href: '/purchasing',
         icon: Truck,
-        description: 'Kulakan dan supplier',
     },
     {
         title: 'Supplier',
         href: '/master-data/suppliers',
         icon: Handshake,
-        description: 'Kontak pemasok',
     },
     {
         title: 'Kas & Bank',
         href: '/operations/cash',
         icon: CreditCard,
-        description: 'Saldo dan mutasi',
     },
     {
         title: 'Biaya Toko',
         href: '/expenses',
         icon: CircleDollarSign,
-        description: 'Catat pengeluaran',
     },
 ];
 
 const cashierActions = [
     {
         title: 'Scan penjualan',
-        description: 'Buka kasir untuk transaksi cepat',
         href: '/pos',
         icon: ShoppingCart,
+        iconClassName: 'bg-orange-50 text-orange-700',
     },
     {
         title: 'Scan kulakan',
-        description: 'Catat pembelian stok masuk',
         href: '/purchasing',
         icon: Truck,
+        iconClassName: 'bg-sky-50 text-sky-700',
     },
     {
         title: 'Cek stok',
-        description: 'Lihat persediaan dan batas minimum',
         href: '/operations/inventory',
         icon: Boxes,
+        iconClassName: 'bg-emerald-50 text-emerald-700',
     },
     {
         title: 'Scan produk baru',
-        description: 'Tambah item yang belum ada',
         href: '/master-data/products',
         icon: PackageSearch,
+        iconClassName: 'bg-amber-50 text-amber-700',
     },
 ];
 
 const manualCashierActions = [
     {
         title: 'Input penjualan',
-        description: 'Buka kasir tanpa scan',
         href: '/pos',
         icon: ShoppingCart,
+        iconClassName: 'bg-orange-50 text-orange-700',
     },
     {
         title: 'Input kulakan',
-        description: 'Catat pembelian stok masuk',
         href: '/purchasing',
         icon: Truck,
+        iconClassName: 'bg-sky-50 text-sky-700',
     },
     {
         title: 'Cek stok manual',
-        description: 'Lihat persediaan sekarang',
         href: '/operations/inventory',
         icon: Boxes,
+        iconClassName: 'bg-emerald-50 text-emerald-700',
     },
     {
         title: 'Tambah produk',
-        description: 'Tambah item yang belum ada',
         href: '/master-data/products',
         icon: PackageSearch,
+        iconClassName: 'bg-amber-50 text-amber-700',
     },
 ];
 
@@ -222,37 +212,31 @@ const moreMenuSections = [
                 title: 'Laporan',
                 href: '/reports',
                 icon: BarChart3,
-                description: 'Ringkasan performa usaha',
             },
             {
                 title: 'Toko',
                 href: '/stores',
                 icon: Store,
-                description: 'Kelola cabang dan tim',
             },
             {
                 title: 'Stock opname',
                 href: '/operations/stock-opnames',
                 icon: ClipboardCheck,
-                description: 'Hitung dan cocokkan stok fisik',
             },
             {
                 title: 'Kas & Bank',
                 href: '/operations/cash',
                 icon: CreditCard,
-                description: 'Saldo dan perpindahan kas',
             },
             {
                 title: 'Biaya',
                 href: '/expenses',
                 icon: CircleDollarSign,
-                description: 'Pengeluaran harian',
             },
             {
                 title: 'Supplier',
                 href: '/master-data/suppliers',
                 icon: Handshake,
-                description: 'Kelola pemasok toko',
             },
         ],
     },
@@ -263,13 +247,11 @@ const moreMenuSections = [
                 title: 'Modal',
                 href: '/operations/capital',
                 icon: Plus,
-                description: 'Setoran dan penarikan modal',
             },
             {
                 title: 'Langganan',
                 href: '/subscription',
                 icon: Check,
-                description: 'Status paket aktif',
             },
         ],
     },
@@ -311,6 +293,17 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
     const getInitials = useInitials();
     const landingHref = activeStore ? '/dashboard' : '/stores';
     const [stockNoticeOpen, setStockNoticeOpen] = useState(false);
+    const pageUrl = usePage().url;
+    const parsedUrl = new URL(
+        pageUrl,
+        typeof window !== 'undefined'
+            ? window.location.origin
+            : 'http://localhost',
+    );
+    const backTarget = customerBackTarget(
+        parsedUrl.pathname,
+        parsedUrl.searchParams,
+    );
     const [acknowledgedUnreadKey, setAcknowledgedUnreadKey] = useState<
         string | null
     >(null);
@@ -347,21 +340,32 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
     return (
         <header className="sticky top-0 z-40 border-b border-[var(--app-ink)]/8 bg-[#fffdfc]/92 backdrop-blur-xl">
             <div className="mx-auto flex h-16 max-w-7xl items-center gap-2.5 px-3 sm:px-5 lg:px-8">
-                <Link
-                    href={landingHref}
-                    aria-label={name}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[var(--app-shadow)] shadow-lg"
-                >
-                    {branding.logo_url ? (
-                        <img
-                            src={branding.logo_url}
-                            alt=""
-                            className="size-full rounded-xl object-contain"
-                        />
-                    ) : (
-                        <AppLogoIcon className="size-5 fill-current" />
-                    )}
-                </Link>
+                {backTarget && (
+                    <Link
+                        href={backTarget.href}
+                        aria-label={backTarget.label}
+                        className="grid size-10 shrink-0 place-items-center rounded-xl text-[var(--app-ink)] transition hover:bg-[var(--app-soft)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/30 focus-visible:outline-none"
+                    >
+                        <ArrowLeft className="size-5" />
+                    </Link>
+                )}
+                {!backTarget && (
+                    <Link
+                        href={landingHref}
+                        aria-label={name}
+                        className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[var(--app-shadow)] shadow-lg"
+                    >
+                        {branding.logo_url ? (
+                            <img
+                                src={branding.logo_url}
+                                alt=""
+                                className="size-full rounded-xl object-contain"
+                            />
+                        ) : (
+                            <AppLogoIcon className="size-5 fill-current" />
+                        )}
+                    </Link>
+                )}
 
                 <StoreMenu
                     stores={stores}
@@ -625,6 +629,83 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
     );
 }
 
+function customerBackTarget(pathname: string, searchParams: URLSearchParams) {
+    if (pathname === '/sales' && searchParams.get('from') === 'pos') {
+        return { href: '/pos', label: 'Kembali ke kasir' };
+    }
+
+    const returnMatch = pathname.match(/^\/sales\/([^/]+)\/returns\/create$/);
+
+    if (returnMatch) {
+        const query = new URLSearchParams();
+
+        ['period', 'view', 'from'].forEach((key) => {
+            const value = searchParams.get(key);
+
+            if (value) {
+                query.set(key, value);
+            }
+        });
+
+        return {
+            href: `/sales/${returnMatch[1]}${query.size ? `?${query}` : ''}`,
+            label: 'Kembali ke invoice',
+        };
+    }
+
+    if (/^\/sales\/[^/]+$/.test(pathname)) {
+        const query = new URLSearchParams();
+
+        ['period', 'view', 'from'].forEach((key) => {
+            const value = searchParams.get(key);
+
+            if (value) {
+                query.set(key, value);
+            }
+        });
+
+        return {
+            href: `/sales${query.size ? `?${query}` : ''}`,
+            label: 'Kembali ke transaksi',
+        };
+    }
+
+    const stockOpnameMatch = pathname.match(
+        /^\/operations\/stock-opnames\/[^/]+$/,
+    );
+
+    if (stockOpnameMatch) {
+        return {
+            href: '/operations/stock-opnames',
+            label: 'Kembali ke stok opname',
+        };
+    }
+
+    const appSubpages = [
+        '/pos',
+        '/purchasing',
+        '/operations/inventory',
+        '/operations/stock-opnames',
+        '/operations/cash',
+        '/operations/capital',
+        '/master-data/suppliers',
+        '/master-data/categories',
+        '/master-data/units',
+        '/master-data/financial-accounts',
+        '/expenses',
+        '/reports',
+        '/stores',
+        '/subscription',
+        '/settings',
+    ];
+
+    if (appSubpages.some((path) => pathname.startsWith(path))) {
+        return { href: '/dashboard', label: 'Kembali ke beranda' };
+    }
+
+    return null;
+}
+
 function StoreMenu({
     stores,
     activeStore,
@@ -880,24 +961,23 @@ function CashierMenu({
 
             <SheetContent
                 side="bottom"
-                className="max-h-[90svh] overflow-y-auto rounded-t-[2rem] border-0 bg-[#fff3ef] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] [&>button]:top-5 [&>button]:right-5 [&>button]:rounded-full [&>button]:bg-white [&>button]:p-2"
+                className="max-h-[90svh] overflow-y-auto rounded-t-[1.5rem] border-0 bg-[#fffaf7] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] sm:rounded-t-[1.75rem] [&>button]:top-4 [&>button]:right-4 [&>button]:size-9 [&>button]:rounded-xl [&>button]:bg-white [&>button]:opacity-100 [&>button]:shadow-sm [&>button]:ring-1 [&>button]:ring-[var(--app-ink)]/8"
             >
-                <SheetHeader className="mx-auto w-full max-w-xl px-4 pt-6 pb-2 text-left sm:px-6">
-                    <div className="mb-2 h-1.5 w-12 self-center rounded-full bg-[var(--app-primary)]/15" />
-                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
+                <SheetHeader className="mx-auto w-full max-w-lg px-4 pt-5 pb-3 text-left sm:px-6 sm:pt-6">
+                    <div className="mb-3 h-1 w-10 self-center rounded-full bg-[var(--app-primary)]/25" />
+                    <SheetTitle className="pr-12 text-lg font-black tracking-[-0.03em] text-[var(--app-ink)] sm:text-xl">
                         Kasir cepat
                     </SheetTitle>
-                    <SheetDescription className="text-sm text-[var(--muted-foreground)]">
-                        Pilih alur kerja. Kamera akan terbuka langsung di
-                        halaman tujuan.
+                    <SheetDescription className="sr-only">
+                        Pilih mode dan aksi kasir
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="mx-auto w-full max-w-xl px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] sm:px-6">
+                <div className="mx-auto w-full max-w-lg px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:px-6 sm:pb-6">
                     <div
                         role="tablist"
                         aria-label="Mode kasir"
-                        className="mb-4 grid grid-cols-2 rounded-[1.1rem] bg-[var(--app-soft)] p-1"
+                        className="mb-3 grid grid-cols-2 rounded-xl bg-[#fff0eb] p-1 ring-1 ring-[#ee4d2d]/8"
                     >
                         <button
                             type="button"
@@ -905,10 +985,10 @@ function CashierMenu({
                             aria-selected={cashierMode === 'scan'}
                             onClick={() => setCashierMode('scan')}
                             className={cn(
-                                'min-h-11 rounded-[.9rem] px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/35 focus-visible:outline-none',
+                                'min-h-10 rounded-lg px-3 text-xs font-black transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/35 focus-visible:outline-none sm:text-sm',
                                 cashierMode === 'scan'
-                                    ? 'bg-white text-[var(--app-ink)] shadow-sm'
-                                    : 'text-[var(--muted-foreground)]',
+                                    ? 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[0_8px_18px_-12px_var(--app-shadow)]'
+                                    : 'text-[#7b5d56] hover:bg-white/60 hover:text-[var(--app-ink)]',
                             )}
                         >
                             Scan produk
@@ -919,17 +999,20 @@ function CashierMenu({
                             aria-selected={cashierMode === 'manual'}
                             onClick={() => setCashierMode('manual')}
                             className={cn(
-                                'min-h-11 rounded-[.9rem] px-3 text-sm font-black transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/35 focus-visible:outline-none',
+                                'min-h-10 rounded-lg px-3 text-xs font-black transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/35 focus-visible:outline-none sm:text-sm',
                                 cashierMode === 'manual'
-                                    ? 'bg-white text-[var(--app-ink)] shadow-sm'
-                                    : 'text-[var(--muted-foreground)]',
+                                    ? 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[0_8px_18px_-12px_var(--app-shadow)]'
+                                    : 'text-[#7b5d56] hover:bg-white/60 hover:text-[var(--app-ink)]',
                             )}
                         >
                             Tanpa scan
                         </button>
                     </div>
 
-                    <div role="tabpanel" className="space-y-2">
+                    <div
+                        role="tabpanel"
+                        className="divide-y divide-[var(--app-ink)]/8 overflow-hidden rounded-2xl bg-white shadow-[0_16px_36px_-28px_var(--app-shadow)] ring-1 ring-[var(--app-ink)]/8"
+                    >
                         {(cashierMode === 'scan'
                             ? cashierActions
                             : manualCashierActions
@@ -942,20 +1025,27 @@ function CashierMenu({
                                             ? `${item.href}?scan=1`
                                             : item.href
                                     }
-                                    className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[var(--app-ink)]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[var(--app-primary)]/20 hover:bg-[#fffdfc] hover:shadow-md"
+                                    className="group flex min-h-14 items-center gap-3 px-3 py-2.5 transition hover:bg-[#fff7f3] focus-visible:bg-[#fff7f3] focus-visible:outline-none sm:min-h-16 sm:px-4"
                                 >
-                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[var(--app-soft)] text-[var(--app-primary)]">
-                                        <item.icon className="size-[1.1rem]" />
+                                    <span
+                                        className={cn(
+                                            'flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-[1.04]',
+                                            item.iconClassName,
+                                        )}
+                                    >
+                                        <item.icon
+                                            className="size-[1.1rem]"
+                                            strokeWidth={2.25}
+                                        />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="block text-sm font-black text-[var(--app-ink)]">
+                                        <span className="block truncate text-sm font-black text-[var(--app-ink)]">
                                             {t(item.title)}
                                         </span>
-                                        <span className="block text-xs font-semibold text-[var(--muted-foreground)]">
-                                            {t(item.description)}
-                                        </span>
                                     </span>
-                                    <ChevronRight className="size-4 shrink-0 text-[var(--muted-foreground)] transition group-hover:translate-x-0.5" />
+                                    <span className="grid size-8 shrink-0 place-items-center rounded-lg text-[#9a817a] transition group-hover:bg-white group-hover:text-[var(--app-primary)]">
+                                        <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                                    </span>
                                 </Link>
                             </SheetClose>
                         ))}

@@ -11,6 +11,7 @@ use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use App\Support\Authentication\AuthenticatedUser;
 use App\Support\Authentication\Impersonation;
+use App\Support\LocaleContext;
 use App\Support\PlatformPermission;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -86,11 +87,9 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => $branding['brand_name'],
             'branding' => $branding,
-            'locale' => app()->getLocale(),
-            'locales' => [
-                ['code' => 'id', 'label' => 'Bahasa Indonesia'],
-                ['code' => 'ms', 'label' => 'Bahasa Melayu'],
-            ],
+            'locale' => LocaleContext::locale($request),
+            'market' => LocaleContext::market($request),
+            'locales' => LocaleContext::options($request),
             'auth' => [
                 'user' => $user,
             ],

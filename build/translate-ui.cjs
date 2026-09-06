@@ -17,7 +17,7 @@ const translatedProps = new Set([
 ]);
 
 const technicalValues =
-    /^(?:[a-z0-9_.:/-]+|#[0-9a-f]{3,8}|\d+(?:\.\d+)?|[A-Z0-9_]+)$/;
+    /^(?:[a-z0-9]*[_.:/-][a-z0-9_.:/-]*|#[0-9a-f]{3,8}|\d+(?:\.\d+)?|[A-Z0-9_]+)$/;
 
 module.exports = function translateUiLiterals({ types: t }) {
     let programPath;

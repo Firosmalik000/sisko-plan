@@ -803,6 +803,10 @@ export default function ProductsIndex({
         setScannerFlow('create');
         setScannerOpen(true);
     };
+    const openFormPhotoScanner = () => {
+        setScannerFlow('form-photo');
+        setScannerOpen(true);
+    };
     const openEdit = (product: Product) => {
         productDrafts.clear();
         setActiveDraftId(null);
@@ -1058,6 +1062,8 @@ export default function ProductsIndex({
             openDraft(remaining[0]);
         } else {
             closeForm(false);
+            setScannerFlow('create');
+            setScannerOpen(true);
         }
     };
     const removeVariant = (index: number) =>
@@ -1365,9 +1371,19 @@ export default function ProductsIndex({
 
             <Dialog
                 open={formOpen}
-                onOpenChange={(open) =>
-                    open ? setFormOpen(true) : closeForm()
-                }
+                onOpenChange={(open) => {
+                    if (scannerOpen) {
+                        return;
+                    }
+
+                    if (open) {
+                        setFormOpen(true);
+
+                        return;
+                    }
+
+                    closeForm();
+                }}
             >
                 <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-full grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-slate-200 bg-white p-0 shadow-[0_28px_80px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[94dvh] sm:w-full sm:max-w-5xl sm:rounded-3xl">
                     <DialogHeader className="relative overflow-hidden border-b border-slate-200 bg-white px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pr-14 pb-4 text-left sm:px-7 sm:py-5 sm:pr-14">
@@ -1730,11 +1746,7 @@ export default function ProductsIndex({
                                             type="button"
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => {
-                                                setScannerFlow('form-photo');
-                                                setFormOpen(false);
-                                                setScannerOpen(true);
-                                            }}
+                                            onClick={openFormPhotoScanner}
                                             className="mt-2 w-full border-[var(--app-soft-strong)] text-[var(--app-primary)] hover:bg-[var(--app-soft)]"
                                         >
                                             <Camera className="size-4" />

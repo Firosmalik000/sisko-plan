@@ -12,6 +12,7 @@ use App\Models\SaleReturn;
 use App\Models\User;
 use App\Support\CurrentStore;
 use App\Support\Decimal;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,14 +23,30 @@ use LogicException;
 
 class SalesController extends Controller
 {
-    public function index(CurrentStore $currentStore): Response
+    public function index(Request $request, CurrentStore $currentStore): Response
     {
         $store = $currentStore->get();
         Gate::authorize('viewSales', $store);
+        $timezone = $store->settings()->value('timezone') ?? 'Asia/Jakarta';
+        $period = in_array($request->string('period')->toString(), ['today', 'week', 'month'], true)
+            ? $request->string('period')->toString()
+            : 'today';
+        $from = $request->string('from')->toString() === 'pos' ? 'pos' : null;
+        $today = CarbonImmutable::now($timezone);
+        $start = match ($period) {
+            'week' => $today->subDays(6)->startOfDay(),
+            'month' => $today->startOfMonth(),
+            default => $today->startOfDay(),
+        };
+        $end = $today->endOfDay();
         $canReturn = Gate::allows('manageSaleReturns', $store);
+        $view = $request->string('view')->toString() === 'returns' && $canReturn
+            ? 'returns'
+            : 'history';
         $itemTotals = DB::table('sale_items')->select('sale_id')->selectRaw('SUM(cogs_amount) as cogs_amount, SUM(gross_profit) as gross_profit')->where('store_id', $store->id)->groupBy('sale_id');
         $returnTotals = DB::table('sale_returns')->select('sale_id')->selectRaw('SUM(refund_amount) as refund_amount, SUM(cogs_reversed) as cogs_reversed, SUM(gross_profit_reversed) as gross_profit_reversed')->where('store_id', $store->id)->groupBy('sale_id');
         $sales = Sale::query()->where('sales.store_id', $store->id)
+            ->whereBetween('sales.occurred_at', [$start->utc(), $end->utc()])
             ->join('sale_payments', 'sale_payments.sale_id', '=', 'sales.id')
             ->join('financial_accounts', 'financial_accounts.id', '=', 'sale_payments.financial_account_id')
             ->leftJoinSub($itemTotals, 'item_totals', 'item_totals.sale_id', '=', 'sales.id')
@@ -57,7 +74,8 @@ class SalesController extends Controller
         return Inertia::render('sales/index', [
             'sales' => $sales, 'canViewProfit' => $canViewProfit,
             'canReturn' => $canReturn,
-            'timezone' => $store->settings()->value('timezone') ?? 'Asia/Jakarta',
+            'timezone' => $timezone,
+            'filters' => ['period' => $period, 'view' => $view, 'from' => $from],
         ]);
     }
 

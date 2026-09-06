@@ -1,5 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
-import { ShoppingCart } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import {
+    CalendarDays,
+    ReceiptText,
+    RotateCcw,
+    ShoppingCart,
+} from 'lucide-react';
 import { ledgerDateTime, money } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
@@ -19,42 +24,116 @@ type Sale = {
     net_gross_profit?: string;
 };
 
+type SalesFilters = {
+    period: 'today' | 'week' | 'month';
+    view: 'history' | 'returns';
+    from: 'pos' | null;
+};
+
+const periodOptions: Array<{ value: SalesFilters['period']; label: string }> = [
+    { value: 'today', label: 'Hari ini' },
+    { value: 'week', label: '7 hari terakhir' },
+    { value: 'month', label: 'Bulan ini' },
+];
+
 export default function SalesIndex({
     sales,
     canViewProfit,
     canReturn,
     timezone,
+    filters,
 }: {
     sales: { data: Sale[]; links: PaginationLink[]; total: number };
     canViewProfit: boolean;
     canReturn: boolean;
     timezone: string;
+    filters: SalesFilters;
 }) {
+    const returnMode = filters.view === 'returns';
+    const contextQuery = new URLSearchParams({
+        period: filters.period,
+        view: filters.view,
+        ...(filters.from ? { from: filters.from } : {}),
+    }).toString();
+    const updatePeriod = (period: SalesFilters['period']) => {
+        router.get(
+            '/sales',
+            { period, view: filters.view, from: filters.from },
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    };
+
     return (
         <>
-            <Head title="Transaksi penjualan" />
+            <Head
+                title={returnMode ? 'Retur penjualan' : 'Riwayat penjualan'}
+            />
             <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto max-w-6xl space-y-4">
-                    <header className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
-                                Transaksi
-                            </h1>
+                    <header className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <span
+                                    className={`grid size-11 shrink-0 place-items-center rounded-xl ${returnMode ? 'bg-red-50 text-red-700' : 'bg-[var(--app-soft)] text-[var(--app-primary)]'}`}
+                                >
+                                    {returnMode ? (
+                                        <RotateCcw className="size-5" />
+                                    ) : (
+                                        <ReceiptText className="size-5" />
+                                    )}
+                                </span>
+                                <div className="min-w-0">
+                                    <h1 className="text-lg leading-tight font-black tracking-[-0.03em] text-[var(--app-ink)] sm:text-2xl">
+                                        {returnMode
+                                            ? 'Pilih Transaksi Retur'
+                                            : 'Riwayat Transaksi'}
+                                    </h1>
+                                    <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">
+                                        {sales.total} transaksi
+                                    </p>
+                                </div>
+                            </div>
                             <Link
                                 href="/pos"
-                                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)]"
+                                className="hidden h-10 shrink-0 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)] sm:inline-flex"
                             >
                                 <ShoppingCart className="size-4" />
                                 Buka kasir
                             </Link>
                         </div>
+                        <div className="mt-4 flex items-center gap-2 border-t border-[var(--app-ink)]/8 pt-3">
+                            <CalendarDays className="size-4 shrink-0 text-[var(--app-primary)]" />
+                            <label htmlFor="sales-period" className="sr-only">
+                                Periode transaksi
+                            </label>
+                            <select
+                                id="sales-period"
+                                value={filters.period}
+                                onChange={(event) =>
+                                    updatePeriod(
+                                        event.target
+                                            .value as SalesFilters['period'],
+                                    )
+                                }
+                                className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--app-ink)]/10 bg-[#fffaf7] px-3 text-sm font-bold text-[var(--app-ink)] outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15 sm:max-w-56"
+                            >
+                                {periodOptions.map((option) => (
+                                    <option
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </header>
-                    <section className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-                        <div className="space-y-3">
+                    <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                        <div className="divide-y divide-[var(--app-ink)]/8">
                             {sales.data.map((sale) => (
                                 <div
                                     key={sale.public_id}
-                                    className="grid gap-4 rounded-2xl border border-slate-200 p-4 transition hover:border-orange-300 hover:shadow-sm md:grid-cols-[1.4fr_1fr_1fr_auto] md:items-center"
+                                    className="grid gap-3 p-4 transition hover:bg-[#fffaf7] sm:p-5 md:grid-cols-[1.4fr_1fr_1fr_auto] md:items-center"
                                 >
                                     <div>
                                         <p className="font-bold text-slate-900">
@@ -107,7 +186,7 @@ export default function SalesIndex({
                                             variant="outline"
                                         >
                                             <Link
-                                                href={`/sales/${sale.public_id}`}
+                                                href={`/sales/${sale.public_id}?${contextQuery}`}
                                             >
                                                 Invoice
                                             </Link>
@@ -115,9 +194,11 @@ export default function SalesIndex({
                                         {canReturn && (
                                             <Button asChild size="sm">
                                                 <Link
-                                                    href={`/sales/${sale.public_id}/returns/create`}
+                                                    href={`/sales/${sale.public_id}/returns/create?${contextQuery}`}
                                                 >
-                                                    Retur
+                                                    {returnMode
+                                                        ? 'Pilih'
+                                                        : 'Retur'}
                                                 </Link>
                                             </Button>
                                         )}
@@ -126,9 +207,9 @@ export default function SalesIndex({
                             ))}
                         </div>
                         {sales.data.length === 0 && (
-                            <div className="py-14 text-center">
-                                <p className="font-serif text-2xl text-slate-700">
-                                    Belum ada penjualan
+                            <div className="px-5 py-14 text-center">
+                                <p className="text-lg font-black text-[var(--app-ink)]">
+                                    Tidak ada transaksi pada periode ini
                                 </p>
                                 <Link
                                     href="/pos"
@@ -138,7 +219,7 @@ export default function SalesIndex({
                                 </Link>
                             </div>
                         )}
-                        <div className="mt-6">
+                        <div className="border-t border-[var(--app-ink)]/8 p-4">
                             <Pagination links={sales.links} />
                         </div>
                     </section>

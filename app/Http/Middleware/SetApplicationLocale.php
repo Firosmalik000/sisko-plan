@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\LocaleContext;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -11,9 +12,7 @@ class SetApplicationLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->session()->get('locale', config('app.locale', 'id'));
-
-        App::setLocale(in_array($locale, ['id', 'ms'], true) ? $locale : 'id');
+        App::setLocale(LocaleContext::locale($request));
 
         return $next($request);
     }

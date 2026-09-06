@@ -10,6 +10,7 @@ import AuthLayout from '@/layouts/auth-layout';
 import ErrorLayout from '@/layouts/error-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import SuperAdminLayout from '@/layouts/super-admin-layout';
+import type { AppLocale, MarketCode } from '@/lib/currency';
 import { setActiveLocale } from '@/lib/i18n';
 
 let appName =
@@ -19,8 +20,42 @@ let appName =
     'Laravel';
 let localeListenerRegistered = false;
 const pages = import.meta.glob<{ default: ComponentType }>('./pages/**/*.tsx');
-const normalizeLocale = (locale: unknown): 'id' | 'ms' =>
-    locale === 'ms' ? 'ms' : 'id';
+const normalizeLocale = (locale: unknown): AppLocale =>
+    locale === 'en' || locale === 'ms' ? locale : 'id';
+const normalizeMarket = (
+    market: unknown,
+    locale: AppLocale,
+    locales: unknown,
+): MarketCode => {
+    if (market === 'id' || market === 'ms') {
+        return market;
+    }
+
+    const isMarketSwitcher =
+        Array.isArray(locales) &&
+        !locales.some(
+            (option) =>
+                typeof option === 'object' &&
+                option !== null &&
+                'code' in option &&
+                option.code === 'en',
+        );
+
+    if (isMarketSwitcher) {
+        return locale === 'ms' ? 'ms' : 'id';
+    }
+
+    const documentMarket =
+        typeof document === 'undefined'
+            ? undefined
+            : document.documentElement.dataset.market;
+
+    if (documentMarket === 'id' || documentMarket === 'ms') {
+        return documentMarket;
+    }
+
+    return locale === 'ms' ? 'ms' : 'id';
+};
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -54,12 +89,30 @@ createInertiaApp({
             }
         }
 
-        setActiveLocale(normalizeLocale(page.props.locale));
+        const locale = normalizeLocale(page.props.locale);
+        const market = normalizeMarket(
+            page.props.market,
+            locale,
+            page.props.locales,
+        );
+        setActiveLocale(locale);
+
+        if (!ssr) {
+            document.documentElement.lang = locale;
+            document.documentElement.dataset.market = market;
+        }
 
         if (!ssr && !localeListenerRegistered) {
             router.on('navigate', (event) => {
-                setActiveLocale(
-                    normalizeLocale(event.detail.page.props.locale),
+                const nextLocale = normalizeLocale(
+                    event.detail.page.props.locale,
+                );
+                setActiveLocale(nextLocale);
+                document.documentElement.lang = nextLocale;
+                document.documentElement.dataset.market = normalizeMarket(
+                    event.detail.page.props.market,
+                    nextLocale,
+                    event.detail.page.props.locales,
                 );
             });
             localeListenerRegistered = true;

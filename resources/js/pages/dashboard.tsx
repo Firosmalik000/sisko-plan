@@ -22,6 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 import type { StoreSummary } from '@/types';
 
 type Performance = {
@@ -278,10 +279,10 @@ function ChangeBadge({
               : Clock3;
     const label =
         change.direction === 'up'
-            ? 'Naik'
+            ? translate('Naik')
             : change.direction === 'down'
-              ? 'Turun'
-              : 'Tetap';
+              ? translate('Turun')
+              : translate('Tetap');
 
     return (
         <span

@@ -8,6 +8,7 @@ use App\Services\Operations\ProductionReadiness;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
@@ -147,6 +148,45 @@ class ProductionReadinessTest extends TestCase
             "'content_security_policy' => env('SECURITY_CSP_ENABLED', false),",
             file_get_contents(config_path('security.php')),
         );
+    }
+
+    public function test_local_content_security_policy_allows_the_active_vite_server(): void
+    {
+        $this->app->detectEnvironment(fn (): string => 'local');
+        config([
+            'app.url' => 'https://sisko-plan.test',
+            'security.content_security_policy' => true,
+        ]);
+        $hotFile = public_path('hot');
+        $previousHotFile = File::exists($hotFile) ? File::get($hotFile) : null;
+
+        try {
+            File::put($hotFile, 'https://sisko-plan.test:5175');
+
+            $policy = (string) $this->get(route('home'))->headers->get('Content-Security-Policy');
+
+            $this->assertStringContainsString("script-src 'self' 'unsafe-inline' https://sisko-plan.test:5175", $policy);
+            $this->assertStringContainsString("style-src 'self' 'unsafe-inline' https://sisko-plan.test:5175", $policy);
+            $this->assertStringContainsString("font-src 'self' data: https://sisko-plan.test:5175", $policy);
+            $this->assertStringContainsString('connect-src \'self\' https://sisko-plan.test:5175 wss://sisko-plan.test:5175', $policy);
+        } finally {
+            if ($previousHotFile === null) {
+                File::delete($hotFile);
+            } else {
+                File::put($hotFile, $previousHotFile);
+            }
+        }
+    }
+
+    public function test_application_content_security_policy_stays_strict_outside_local(): void
+    {
+        config(['security.content_security_policy' => true]);
+
+        $policy = (string) $this->get(route('home'))->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("script-src 'self'", $policy);
+        $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline'", $policy);
+        $this->assertStringNotContainsString(':5175', $policy);
     }
 
     public function test_readiness_is_generic_and_fails_closed_when_database_is_unavailable(): void

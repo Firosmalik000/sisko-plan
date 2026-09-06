@@ -23,6 +23,7 @@ use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use App\Support\Decimal;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -467,6 +468,7 @@ class SalesPosTest extends TestCase
 
     public function test_sales_history_is_paginated_after_twenty_five_documents(): void
     {
+        $this->travelTo(CarbonImmutable::parse('2026-08-07 18:00:00', 'Asia/Jakarta'));
         [$owner, $store, $product, $cash] = $this->fixtures();
         $this->openStock($store, $owner, $product, '30', '500');
         foreach (range(1, 26) as $index) {
@@ -478,6 +480,47 @@ class SalesPosTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->component('sales/index')->has('sales.data', 25)->where('sales.total', 26));
         $this->actingAs($owner)->withSession($session)->get(route('sales.index', ['page' => 2]))
             ->assertInertia(fn (Assert $page) => $page->has('sales.data', 1));
+    }
+
+    public function test_sales_history_defaults_to_today_and_can_show_the_current_month(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-08-10 18:00:00', 'Asia/Jakarta'));
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $this->postSale(
+            $store,
+            $owner,
+            $product,
+            $cash,
+            key: 'earlier-sale',
+            occurredAt: '2026-08-07T09:00:00Z',
+        );
+        $this->postSale(
+            $store,
+            $owner,
+            $product,
+            $cash,
+            key: 'today-sale',
+            occurredAt: '2026-08-10T09:00:00Z',
+        );
+        $session = ['active_store_id' => $store->id];
+
+        $this->actingAs($owner)->withSession($session)->get(route('sales.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('sales/index')
+                ->where('filters.period', 'today')
+                ->where('filters.view', 'history')
+                ->has('sales.data', 1));
+
+        $this->actingAs($owner)->withSession($session)->get(route('sales.index', [
+            'period' => 'month',
+            'view' => 'returns',
+            'from' => 'pos',
+        ]))->assertInertia(fn (Assert $page) => $page
+            ->where('filters.period', 'month')
+            ->where('filters.view', 'returns')
+            ->where('filters.from', 'pos')
+            ->has('sales.data', 2));
     }
 
     /** @return array{User, Store, Product, FinancialAccount, FinancialAccount} */

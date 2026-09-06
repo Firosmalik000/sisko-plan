@@ -1,6 +1,6 @@
 import { Form, Head, setLayoutProps } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,29 +18,21 @@ export default function TwoFactorChallenge() {
     const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
     const [code, setCode] = useState<string>('');
 
-    const authConfigContent = useMemo<{
-        title: string;
-        description: string;
-        toggleText: string;
-    }>(() => {
-        if (showRecoveryInput) {
-            return {
-                title: t('Kode pemulihan'),
-                description: t(
-                    'Konfirmasi akses akun dengan memasukkan salah satu kode pemulihan darurat.',
-                ),
-                toggleText: t('masuk menggunakan kode autentikasi'),
-            };
-        }
-
-        return {
-            title: t('Kode autentikasi'),
-            description: t(
-                'Masukkan kode autentikasi dari aplikasi autentikator Anda.',
-            ),
-            toggleText: t('masuk menggunakan kode pemulihan'),
-        };
-    }, [showRecoveryInput]);
+    const authConfigContent = showRecoveryInput
+        ? {
+              title: t('Kode pemulihan'),
+              description: t(
+                  'Konfirmasi akses akun dengan memasukkan salah satu kode pemulihan darurat.',
+              ),
+              toggleText: t('masuk menggunakan kode autentikasi'),
+          }
+        : {
+              title: t('Kode autentikasi'),
+              description: t(
+                  'Masukkan kode autentikasi dari aplikasi autentikator Anda.',
+              ),
+              toggleText: t('masuk menggunakan kode pemulihan'),
+          };
 
     setLayoutProps({
         title: authConfigContent.title,

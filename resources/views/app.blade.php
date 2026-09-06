@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-app-name="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light" style="color-scheme: light" data-market="{{ $page['props']['market'] ?? 'id' }}" data-app-name="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,14 +27,6 @@
             <meta name="twitter:image" content="{{ $socialImageUrl }}">
             <meta name="twitter:card" content="{{ ! empty($page['props']['branding']['social_image_url']) ? 'summary_large_image' : 'summary' }}">
         @endif
-
-        {{-- The application currently ships with one consistent light theme. --}}
-        <script>
-            (function() {
-                document.documentElement.classList.remove('dark');
-                document.documentElement.style.colorScheme = 'light';
-            })();
-        </script>
 
         <style>
             html {

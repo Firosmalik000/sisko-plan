@@ -8,6 +8,7 @@ import {
     PackageOpen,
     Plus,
     ReceiptText,
+    RotateCcw,
     Search,
     ShoppingCart,
     QrCode,
@@ -463,11 +464,18 @@ export default function PosPage({
                                         Scan kamera
                                     </button>
                                     <Link
-                                        href="/sales"
+                                        href="/sales?view=history&from=pos"
                                         className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--app-soft)] px-3 text-xs font-bold text-[var(--app-primary)] hover:bg-[var(--app-soft-strong)]"
                                     >
                                         <ReceiptText className="size-4" />
-                                        Riwayat & retur
+                                        Riwayat
+                                    </Link>
+                                    <Link
+                                        href="/sales?view=returns&from=pos"
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100"
+                                    >
+                                        <RotateCcw className="size-4" />
+                                        Retur
                                     </Link>
                                 </div>
                             </div>

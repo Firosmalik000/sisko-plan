@@ -8,31 +8,46 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import type { AppLocale, MarketCode } from '@/lib/currency';
 
-type LocaleCode = 'id' | 'ms';
-type LocaleOption = { code: LocaleCode; label: string };
+type LocaleOption = { code: AppLocale; label: string };
 
-const fallbackLocales: LocaleOption[] = [
-    { code: 'id', label: 'Bahasa Indonesia' },
-    { code: 'ms', label: 'Bahasa Melayu' },
-];
+const fallbackLocales = (market: MarketCode): LocaleOption[] =>
+    market === 'ms'
+        ? [
+              { code: 'ms', label: 'Bahasa Melayu' },
+              { code: 'en', label: 'English' },
+          ]
+        : [
+              { code: 'id', label: 'Bahasa Indonesia' },
+              { code: 'en', label: 'English' },
+          ];
 
 const isLocaleOption = (value: unknown): value is LocaleOption =>
     typeof value === 'object' &&
     value !== null &&
     'code' in value &&
-    (value.code === 'id' || value.code === 'ms') &&
+    (value.code === 'en' || value.code === 'id' || value.code === 'ms') &&
     'label' in value &&
     typeof value.label === 'string';
 
 export default function LanguageSwitcher() {
     const pageProps = usePage().props;
-    const locale: LocaleCode = pageProps.locale === 'ms' ? 'ms' : 'id';
+    const locale: AppLocale =
+        pageProps.locale === 'en' || pageProps.locale === 'ms'
+            ? pageProps.locale
+            : 'id';
+    const market: MarketCode = pageProps.market === 'ms' ? 'ms' : 'id';
     const configuredLocales = Array.isArray(pageProps.locales)
         ? pageProps.locales.filter(isLocaleOption)
         : [];
     const locales =
-        configuredLocales.length > 0 ? configuredLocales : fallbackLocales;
+        configuredLocales.length > 0
+            ? configuredLocales
+            : fallbackLocales(market);
+    const context = locales.some((language) => language.code === 'en')
+        ? 'customer'
+        : 'market';
     const [isChanging, setIsChanging] = useState(false);
 
     const changeLocale = (nextLocale: string) => {
@@ -43,7 +58,7 @@ export default function LanguageSwitcher() {
         setIsChanging(true);
         router.post(
             '/locale',
-            { locale: nextLocale },
+            { locale: nextLocale, context },
             {
                 preserveScroll: true,
                 onFinish: () => setIsChanging(false),
