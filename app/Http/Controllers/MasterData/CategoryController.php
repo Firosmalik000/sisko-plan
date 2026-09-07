@@ -27,7 +27,7 @@ class CategoryController extends Controller
             ->orderBy('name')->paginate(12)->withQueryString()
             ->through(fn (Category $category) => $category->only(['public_id', 'name', 'description', 'is_active']));
 
-        return Inertia::render('master-data/categories/index', compact('categories', 'search', 'status', 'canManage'));
+        return Inertia::render('customer/master-data/categories/index', compact('categories', 'search', 'status', 'canManage'));
     }
 
     public function store(CategoryRequest $request, CurrentStore $currentStore): RedirectResponse

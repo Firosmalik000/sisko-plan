@@ -302,7 +302,7 @@ class SalesPosTest extends TestCase
         $sale = Sale::query()->sole();
         app(PostSaleReturn::class)->handle($store, $owner, $sale->id, $cash->id, [['sale_item_id' => SaleItem::query()->sole()->id, 'quantity' => '0.5']], '2026-08-07T16:30:00Z', null, 'owner-return-before-cashier-view');
         $this->actingAs($cashier)->withSession($session)->get(route('sales.show', $sale))
-            ->assertInertia(fn (Assert $page) => $page->component('sales/show')
+            ->assertInertia(fn (Assert $page) => $page->component('customer/sales/show')
                 ->where('canReturn', false)
                 ->where('canViewProfit', false)
                 ->missing('items.0.cogs_amount')
@@ -322,14 +322,14 @@ class SalesPosTest extends TestCase
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('pos.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('pos/index')
+                ->component('customer/pos/index')
                 ->has('products', 1)
                 ->where('products.0.catalog_product_id', $product->public_id)
                 ->where('products.0.catalog_product_name', $product->name)
                 ->where('products.0.variant_name', null)
                 ->has('paymentMethods', 2)
                 ->where('paymentMethods.0.method', 'cash')
-                ->where('paymentMethods.0.label', 'Cash')
+                ->where('paymentMethods.0.label', __('Cash'))
                 ->where('paymentMethods.0.account_id', $cash->public_id)
                 ->where('paymentMethods.1.method', 'qris')
                 ->where('paymentMethods.1.label', 'QRIS')
@@ -346,10 +346,10 @@ class SalesPosTest extends TestCase
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('pos.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('pos/index')
+                ->component('customer/pos/index')
                 ->has('paymentMethods', 2)
                 ->where('paymentMethods.0.method', 'cash')
-                ->where('paymentMethods.0.label', 'Cash')
+                ->where('paymentMethods.0.label', __('Cash'))
                 ->where('paymentMethods.1.method', 'qris')
                 ->where('paymentMethods.1.label', 'QRIS'));
 
@@ -380,7 +380,7 @@ class SalesPosTest extends TestCase
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('pos.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('pos/index')
+                ->component('customer/pos/index')
                 ->has('products', 2)
                 ->where('products.0.catalog_product_id', $product->public_id)
                 ->where('products.1.catalog_product_id', $product->public_id)
@@ -425,7 +425,7 @@ class SalesPosTest extends TestCase
             'auto_print_receipt' => true,
         ]);
         $this->actingAs($owner)->withSession($session)->get(route('sales.show', $sale))
-            ->assertInertia(fn (Assert $page) => $page->component('sales/show')
+            ->assertInertia(fn (Assert $page) => $page->component('customer/sales/show')
                 ->where('canReturn', true)
                 ->where('canViewProfit', true)
                 ->where('receipt.address', 'Jl. Melati No. 10')
@@ -477,7 +477,7 @@ class SalesPosTest extends TestCase
         $session = ['active_store_id' => $store->id];
 
         $this->actingAs($owner)->withSession($session)->get(route('sales.index'))
-            ->assertInertia(fn (Assert $page) => $page->component('sales/index')->has('sales.data', 25)->where('sales.total', 26));
+            ->assertInertia(fn (Assert $page) => $page->component('customer/sales/index')->has('sales.data', 25)->where('sales.total', 26));
         $this->actingAs($owner)->withSession($session)->get(route('sales.index', ['page' => 2]))
             ->assertInertia(fn (Assert $page) => $page->has('sales.data', 1));
     }
@@ -507,7 +507,7 @@ class SalesPosTest extends TestCase
 
         $this->actingAs($owner)->withSession($session)->get(route('sales.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('sales/index')
+                ->component('customer/sales/index')
                 ->where('filters.period', 'today')
                 ->where('filters.view', 'history')
                 ->has('sales.data', 1));

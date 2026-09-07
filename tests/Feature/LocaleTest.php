@@ -38,7 +38,7 @@ class LocaleTest extends TestCase
             ->withSession(['market' => 'ms', 'locale' => 'en'])
             ->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('welcome')
+                ->component('public/welcome')
                 ->where('market', 'ms')
                 ->where('locale', 'ms')
                 ->where('locales.0.code', 'id')

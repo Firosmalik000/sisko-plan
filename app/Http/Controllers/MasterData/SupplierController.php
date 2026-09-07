@@ -26,7 +26,7 @@ class SupplierController extends Controller
             ->orderBy('name')->paginate(12)->withQueryString()
             ->through(fn (Supplier $supplier) => $supplier->only(['public_id', 'name', 'contact_person', 'phone', 'email', 'address', 'is_active']));
 
-        return Inertia::render('master-data/suppliers/index', compact('suppliers', 'search', 'status', 'canManage'));
+        return Inertia::render('customer/master-data/suppliers/index', compact('suppliers', 'search', 'status', 'canManage'));
     }
 
     public function store(SupplierRequest $request, CurrentStore $currentStore): RedirectResponse

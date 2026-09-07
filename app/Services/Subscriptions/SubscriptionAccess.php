@@ -207,22 +207,22 @@ class SubscriptionAccess
 
     private function activeMembersCount(int $ownerId): int
     {
-        return DB::table('store_user')
-            ->join('stores', 'stores.id', '=', 'store_user.store_id')
+        return DB::table('store_memberships')
+            ->join('stores', 'stores.id', '=', 'store_memberships.store_id')
             ->where('stores.owner_user_id', $ownerId)
-            ->where('store_user.user_id', '!=', $ownerId)
-            ->where('store_user.status', MembershipStatus::Active->value)
+            ->where('store_memberships.user_id', '!=', $ownerId)
+            ->where('store_memberships.status', MembershipStatus::Active->value)
             ->distinct()
-            ->count('store_user.user_id');
+            ->count('store_memberships.user_id');
     }
 
     private function isActiveAccountMember(int $ownerId, int $memberId): bool
     {
-        return DB::table('store_user')
-            ->join('stores', 'stores.id', '=', 'store_user.store_id')
+        return DB::table('store_memberships')
+            ->join('stores', 'stores.id', '=', 'store_memberships.store_id')
             ->where('stores.owner_user_id', $ownerId)
-            ->where('store_user.user_id', $memberId)
-            ->where('store_user.status', MembershipStatus::Active->value)
+            ->where('store_memberships.user_id', $memberId)
+            ->where('store_memberships.status', MembershipStatus::Active->value)
             ->exists();
     }
 

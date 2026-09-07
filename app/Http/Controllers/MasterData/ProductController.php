@@ -48,7 +48,7 @@ class ProductController extends Controller
             ->orderBy('name')->paginate(12)->withQueryString()
             ->through(fn (Product $product) => $this->serialize($product));
 
-        return Inertia::render('master-data/products/index', [
+        return Inertia::render('customer/master-data/products/index', [
             'products' => $products,
             'categories' => Category::query()
                 ->where('store_id', $currentStore->id())

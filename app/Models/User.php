@@ -95,7 +95,7 @@ class User extends Authenticatable implements PasskeyUser
     /** @return BelongsToMany<Store, $this, StoreMembership, 'pivot'> */
     public function stores(): BelongsToMany
     {
-        return $this->belongsToMany(Store::class)
+        return $this->belongsToMany(Store::class, 'store_memberships')
             ->using(StoreMembership::class)
             ->withPivot(['role', 'status'])
             ->withTimestamps();

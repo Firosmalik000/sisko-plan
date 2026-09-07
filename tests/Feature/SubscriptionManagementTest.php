@@ -180,7 +180,7 @@ class SubscriptionManagementTest extends TestCase
         ]);
 
         $this->get(route('pricing'))->assertInertia(fn (Assert $page) => $page
-            ->component('pricing')
+            ->component('public/pricing')
             ->has('plans', 2)
             ->where('plans.1.name', 'Growth')
             ->where('plans.0.max_stores', 3)
@@ -256,7 +256,7 @@ class SubscriptionManagementTest extends TestCase
 
         $this->actingAs($owner)->get(route('pricing'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('pricing')
+                ->component('public/pricing')
                 ->where('account.can_access_dashboard', false)
                 ->where('account.trial_used', true)
                 ->where('plans.0.is_trial', true)
@@ -648,7 +648,7 @@ class SubscriptionManagementTest extends TestCase
 
         $this->actingAs($owner)->withSession($session)->get(route('dashboard'))->assertRedirect(route('subscription.index'));
         $this->actingAs($owner)->withSession($session)->get(route('subscription.index'))
-            ->assertInertia(fn (Assert $page) => $page->component('subscription/index')->where('usage.can_write', false)->where('usage.status', SubscriptionStatus::PastDue->value));
+            ->assertInertia(fn (Assert $page) => $page->component('customer/subscription/index')->where('usage.can_write', false)->where('usage.status', SubscriptionStatus::PastDue->value));
         $this->actingAs($owner)->withSession($session)->post(route('operations.cash.opening.store'), [
             'account_id' => $account->public_id, 'amount' => '100', 'occurred_at' => '2026-08-08T10:00', 'idempotency_key' => (string) Str::uuid(),
         ])->assertSessionHasErrors('subscription');
@@ -680,7 +680,7 @@ class SubscriptionManagementTest extends TestCase
             ->assertRedirect(route('subscription.index'));
         $this->actingAs($owner)->withSession($session)->get(route('subscription.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('subscription/index')
+                ->component('customer/subscription/index')
                 ->where('usage.can_write', false)
                 ->where('usage.reason', 'Periode subscription belum ditetapkan.'));
 
@@ -723,7 +723,7 @@ class SubscriptionManagementTest extends TestCase
         ])->assertSessionHasErrors('email');
         $ownedStoreIds = Store::query()->where('owner_user_id', $owner->id)->pluck('id');
         $this->assertSame(1, Product::query()->whereIn('store_id', $ownedStoreIds)->count());
-        $this->assertDatabaseHas('store_user', ['store_id' => $secondStore->id, 'user_id' => $member->id, 'status' => MembershipStatus::Active->value]);
+        $this->assertDatabaseHas('store_memberships', ['store_id' => $secondStore->id, 'user_id' => $member->id, 'status' => MembershipStatus::Active->value]);
         $this->assertDatabaseMissing('users', ['email' => 'limit.member@example.com']);
         $this->assertSame($product->id, Product::query()->sole()->id);
     }
@@ -746,13 +746,13 @@ class SubscriptionManagementTest extends TestCase
 
         $this->actingAs($owner)->get(route('super-admin.subscriptions.index'))->assertForbidden();
         $this->actingAs($admin)->get(route('super-admin.subscriptions.index'))
-            ->assertInertia(fn (Assert $page) => $page->component('super-admin/subscriptions/index')
+            ->assertInertia(fn (Assert $page) => $page->component('platform/subscriptions/index')
                 ->has('plans', 2)
                 ->has('subscriptions.data', 2)
                 ->where('subscriptions.data.0.plan.monthly_price', '200000.0000')
                 ->where('subscriptions.data.0.plan.is_active', true));
         $this->actingAs($admin)->get(route('super-admin.payments.index'))
-            ->assertInertia(fn (Assert $page) => $page->component('super-admin/payments/index')->has('payments.data', 1)->where('summary.transactions', 1)->where('summary.amount', 200000));
+            ->assertInertia(fn (Assert $page) => $page->component('platform/payments/index')->has('payments.data', 1)->where('summary.transactions', 1)->where('summary.amount', 200000));
         $this->actingAs($admin)->get(route('super-admin.dashboard'))
             ->assertInertia(fn (Assert $page) => $page->where('metrics.operational_subscriptions', 1)->where('metrics.monthly_recurring_revenue', 200000)->where('metrics.payments_this_month', 200000));
         $this->actingAs($admin)->get(route('super-admin.stores.index'))

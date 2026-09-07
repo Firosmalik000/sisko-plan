@@ -63,7 +63,7 @@ class Store extends Model
     /** @return BelongsToMany<User, $this, StoreMembership, 'pivot'> */
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)
+        return $this->belongsToMany(User::class, 'store_memberships')
             ->using(StoreMembership::class)
             ->withPivot(['role', 'status'])
             ->withTimestamps();

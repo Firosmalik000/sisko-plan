@@ -35,7 +35,7 @@ class ProfileUpdateTest extends TestCase
             ->withSession(['active_store_id' => $store->id])
             ->get(route('profile.edit'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('settings/profile')
+                ->component('customer/settings/profile')
                 ->where('store.public_id', $store->public_id)
                 ->where('store.can_manage', true)
                 ->where('subscription.plan_name', $store->subscription->plan->name));

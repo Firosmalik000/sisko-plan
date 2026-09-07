@@ -13,5 +13,5 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  */
 class StoreMembership extends Pivot
 {
-    protected $table = 'store_user';
+    protected $table = 'store_memberships';
 }

@@ -31,7 +31,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::before(fn (User $user): ?bool => $user->platform_role === PlatformAdminRole::SuperAdmin ? true : null);
+        Gate::before(fn (User $user, string $ability): ?bool => $user->platform_role === PlatformAdminRole::SuperAdmin
+            && str_starts_with($ability, 'platform.')
+                ? true
+                : null);
         $this->configureDefaults();
     }
 

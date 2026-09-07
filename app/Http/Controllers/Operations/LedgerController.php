@@ -82,7 +82,7 @@ class LedgerController extends Controller
                 return [...$movement->toArray(), 'product_name' => $variantName === null ? $productName : "{$productName} - {$variantName}"];
             });
 
-        return Inertia::render('operations/inventory', ['products' => $products, 'movements' => $movements, 'timezone' => $timezone, 'canManage' => Gate::allows('manageOperations', $store)]);
+        return Inertia::render('customer/operations/inventory', ['products' => $products, 'movements' => $movements, 'timezone' => $timezone, 'canManage' => Gate::allows('manageOperations', $store)]);
     }
 
     public function cash(Request $request, CurrentStore $currentStore): Response
@@ -101,7 +101,7 @@ class LedgerController extends Controller
                 'cash_transactions.balance_after', 'cash_transactions.occurred_at', 'financial_accounts.name as account_name',
             ])->withQueryString();
 
-        return Inertia::render('operations/cash', ['accounts' => $accounts, 'transactions' => $transactions, 'timezone' => $timezone, 'totalBalance' => FinancialAccountBalance::query()->where('store_id', $store->id)->sum('balance'), 'canManage' => Gate::allows('manageOperations', $store)]);
+        return Inertia::render('customer/operations/cash', ['accounts' => $accounts, 'transactions' => $transactions, 'timezone' => $timezone, 'totalBalance' => FinancialAccountBalance::query()->where('store_id', $store->id)->sum('balance'), 'canManage' => Gate::allows('manageOperations', $store)]);
     }
 
     public function capital(Request $request, CurrentStore $currentStore): Response
@@ -140,7 +140,7 @@ class LedgerController extends Controller
             ->orderBy('financial_accounts.name')->get(['financial_accounts.public_id', 'financial_accounts.name', 'financial_account_balances.balance'])
             ->map(fn (FinancialAccount $account): array => [...$account->toArray(), 'balance' => $account->balance ?? '0.0000']);
 
-        return Inertia::render('operations/capital', [
+        return Inertia::render('customer/operations/capital', [
             'transactions' => $transactions, 'capitalBalance' => $balance,
             'contributionTotal' => $contributions, 'withdrawalTotal' => $withdrawals,
             'products' => $products, 'accounts' => $accounts, 'timezone' => $timezone,

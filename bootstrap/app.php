@@ -87,7 +87,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     default => route('home'),
                 };
 
-                $response = Inertia::render('errors/show', [
+                $response = Inertia::render('system/errors/show', [
                     'status' => $status,
                     'requestId' => (string) $request->attributes->get('request_id', 'unavailable'),
                     'homeUrl' => $homeUrl,

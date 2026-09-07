@@ -30,7 +30,7 @@ class StoreTenancyTest extends TestCase
 
         $response->assertRedirect(route('dashboard'));
         $this->assertSame($store->id, session('active_store_id'));
-        $this->assertDatabaseHas('store_user', [
+        $this->assertDatabaseHas('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $user->id,
             'role' => MembershipRole::Owner->value,
@@ -159,7 +159,7 @@ class StoreTenancyTest extends TestCase
             'role' => MembershipRole::Cashier->value,
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('store_user', [
+        $this->assertDatabaseHas('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $member->id,
             'role' => MembershipRole::Cashier->value,
@@ -171,7 +171,7 @@ class StoreTenancyTest extends TestCase
             'status' => MembershipStatus::Suspended->value,
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('store_user', [
+        $this->assertDatabaseHas('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $member->id,
             'role' => MembershipRole::Admin->value,
@@ -197,7 +197,7 @@ class StoreTenancyTest extends TestCase
 
         $this->assertSame('Kasir Baru', $worker->name);
         $this->assertTrue(Hash::check('Password123!', $worker->password));
-        $this->assertDatabaseHas('store_user', [
+        $this->assertDatabaseHas('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $worker->id,
             'role' => MembershipRole::Cashier->value,
@@ -246,7 +246,7 @@ class StoreTenancyTest extends TestCase
 
         $this->assertNotSame('Nama Pengganti', $existingUser->name);
         $this->assertTrue(Hash::check('PasswordLama123!', $existingUser->password));
-        $this->assertDatabaseMissing('store_user', [
+        $this->assertDatabaseMissing('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $existingUser->id,
         ]);
@@ -262,7 +262,7 @@ class StoreTenancyTest extends TestCase
             'role' => MembershipRole::Cashier->value,
         ])->assertSessionHasErrors('email');
 
-        $this->assertDatabaseHas('store_user', [
+        $this->assertDatabaseHas('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $owner->id,
             'role' => MembershipRole::Owner->value,
@@ -285,7 +285,7 @@ class StoreTenancyTest extends TestCase
             'role' => MembershipRole::Cashier->value,
         ])->assertSessionHasErrors('email');
 
-        $this->assertDatabaseHas('store_user', [
+        $this->assertDatabaseHas('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $member->id,
             'role' => MembershipRole::Admin->value,
@@ -328,7 +328,7 @@ class StoreTenancyTest extends TestCase
         );
 
         $response->assertSessionHasErrors('status');
-        $this->assertDatabaseHas('store_user', [
+        $this->assertDatabaseHas('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $owner->id,
             'role' => MembershipRole::Owner->value,
@@ -362,7 +362,7 @@ class StoreTenancyTest extends TestCase
             'id' => $store->id,
             'name' => 'Toko Lama',
         ]);
-        $this->assertDatabaseMissing('store_user', [
+        $this->assertDatabaseMissing('store_memberships', [
             'store_id' => $store->id,
             'user_id' => $member->id,
         ]);

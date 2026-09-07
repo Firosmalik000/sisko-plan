@@ -30,7 +30,7 @@ class UnitController extends Controller
                 'unit_type_label' => $unit->unit_type->label(),
             ]);
 
-        return Inertia::render('master-data/units/index', compact('units', 'search', 'status', 'canManage'));
+        return Inertia::render('customer/master-data/units/index', compact('units', 'search', 'status', 'canManage'));
     }
 
     public function store(UnitRequest $request, CurrentStore $currentStore): RedirectResponse

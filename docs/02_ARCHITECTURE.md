@@ -18,9 +18,14 @@
 
 ## Directory guidance
 
-- Put backend domain code in `app/`.
+- Put public HTTP entry points in `app/Http/Controllers/PublicSite`.
+- Put tenant entry points in `app/Http/Controllers/Customer` and reusable business behavior in domain-oriented actions and services.
+- Put SaaS administration entry points in `app/Http/Controllers/Platform`.
+- Register routes through the thin `routes/web.php` aggregator and keep each portal in its own route file.
 - Put database migrations, factories, and seeders in `database/`.
-- Put the Inertia frontend in `resources/js/`.
+- Put Inertia pages in `resources/js/pages/public`, `customer`, `platform`, `auth`, or `system`.
+- Organize customer and platform pages by visible menu so route-to-page tracing is direct.
+- Keep portal-specific layouts and components inside a matching portal directory.
 - Keep shared UI primitives centralized and reusable.
 
 ## Domain boundaries

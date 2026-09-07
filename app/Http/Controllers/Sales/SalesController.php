@@ -71,7 +71,7 @@ class SalesController extends Controller
             return $result;
         });
 
-        return Inertia::render('sales/index', [
+        return Inertia::render('customer/sales/index', [
             'sales' => $sales, 'canViewProfit' => $canViewProfit,
             'canReturn' => $canReturn,
             'timezone' => $timezone,
@@ -81,7 +81,7 @@ class SalesController extends Controller
 
     public function show(Sale $sale, CurrentStore $currentStore): Response
     {
-        return Inertia::render('sales/show', [
+        return Inertia::render('customer/sales/show', [
             ...$this->saleData($sale, $currentStore),
             'showReturnForm' => false,
         ]);
@@ -92,7 +92,7 @@ class SalesController extends Controller
         $store = $currentStore->get();
         Gate::authorize('manageSaleReturns', $store);
 
-        return Inertia::render('sales/return', [
+        return Inertia::render('customer/sales/return', [
             ...$this->saleData($sale, $currentStore),
             'showReturnForm' => true,
         ]);

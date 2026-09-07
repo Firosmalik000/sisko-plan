@@ -36,7 +36,7 @@ class ReportController extends Controller
         }
         $period = $metrics->period($store, $startDate, $endDate);
 
-        return Inertia::render('reports/index', [
+        return Inertia::render('customer/reports/index', [
             'period' => ['start_date' => $startDate, 'end_date' => $endDate],
             'performance' => $metrics->performance($store->id, $period['start'], $period['end']),
             'position' => $metrics->position($store->id),

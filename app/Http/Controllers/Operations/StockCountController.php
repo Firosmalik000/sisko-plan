@@ -48,7 +48,7 @@ class StockCountController extends Controller
                 'discrepancy_items_count' => $count->discrepancy_items_count,
             ]);
 
-        return Inertia::render('operations/stock-opnames/index', [
+        return Inertia::render('customer/operations/stock-opnames/index', [
             'counts' => $counts,
             'canManage' => Gate::allows('manageStockCounts', $store),
             'timezone' => $store->settings()->value('timezone') ?? 'Asia/Jakarta',
@@ -102,7 +102,7 @@ class StockCountController extends Controller
                 DB::raw('COALESCE(inventory_balances.quantity, 0) as current_quantity'),
             ]);
 
-        return Inertia::render('operations/stock-opnames/show', [
+        return Inertia::render('customer/operations/stock-opnames/show', [
             'stockCount' => [
                 'public_id' => $stockCount->public_id,
                 'document_number' => $stockCount->document_number,

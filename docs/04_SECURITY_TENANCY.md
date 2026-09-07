@@ -46,13 +46,15 @@ from browser input without server derivation and validation.
 
 ## Platform admin
 
-- Separate authentication surface.
+- Use the shared identity table with an explicit `platform_role`, dedicated platform middleware, and Spatie permissions.
+- Keep platform controllers, requests, routes, pages, and layouts in a separate portal boundary.
 - Strong password.
 - 2FA before production.
 - Rate limiting.
 - Audit all sensitive actions.
 - No unrestricted impersonation in Stage 1.
 - No password viewing or retrieval.
+- Enforce sensitive permissions in both route middleware and mutation Form Requests/controllers.
 
 ## Session and web security
 

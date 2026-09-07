@@ -37,7 +37,7 @@ class ProfileController extends Controller
             $store->loadMissing(['settings', 'subscription.plan']);
         }
 
-        return Inertia::render('settings/profile', [
+        return Inertia::render('customer/settings/profile', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
             'store' => $store === null ? null : [

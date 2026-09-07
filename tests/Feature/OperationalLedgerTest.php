@@ -337,7 +337,7 @@ class OperationalLedgerTest extends TestCase
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
             ->get(route('operations.inventory'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('operations/inventory')
+                ->component('customer/operations/inventory')
                 ->has('movements.data', 25)
                 ->where('movements.total', 26)
                 ->has('movements.links'));

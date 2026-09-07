@@ -35,7 +35,7 @@ class PlatformSettingTest extends TestCase
         $this->actingAs($admin)
             ->get(route('super-admin.brand-seo.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('super-admin/brand-seo/index')
+                ->component('platform/brand-seo/index')
                 ->where('can_manage', true)
                 ->where('settings.brand_name', config('app.name'))
                 ->where('settings.social_links', []));
@@ -70,7 +70,7 @@ class PlatformSettingTest extends TestCase
 
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('welcome')
+                ->component('public/welcome')
                 ->where('name', 'Toko Maju')
                 ->where('branding.brand_name', 'Toko Maju')
                 ->where('branding.robots_index', false));
@@ -242,13 +242,17 @@ class PlatformSettingTest extends TestCase
             ])
             ->assertForbidden();
 
+        $this->actingAs($admin)
+            ->delete(route('super-admin.brand-seo.logo.destroy'))
+            ->assertForbidden();
+
         $admin->syncPermissions([PlatformPermission::BRANDING_MANAGE]);
         $this->actingAs($admin)
             ->get(route('super-admin.brand-seo.index'))
             ->assertForbidden();
     }
 
-    public function test_store_user_cannot_access_platform_brand_settings(): void
+    public function test_customer_user_cannot_access_platform_brand_settings(): void
     {
         $user = User::factory()->create();
 

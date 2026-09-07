@@ -98,7 +98,7 @@ class MasterDataTest extends TestCase
             ->get(route('master-data.suppliers.index', ['create' => '1']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('master-data/suppliers/index')
+                ->component('customer/master-data/suppliers/index')
                 ->where('canManage', true)
                 ->where('suppliers.total', 1)
                 ->where('suppliers.data.0.name', 'Supplier Aktif'));
@@ -216,7 +216,7 @@ class MasterDataTest extends TestCase
             ->get(route('master-data.categories.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('master-data/categories/index')
+                ->component('customer/master-data/categories/index')
                 ->where('canManage', false)
                 ->has('categories.data', 1));
 

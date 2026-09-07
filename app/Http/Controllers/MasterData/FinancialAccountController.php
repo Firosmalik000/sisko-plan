@@ -30,7 +30,7 @@ class FinancialAccountController extends Controller
                 'type' => $account->type->value,
             ]);
 
-        return Inertia::render('master-data/financial-accounts/index', [
+        return Inertia::render('customer/master-data/financial-accounts/index', [
             'accounts' => $accounts,
             'accountTypes' => collect(FinancialAccountType::cases())->map(fn ($type) => $type->value),
             'search' => $search,

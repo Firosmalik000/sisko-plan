@@ -56,7 +56,7 @@ class StockCountTest extends TestCase
         $this->actingAs($cashier)->withSession($session)
             ->get(route('operations.stock-opnames.show', $count))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('operations/stock-opnames/show')
+                ->component('customer/operations/stock-opnames/show')
                 ->where('canCount', true)
                 ->where('canManage', false)
                 ->where('stockCount.items.0.snapshot_unit_cost', 1000));

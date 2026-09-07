@@ -80,7 +80,7 @@ Provide secure user authentication, an isolated Super Admin surface, and a verif
 - Add status and last-login fields to `users`.
 - Create `platform_admins`.
 - Create `stores`.
-- Create `store_user` with unique store/user membership.
+- Create `store_user` with unique store/user membership (renamed in place to `store_memberships` by the 2026-09-07 compatibility migration).
 - Create `store_settings`.
 - Create tenant-aware `audit_logs` for store-domain activity.
 - Create `admin_audit_logs`.

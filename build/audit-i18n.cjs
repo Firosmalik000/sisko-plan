@@ -476,12 +476,11 @@ function isCustomerUiFile(file) {
     const normalized = file.replaceAll('\\', '/');
 
     return ![
-        'resources/js/pages/welcome.tsx',
-        'resources/js/pages/pricing.tsx',
+        'resources/js/pages/public/',
         'resources/js/pages/auth/',
-        'resources/js/pages/super-admin/',
+        'resources/js/pages/platform/',
         'resources/js/layouts/auth/',
-        'resources/js/components/public-site-shell.tsx',
+        'resources/js/components/public/',
     ].some((excluded) => normalized.includes(excluded));
 }
 

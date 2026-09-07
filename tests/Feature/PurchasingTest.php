@@ -191,7 +191,7 @@ class PurchasingTest extends TestCase
         ];
 
         $this->actingAs($owner)->withSession($session)->get(route('purchasing.index'))
-            ->assertInertia(fn (Assert $page) => $page->component('purchasing/index')->where('canManage', true));
+            ->assertInertia(fn (Assert $page) => $page->component('customer/purchasing/index')->where('canManage', true));
         $this->actingAs($cashier)->withSession($session)->get(route('purchasing.index'))
             ->assertInertia(fn (Assert $page) => $page->where('canManage', false));
         $this->actingAs($cashier)->withSession($session)->post(route('purchasing.store'), $payload)->assertForbidden();

@@ -69,7 +69,7 @@ class ExpenseController extends Controller
         $expenses = $expenseQuery
             ->latest('id')->paginate(20, ['public_id', 'document_number', 'category_name', 'account_name', 'amount', 'occurred_at', 'notes'])->withQueryString();
 
-        return Inertia::render('expenses/index', [
+        return Inertia::render('customer/expenses/index', [
             'categories' => $categories, 'accounts' => $accounts, 'expenses' => $expenses,
             'filters' => ['search' => $search, 'category' => $category, 'start_date' => $startDate, 'end_date' => $endDate],
             'summary' => $summary,

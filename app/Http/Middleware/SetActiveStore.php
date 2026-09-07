@@ -24,7 +24,7 @@ class SetActiveStore
             ->where('status', StoreStatus::Active->value)
             ->whereHas('users', fn ($membership) => $membership
                 ->where('users.id', $user->id)
-                ->where('store_user.status', MembershipStatus::Active->value));
+                ->where('store_memberships.status', MembershipStatus::Active->value));
 
         $activeStoreId = (int) $request->session()->get('active_store_id', 0);
         $store = (clone $query)->whereKey($activeStoreId)->first()

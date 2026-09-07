@@ -107,7 +107,7 @@ class ExpensesReportsTest extends TestCase
         $this->actingAs($cashier)->withSession($session)->get(route('expenses.index'))->assertForbidden();
         $this->actingAs($cashier)->withSession($session)->get(route('reports.index'))->assertForbidden();
         $this->actingAs($cashier)->withSession($session)->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
-            ->component('dashboard')->where('canViewBusinessPosition', false)->missing('performance')->missing('position')->missing('lowStock'));
+            ->component('customer/dashboard')->where('canViewBusinessPosition', false)->missing('performance')->missing('position')->missing('lowStock'));
 
         $this->actingAs($owner)->withSession($session)->post(route('expenses.store'), [
             'category_id' => $foreignCategory->public_id, 'account_id' => $foreignCash->public_id, 'amount' => '10',
@@ -141,7 +141,7 @@ class ExpensesReportsTest extends TestCase
         $session = ['active_store_id' => $store->id];
 
         $this->actingAs($owner)->withSession($session)->get(route('dashboard'))
-            ->assertInertia(fn (Assert $page) => $page->component('dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('customer/dashboard')
                 ->where('canViewBusinessPosition', true)
                 ->where('performance.net_revenue', '3000.0000')
                 ->where('performance.net_cogs', '1500.0000')
@@ -171,7 +171,7 @@ class ExpensesReportsTest extends TestCase
                 ->has('lowStock', 1));
 
         $this->actingAs($owner)->withSession($session)->get(route('dashboard', ['period' => 'day']))
-            ->assertInertia(fn (Assert $page) => $page->component('dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('customer/dashboard')
                 ->where('period.key', 'day')
                 ->where('performance.net_revenue', '0.0000')
                 ->where('transactions', 0)
@@ -180,7 +180,7 @@ class ExpensesReportsTest extends TestCase
                 ->has('categorySales', 0));
 
         $this->actingAs($owner)->withSession($session)->get(route('reports.index', ['start_date' => '2026-08-07', 'end_date' => '2026-08-07']))
-            ->assertInertia(fn (Assert $page) => $page->component('reports/index')
+            ->assertInertia(fn (Assert $page) => $page->component('customer/reports/index')
                 ->where('performance.estimated_profit', '1200.0000')
                 ->where('daily.0.net_revenue', '3000.0000')
                 ->where('daily.0.gross_profit', '1500.0000')
@@ -232,7 +232,7 @@ class ExpensesReportsTest extends TestCase
         }
 
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('expenses.index'))
-            ->assertInertia(fn (Assert $page) => $page->component('expenses/index')->has('expenses.data', 20)->where('expenses.total', 21)->has('expenses.links'));
+            ->assertInertia(fn (Assert $page) => $page->component('customer/expenses/index')->has('expenses.data', 20)->where('expenses.total', 21)->has('expenses.links'));
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('expenses.index', ['page' => 2]))
             ->assertInertia(fn (Assert $page) => $page->has('expenses.data', 1));
     }
@@ -255,7 +255,7 @@ class ExpensesReportsTest extends TestCase
                 'end_date' => '2026-08-08',
             ]))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('expenses/index')
+                ->component('customer/expenses/index')
                 ->where('filters.category', $marketing->public_id)
                 ->where('filters.start_date', '2026-08-08')
                 ->where('filters.end_date', '2026-08-08')

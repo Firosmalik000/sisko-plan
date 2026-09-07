@@ -42,11 +42,12 @@ Examples:
 
 ### Platform
 
-- platform_admins
+- users (`platform_role` identifies platform administrators)
 - plans
 - subscriptions
+- subscription_periods
 - subscription_payments
-- system_settings
+- platform_settings
 - admin_audit_logs
 
 `subscriptions.user_id` is the authoritative account owner for the active subscription. `subscriptions.store_id` and `subscription_payments.store_id` are retained as historical origin/attribution fields; commercial access and billing queries use the account owner.
@@ -59,8 +60,12 @@ Examples:
 
 - users
 - stores
-- store_users
+- store_memberships
 - store_settings
+
+`store_memberships` is the canonical tenant membership table. Deployments created
+before 2026-09-07 are upgraded by an in-place rename from `store_user`; the
+migration verifies the row count and does not rebuild or truncate membership data.
 
 ### Catalog
 

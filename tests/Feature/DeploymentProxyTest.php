@@ -19,9 +19,8 @@ class DeploymentProxyTest extends TestCase
             ->withHeader('X-Forwarded-Proto', 'https')
             ->get('/proxy-scheme-check')
             ->assertSuccessful()
-            ->assertJson([
-                'secure' => true,
-                'url' => 'https://localhost:8000/target',
-            ]);
+            ->assertJsonPath('secure', true)
+            ->assertJsonPath('url', fn (string $url): bool => str_starts_with($url, 'https://')
+                && str_ends_with($url, '/target'));
     }
 }

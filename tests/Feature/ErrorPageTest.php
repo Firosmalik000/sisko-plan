@@ -38,7 +38,7 @@ class ErrorPageTest extends TestCase
                 ->assertHeader('X-Request-ID', "error-page-{$status}");
 
             $response->assertInertia(fn (Assert $page) => $page
-                ->component('errors/show')
+                ->component('system/errors/show')
                 ->where('status', $status)
                 ->where('requestId', "error-page-{$status}")
                 ->where('homeUrl', route('home'))
@@ -61,14 +61,14 @@ class ErrorPageTest extends TestCase
             ->get('/_test/error/404')
             ->assertNotFound()
             ->assertHeader('X-Inertia', 'true')
-            ->assertJsonPath('component', 'errors/show')
+            ->assertJsonPath('component', 'system/errors/show')
             ->assertJsonPath('props.status', 404);
 
         $this->withHeader('X-Inertia', 'true')
             ->post('/_test/error/419')
             ->assertStatus(419)
             ->assertHeader('X-Inertia', 'true')
-            ->assertJsonPath('component', 'errors/show')
+            ->assertJsonPath('component', 'system/errors/show')
             ->assertJsonPath('props.status', 419);
     }
 
@@ -80,7 +80,7 @@ class ErrorPageTest extends TestCase
             ->get('/_test/error/403')
             ->assertForbidden()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('errors/show')
+                ->component('system/errors/show')
                 ->where('homeUrl', route('dashboard'))
                 ->where('isAuthenticated', true)
                 ->where('isPlatformAdmin', false));
@@ -91,7 +91,7 @@ class ErrorPageTest extends TestCase
             ->get('/_test/error/403')
             ->assertForbidden()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('errors/show')
+                ->component('system/errors/show')
                 ->where('homeUrl', route('super-admin.security.index'))
                 ->where('isAuthenticated', true)
                 ->where('isPlatformAdmin', true));
@@ -102,7 +102,7 @@ class ErrorPageTest extends TestCase
         $this->get('/_test/server-error')
             ->assertInternalServerError()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('errors/show')
+                ->component('system/errors/show')
                 ->where('status', 500)
                 ->missing('exception')
                 ->missing('message'));
@@ -112,7 +112,7 @@ class ErrorPageTest extends TestCase
     {
         $this->getJson('/_test/error/403')
             ->assertForbidden()
-            ->assertJsonMissing(['component' => 'errors/show'])
+            ->assertJsonMissing(['component' => 'system/errors/show'])
             ->assertHeaderMissing('X-Inertia');
     }
 

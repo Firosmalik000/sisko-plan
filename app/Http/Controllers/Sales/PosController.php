@@ -74,7 +74,7 @@ class PosController extends Controller
             $qris ? ['method' => 'qris', 'label' => 'QRIS', 'account_id' => $qris->public_id] : null,
         ])->filter()->values();
 
-        return Inertia::render('pos/index', [
+        return Inertia::render('customer/pos/index', [
             'products' => $products, 'paymentMethods' => $paymentMethods,
             'timezone' => $store->settings()->value('timezone') ?? 'Asia/Jakarta',
         ]);

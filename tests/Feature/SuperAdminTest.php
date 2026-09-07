@@ -11,6 +11,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Support\PlatformPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -89,13 +90,23 @@ class SuperAdminTest extends TestCase
         ]);
     }
 
-    public function test_store_user_cannot_access_super_admin_surface(): void
+    public function test_customer_user_cannot_access_platform_surface(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->get(route('super-admin.dashboard'))
             ->assertForbidden();
+    }
+
+    public function test_super_admin_bypass_is_limited_to_platform_permissions(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $store = Store::factory()->create();
+
+        $this->assertTrue(Gate::forUser($admin)->allows(PlatformPermission::DASHBOARD_VIEW));
+        $this->assertFalse(Gate::forUser($admin)->allows('view', $store));
+        $this->assertFalse(Gate::forUser($admin)->allows('manageMasterData', $store));
     }
 
     public function test_inactive_super_admin_cannot_log_in(): void
@@ -245,7 +256,7 @@ class SuperAdminTest extends TestCase
         $this->actingAs($superAdmin)
             ->get(route('super-admin.platform-admins.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('super-admin/platform-admins/index')
+                ->component('platform/platform-admins/index')
                 ->has('admins', 2));
 
         $this->actingAs($superAdmin)->post(route('super-admin.platform-admins.store'), [
@@ -340,7 +351,7 @@ class SuperAdminTest extends TestCase
 
         $this->actingAs($admin)->get(route('super-admin.users.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('super-admin/users/index')
+                ->component('platform/users/index')
                 ->where('platformAdmin.permissions', [PlatformPermission::USERS_VIEW]));
         $this->actingAs($admin)->get(route('super-admin.dashboard'))->assertForbidden();
         $this->actingAs($admin)->get(route('super-admin.stores.index'))->assertForbidden();

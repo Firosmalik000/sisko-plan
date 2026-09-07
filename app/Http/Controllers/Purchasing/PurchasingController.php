@@ -86,7 +86,7 @@ class PurchasingController extends Controller
                 'suppliers.name as supplier_name',
             ], 'payables_page')->withQueryString();
 
-        return Inertia::render('purchasing/index', [
+        return Inertia::render('customer/purchasing/index', [
             'purchases' => $purchases, 'suppliers' => $suppliers, 'products' => $products, 'accounts' => $accounts,
             'payableTransactions' => $payableTransactions, 'timezone' => $timezone,
             'totalPayable' => DB::table('supplier_payable_balances')->where('store_id', $store->id)->sum('balance'),
