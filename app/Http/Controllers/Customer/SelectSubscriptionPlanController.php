@@ -30,6 +30,7 @@ class SelectSubscriptionPlanController extends Controller
         $plan = Plan::query()
             ->where('public_id', $validated['plan_id'])
             ->where('is_active', true)
+            ->where('is_default', false)
             ->first();
 
         if ($plan === null) {

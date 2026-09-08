@@ -4,6 +4,7 @@ import { money } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import { localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 type Subscription = {
     public_id: string;
@@ -105,7 +106,7 @@ export default function StoreSubscriptionPage({
                                     Paket aktif
                                 </p>
                                 <h1 className="mt-0.5 truncate text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
-                                    {subscription.plan.name}
+                                    {translate(subscription.plan.name)}
                                 </h1>
                             </div>
                             <div className="shrink-0 rounded-xl bg-[var(--app-soft)] px-3 py-2 text-right">
@@ -198,7 +199,7 @@ export default function StoreSubscriptionPage({
                                         className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5"
                                     >
                                         <div className="min-w-0">
-                                            <h3 className="truncate font-black text-[var(--app-ink)]">{addon.plan_name}</h3>
+                                            <h3 className="truncate font-black text-[var(--app-ink)]">{translate(addon.plan_name)}</h3>
                                             <p className="mt-1 text-sm font-semibold text-slate-500">{addonCapacity(addon)}</p>
                                         </div>
                                         <div className="text-sm font-bold text-slate-700 sm:text-right">
@@ -231,7 +232,7 @@ export default function StoreSubscriptionPage({
                                 >
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <h3 className="truncate font-black text-[var(--app-ink)]">{period.plan_name}</h3>
+                                            <h3 className="truncate font-black text-[var(--app-ink)]">{translate(period.plan_name)}</h3>
                                             <PeriodStatus status={period.status} />
                                         </div>
                                         <p className="mt-1 text-sm font-semibold text-slate-500">

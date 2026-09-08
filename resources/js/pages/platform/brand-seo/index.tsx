@@ -545,8 +545,8 @@ function SectionHeader({
                 <Icon className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-                <h2 className="text-base font-black text-[#3b211b]">{title}</h2>
-                <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+                <h2 className="text-base font-black text-[#3b211b]">{translate(title)}</h2>
+                <p className="mt-0.5 text-xs text-slate-500">{translate(description)}</p>
             </div>
             {action}
         </div>
@@ -569,7 +569,7 @@ function Field({
     return (
         <div className={`space-y-1.5 ${className ?? ''}`.trim()}>
             <div className="flex items-center justify-between gap-3">
-                <Label>{label}</Label>
+                <Label>{translate(label)}</Label>
                 {count && <span className="text-[11px] text-slate-400 tabular-nums">{count}</span>}
             </div>
             {children}

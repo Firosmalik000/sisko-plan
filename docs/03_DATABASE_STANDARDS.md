@@ -107,6 +107,8 @@ migration verifies the row count and does not rebuild or truncate membership dat
 - sale_returns
 - sale_return_items
 
+`customers` is store-scoped and uniquely identifies a reusable customer by `(store_id, phone_normalized)`. `sales.customer_id` supports future loyalty aggregation, while `sales.customer_name` and `sales.customer_phone` preserve the customer details shown when the immutable sale was posted.
+
 ### Finance
 
 - financial_accounts

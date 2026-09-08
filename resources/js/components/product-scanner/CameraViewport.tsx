@@ -1,5 +1,7 @@
+import { Link } from '@inertiajs/react';
 import { Camera, Images, Pause, Play, ScanLine, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
 import type { ChangeEvent, RefObject } from 'react';
+import { translate } from '@/lib/i18n';
 import { CaptureTray } from './CaptureTray';
 import type { ScannerCapture } from './types';
 
@@ -23,6 +25,7 @@ export function CameraViewport({
     manualActionLabel,
     scanMode,
     barcodeError,
+    barcodeLimitReached,
     barcodeStatus,
     photoStatus,
     photoError,
@@ -47,6 +50,7 @@ export function CameraViewport({
     manualActionLabel?: string;
     scanMode: 'photo' | 'barcode';
     barcodeError: string;
+    barcodeLimitReached: boolean;
     barcodeStatus: 'idle' | 'reading' | 'success' | 'not_found';
     photoStatus: 'idle' | 'reading' | 'success' | 'not_found' | 'failed';
     photoError: string;
@@ -94,7 +98,7 @@ export function CameraViewport({
                     >
                         <Camera className="mx-auto size-8 text-[#d66a35]" />
                         <p className="mt-3 text-base font-black">Kamera belum tersedia</p>
-                        <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{error}</p>
+                        <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{translate(error)}</p>
                         <button
                             type="button"
                             onClick={onRetry}
@@ -182,9 +186,17 @@ export function CameraViewport({
                     </button>
                 </div>
                 {barcodeError && (
-                    <p role="alert" className="mx-5 mb-3 rounded-xl bg-red-950/75 px-3 py-2 text-center text-xs font-bold text-red-100">
-                        {barcodeError}
-                    </p>
+                    <div role="alert" className="mx-5 mb-3 rounded-xl bg-red-950/75 px-3 py-2 text-center text-xs font-bold text-red-100">
+                        <p>{translate(barcodeError)}</p>
+                        {barcodeLimitReached && (
+                            <Link
+                                href="/pricing?category=scan_capacity#category-scan_capacity"
+                                className="mt-2 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-[var(--app-ink)] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-red-950 focus-visible:outline-none"
+                            >
+                                Tambah kuota scan
+                            </Link>
+                        )}
+                    </div>
                 )}
                 {scanMode === 'photo' && photoStatus !== 'idle' && (
                     <p
@@ -198,7 +210,7 @@ export function CameraViewport({
                               ? 'Produk dikenali. Membuka hasil…'
                               : photoStatus === 'not_found'
                                 ? 'Produk belum dikenali. Ubah posisi, lalu tahan stabil.'
-                                : photoError || 'Foto gagal diproses. Ubah posisi, lalu coba lagi.'}
+                                : translate(photoError || 'Foto gagal diproses. Ubah posisi, lalu coba lagi.')}
                     </p>
                 )}
                 {scanMode === 'barcode' && (

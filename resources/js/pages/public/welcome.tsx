@@ -21,6 +21,7 @@ import {
     Zap,
 } from 'lucide-react';
 import { publicEase, publicViewport, revealClip, revealLeft, revealRight, staggerGroup, staggerItem } from '@/components/public/motion';
+import { formatMoney } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
 import { dashboard, register } from '@/routes';
 
@@ -110,14 +111,14 @@ function ProductGallery() {
                     <ScanLine /> Scan barcode atau cari produk
                 </div>
                 {[
-                    ['Beras Premium 5 kg', 'Rp72.000'],
-                    ['Minyak Goreng 2 L', 'Rp38.000'],
-                    ['Gula Pasir 1 kg', 'Rp14.000'],
+                    ['Beras Premium 5 kg', 72000],
+                    ['Minyak Goreng 2 L', 38000],
+                    ['Gula Pasir 1 kg', 14000],
                 ].map(([name, price], index) => (
                     <div className="scan-product-row" key={name}>
                         <span>{index + 1}</span>
                         <p>{name}</p>
-                        <strong>{translate(price)}</strong>
+                        <strong>{formatMoney(Number(price))}</strong>
                         <i>+</i>
                     </div>
                 ))}
@@ -147,7 +148,7 @@ function ProductGallery() {
                     <small>10:00</small>
                 </div>
                 <span className="scan-report-label">Penjualan bersih</span>
-                <strong className="scan-report-value">Rp682.500</strong>
+                <strong className="scan-report-value">{formatMoney(682500)}</strong>
                 <span className="scan-report-growth">Naik 12% dari kemarin</span>
                 <div className="scan-mini-chart" aria-hidden="true">
                     {[36, 48, 43, 65, 57, 81, 72].map((height, index) => (
@@ -220,7 +221,7 @@ export default function Welcome() {
                     ].map(([Icon, label], index) => (
                         <m.div className="scan-flow-item" key={String(label)} variants={staggerItem}>
                             <span>
-                                <Icon /> {String(label)}
+                                <Icon /> {translate(String(label))}
                             </span>
                             {index < 4 && <ArrowRight />}
                         </m.div>

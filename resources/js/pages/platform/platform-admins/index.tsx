@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 import type { PlatformAdmin } from '@/types';
 
 type AdminItem = {
@@ -225,7 +226,7 @@ function PermissionDialog({ admin, groups }: { admin: AdminItem; groups: Permiss
                     <div className="grid min-h-0 gap-3 overflow-y-auto p-4 sm:grid-cols-2 sm:p-5">
                         {groups.map((group) => (
                             <fieldset key={group.label} className="rounded-xl border border-slate-200 p-3">
-                                <legend className="px-1 text-xs font-black tracking-wide text-slate-500 uppercase">{group.label}</legend>
+                                <legend className="px-1 text-xs font-black tracking-wide text-slate-500 uppercase">{translate(group.label)}</legend>
                                 <div className="mt-1 space-y-1">
                                     {group.permissions.map((permission) => (
                                         <label
@@ -238,7 +239,7 @@ function PermissionDialog({ admin, groups }: { admin: AdminItem; groups: Permiss
                                                 checked={form.data.permissions.includes(permission.name)}
                                                 onChange={(event) => toggle(permission.name, event.target.checked)}
                                             />
-                                            {permission.label}
+                                            {translate(permission.label)}
                                         </label>
                                     ))}
                                 </div>
@@ -263,7 +264,7 @@ function PermissionDialog({ admin, groups }: { admin: AdminItem; groups: Permiss
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="space-y-1.5">
-            <Label>{label}</Label>
+            <Label>{translate(label)}</Label>
             {children}
             <InputError message={error} />
         </div>

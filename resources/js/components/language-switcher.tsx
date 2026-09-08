@@ -14,23 +14,30 @@ const fallbackLocales = (market: MarketCode): LocaleOption[] =>
               { code: 'ms', label: 'Bahasa Melayu' },
               { code: 'en', label: 'English' },
           ]
-        : [
-              { code: 'id', label: 'Bahasa Indonesia' },
-              { code: 'en', label: 'English' },
-          ];
+        : market === 'vi'
+          ? [
+                { code: 'vi', label: 'Tiếng Việt' },
+                { code: 'en', label: 'English' },
+            ]
+          : [
+                { code: 'id', label: 'Bahasa Indonesia' },
+                { code: 'en', label: 'English' },
+            ];
 
 const isLocaleOption = (value: unknown): value is LocaleOption =>
     typeof value === 'object' &&
     value !== null &&
     'code' in value &&
-    (value.code === 'en' || value.code === 'id' || value.code === 'ms') &&
+    (value.code === 'en' || value.code === 'id' || value.code === 'ms' || value.code === 'vi') &&
     'label' in value &&
     typeof value.label === 'string';
 
 export default function LanguageSwitcher() {
     const pageProps = usePage().props;
-    const locale: AppLocale = pageProps.locale === 'en' || pageProps.locale === 'ms' ? pageProps.locale : 'id';
-    const market: MarketCode = pageProps.market === 'ms' ? 'ms' : 'id';
+    const rawLocale = pageProps.locale as unknown;
+    const locale: AppLocale = rawLocale === 'en' || rawLocale === 'ms' || rawLocale === 'vi' ? rawLocale : 'id';
+    const rawMarket = pageProps.market as unknown;
+    const market: MarketCode = rawMarket === 'ms' || rawMarket === 'vi' ? rawMarket : 'id';
     const configuredLocales = Array.isArray(pageProps.locales) ? pageProps.locales.filter(isLocaleOption) : [];
     const locales = configuredLocales.length > 0 ? configuredLocales : fallbackLocales(market);
     const context = locales.some((language) => language.code === 'en') ? 'customer' : 'market';

@@ -103,6 +103,7 @@ class PosController extends Controller
             $currentStore->get(), $this->actor($request), $accountId, $items,
             $data['transaction_discount_amount'], $data['paid_amount'], $data['occurred_at'],
             $data['notes'] ?? null, $data['idempotency_key'], $request->ip(), $request->file('payment_proof'),
+            $data['customer_name'] ?? null, $data['customer_phone'] ?? null,
         );
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Sale posted successfully.')]);
 

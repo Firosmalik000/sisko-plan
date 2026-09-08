@@ -1,6 +1,6 @@
 import { Form, Head, Link, router, useForm } from '@inertiajs/react';
 import type { InertiaFormProps } from '@inertiajs/react';
-import { CreditCard, PackagePlus, Pencil, ReceiptText, RefreshCw, Search, Store } from 'lucide-react';
+import { CreditCard, PackagePlus, Pencil, Plus, ReceiptText, RefreshCw, Search, Store, Trash2 } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { useState } from 'react';
 import { postingToken } from '@/components/operations-shell';
@@ -47,11 +47,30 @@ type Subscription = {
         name: string;
         monthly_price: string;
         duration_months: number;
+        max_stores: number;
+        max_products: number;
+        max_members: number;
+        max_scans: number;
         is_active: boolean;
     };
     active_addons: Array<{
         public_id: string;
         plan_name: string;
+        offer_category: OfferCategory | null;
+        stores: number;
+        products: number;
+        members: number;
+        scans: number;
+        starts_on: string;
+        ends_on: string | null;
+    }>;
+    scheduled_addons: Subscription['active_addons'];
+    assigned_addons: Array<{
+        public_id: string;
+        plan_id: string;
+        plan_name: string;
+        plan_is_active: boolean;
+        offer_category: OfferCategory | null;
         stores: number;
         products: number;
         members: number;
@@ -90,6 +109,23 @@ type PlanData = {
     max_scans: string;
     is_active: boolean;
 };
+type SubscriptionAddonData = {
+    client_id: string;
+    public_id: string | null;
+    plan_id: string;
+    starts_on: string;
+    ends_on: string;
+};
+type SubscriptionFormData = {
+    plan_id: string;
+    status: string;
+    starts_at: string;
+    trial_ends_at: string;
+    current_period_start: string;
+    current_period_end: string;
+    notes: string;
+    addons: SubscriptionAddonData[];
+};
 
 type OfferCategory = 'store_capacity' | 'staff_capacity' | 'scan_capacity' | 'product_capacity' | 'general';
 
@@ -109,6 +145,8 @@ const secondaryButton =
     'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b83219] disabled:cursor-not-allowed disabled:opacity-50';
 const dialogClass =
     'flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-2xl';
+const subscriptionDialogClass =
+    'flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-4xl';
 const statusLabels: Record<string, string> = {
     trialing: 'Trial',
     active: 'Aktif',
@@ -142,6 +180,9 @@ export default function AdminSubscriptions({
     };
 }) {
     const filter = useForm(filters);
+    const basePlans = plans.filter((plan) => plan.kind === 'base');
+    const addonPlans = plans.filter((plan) => plan.kind === 'addon');
+    const filterActive = filters.search !== '' || filters.status !== '';
     const submitFilter = (event: FormEvent) => {
         event.preventDefault();
         router.get('/super-admin/subscriptions', filter.data, {
@@ -153,14 +194,18 @@ export default function AdminSubscriptions({
     return (
         <>
             <Head title="Subscription & Paket" />
-            <header className="platform-enter flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <header className="platform-enter flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
                 <div className="min-w-0">
-                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">Subscription & paket</h1>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
-                        {plans.length} paket · {subscriptions.total} akun
-                    </p>
+                    <h1 className="text-3xl font-black tracking-[-0.03em] text-[#3b211b] sm:text-4xl">Subscription & paket</h1>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-bold text-slate-500">
+                        <span>{localizedQuantity(basePlans.length, 'paket dasar')}</span>
+                        <span className="size-1 rounded-full bg-[#ee4d2d]" aria-hidden="true" />
+                        <span>{localizedQuantity(addonPlans.length, 'add-on')}</span>
+                        <span className="size-1 rounded-full bg-[#ee4d2d]" aria-hidden="true" />
+                        <span>{localizedQuantity(subscriptions.total, 'akun')}</span>
+                    </div>
                 </div>
-                <div className="flex flex-col gap-2 min-[480px]:flex-row">
+                <div className="grid gap-2 min-[480px]:grid-cols-2 sm:flex sm:flex-wrap xl:justify-end">
                     {access.activate_all && <ActivateAllDialog />}
                     {access.view_payments && (
                         <Link href="/super-admin/payments" className={secondaryButton}>
@@ -173,12 +218,25 @@ export default function AdminSubscriptions({
             </header>
 
             <section className="platform-panel mt-5 overflow-hidden">
-                <SectionHeader title="Katalog paket" count={`${plans.length} paket`} />
+                <SectionHeader title="Katalog paket" count={localizedQuantity(plans.length, 'paket')} />
                 {plans.length ? (
-                    <div className="divide-y divide-slate-200">
-                        {plans.map((plan) => (
-                            <PlanRow key={plan.public_id} plan={plan} canManage={access.manage_plans} />
-                        ))}
+                    <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)]">
+                        <div className="min-w-0 border-b border-slate-200 lg:border-r lg:border-b-0">
+                            <PlanGroupHeader title="Paket dasar" count={basePlans.length} />
+                            <div className="divide-y divide-slate-200">
+                                {basePlans.map((plan) => (
+                                    <PlanRow key={plan.public_id} plan={plan} canManage={access.manage_plans} />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="min-w-0">
+                            <PlanGroupHeader title="Penawaran add-on" count={addonPlans.length} />
+                            <div className="divide-y divide-slate-200">
+                                {addonPlans.map((plan) => (
+                                    <PlanRow key={plan.public_id} plan={plan} canManage={access.manage_plans} compact />
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <Empty label="Belum ada paket" />
@@ -186,13 +244,13 @@ export default function AdminSubscriptions({
             </section>
 
             <section className="platform-panel mt-5 overflow-hidden">
-                <div className="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex flex-col gap-4 border-b border-slate-200 bg-[#fffdfc] px-4 py-4 sm:px-5 xl:flex-row xl:items-end xl:justify-between">
                     <div>
                         <h2 className="text-lg font-black text-[#3b211b]">Subscription akun</h2>
-                        <p className="mt-1 text-sm font-semibold text-slate-500">{subscriptions.total} akun</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-500">{localizedQuantity(subscriptions.total, 'akun')}</p>
                     </div>
-                    <form onSubmit={submitFilter} className="flex flex-col gap-2 sm:flex-row">
-                        <label className="relative min-w-0 sm:w-64">
+                    <form onSubmit={submitFilter} className="grid gap-2 sm:grid-cols-[minmax(15rem,1fr)_11rem_auto] xl:w-auto">
+                        <label className="relative min-w-0">
                             <span className="sr-only">Cari akun</span>
                             <Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-slate-400" />
                             <input
@@ -212,19 +270,26 @@ export default function AdminSubscriptions({
                                 <option value="">Semua status</option>
                                 {Object.entries(statusLabels).map(([value, label]) => (
                                     <option key={value} value={value}>
-                                        {label}
+                                        {translate(label)}
                                     </option>
                                 ))}
                             </select>
                         </label>
-                        <button className={primaryButton}>Terapkan</button>
+                        <div className="flex gap-2 sm:contents">
+                            <button className={`${primaryButton} flex-1`}>Terapkan</button>
+                            {filterActive && (
+                                <Link href="/super-admin/subscriptions" className={`${secondaryButton} flex-1 sm:col-span-3`}>
+                                    Reset filter
+                                </Link>
+                            )}
+                        </div>
                     </form>
                 </div>
                 {subscriptions.data.length ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[980px] text-left text-sm">
+                    <div>
+                        <table className="w-full text-left text-sm">
                             <caption className="sr-only">Daftar subscription akun</caption>
-                            <thead className="platform-table-head">
+                            <thead className="hidden bg-[#fff3ef] text-xs font-black tracking-[0.04em] text-[#7c392c] uppercase 2xl:table-header-group">
                                 <tr>
                                     <PlatformTableLeadHeader />
                                     <th className="px-5 py-3.5">Akun</th>
@@ -233,7 +298,7 @@ export default function AdminSubscriptions({
                                     <th className="px-5 py-3.5">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200">
+                            <tbody className="grid gap-3 bg-slate-50/70 p-3 2xl:table-row-group 2xl:divide-y 2xl:divide-slate-200 2xl:bg-transparent 2xl:p-0">
                                 {subscriptions.data.map((subscription, index) => (
                                     <SubscriptionRow
                                         key={subscription.public_id}
@@ -263,8 +328,17 @@ export default function AdminSubscriptions({
 function SectionHeader({ title, count }: { title: string; count: string }) {
     return (
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
-            <h2 className="text-lg font-black text-[#3b211b]">{title}</h2>
+            <h2 className="text-lg font-black text-[#3b211b]">{translate(title)}</h2>
             <span className="text-sm font-bold text-slate-500">{count}</span>
+        </div>
+    );
+}
+
+function PlanGroupHeader({ title, count }: { title: string; count: number }) {
+    return (
+        <div className="flex items-center justify-between gap-3 bg-slate-50/80 px-4 py-2.5 sm:px-5">
+            <h3 className="text-xs font-black tracking-[0.04em] text-slate-500 uppercase">{translate(title)}</h3>
+            <span className="rounded-md bg-white px-2 py-1 text-xs font-black text-slate-600 shadow-sm">{count}</span>
         </div>
     );
 }
@@ -273,7 +347,7 @@ function Empty({ label, icon = false }: { label: string; icon?: boolean }) {
     return (
         <div className="px-4 py-12 text-center sm:px-5">
             {icon && <Store className="mx-auto size-8 text-slate-300" />}
-            <p className={`${icon ? 'mt-3' : ''}text-sm font-bold text-slate-600`}>{label}</p>
+            <p className={`${icon ? 'mt-3' : ''}text-sm font-bold text-slate-600`}>{translate(label)}</p>
         </div>
     );
 }
@@ -360,7 +434,7 @@ function CreatePlanDialog() {
     );
 }
 
-function PlanRow({ plan, canManage }: { plan: Plan; canManage: boolean }) {
+function PlanRow({ plan, canManage, compact = false }: { plan: Plan; canManage: boolean; compact?: boolean }) {
     const [open, setOpen] = useState(false);
     const form = useForm<PlanData>({
         name: plan.name,
@@ -386,45 +460,47 @@ function PlanRow({ plan, canManage }: { plan: Plan; canManage: boolean }) {
     };
 
     return (
-        <div className="grid gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5">
+        <div
+            className={`grid gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5 ${compact ? 'hover:bg-violet-50/40' : 'bg-[#fffaf7] hover:bg-[#fff3ef]'}`}
+        >
             <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate text-base font-black text-[#3b211b]">{plan.name}</h3>
+                    <h3 className="min-w-0 truncate text-base font-black text-[#3b211b]">{translate(plan.name)}</h3>
                     {plan.is_default && <Badge className="bg-[#ffe1d8] text-[#9f2f19]">Default</Badge>}
                     {plan.is_trial && <Badge className="bg-sky-100 text-sky-800">Trial</Badge>}
                     {plan.kind === 'addon' && (
                         <Badge className="bg-violet-100 text-violet-800">
-                            {plan.offer_category ? offerCategoryLabels[plan.offer_category] : 'Add-on'}
+                            {translate(plan.offer_category ? offerCategoryLabels[plan.offer_category] : 'Add-on')}
                         </Badge>
                     )}
                     {plan.billing_cycle === 'lifetime' && <Badge className="bg-emerald-100 text-emerald-800">Selamanya</Badge>}
                     {!plan.is_active && <Badge className="bg-slate-200 text-slate-700">Nonaktif</Badge>}
                 </div>
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
-                    <span className="font-semibold">
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-slate-500">
+                    <span className="font-black text-[#3b211b]">
                         {formatMoney(plan.monthly_price)}
-                        {plan.billing_cycle === 'fixed' ? '/bulan' : ''}
+                        {plan.billing_cycle === 'fixed' ? translate('/bulan') : ''}
                     </span>
                     <span>{planTerm(plan)}</span>
                     <span>
-                        {plan.subscriptions_count} {plan.kind === 'addon' ? 'aktivasi' : 'akun'}
+                        {localizedQuantity(plan.subscriptions_count, plan.kind === 'addon' ? 'aktivasi' : 'akun')}
                     </span>
-                    {(plan.kind === 'base' || plan.max_stores > 0) && <span>{capacity(plan, plan.max_stores)} toko</span>}
-                    {(plan.kind === 'base' || plan.max_products > 0) && <span>{capacity(plan, plan.max_products)} produk</span>}
-                    {(plan.kind === 'base' || plan.max_members > 0) && <span>{capacity(plan, plan.max_members)} staf</span>}
-                    {(plan.kind === 'base' || plan.max_scans > 0) && <span>{capacity(plan, plan.max_scans)} scan / bulan</span>}
+                    {(plan.kind === 'base' || plan.max_stores > 0) && <span>{localizedCapacity(plan, plan.max_stores, 'toko')}</span>}
+                    {(plan.kind === 'base' || plan.max_products > 0) && <span>{localizedCapacity(plan, plan.max_products, 'produk')}</span>}
+                    {(plan.kind === 'base' || plan.max_members > 0) && <span>{localizedCapacity(plan, plan.max_members, 'staf')}</span>}
+                    {(plan.kind === 'base' || plan.max_scans > 0) && <span>{localizedCapacity(plan, plan.max_scans, 'scan / bulan')}</span>}
                 </div>
             </div>
             {canManage && (
                 <Dialog open={open} onOpenChange={changeOpen}>
                     <DialogTrigger asChild>
-                        <button className={secondaryButton}>
+                        <button className={`${secondaryButton} w-full sm:w-auto`}>
                             <Pencil className="size-4" />
                             Edit paket
                         </button>
                     </DialogTrigger>
                     <PlanModal
-                        title={`Edit ${plan.name}`}
+                        title={`${translate('Edit')} ${translate(plan.name)}`}
                         form={form}
                         submit={submit}
                         close={() => changeOpen(false)}
@@ -553,7 +629,7 @@ function PlanModal({
                                 </option>
                                 {Object.entries(offerCategoryLabels).map(([value, label]) => (
                                     <option key={value} value={value}>
-                                        {label}
+                                        {translate(label)}
                                     </option>
                                 ))}
                             </select>
@@ -600,7 +676,7 @@ function PlanModal({
 
                                         return (
                                             <option key={months} value={months}>
-                                                {months} bulan
+                                                {localizedQuantity(months, 'bulan')}
                                             </option>
                                         );
                                     })
@@ -701,7 +777,7 @@ function SubscriptionRow({
     const eligiblePlans = plans.filter(
         (plan) => plan.kind === 'base' && (plan.is_active || plan.public_id === subscription.plan.public_id),
     );
-    const form = useForm({
+    const form = useForm<SubscriptionFormData>({
         plan_id: subscription.plan.public_id,
         status: subscription.status,
         starts_at: dateInput(subscription.starts_at),
@@ -709,6 +785,13 @@ function SubscriptionRow({
         current_period_start: dateInput(subscription.current_period_start),
         current_period_end: dateInput(subscription.current_period_end),
         notes: subscription.notes ?? '',
+        addons: subscription.assigned_addons.map((addon) => ({
+            client_id: addon.public_id,
+            public_id: addon.public_id,
+            plan_id: addon.plan_id,
+            starts_on: addon.starts_on,
+            ends_on: addon.ends_on ?? '',
+        })),
     });
     const billing = billingPeriod();
     const payment = useForm({
@@ -745,12 +828,16 @@ function SubscriptionRow({
             onSuccess: () => changePayment(false),
         });
     };
+    const groupedAddons = groupAddons(subscription.active_addons);
+    const groupedScheduledAddons = groupAddons(subscription.scheduled_addons);
+    const totalLimits = accountLimits(subscription.plan, subscription.active_addons);
 
     return (
-        <tr className="align-middle transition-colors hover:bg-slate-50/70">
+        <tr className="align-middle transition-colors hover:bg-slate-50/70 max-2xl:grid max-2xl:grid-cols-[minmax(0,1fr)_auto] max-2xl:overflow-hidden max-2xl:rounded-xl max-2xl:border max-2xl:border-slate-200 max-2xl:bg-white max-2xl:shadow-sm">
             <PlatformTableLeadCell
                 index={index}
                 label={subscription.account.name}
+                className="max-2xl:col-start-2 max-2xl:row-start-1 max-2xl:w-auto max-2xl:px-4 max-2xl:py-4"
                 actions={[
                     ...(canManage
                         ? [
@@ -772,13 +859,16 @@ function SubscriptionRow({
                         : []),
                 ]}
             />
-            <td className="px-5 py-4">
-                <p className="max-w-64 truncate font-black text-[#3b211b]">{subscription.account.name}</p>
-                <p className="mt-1 max-w-64 truncate text-xs text-slate-500">{subscription.account.email}</p>
-                <p className="max-w-64 text-xs text-slate-500">{subscription.account.stores_count} toko</p>
+            <td className="px-5 py-4 max-2xl:col-start-1 max-2xl:row-start-1 max-2xl:min-w-0 max-2xl:px-4">
+                <p className="max-w-64 truncate text-base font-black text-[#3b211b]">{subscription.account.name}</p>
+                <p className="mt-1 max-w-64 truncate text-xs font-semibold text-slate-500">{subscription.account.email}</p>
+                <p className="mt-1 max-w-64 text-xs font-bold text-[#b83219]">
+                    {localizedQuantity(subscription.account.stores_count, 'toko aktif')}
+                </p>
             </td>
-            <td className="px-5 py-4">
-                <p className="font-bold text-slate-800">{subscription.plan.name}</p>
+            <td className="px-5 py-4 max-2xl:col-span-2 max-2xl:border-t max-2xl:border-slate-200 max-2xl:px-4">
+                <p className="mb-2 text-xs font-black tracking-[0.04em] text-slate-400 uppercase 2xl:hidden">Paket & add-on</p>
+                <p className="font-black text-slate-800">{translate(subscription.plan.name)}</p>
                 {!subscription.plan.is_active && <p className="mt-1 text-xs font-bold text-amber-700">Paket nonaktif</p>}
                 {subscription.scheduled_periods.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
@@ -787,61 +877,88 @@ function SubscriptionRow({
                                 <span className="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
                                     Terjadwal
                                 </span>
-                                <span className="min-w-0 truncate text-sm font-bold text-slate-700">{period.plan_name}</span>
+                                <span className="min-w-0 truncate text-sm font-bold text-slate-700">{translate(period.plan_name)}</span>
                             </div>
                         ))}
                     </div>
                 )}
-                {subscription.active_addons.length > 0 && (
-                    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
-                        {subscription.active_addons.map((addon) => (
-                            <div key={addon.public_id} className="flex min-w-0 items-center gap-2">
-                                <span className="shrink-0 rounded-full bg-violet-100 px-2 py-1 text-xs font-bold text-violet-800">
-                                    Add-on
-                                </span>
-                                <span className="min-w-0 truncate text-sm font-bold text-slate-700">{addon.plan_name}</span>
+                {groupedAddons.length > 0 && (
+                    <div className="mt-3 space-y-2.5 border-t border-slate-200 pt-3">
+                        <p className="text-xs font-black text-violet-700">
+                            {localizedQuantity(subscription.active_addons.length, 'add-on aktif')}
+                        </p>
+                        {groupedAddons.map((addon) => (
+                            <div key={addon.key} className="min-w-0 rounded-lg bg-violet-50 px-3 py-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    {addon.quantity > 1 && (
+                                        <span className="shrink-0 rounded-md bg-violet-700 px-1.5 py-0.5 text-xs font-black text-white">
+                                            {addon.quantity}×
+                                        </span>
+                                    )}
+                                    <span className="min-w-0 truncate text-sm font-black text-violet-950">{translate(addon.plan_name)}</span>
+                                </div>
+                                <p className="mt-1 text-xs font-semibold text-violet-700">
+                                    {addonCapacity(addon)} · {periodLabel(addon.starts_on, addon.ends_on)}
+                                </p>
+                            </div>
+                        ))}
+                        <p className="text-xs font-semibold text-slate-500">
+                            {translate('Total kapasitas:')} {capacitySummary(totalLimits)}
+                        </p>
+                    </div>
+                )}
+                {groupedScheduledAddons.length > 0 && (
+                    <div className="mt-3 space-y-2.5 border-t border-slate-200 pt-3">
+                        <p className="text-xs font-black text-amber-700">
+                            {localizedQuantity(subscription.scheduled_addons.length, 'add-on terjadwal')}
+                        </p>
+                        {groupedScheduledAddons.map((addon) => (
+                            <div key={addon.key} className="min-w-0 rounded-lg bg-amber-50 px-3 py-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    {addon.quantity > 1 && (
+                                        <span className="shrink-0 rounded-md bg-amber-700 px-1.5 py-0.5 text-xs font-black text-white">
+                                            {addon.quantity}×
+                                        </span>
+                                    )}
+                                    <span className="min-w-0 truncate text-sm font-black text-amber-950">{translate(addon.plan_name)}</span>
+                                </div>
+                                <p className="mt-1 text-xs font-semibold text-amber-700">
+                                    {addonCapacity(addon)} · {periodLabel(addon.starts_on, addon.ends_on)}
+                                </p>
                             </div>
                         ))}
                     </div>
                 )}
             </td>
-            <td className="px-5 py-4 text-slate-600">
+            <td className="px-5 py-4 text-slate-600 max-2xl:border-t max-2xl:border-slate-200 max-2xl:px-4">
+                <p className="mb-2 text-xs font-black tracking-[0.04em] text-slate-400 uppercase 2xl:hidden">Masa berlaku</p>
                 <p className="font-semibold text-slate-800">
                     {periodLabel(
                         subscription.status === 'trialing' ? subscription.starts_at : subscription.current_period_start,
                         subscription.status === 'trialing' ? subscription.trial_ends_at : subscription.current_period_end,
                     )}
                 </p>
-                <p className="mt-1 text-xs">{subscription.status === 'trialing' ? 'Masa trial' : 'Periode langganan'}</p>
+                <p className="mt-1 text-xs">{translate(subscription.status === 'trialing' ? 'Masa trial' : 'Periode langganan')}</p>
                 {subscription.scheduled_periods.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                         {subscription.scheduled_periods.map((period) => (
                             <div key={period.public_id}>
                                 <p className="font-semibold text-amber-800">{periodLabel(period.period_start, period.period_end)}</p>
                                 <p className="mt-0.5 text-xs text-amber-700">
-                                    {period.plan_name} · {period.is_trial ? '30 hari trial' : `${period.duration_months} bulan`}
+                                    {translate(period.plan_name)} ·{' '}
+                                    {period.is_trial ? translate('30 hari trial') : localizedQuantity(period.duration_months, 'bulan')}
                                 </p>
                             </div>
                         ))}
                     </div>
                 )}
-                {subscription.active_addons.length > 0 && (
-                    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
-                        {subscription.active_addons.map((addon) => (
-                            <div key={addon.public_id}>
-                                <p className="font-semibold text-violet-800">{periodLabel(addon.starts_on, addon.ends_on)}</p>
-                                <p className="mt-0.5 text-xs text-violet-700">{addonCapacity(addon)}</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
             </td>
-            <td className="px-5 py-4">
-                <Badge className={statusClasses[subscription.status] ?? statusClasses.cancelled}>
-                    {statusLabels[subscription.status] ?? subscription.status}
+            <td className="px-5 py-4 max-2xl:flex max-2xl:items-start max-2xl:justify-end max-2xl:border-t max-2xl:border-slate-200 max-2xl:px-4">
+                <Badge className={`${statusClasses[subscription.status] ?? statusClasses.cancelled} px-2.5 py-1`}>
+                    {translate(statusLabels[subscription.status] ?? subscription.status)}
                 </Badge>
                 <Dialog open={editOpen} onOpenChange={changeEdit}>
-                    <DialogContent className={dialogClass}>
+                    <DialogContent className={subscriptionDialogClass}>
                         <ModalHeader title={`Edit subscription ${subscription.account.name}`} description="Pengaturan subscription akun." />
                         <form onSubmit={submitEdit} className="flex min-h-0 flex-1 flex-col">
                             <div className="grid min-h-0 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-5">
@@ -855,7 +972,7 @@ function SubscriptionRow({
                                     >
                                         {eligiblePlans.map((plan) => (
                                             <option key={plan.public_id} value={plan.public_id}>
-                                                {plan.name}
+                                                {translate(plan.name)}
                                                 {!plan.is_active ? ' (nonaktif)' : ''}
                                             </option>
                                         ))}
@@ -870,7 +987,7 @@ function SubscriptionRow({
                                     >
                                         {Object.entries(statusLabels).map(([value, label]) => (
                                             <option key={value} value={value}>
-                                                {label}
+                                                {translate(label)}
                                             </option>
                                         ))}
                                     </select>
@@ -913,6 +1030,7 @@ function SubscriptionRow({
                                         />
                                     </Field>
                                 </div>
+                                <AddonEditor form={form} plans={plans} />
                                 <Errors errors={form.errors} />
                             </div>
                             <Footer processing={form.processing} close={() => changeEdit(false)} label="Simpan subscription" />
@@ -1004,11 +1122,198 @@ function SubscriptionRow({
     );
 }
 
+function AddonEditor({ form, plans }: { form: InertiaFormProps<SubscriptionFormData>; plans: Plan[] }) {
+    const activePlans = plans.filter((plan) => plan.kind === 'addon' && plan.is_active);
+    const errors = form.errors as Partial<Record<string, string>>;
+    const changeAddon = (index: number, changes: Partial<SubscriptionAddonData>) => {
+        form.setData(
+            'addons',
+            form.data.addons.map((addon, addonIndex) => (addonIndex === index ? { ...addon, ...changes } : addon)),
+        );
+    };
+    const addAddon = () => {
+        const plan = activePlans[0];
+
+        if (!plan) {
+            return;
+        }
+
+        const startsOn = todayInput();
+        form.setData('addons', [
+            ...form.data.addons,
+            {
+                client_id: crypto.randomUUID(),
+                public_id: null,
+                plan_id: plan.public_id,
+                starts_on: startsOn,
+                ends_on: addonEndDate(startsOn, plan),
+            },
+        ]);
+    };
+    const previewAddons = form.data.addons.flatMap((addon) => {
+        const plan = plans.find((candidate) => candidate.public_id === addon.plan_id);
+
+        return plan
+            ? [
+                  {
+                      ...plan,
+                      public_id: addon.client_id,
+                      plan_name: plan.name,
+                      stores: plan.max_stores,
+                      products: plan.max_products,
+                      members: plan.max_members,
+                      scans: plan.max_scans,
+                      starts_on: addon.starts_on,
+                      ends_on: addon.ends_on || null,
+                  },
+              ]
+            : [];
+    });
+    const basePlan = plans.find((plan) => plan.public_id === form.data.plan_id);
+    const activePreviewAddons = previewAddons.filter((addon) => activeOn(addon, todayInput()));
+    const previewLimits = basePlan ? accountLimits(basePlan, activePreviewAddons) : null;
+    const scheduledCount = previewAddons.length - activePreviewAddons.length;
+
+    return (
+        <section className="sm:col-span-2" aria-labelledby="subscription-addons-title">
+            <div className="flex flex-col gap-3 rounded-xl bg-[#fff3ef] px-4 py-3 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
+                <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#ee4d2d] text-white">
+                        <PackagePlus className="size-4" />
+                    </div>
+                    <div className="min-w-0">
+                        <h3 id="subscription-addons-title" className="font-black text-[#3b211b]">
+                            Add-on akun
+                        </h3>
+                        <p className="text-xs font-bold text-[#8b4a3a]">
+                            {form.data.addons.filter((addon) => addon.public_id).length} tersimpan
+                            {form.data.addons.some((addon) => !addon.public_id)
+                                ? ` · ${form.data.addons.filter((addon) => !addon.public_id).length} baru`
+                                : ''}
+                        </p>
+                    </div>
+                </div>
+                <button type="button" className={secondaryButton} disabled={!activePlans.length || form.processing} onClick={addAddon}>
+                    <Plus className="size-4" />
+                    Tambah add-on
+                </button>
+            </div>
+
+            {previewLimits && (
+                <div className="mt-3 flex flex-col gap-1 rounded-xl border border-[#f0d8d1] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs font-bold text-slate-500">
+                        Kapasitas aktif saat ini{scheduledCount > 0 ? ` · ${scheduledCount} terjadwal` : ''}
+                    </p>
+                    <p className="text-sm font-black text-[#3b211b]">{capacitySummary(previewLimits)}</p>
+                </div>
+            )}
+
+            {form.data.addons.length > 0 ? (
+                <div className="mt-3 grid gap-3">
+                    {form.data.addons.map((addon, index) => {
+                        const selectedPlan = plans.find((plan) => plan.public_id === addon.plan_id);
+                        const eligiblePlans = plans.filter(
+                            (plan) => plan.kind === 'addon' && (plan.is_active || plan.public_id === addon.plan_id),
+                        );
+
+                        return (
+                            <article key={addon.client_id} className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                    <p className="text-xs font-black text-slate-500">Add-on {index + 1}</p>
+                                    <span
+                                        className={`rounded-md px-2 py-1 text-xs font-black ${addon.public_id ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}
+                                    >
+                                        {addon.public_id ? 'Tersimpan' : 'Belum disimpan'}
+                                    </span>
+                                </div>
+                                <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+                                    <Field label="Paket add-on">
+                                        <select
+                                            className={inputClass}
+                                            required
+                                            value={addon.plan_id}
+                                            onChange={(event) => {
+                                                const nextPlan = plans.find((plan) => plan.public_id === event.target.value);
+                                                changeAddon(index, {
+                                                    plan_id: event.target.value,
+                                                    ends_on: nextPlan ? addonEndDate(addon.starts_on, nextPlan) : addon.ends_on,
+                                                });
+                                            }}
+                                        >
+                                            {eligiblePlans.map((plan) => (
+                                                <option key={plan.public_id} value={plan.public_id}>
+                                                    {translate(plan.name)}
+                                                    {!plan.is_active ? ' (nonaktif)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </Field>
+                                    <DateField
+                                        label="Mulai"
+                                        required
+                                        value={addon.starts_on}
+                                        change={(startsOn) =>
+                                            changeAddon(index, {
+                                                starts_on: startsOn,
+                                                ends_on: selectedPlan ? addonEndDate(startsOn, selectedPlan) : addon.ends_on,
+                                            })
+                                        }
+                                    />
+                                    <DateField
+                                        label="Selesai (opsional)"
+                                        value={addon.ends_on}
+                                        change={(endsOn) => changeAddon(index, { ends_on: endsOn })}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 px-3 text-sm font-bold text-rose-700 transition hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 disabled:opacity-50"
+                                        disabled={form.processing}
+                                        onClick={() =>
+                                            form.setData(
+                                                'addons',
+                                                form.data.addons.filter((_, addonIndex) => addonIndex !== index),
+                                            )
+                                        }
+                                        aria-label={`Hapus add-on ${index + 1}`}
+                                    >
+                                        <Trash2 className="size-4" />
+                                        <span className="lg:sr-only">Hapus</span>
+                                    </button>
+                                </div>
+                                {selectedPlan && (
+                                    <p className="mt-2 text-xs font-semibold text-slate-500">
+                                        {addonPlanCapacity(selectedPlan)} · {planTerm(selectedPlan)}
+                                    </p>
+                                )}
+                                {(errors[`addons.${index}.plan_id`] ||
+                                    errors[`addons.${index}.starts_on`] ||
+                                    errors[`addons.${index}.ends_on`]) && (
+                                    <p className="mt-2 text-sm font-semibold text-rose-700">
+                                        {errors[`addons.${index}.plan_id`] ??
+                                            errors[`addons.${index}.starts_on`] ??
+                                            errors[`addons.${index}.ends_on`]}
+                                    </p>
+                                )}
+                            </article>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="mt-3 rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm font-semibold text-slate-500">
+                    Belum ada add-on
+                </div>
+            )}
+            <p className="mt-2 text-xs font-semibold text-slate-500">Perubahan kapasitas berlaku setelah subscription disimpan.</p>
+            {errors.addons && <p className="mt-2 text-sm font-semibold text-rose-700">{errors.addons}</p>}
+        </section>
+    );
+}
+
 function ModalHeader({ title, description }: { title: string; description: string }) {
     return (
         <DialogHeader className="border-b border-slate-200 px-4 py-4 pr-12 text-left sm:px-5">
-            <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#3b211b]">{title}</DialogTitle>
-            <DialogDescription className="sr-only">{description}</DialogDescription>
+            <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#3b211b]">{translate(title)}</DialogTitle>
+            <DialogDescription className="sr-only">{translate(description)}</DialogDescription>
         </DialogHeader>
     );
 }
@@ -1029,7 +1334,7 @@ function Footer({
                 Batal
             </button>
             <button className={primaryButton} disabled={processing}>
-                {processing ? busyLabel : label}
+                {translate(processing ? busyLabel : label)}
             </button>
         </DialogFooter>
     );
@@ -1037,7 +1342,7 @@ function Footer({
 function Field({ label, children }: { label: string; children: ReactNode }) {
     return (
         <label className="grid gap-1.5 text-sm font-bold text-slate-700">
-            <span>{label}</span>
+            <span>{translate(label)}</span>
             {children}
         </label>
     );
@@ -1068,7 +1373,7 @@ function Check({ label, checked, change }: { label: string; checked: boolean; ch
                 checked={checked}
                 onChange={(event) => change(event.target.checked)}
             />
-            {label}
+            {translate(label)}
         </label>
     );
 }
@@ -1128,6 +1433,26 @@ function billingPeriod() {
         end: `${part.year}-${part.month}-${last}`,
     };
 }
+function todayInput() {
+    const part = dateParts(new Date());
+
+    return `${part.year}-${part.month}-${part.day}`;
+}
+function addonEndDate(startsOn: string, plan: Pick<Plan, 'billing_cycle' | 'duration_months'>) {
+    if (!startsOn || plan.billing_cycle === 'lifetime') {
+        return '';
+    }
+
+    const [year, month, day] = startsOn.split('-').map(Number);
+    const targetMonthIndex = month - 1 + plan.duration_months;
+    const targetYear = year + Math.floor(targetMonthIndex / 12);
+    const targetMonth = targetMonthIndex % 12;
+    const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+    const anniversary = new Date(Date.UTC(targetYear, targetMonth, Math.min(day, lastDay)));
+    anniversary.setUTCDate(anniversary.getUTCDate() - 1);
+
+    return anniversary.toISOString().slice(0, 10);
+}
 function formatDate(value: string | null) {
     if (!value) {
         return '—';
@@ -1154,7 +1479,15 @@ function planTerm(plan: Pick<Plan, 'is_trial' | 'duration_months' | 'billing_cyc
         ? translate('Selamanya')
         : plan.is_trial
           ? translate('30 hari')
-          : translate(`${plan.duration_months} bulan`);
+          : localizedQuantity(plan.duration_months, 'bulan');
+}
+
+function localizedQuantity(value: number, unit: string) {
+    return `${value.toLocaleString(localeTag())} ${translate(unit)}`;
+}
+
+function localizedCapacity(plan: Pick<Plan, 'kind'>, value: number, unit: string) {
+    return `${capacity(plan, value)} ${translate(unit)}`;
 }
 
 function capacity(plan: Pick<Plan, 'kind'>, value: number) {
@@ -1167,10 +1500,72 @@ function capacity(plan: Pick<Plan, 'kind'>, value: number) {
 
 function addonCapacity(addon: Subscription['active_addons'][number]) {
     return [
-        addon.stores > 0 ? `+${addon.stores} toko` : null,
-        addon.products > 0 ? `+${addon.products} produk` : null,
-        addon.members > 0 ? `+${addon.members} staf` : null,
-        addon.scans > 0 ? `+${addon.scans} scan/bulan` : null,
+        addon.stores > 0 ? `+${localizedQuantity(addon.stores, 'toko')}` : null,
+        addon.products > 0 ? `+${localizedQuantity(addon.products, 'produk')}` : null,
+        addon.members > 0 ? `+${localizedQuantity(addon.members, 'staf')}` : null,
+        addon.scans > 0 ? `+${localizedQuantity(addon.scans, 'scan/bulan')}` : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+}
+function groupAddons(addons: Subscription['active_addons']) {
+    const grouped = new Map<string, Subscription['active_addons'][number] & { key: string; quantity: number }>();
+
+    for (const addon of addons) {
+        const key = `${addon.plan_name}|${addon.starts_on}|${addon.ends_on ?? ''}`;
+        const current = grouped.get(key);
+
+        if (current) {
+            current.quantity += 1;
+            current.stores += addon.stores;
+            current.products += addon.products;
+            current.members += addon.members;
+            current.scans += addon.scans;
+        } else {
+            grouped.set(key, { ...addon, key, quantity: 1 });
+        }
+    }
+
+    return [...grouped.values()];
+}
+function accountLimits(
+    basePlan: Pick<Plan, 'max_stores' | 'max_products' | 'max_members' | 'max_scans'>,
+    addons: Array<Pick<Subscription['active_addons'][number], 'stores' | 'products' | 'members' | 'scans'>>,
+) {
+    const additional = addons.reduce(
+        (total, addon) => ({
+            stores: total.stores + addon.stores,
+            products: total.products + addon.products,
+            members: total.members + addon.members,
+            scans: total.scans + addon.scans,
+        }),
+        { stores: 0, products: 0, members: 0, scans: 0 },
+    );
+
+    return {
+        stores: basePlan.max_stores === 0 ? 0 : basePlan.max_stores + additional.stores,
+        products: basePlan.max_products === 0 ? 0 : basePlan.max_products + additional.products,
+        members: basePlan.max_members === 0 ? 0 : basePlan.max_members + additional.members,
+        scans: basePlan.max_scans === 0 ? 0 : basePlan.max_scans + additional.scans,
+    };
+}
+function activeOn(addon: { starts_on: string; ends_on: string | null }, date: string) {
+    return addon.starts_on <= date && (!addon.ends_on || addon.ends_on >= date);
+}
+function capacitySummary(limits: { stores: number; products: number; members: number; scans: number }) {
+    return [
+        `${limit(limits.stores)} ${translate('toko')}`,
+        `${limit(limits.members)} ${translate('staf')}`,
+        `${limit(limits.products)} ${translate('produk')}`,
+        `${limit(limits.scans)} ${translate('scan/bulan')}`,
+    ].join(' · ');
+}
+function addonPlanCapacity(plan: Plan) {
+    return [
+        plan.max_stores > 0 ? `+${localizedQuantity(plan.max_stores, 'toko')}` : null,
+        plan.max_products > 0 ? `+${localizedQuantity(plan.max_products, 'produk')}` : null,
+        plan.max_members > 0 ? `+${localizedQuantity(plan.max_members, 'staf')}` : null,
+        plan.max_scans > 0 ? `+${localizedQuantity(plan.max_scans, 'scan/bulan')}` : null,
     ]
         .filter(Boolean)
         .join(' · ');

@@ -7,6 +7,8 @@ import { currentDateTime, ledgerDateTime, money, postingToken, quantity } from '
 type Sale = {
     public_id: string;
     document_number: string;
+    customer_name: string | null;
+    customer_phone: string | null;
     subtotal: string;
     item_discount_amount: string;
     transaction_discount_amount: string;
@@ -166,6 +168,11 @@ export default function SaleShow({
                                     {ledgerDateTime(sale.occurred_at, timezone)}
                                     {receipt.show_cashier && ` · Kasir ${sale.cashier_name}`}
                                 </p>
+                                {sale.customer_name && sale.customer_phone && (
+                                    <p className="mt-1 text-xs font-semibold text-slate-600">
+                                        Pelanggan {sale.customer_name} · {sale.customer_phone}
+                                    </p>
+                                )}
                             </header>
                             <div className="divide-y divide-slate-100">
                                 {items.map((item) => (

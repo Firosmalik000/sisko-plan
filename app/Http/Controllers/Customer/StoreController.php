@@ -25,9 +25,10 @@ use Inertia\Response;
 
 class StoreController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, SubscriptionAccess $subscriptionAccess): Response
     {
-        $storeModels = AuthenticatedUser::get($request)->stores()
+        $user = AuthenticatedUser::get($request);
+        $storeModels = $user->stores()
             ->orderBy('name')
             ->with(['country.currency', 'settings'])
             ->get();
@@ -47,7 +48,12 @@ class StoreController extends Controller
             'currency_symbol' => $currencies->get($store->settings?->currency)?->symbol,
         ]);
 
-        return Inertia::render('customer/stores/index', ['stores' => $stores]);
+        $ownedStore = $storeModels->first(fn (Store $store): bool => $store->owner_user_id === $user->id);
+
+        return Inertia::render('customer/stores/index', [
+            'stores' => $stores,
+            'usage' => $ownedStore === null ? null : $subscriptionAccess->summary($ownedStore),
+        ]);
     }
 
     public function create(Request $request, SubscriptionAccess $subscriptionAccess): Response|RedirectResponse

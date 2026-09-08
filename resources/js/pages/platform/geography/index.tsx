@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { translate } from '@/lib/i18n';
 
 type Currency = {
     code: string;
@@ -220,7 +221,7 @@ function CreateField({ label, htmlFor, children }: { label: string; htmlFor: str
     return (
         <div className="grid gap-1.5">
             <Label htmlFor={htmlFor} className="text-xs font-bold">
-                {label}
+                {translate(label)}
             </Label>
             {children}
         </div>
@@ -305,7 +306,7 @@ function CurrencyCard({ currency, canManage }: { currency: Currency; canManage: 
                 <>
                     <div className="flex items-center justify-between gap-3">
                         <strong>{currency.code}</strong>
-                        <Badge variant="outline">{currency.countries_count} negara</Badge>
+                        <Badge variant="outline">{currency.countries_count} {translate('negara')}</Badge>
                     </div>
                     <CreateField label="Nama" htmlFor={`${prefix}-name`}>
                         <Input id={`${prefix}-name`} name="name" defaultValue={currency.name} disabled={!canManage} className="h-11" />

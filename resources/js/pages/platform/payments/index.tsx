@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 type Payment = {
     public_id: string;
@@ -91,7 +92,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                         <option value="">Semua metode</option>
                         {Object.entries(methodLabels).map(([value, label]) => (
                             <option key={value} value={value}>
-                                {label}
+                                {translate(label)}
                             </option>
                         ))}
                     </select>
@@ -135,7 +136,7 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                                         </span>
                                     </td>
                                     <td className="px-5 py-4">
-                                        <Badge variant="outline">{methodLabels[payment.payment_method] ?? payment.payment_method}</Badge>
+                                        <Badge variant="outline">{translate(methodLabels[payment.payment_method] ?? payment.payment_method)}</Badge>
                                         {payment.external_reference && (
                                             <p className="mt-1 text-xs text-slate-500">{payment.external_reference}</p>
                                         )}
@@ -180,7 +181,7 @@ function SummaryCard({
                 <Icon className="size-5" />
             </span>
             <div>
-                <p className="text-xs font-semibold text-slate-500">{label}</p>
+                <p className="text-xs font-semibold text-slate-500">{translate(label)}</p>
                 <p className="mt-1 text-xl font-black tracking-tight text-[#3b211b]">{value}</p>
             </div>
         </article>

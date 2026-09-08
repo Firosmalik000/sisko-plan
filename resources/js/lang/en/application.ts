@@ -1,6 +1,37 @@
 import { indonesianCore } from '../id/common';
 
 export const englishOverrides: Record<string, string> = {
+    'Data pelanggan': 'Customer details',
+    Opsional: 'Optional',
+    'Nama pelanggan': 'Customer name',
+    'Nomor telepon': 'Phone number',
+    'Hapus data pelanggan': 'Clear customer details',
+    Pelanggan: 'Customer',
+    'Checkout gagal. Periksa data pelanggan, stok, diskon, dan pembayaran.':
+        'Checkout failed. Check the customer details, stock, discounts, and payment.',
+    'Paket & add-on': 'Plans & add-ons',
+    'toko aktif': 'active stores',
+    'Penawaran add-on': 'Add-on offers',
+    'Paket dasar': 'Base plans',
+    'paket dasar': 'base plans',
+    'Add-on akun': 'Account add-ons',
+    'Belum ada add-on': 'No add-ons yet',
+    'Hapus add-on': 'Delete add-on',
+    'Tambah add-on': 'Add add-on',
+    'Kapasitas tertulis jelas': 'Clearly stated capacity',
+    'Masa aktif': 'Active period',
+    pilihan: 'options',
+    sekali: 'once',
+    Tim: 'Team',
+    'Paket add-on': 'Add-on packages',
+    'add-on aktif': 'active add-ons',
+    'add-on terjadwal': 'scheduled add-ons',
+    'Periksa hasil': 'Review results',
+    'Pengenalan sedang terganggu. Coba lagi atau cari manual.': 'Recognition is temporarily unavailable. Try again or search manually.',
+    'Foto belum berhasil diproses. Coba lagi atau cari manual.': 'The photo could not be processed. Try again or search manually.',
+    'Scanner toko sedang disiapkan. Coba lagi sebentar.': 'The store scanner is being prepared. Try again shortly.',
+    'perlu dipilih': 'need selection',
+    dilewati: 'skipped',
     ...Object.fromEntries(Object.entries(indonesianCore).map(([english, indonesian]) => [indonesian, english])),
     'Auto aktif': 'Auto active',
     'Auto jeda': 'Auto paused',
@@ -145,6 +176,9 @@ export const englishOverrides: Record<string, string> = {
     'Menu cepat': 'Quick menu',
     'Menu lainnya': 'More menu',
     'Mulai operasional': 'Start operations',
+    'Lihat pilihan add-on': 'View add-on options',
+    'Arus masuk': 'Cash in',
+    'Arus keluar': 'Cash out',
     Operasional: 'Operations',
     'Operasional Terkini': 'Recent Operations',
     'Pantau performa': 'Monitor performance',
@@ -252,6 +286,22 @@ export const englishOverrides: Record<string, string> = {
         'Return to the previous page or open the home page to continue.',
     'Kembali ke transaksi': 'Back to transactions',
     'Kode terbaca, tetapi produk belum ada di katalog.': 'The code was detected, but the product is not in the catalog yet.',
+    'Scanner sedang sibuk. Coba lagi sebentar.': 'The scanner is busy. Please try again shortly.',
+    'Layanan scanner belum terhubung. Hubungi administrator.': 'The scanner service is not connected. Contact an administrator.',
+    'Kuota scan bulan ini sudah habis. Tambahkan kapasitas untuk melanjutkan.':
+        "This month's scan quota has been used. Add more capacity to continue.",
+    'Akses kamera memerlukan HTTPS. Buka halaman ini melalui alamat HTTPS.':
+        'Camera access requires HTTPS. Open this page using an HTTPS address.',
+    'Browser ini tidak menyediakan akses kamera. Gunakan browser terbaru atau pilih foto dari galeri.':
+        'This browser does not provide camera access. Use an up-to-date browser or choose a photo from your gallery.',
+    'Izin kamera ditolak. Izinkan kamera di pengaturan situs, lalu coba lagi.':
+        'Camera permission was denied. Allow camera access in the site settings, then try again.',
+    'Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut, lalu coba lagi.':
+        'The camera is being used by another application. Close it, then try again.',
+    'Kamera tidak dapat dibuka. Periksa izin kamera, lalu coba lagi atau pilih foto dari galeri.':
+        'The camera could not be opened. Check its permission, then try again or choose a photo from your gallery.',
+    'Kamera tidak ditemukan pada perangkat ini. Pilih foto dari galeri untuk melanjutkan.':
+        'No camera was found on this device. Choose a photo from your gallery to continue.',
     'Kode warna utama': 'Primary color code',
     'Komposisi Kategori': 'Category Mix',
     'Kontak utama': 'Primary contact',

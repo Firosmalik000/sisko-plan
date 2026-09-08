@@ -81,5 +81,7 @@
     "Currency added successfully.": "Mata uang berhasil ditambahkan.",
     "Currency updated successfully.": "Mata uang berhasil diperbarui.",
     "Bukti pembayaran hanya dapat ditambahkan untuk QRIS.": "Bukti pembayaran hanya dapat ditambahkan untuk QRIS.",
-    "Bukti pembayaran gagal disimpan. Coba unggah kembali.": "Bukti pembayaran gagal disimpan. Coba unggah kembali."
+    "Bukti pembayaran gagal disimpan. Coba unggah kembali.": "Bukti pembayaran gagal disimpan. Coba unggah kembali.",
+    "Nama pelanggan dan nomor telepon harus diisi bersama.": "Nama pelanggan dan nomor telepon harus diisi bersama.",
+    "Nomor telepon pelanggan tidak valid.": "Nomor telepon pelanggan tidak valid."
 }

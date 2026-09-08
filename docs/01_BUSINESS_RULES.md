@@ -39,6 +39,7 @@
 - Multi-row workflows must be atomic.
 - Duplicate submission must be prevented where the action is not safe to repeat.
 - Posted records are immutable unless the workflow explicitly supports reversal or cancellation.
+- Customer details on a sale are optional. When supplied, name and phone are required together, the reusable customer identity is scoped to the store by normalized phone number, and the posted sale keeps immutable name and phone snapshots.
 
 ## Data rules
 

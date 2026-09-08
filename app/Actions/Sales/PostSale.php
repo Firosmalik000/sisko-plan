@@ -27,14 +27,21 @@ use Throwable;
 
 class PostSale
 {
-    public function __construct(private NextDocumentNumber $numbers, private ApplyStockMovement $stock, private ApplyCashTransaction $cash, private SaleCalculator $calculator, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
+    public function __construct(private NextDocumentNumber $numbers, private ApplyStockMovement $stock, private ApplyCashTransaction $cash, private SaleCalculator $calculator, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps, private UpsertSaleCustomer $customers) {}
 
     /** @param array<int, array{product_unit_id:int, quantity:string, item_discount:string}> $items */
-    public function handle(Store $store, User $actor, int $accountId, array $items, string $transactionDiscount, string $paidAmount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null, ?UploadedFile $paymentProof = null): Sale
+    public function handle(Store $store, User $actor, int $accountId, array $items, string $transactionDiscount, string $paidAmount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null, ?UploadedFile $paymentProof = null, ?string $customerName = null, ?string $customerPhone = null): Sale
     {
+        $customerName = $customerName === null || trim($customerName) === '' ? null : trim($customerName);
+        $customerPhone = $customerPhone === null || trim($customerPhone) === '' ? null : trim($customerPhone);
         $date = $this->timestamps->parse($store, $occurredAt);
         $proofChecksum = $paymentProof?->isValid() ? hash_file('sha256', $paymentProof->getRealPath()) : null;
-        $requestPayload = compact('accountId', 'items', 'transactionDiscount', 'paidAmount', 'notes') + ['occurred_at' => $date->toISOString()];
+        $countryCode = $store->country()->value('code');
+        $normalizedCustomerPhone = $customerPhone === null ? null : UpsertSaleCustomer::normalizePhone($customerPhone, $countryCode);
+        $requestPayload = compact('accountId', 'items', 'transactionDiscount', 'paidAmount', 'notes', 'customerName') + [
+            'customer_phone' => $normalizedCustomerPhone,
+            'occurred_at' => $date->toISOString(),
+        ];
         if (is_string($proofChecksum)) {
             $requestPayload['payment_proof_sha256'] = $proofChecksum;
         }
@@ -42,7 +49,7 @@ class PostSale
         $newProofPath = null;
 
         try {
-            return DB::transaction(function () use ($store, $actor, $accountId, $items, $transactionDiscount, $paidAmount, $date, $notes, $idempotencyKey, $requestHash, $ipAddress, $paymentProof, &$newProofPath): Sale {
+            return DB::transaction(function () use ($store, $actor, $accountId, $items, $transactionDiscount, $paidAmount, $date, $notes, $idempotencyKey, $requestHash, $ipAddress, $paymentProof, $customerName, $customerPhone, &$newProofPath): Sale {
                 $existing = $this->idempotency->existing(fn (): ?Sale => Sale::query()->where(['store_id' => $store->id, 'idempotency_key' => $idempotencyKey])->lockForUpdate()->first(), $requestHash);
                 if ($existing !== null) {
                     return $existing;
@@ -93,8 +100,11 @@ class PostSale
                     }
                     $newProofPath = $storedProofPath;
                 }
+                $customer = $this->customers->handle($store, $customerName, $customerPhone);
                 $sale = Sale::create([
-                    'store_id' => $store->id, 'document_number' => $this->numbers->handle($store->id, 'sale', $date),
+                    'store_id' => $store->id, 'customer_id' => $customer?->id,
+                    'document_number' => $this->numbers->handle($store->id, 'sale', $date),
+                    'customer_name' => $customerName, 'customer_phone' => $customerPhone,
                     'subtotal' => $calculation['subtotal'], 'item_discount_amount' => $calculation['item_discount'],
                     'transaction_discount_amount' => $calculation['transaction_discount'], 'total_amount' => $calculation['total'],
                     'paid_amount' => $paidAmount, 'change_amount' => $change, 'idempotency_key' => $idempotencyKey,

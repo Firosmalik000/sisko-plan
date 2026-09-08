@@ -14,8 +14,10 @@ use App\Models\Plan;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Subscription;
+use App\Models\SubscriptionScanUsage;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\Subscriptions\SubscriptionEntitlements;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -74,6 +76,34 @@ class SubscriptionManagementTest extends TestCase
         $this->actingAs($owner)->post(route('stores.store'), ['name' => 'Toko Ketiga'])
             ->assertSessionHasErrors('name');
         $this->assertSame(2, Store::query()->where('owner_user_id', $owner->id)->count());
+    }
+
+    public function test_stores_index_exposes_the_current_owner_capacity_preview(): void
+    {
+        $this->travelTo('2026-09-08 10:00:00');
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+        $store->subscription()->sole()->plan()->update([
+            'max_stores' => 2,
+            'max_members' => 3,
+            'max_scans' => 100,
+        ]);
+        SubscriptionScanUsage::create([
+            'user_id' => $owner->id,
+            'period_start' => '2026-09-01',
+            'period_end' => '2026-09-30',
+            'used' => 80,
+        ]);
+
+        $this->actingAs($owner)->get(route('stores.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('usage.plan_name', 'Gratis Selamanya')
+                ->where('usage.stores_used', 1)
+                ->where('usage.max_stores', 2)
+                ->where('usage.members_used', 0)
+                ->where('usage.max_members', 3)
+                ->where('usage.scans_used', 80)
+                ->where('usage.max_scans', 100));
     }
 
     public function test_account_subscription_migration_rolls_back_without_leaving_owned_stores_uncovered(): void
@@ -301,7 +331,7 @@ class SubscriptionManagementTest extends TestCase
         $this->assertSame(0, Plan::query()->where('kind', Plan::KIND_ADDON)->where('is_active', true)->count());
     }
 
-    public function test_public_pricing_page_only_lists_active_plans(): void
+    public function test_public_pricing_page_only_lists_active_non_default_offers(): void
     {
         $this->withoutVite();
         Plan::create([
@@ -315,12 +345,16 @@ class SubscriptionManagementTest extends TestCase
 
         $this->get(route('pricing'))->assertInertia(fn (Assert $page) => $page
             ->component('public/pricing')
-            ->has('plans', 2)
-            ->where('plans.1.name', 'Growth')
-            ->where('plans.0.max_stores', 1)
-            ->where('plans.0.duration_months', 1)
-            ->where('plans.0.is_current', false)
-            ->where('plans.1.is_current', false));
+            ->has('plans', 1)
+            ->where('plans.0.name', 'Growth')
+            ->where('plans.0.is_default', false)
+            ->where('plans.0.is_current', false));
+
+        $free = Plan::query()->where('is_default', true)->sole();
+        $owner = User::factory()->create();
+        Store::factory()->for($owner, 'owner')->create();
+        $this->actingAs($owner)->post(route('pricing.subscribe'), ['plan_id' => $free->public_id])
+            ->assertSessionHasErrors('plan_id');
     }
 
     public function test_plan_seeder_is_idempotent_and_marks_the_free_forever_default(): void
@@ -402,9 +436,9 @@ class SubscriptionManagementTest extends TestCase
 
         $this->actingAs($owner)->get(route('pricing'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('plans.1.name', 'Tambah Kapasitas Dasar')
-                ->where('plans.1.kind', Plan::KIND_ADDON)
-                ->where('plans.1.can_select', true));
+                ->where('plans.0.name', 'Tambah Kapasitas Dasar')
+                ->where('plans.0.kind', Plan::KIND_ADDON)
+                ->where('plans.0.can_select', true));
         $this->actingAs($owner)->post(route('pricing.subscribe'), ['plan_id' => $addon->public_id])
             ->assertRedirect(route('subscription.index'))->assertSessionHasNoErrors();
 
@@ -459,7 +493,7 @@ class SubscriptionManagementTest extends TestCase
         $this->get(route('pricing', ['category' => Plan::CATEGORY_STAFF]))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('focus_category', Plan::CATEGORY_STAFF)
-                ->where('plans.1.offer_category', Plan::CATEGORY_STAFF));
+                ->where('plans.0.offer_category', Plan::CATEGORY_STAFF));
         $this->get(route('pricing', ['category' => 'unknown']))
             ->assertInertia(fn (Assert $page) => $page->where('focus_category', null));
     }
@@ -512,11 +546,11 @@ class SubscriptionManagementTest extends TestCase
                 ->component('public/pricing')
                 ->where('account.can_access_dashboard', false)
                 ->where('account.trial_used', true)
-                ->where('plans.1.is_trial', true)
-                ->where('plans.1.can_select', false)
-                ->where('plans.1.disabled_reason', 'Trial sudah digunakan.')
-                ->where('plans.2.name', 'Growth')
-                ->where('plans.2.can_select', true));
+                ->where('plans.0.is_trial', true)
+                ->where('plans.0.can_select', false)
+                ->where('plans.0.disabled_reason', 'Trial sudah digunakan.')
+                ->where('plans.1.name', 'Growth')
+                ->where('plans.1.can_select', true));
     }
 
     public function test_owner_can_confirm_paid_plan_after_trial_expiry_and_dashboard_is_unlocked(): void
@@ -564,8 +598,8 @@ class SubscriptionManagementTest extends TestCase
         $this->actingAs($owner)->get(route('pricing'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('account.next_period_start', '2026-11-24')
-                ->where('plans.1.can_select', true)
-                ->where('plans.2.can_select', true));
+                ->where('plans.0.can_select', true)
+                ->where('plans.1.can_select', true));
         $this->actingAs($owner)->post(route('pricing.subscribe'), ['plan_id' => $next->public_id])
             ->assertRedirect(route('subscription.index'))->assertSessionHasNoErrors();
 
@@ -759,6 +793,132 @@ class SubscriptionManagementTest extends TestCase
         $this->assertNull($subscription->trial_ends_at);
         $this->assertDatabaseHas('admin_audit_logs', ['user_id' => $admin->id, 'action' => 'plan.created', 'subject_id' => $plan->id]);
         $this->assertDatabaseHas('admin_audit_logs', ['user_id' => $admin->id, 'action' => 'subscription.updated', 'subject_id' => $subscription->id]);
+    }
+
+    public function test_platform_admin_can_manage_multiple_assigned_addons_atomically(): void
+    {
+        $this->travelTo('2026-09-08 10:00:00');
+        $admin = User::factory()->superAdmin()->create();
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+        $subscription = $store->subscription()->sole();
+        $storeAddon = Plan::create([
+            'code' => 'admin-store-addon', 'name' => 'Tambah Toko', 'kind' => Plan::KIND_ADDON,
+            'offer_category' => Plan::CATEGORY_STORE, 'billing_cycle' => Plan::BILLING_FIXED,
+            'monthly_price' => '50000', 'duration_months' => 2, 'max_stores' => 1,
+            'max_products' => 0, 'max_members' => 0, 'max_scans' => 0, 'is_active' => true, 'is_default' => false,
+        ]);
+        $scanAddon = Plan::create([
+            'code' => 'admin-scan-addon', 'name' => 'Tambah Scan', 'kind' => Plan::KIND_ADDON,
+            'offer_category' => Plan::CATEGORY_SCAN, 'billing_cycle' => Plan::BILLING_FIXED,
+            'monthly_price' => '25000', 'duration_months' => 1, 'max_stores' => 0,
+            'max_products' => 0, 'max_members' => 0, 'max_scans' => 250, 'is_active' => true, 'is_default' => false,
+        ]);
+
+        $payload = [
+            'plan_id' => $subscription->plan->public_id,
+            'status' => SubscriptionStatus::Active->value,
+            'starts_at' => '2026-09-01',
+            'trial_ends_at' => null,
+            'current_period_start' => '2026-09-01',
+            'current_period_end' => null,
+            'notes' => 'Dikelola admin',
+            'addons' => [
+                ['public_id' => null, 'plan_id' => $storeAddon->public_id, 'starts_on' => '2026-10-08', 'ends_on' => '2026-12-07'],
+                ['public_id' => null, 'plan_id' => $scanAddon->public_id, 'starts_on' => '2026-09-08', 'ends_on' => '2026-10-07'],
+                ['public_id' => null, 'plan_id' => $storeAddon->public_id, 'starts_on' => '2026-09-08', 'ends_on' => '2026-11-07'],
+            ],
+        ];
+        $this->actingAs($admin)->patch(route('super-admin.subscriptions.update', $subscription), $payload)
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('subscription_addons', 3);
+        $this->assertDatabaseHas('subscription_addons', [
+            'subscription_id' => $subscription->id, 'plan_id' => $storeAddon->id, 'stores' => 1, 'source' => 'admin',
+        ]);
+        $this->assertDatabaseHas('subscription_addons', [
+            'subscription_id' => $subscription->id, 'plan_id' => $scanAddon->id, 'scans' => 250, 'source' => 'admin',
+        ]);
+        $limits = app(SubscriptionEntitlements::class)->forOwner($owner->id);
+        $this->assertSame(2, $limits['max_stores']);
+        $this->assertSame(350, $limits['max_scans']);
+
+        $this->actingAs($admin)->get(route('super-admin.subscriptions.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('subscriptions.data.0.assigned_addons', 3)
+                ->has('subscriptions.data.0.active_addons', 2)
+                ->has('subscriptions.data.0.scheduled_addons', 1)
+                ->where('subscriptions.data.0.scheduled_addons.0.starts_on', '2026-10-08')
+                ->where('subscriptions.data.0.plan.max_stores', 1));
+
+        $assigned = $subscription->addons()->orderBy('id')->get();
+        $payload['addons'] = [[
+            'public_id' => $assigned[1]->public_id,
+            'plan_id' => $scanAddon->public_id,
+            'starts_on' => '2026-09-10',
+            'ends_on' => '2026-10-09',
+        ]];
+        $this->actingAs($admin)->patch(route('super-admin.subscriptions.update', $subscription), $payload)
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('subscription_addons', 1);
+        $this->assertDatabaseHas('subscription_addons', [
+            'public_id' => $assigned[1]->public_id, 'starts_on' => '2026-09-10', 'ends_on' => '2026-10-09',
+        ]);
+        $this->assertDatabaseMissing('subscription_addons', ['public_id' => $assigned[0]->public_id]);
+        $this->actingAs($admin)->get(route('super-admin.subscriptions.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('subscriptions.data.0.assigned_addons', 1)
+                ->where('subscriptions.data.0.assigned_addons.0.plan_id', $scanAddon->public_id));
+    }
+
+    public function test_platform_admin_addon_management_rejects_invalid_relationships_and_dates(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $firstSubscription = Store::factory()->create()->subscription()->sole();
+        $secondSubscription = Store::factory()->create()->subscription()->sole();
+        $addonPlan = Plan::create([
+            'code' => 'validated-addon', 'name' => 'Validated Add-on', 'kind' => Plan::KIND_ADDON,
+            'offer_category' => Plan::CATEGORY_STAFF, 'billing_cycle' => Plan::BILLING_FIXED,
+            'monthly_price' => 0, 'duration_months' => 1, 'max_stores' => 0,
+            'max_products' => 0, 'max_members' => 1, 'max_scans' => 0, 'is_active' => true, 'is_default' => false,
+        ]);
+        $foreignAddon = $secondSubscription->addons()->create([
+            'user_id' => $secondSubscription->user_id, 'plan_id' => $addonPlan->id, 'plan_name' => $addonPlan->name,
+            'offer_category' => $addonPlan->offer_category, 'price' => 0, 'duration_months' => 1,
+            'stores' => 0, 'products' => 0, 'members' => 1, 'scans' => 0,
+            'starts_on' => now()->toDateString(), 'ends_on' => null, 'source' => 'admin', 'created_by_user_id' => $admin->id,
+        ]);
+        $basePayload = [
+            'plan_id' => $firstSubscription->plan->public_id,
+            'status' => SubscriptionStatus::Active->value,
+            'starts_at' => now()->toDateString(),
+            'trial_ends_at' => null,
+            'current_period_start' => now()->toDateString(),
+            'current_period_end' => null,
+            'notes' => null,
+        ];
+
+        $this->actingAs($admin)->patch(route('super-admin.subscriptions.update', $firstSubscription), [
+            ...$basePayload,
+            'addons' => [[
+                'public_id' => $foreignAddon->public_id,
+                'plan_id' => $addonPlan->public_id,
+                'starts_on' => '2026-09-08',
+                'ends_on' => '2026-09-07',
+            ]],
+        ])->assertSessionHasErrors(['addons.0.public_id', 'addons.0.ends_on']);
+
+        $this->actingAs($admin)->patch(route('super-admin.subscriptions.update', $firstSubscription), [
+            ...$basePayload,
+            'addons' => [[
+                'public_id' => null,
+                'plan_id' => $firstSubscription->plan->public_id,
+                'starts_on' => '2026-09-08',
+                'ends_on' => null,
+            ]],
+        ])->assertSessionHasErrors('addons.0.plan_id');
+        $this->assertDatabaseCount('subscription_addons', 1);
     }
 
     public function test_subscription_payment_is_idempotent_immutable_and_renews_subscription(): void

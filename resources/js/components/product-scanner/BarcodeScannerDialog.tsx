@@ -1,6 +1,7 @@
 import { Camera, ImageUp, LoaderCircle, RefreshCw, ScanBarcode, X, Zap, ZapOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { translate } from '@/lib/i18n';
 import { decodeBarcodeImage } from './decode-barcode-image';
 import { useCamera } from './use-camera';
 
@@ -118,7 +119,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                         <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center text-[var(--app-ink)] shadow-[0_20px_60px_-24px_rgba(0,0,0,.8)]">
                             <Camera className="mx-auto size-8 text-[#c75d32]" />
                             <p className="mt-3 font-black">Scanner belum tersedia</p>
-                            <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{cameraError}</p>
+                            <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{translate(cameraError)}</p>
                             <button
                                 type="button"
                                 onClick={retry}
@@ -128,7 +129,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                             </button>
                             {scanError && (
                                 <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
-                                    {scanError}
+                                    {translate(scanError)}
                                 </p>
                             )}
                         </div>
@@ -146,7 +147,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                                     role="alert"
                                     className="mx-auto mt-3 max-w-sm rounded-lg bg-red-950/70 px-3 py-2 text-center text-xs font-bold text-red-100"
                                 >
-                                    {scanError}
+                                    {translate(scanError)}
                                 </p>
                             )}
                         </div>

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { formatMoney, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 import type { ScannerCapture, ScannerProductCandidate, ScannerPurpose, ScannerSaleOption, ScannerSelection } from './types';
 
 const actionLabels: Record<ScannerPurpose, string> = {
@@ -119,9 +120,9 @@ export function ScanReview({
                 <div className="min-w-0 flex-1">
                     <h2 className="text-xl font-black tracking-[-0.03em]">Periksa hasil</h2>
                     <p className="text-xs font-semibold text-[var(--muted-foreground)]">
-                        {confirmed.length} siap
-                        {unresolved > 0 ? ` · ${unresolved} perlu dipilih` : ''}
-                        {skipped > 0 ? ` · ${skipped} dilewati` : ''}
+                        {confirmed.length} {translate('siap')}
+                        {unresolved > 0 ? ` · ${unresolved} ${translate('perlu dipilih')}` : ''}
+                        {skipped > 0 ? ` · ${skipped} ${translate('dilewati')}` : ''}
                     </p>
                 </div>
                 <button
@@ -157,7 +158,9 @@ export function ScanReview({
                                     <AlertCircle className="mt-0.5 size-5 shrink-0 text-[#bd572f]" />
                                     <div className="min-w-0 flex-1">
                                         <p className="font-black">Foto belum berhasil diproses</p>
-                                        <p className="mt-1 text-sm text-[#795f55]">{capture.error}</p>
+                                        <p className="mt-1 text-sm text-[#795f55]">
+                                            {translate(capture.error ?? 'Foto belum berhasil diproses. Coba lagi atau cari manual.')}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="mt-3 flex flex-wrap gap-2">
@@ -282,7 +285,7 @@ export function ScanReview({
                     {pending
                         ? 'Menunggu hasil…'
                         : unresolved > 0
-                          ? `${unresolved} produk perlu dipilih`
+                          ? `${unresolved} ${translate('produk perlu dipilih')}`
                           : confirmed.length === 0
                             ? 'Selesai'
                             : actionLabels[purpose]}
@@ -641,7 +644,9 @@ function ManualProductPicker({
                         <span className="min-w-0 flex-1">
                             <span className="line-clamp-2 text-sm font-black">{product.name}</span>
                             <span className="mt-1 block text-xs font-semibold text-[var(--muted-foreground)]">
-                                {product.options.length > 1 ? `${product.options.length} pilihan` : optionName(product.options[0])}
+                                {product.options.length > 1
+                                    ? `${product.options.length} ${translate('pilihan')}`
+                                    : optionName(product.options[0])}
                             </span>
                         </span>
                     </button>

@@ -5,6 +5,7 @@ import { ledgerDateTime, money, OperationsShell, quantity } from '@/components/o
 import type { ScannerSelection } from '@/components/product-scanner/types';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
 import { decimalInput } from '@/lib/decimal-input';
+import { translate } from '@/lib/i18n';
 
 type Item = {
     product_id: string;
@@ -459,7 +460,9 @@ export default function StockOpnameShow({
 function Summary({ label, value, danger = false }: { label: string; value: string | number; danger?: boolean }) {
     return (
         <div className="min-w-0 px-1.5 text-center sm:px-3">
-            <p className="truncate text-[8px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">{label}</p>
+            <p className="truncate text-[8px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">
+                {translate(label)}
+            </p>
             <p
                 className={`mt-0.5 truncate text-sm font-black tabular-nums sm:text-base ${danger ? 'text-red-700' : 'text-[var(--app-ink)]'}`}
             >

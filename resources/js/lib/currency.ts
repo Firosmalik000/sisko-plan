@@ -1,5 +1,5 @@
-export type AppLocale = 'en' | 'id' | 'ms';
-export type MarketCode = 'id' | 'ms';
+export type AppLocale = 'en' | 'id' | 'ms' | 'vi';
+export type MarketCode = 'id' | 'ms' | 'vi';
 
 type CurrencyConfiguration = {
     currency_code?: string;
@@ -13,8 +13,9 @@ export function applyStoreCurrency(activeStore: CurrencyConfiguration, market: M
         return;
     }
 
-    document.documentElement.dataset.currency = activeStore?.currency_code ?? (market === 'ms' ? 'MYR' : 'IDR');
-    document.documentElement.dataset.currencySymbol = activeStore?.currency_symbol ?? (market === 'ms' ? 'RM' : 'Rp');
+    document.documentElement.dataset.currency = activeStore?.currency_code ?? (market === 'ms' ? 'MYR' : market === 'vi' ? 'VND' : 'IDR');
+    document.documentElement.dataset.currencySymbol =
+        activeStore?.currency_symbol ?? (market === 'ms' ? 'RM' : market === 'vi' ? '₫' : 'Rp');
     document.documentElement.dataset.currencyDecimals = String(activeStore?.currency_decimal_places ?? 0);
     document.documentElement.dataset.currencyPosition = activeStore?.currency_symbol_position === 'after' ? 'after' : 'before';
 }
@@ -22,31 +23,33 @@ export function applyStoreCurrency(activeStore: CurrencyConfiguration, market: M
 export function currentLocale(): AppLocale {
     const locale = typeof document !== 'undefined' ? document.documentElement.lang : 'id';
 
-    return locale === 'en' || locale === 'ms' ? locale : 'id';
+    return locale === 'en' || locale === 'ms' || locale === 'vi' ? locale : 'id';
 }
 
 export function currentMarket(): MarketCode {
-    return typeof document !== 'undefined' && document.documentElement.dataset.market === 'ms' ? 'ms' : 'id';
+    const market = typeof document !== 'undefined' ? document.documentElement.dataset.market : undefined;
+
+    return market === 'ms' || market === 'vi' ? market : 'id';
 }
 
 export function currencyCode(market = currentMarket()) {
     const configured = typeof document !== 'undefined' ? document.documentElement.dataset.currency : undefined;
 
-    return configured || (market === 'ms' ? 'MYR' : 'IDR');
+    return configured || (market === 'ms' ? 'MYR' : market === 'vi' ? 'VND' : 'IDR');
 }
 
 export function localeTag(locale = currentLocale(), market = currentMarket()) {
     if (locale === 'en') {
-        return market === 'ms' ? 'en-MY' : 'en-ID';
+        return market === 'ms' ? 'en-MY' : market === 'vi' ? 'en-VN' : 'en-ID';
     }
 
-    return locale === 'ms' ? 'ms-MY' : 'id-ID';
+    return locale === 'ms' ? 'ms-MY' : locale === 'vi' ? 'vi-VN' : 'id-ID';
 }
 
 export function currencySymbol(market = currentMarket()) {
     const configured = typeof document !== 'undefined' ? document.documentElement.dataset.currencySymbol : undefined;
 
-    return configured || (market === 'ms' ? 'RM' : 'Rp');
+    return configured || (market === 'ms' ? 'RM' : market === 'vi' ? '₫' : 'Rp');
 }
 
 const highDenominationCurrencies = new Set(['IDR', 'VND']);

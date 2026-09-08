@@ -50,6 +50,7 @@ const translatedProps = new Set([
     'caption',
     'description',
     'emptyLabel',
+    'error',
     'label',
     'loadingLabel',
     'message',
@@ -172,9 +173,11 @@ function visit(file, source, node) {
         } else if (ts.isVariableDeclaration(parent) && uiNames.test(nameOf(parent.name))) {
             report(node.text, file, source, node, false);
         } else if (ts.isReturnStatement(parent) && uiNames.test(enclosingFunctionName(node))) {
-            report(node.text, file, source, node, false);
+            const scannerMessage = file.replaceAll('\\', '/').includes('/components/product-scanner/');
+            report(node.text, file, source, node, scannerMessage);
         } else if (ts.isCallExpression(parent) && uiCalls.test(nameOf(parent.expression))) {
-            report(node.text, file, source, node, false);
+            const scannerMessage = file.replaceAll('\\', '/').includes('/components/product-scanner/');
+            report(node.text, file, source, node, scannerMessage);
         }
     } else if (ts.isTemplateExpression(node) && isJsxChild(node)) {
         report(node.head.text, file, source, node, true);
@@ -189,8 +192,17 @@ function walk(directory) {
         const target = path.join(directory, entry.name);
         if (entry.isDirectory()) {
             walk(target);
-        } else if (entry.name.endsWith('.tsx')) {
-            const source = ts.createSourceFile(target, fs.readFileSync(target, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+        } else if (
+            entry.name.endsWith('.tsx') ||
+            (entry.name.endsWith('.ts') && target.replaceAll('\\', '/').includes('/components/product-scanner/'))
+        ) {
+            const source = ts.createSourceFile(
+                target,
+                fs.readFileSync(target, 'utf8'),
+                ts.ScriptTarget.Latest,
+                true,
+                entry.name.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+            );
             visit(target, source, source);
         }
     }
@@ -203,6 +215,7 @@ const malayCatalog = new Map();
 const malayLexiconEntries = [];
 const englishCatalog = new Map();
 const englishLexiconEntries = [];
+const vietnameseCatalog = new Map();
 const catalogGroups = new Map();
 
 function collectKeys(node) {
@@ -276,6 +289,19 @@ function collectKeys(node) {
         for (const property of node.initializer.properties) {
             if (ts.isPropertyAssignment(property) && ts.isStringLiteralLike(property.initializer)) {
                 englishCatalog.set(nameOf(property.name), property.initializer.text);
+            }
+        }
+    }
+    if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.name.text.startsWith('vietnamese') &&
+        node.initializer &&
+        ts.isObjectLiteralExpression(node.initializer)
+    ) {
+        for (const property of node.initializer.properties) {
+            if (ts.isPropertyAssignment(property) && ts.isStringLiteralLike(property.initializer)) {
+                vietnameseCatalog.set(nameOf(property.name), property.initializer.text);
             }
         }
     }
@@ -358,12 +384,15 @@ const dynamicEnglish = [
 const missingEnglish = new Map();
 const untranslatedIndonesian = new Map();
 const untranslatedEnglish = new Map();
+const untranslatedVietnamese = new Map();
 const indonesianLandingWords =
     /\b(?:kasir|operasional|rapi|barangnya|sisanya|langsung|tercatat|menyatukan|toko|bisa|tim|terkontrol|ditemukan|keranjang|bayar|diperbarui|penjualan|ringan|butuh|merepotkan|dibuat|ingin|bekerja|memahami|kondisi|usahanya|alur|catatan|dipahami|nyaman|dipakai|ponsel|sering|terjadi|jualannya|tertinggal|berulang|membuat|sulit|dibaca|mudah|tercecer|tersimpan|diperiksa|dihitung|terlambat|menumpuk|menghabiskan|waktu|harus|disatukan|gerakan|utuh|gunakan|atau|atur|kembalian|hasilnya|cuma|pekerjaan|paham|masukkan|lalu|berpindah|layar|otomatis|kulakan|hingga|tingkat|uang|biaya|utang|ditelusuri|tebakan|laba|kritis|sampai|informasi|dibutuhkan|membingungkan|batas|kemarin|menyeluruh|tersedia|berbeda|sedikit|mencatat|melayani|perbarui|mengikuti|hitung|pantau|terhubung|terpisah|siap|periode|pertanyaan|mulai|membeli|apa|setelah|pegang|kendali)\b/iu;
 const indonesianOnlyWords =
     /\b(?:akun|autentikasi|bagian|barcode|berhasil|berikutnya|biaya|bisnis|cash|cocokkan|dikirim|ditemukan|diskon|duplikat|email|environment|foto|hapus|informasi|inventory|invoice|karena|kasir|keamanan|kelola|kemarin|kembalian|kode|kondisi|konfirmasi|kuantitas|kulakan|laba|lanjutkan|layar|maksimal|minimal|mode|nominal|nomor|notifikasi|otomatis|package|paket|password|pemasok|pengaturan|pengelola|penjualan|perbarui|performa|periode|ponsel|posisi|produksi|rekap|refund|rentang|retur|riwayat|saldo|satuan|scanner|silakan|subscription|supplier|tanggal|tambahkan|tebakan|terbaru|tercecer|terdaftar|tampilkan|tersedia|toko|tren|trial|utang|valid|verifikasi)\b/iu;
 const englishIndonesianWords =
     /\b(?:Anda|ada|akun|belum|bersih|biaya|bisnis|buka|bulanan|diskon|hapus|kasir|keamanan|kelola|komposisi|kontribusi|kuantitas|laba|lanjutkan|lengkap|masuk|navigasi|nilai|nominal|notifikasi|operasional|paket|pemulihan|penjualan|performa|periode|posisi|potensi|produk|riwayat|saldo|satuan|silakan|tanggal|tampilkan|tetap|terdaftar|terjual|terlaris|toko|transaksi|tren|usaha|utang)\b/iu;
+const vietnameseIndonesianWords =
+    /\b(?:Anda|ada|akses|akun|anggota|awal|barang|belum|beranda|bersih|biaya|bisnis|buka|bulan|bulanan|catat|dapur|dari|diskon|ecer|fitur|foto|gunakan|habis|hapus|harga|hari|informasi|jenis|kas|kasir|kategori|keamanan|kelola|kembali|kembalian|kebutuhan|kerja|kritis|laporan|laba|masuk|mata|modal|mulai|nominal|operasional|paket|pembayaran|penjualan|periode|pilih|posisi|potensi|produk|rekening|retur|riwayat|saldo|satuan|scan|semua|simpan|stok|supplier|tanggal|tambah|terakhir|terbaru|terjual|toko|transaksi|tren|uang|usaha|utang|waktu)\b/iu;
 
 function translateMalayForAudit(value) {
     if (malayCatalog.has(value)) return malayCatalog.get(value);
@@ -427,6 +456,18 @@ for (const [value, files] of coveredValues) {
 }
 
 for (const [value, files] of coveredValues) {
+    if (/\S+@\S+/u.test(value) || technicalValues.test(value) || /^[#/]\S+$/u.test(value)) continue;
+
+    const vietnameseOutput = vietnameseCatalog.get(value) ?? value;
+    const hasExistingLocalization = translateMalayForAudit(value) !== value || translateEnglishForAudit(value) !== value;
+    const needsVietnameseTranslation = vietnameseIndonesianWords.test(value) || hasExistingLocalization;
+
+    if (needsVietnameseTranslation && (!vietnameseCatalog.has(value) || vietnameseIndonesianWords.test(vietnameseOutput))) {
+        untranslatedVietnamese.set(value, `${files[0]} -> ${JSON.stringify(vietnameseOutput)}`);
+    }
+}
+
+for (const [value, files] of coveredValues) {
     if (englishWords.test(value) && !catalogKeys.has(value) && !dynamicEnglish.some((pattern) => pattern.test(value))) {
         missingEnglish.set(value, files);
     }
@@ -434,10 +475,18 @@ for (const [value, files] of coveredValues) {
 
 const serverMalayIssues = new Map();
 const serverMalayCatalog = JSON.parse(fs.readFileSync(path.join(root, 'lang', 'ms.json'), 'utf8'));
+const serverVietnameseIssues = new Map();
+const serverVietnameseCatalog = JSON.parse(fs.readFileSync(path.join(root, 'lang', 'vi.json'), 'utf8'));
 
 for (const [source, output] of Object.entries(serverMalayCatalog)) {
     if (indonesianOnlyWords.test(output)) {
         serverMalayIssues.set(source, output);
+    }
+}
+
+for (const [source, output] of Object.entries(serverVietnameseCatalog)) {
+    if (vietnameseIndonesianWords.test(output)) {
+        serverVietnameseIssues.set(source, output);
     }
 }
 
@@ -446,8 +495,10 @@ if (
     missingEnglish.size > 0 ||
     untranslatedIndonesian.size > 0 ||
     untranslatedEnglish.size > 0 ||
+    untranslatedVietnamese.size > 0 ||
     duplicateLandingKeys.length > 0 ||
-    serverMalayIssues.size > 0
+    serverMalayIssues.size > 0 ||
+    serverVietnameseIssues.size > 0
 ) {
     for (const [value, locations] of [...uncovered].sort()) {
         process.stderr.write(`${JSON.stringify(value)} ${locations.join(', ')}\n`);
@@ -461,18 +512,24 @@ if (
     for (const [value, location] of [...untranslatedEnglish].sort()) {
         process.stderr.write(`Untranslated English customer copy ${JSON.stringify(value)} ${location}\n`);
     }
+    for (const [value, location] of [...untranslatedVietnamese].sort()) {
+        process.stderr.write(`Untranslated Vietnamese UI copy ${JSON.stringify(value)} ${location}\n`);
+    }
     for (const key of duplicateLandingKeys.sort()) {
         process.stderr.write(`Duplicate Malay landing translation ${JSON.stringify(key)}\n`);
     }
     for (const [source, output] of [...serverMalayIssues].sort()) {
         process.stderr.write(`Indonesian server copy in Malay catalog ${JSON.stringify(source)} -> ${JSON.stringify(output)}\n`);
     }
+    for (const [source, output] of [...serverVietnameseIssues].sort()) {
+        process.stderr.write(`Indonesian server copy in Vietnamese catalog ${JSON.stringify(source)} -> ${JSON.stringify(output)}\n`);
+    }
     process.stderr.write(
-        `\n${uncovered.size} possible UI literal(s), ${missingEnglish.size} English translation(s), ${untranslatedIndonesian.size} Malay output issue(s), ${untranslatedEnglish.size} English output issue(s), ${duplicateLandingKeys.length} duplicate landing translation(s), and ${serverMalayIssues.size} Malay server copy issue(s) require review.\n`,
+        `\n${uncovered.size} possible UI literal(s), ${missingEnglish.size} English translation(s), ${untranslatedIndonesian.size} Malay output issue(s), ${untranslatedEnglish.size} English output issue(s), ${untranslatedVietnamese.size} Vietnamese output issue(s), ${duplicateLandingKeys.length} duplicate landing translation(s), ${serverMalayIssues.size} Malay server copy issue(s), and ${serverVietnameseIssues.size} Vietnamese server copy issue(s) require review.\n`,
     );
     process.exit(1);
 }
 
 process.stdout.write(
-    `${covered} UI literal occurrence(s) are covered by the build transform and have Malay and English output coverage.\n`,
+    `${covered} UI literal occurrence(s) are covered by the build transform and have Malay, English, and Vietnamese output coverage.\n`,
 );

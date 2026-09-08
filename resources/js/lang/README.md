@@ -5,6 +5,7 @@ Each locale owns a folder under `resources/js/lang`:
 - `id` is the Indonesian source UI.
 - `ms` is the Malay UI for the Malaysia market.
 - `en` is the English UI offered inside customer portals.
+- `vi` is the Vietnamese UI for the Vietnam market.
 
 Catalog files are grouped by responsibility:
 

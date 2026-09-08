@@ -48,6 +48,7 @@ export default function ProductScanner({
     const [cameraCaptureStart, setCameraCaptureStart] = useState(0);
     const [scanMode, setScanMode] = useState<ScanMode>('photo');
     const [barcodeError, setBarcodeError] = useState('');
+    const [barcodeLimitReached, setBarcodeLimitReached] = useState(false);
     const [barcodeStatus, setBarcodeStatus] = useState<'idle' | 'reading' | 'success' | 'not_found'>('idle');
     const barcodeBusyRef = useRef(false);
     const captureBusyRef = useRef(false);
@@ -65,6 +66,7 @@ export default function ProductScanner({
 
             barcodeBusyRef.current = true;
             setBarcodeError('');
+            setBarcodeLimitReached(false);
             setBarcodeStatus('reading');
 
             if (purpose === 'product' && onBarcodeDetected) {
@@ -79,6 +81,7 @@ export default function ProductScanner({
                     })
                     .catch((error: unknown) => {
                         setBarcodeStatus('not_found');
+                        setBarcodeLimitReached(scannerErrorCode(error) === 'SCAN_LIMIT_REACHED');
                         setBarcodeError(error instanceof Error ? error.message : 'Pencatatan scan gagal. Coba lagi.');
                     })
                     .finally(() => {
@@ -99,6 +102,7 @@ export default function ProductScanner({
                 })
                 .catch((error: unknown) => {
                     setBarcodeStatus('not_found');
+                    setBarcodeLimitReached(scannerErrorCode(error) === 'SCAN_LIMIT_REACHED');
                     setBarcodeError(error instanceof Error ? error.message : 'Pencarian barcode gagal. Coba lagi.');
                 })
                 .finally(() => {
@@ -298,6 +302,7 @@ export default function ProductScanner({
         setCameraCaptureStart(0);
         setScanMode('photo');
         setBarcodeError('');
+        setBarcodeLimitReached(false);
         setBarcodeStatus('idle');
         barcodeBusyRef.current = false;
         setAutoPaused(!config.auto_capture_enabled);
@@ -312,6 +317,7 @@ export default function ProductScanner({
         setCameraCaptureStart(scanner.captures.length);
         setRetakeCaptureId(null);
         setBarcodeError('');
+        setBarcodeLimitReached(false);
         setBarcodeStatus('idle');
         barcodeBusyRef.current = false;
         stableRef.current.pixels = new Uint8ClampedArray();
@@ -477,11 +483,13 @@ export default function ProductScanner({
                         onToggleAuto={() => setAutoPaused((value) => !value)}
                         scanMode={scanMode}
                         barcodeError={barcodeError}
+                        barcodeLimitReached={barcodeLimitReached}
                         barcodeStatus={barcodeStatus}
                         photoStatus={photoStatus}
                         photoError={latestCameraCapture?.error ?? ''}
                         onToggleScanMode={() => {
                             setBarcodeError('');
+                            setBarcodeLimitReached(false);
                             setBarcodeStatus('idle');
                             barcodeBusyRef.current = false;
                             stableRef.current.pixels = new Uint8ClampedArray();
@@ -504,4 +512,12 @@ export default function ProductScanner({
             </DialogContent>
         </Dialog>
     );
+}
+
+function scannerErrorCode(error: unknown): string | null {
+    if (typeof error !== 'object' || error === null || !('code' in error)) {
+        return null;
+    }
+
+    return typeof error.code === 'string' ? error.code : null;
 }

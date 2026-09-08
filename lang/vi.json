@@ -1,0 +1,20 @@
+{
+    "The name field is required.": "Trường tên là bắt buộc.",
+    "The email field is required.": "Trường email là bắt buộc.",
+    "The password field is required.": "Trường mật khẩu là bắt buộc.",
+    "The selected country is invalid.": "Quốc gia đã chọn không hợp lệ.",
+    "The selected currency is unavailable.": "Tiền tệ đã chọn không khả dụng.",
+    "The selected country is unavailable.": "Quốc gia đã chọn không khả dụng.",
+    "The password is incorrect.": "Mật khẩu không chính xác.",
+    "The provided credentials are incorrect.": "Thông tin đăng nhập không chính xác.",
+    "Please verify your email address.": "Vui lòng xác minh địa chỉ email của bạn.",
+    "The password must be at least 8 characters.": "Mật khẩu phải có ít nhất 8 ký tự.",
+    "The password confirmation does not match.": "Xác nhận mật khẩu không khớp.",
+    "The :attribute field is required.": "Trường :attribute là bắt buộc.",
+    "The :attribute must be a valid email address.": "Trường :attribute phải là địa chỉ email hợp lệ.",
+    "Batas :limit toko pada paket :plan sudah tercapai.": "Đã đạt giới hạn :limit cửa hàng của gói :plan.",
+    "Complete :document before starting a new stock count.": "Hoàn tất :document trước khi bắt đầu lần kiểm kê mới.",
+    "Selected currency is unavailable.": "Tiền tệ đã chọn không khả dụng.",
+    "Nama pelanggan dan nomor telepon harus diisi bersama.": "Tên và số điện thoại khách hàng phải được nhập cùng nhau.",
+    "Nomor telepon pelanggan tidak valid.": "Số điện thoại khách hàng không hợp lệ."
+}

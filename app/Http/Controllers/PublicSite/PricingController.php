@@ -27,6 +27,7 @@ class PricingController extends Controller
             && ($subscription->trial_used_at !== null || $subscription->trial_ends_at !== null);
         $plans = Plan::query()
             ->where('is_active', true)
+            ->where('is_default', false)
             ->orderBy('monthly_price')
             ->orderBy('id')
             ->get(['id', 'public_id', 'name', 'description', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial'])

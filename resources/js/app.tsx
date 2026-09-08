@@ -1,7 +1,7 @@
 import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { Fragment } from 'react';
-import type { ComponentType, ReactNode } from 'react';
+import { cloneElement, Fragment, isValidElement } from 'react';
+import type { ComponentType, ReactElement, ReactNode } from 'react';
 import PublicSiteLayout from '@/components/public/site-shell';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -18,9 +18,9 @@ import { setActiveLocale, useTranslation } from '@/lib/i18n';
 let appName = (typeof document !== 'undefined' && document.documentElement.dataset.appName) || import.meta.env.VITE_APP_NAME || 'Laravel';
 let localeListenerRegistered = false;
 const pages = import.meta.glob<{ default: ComponentType }>('./pages/**/*.tsx');
-const normalizeLocale = (locale: unknown): AppLocale => (locale === 'en' || locale === 'ms' ? locale : 'id');
+const normalizeLocale = (locale: unknown): AppLocale => (locale === 'en' || locale === 'ms' || locale === 'vi' ? locale : 'id');
 const normalizeMarket = (market: unknown, locale: AppLocale, locales: unknown): MarketCode => {
-    if (market === 'id' || market === 'ms') {
+    if (market === 'id' || market === 'ms' || market === 'vi') {
         return market;
     }
 
@@ -29,20 +29,26 @@ const normalizeMarket = (market: unknown, locale: AppLocale, locales: unknown): 
         !locales.some((option) => typeof option === 'object' && option !== null && 'code' in option && option.code === 'en');
 
     if (isMarketSwitcher) {
-        return locale === 'ms' ? 'ms' : 'id';
+        return locale === 'ms' ? 'ms' : locale === 'vi' ? 'vi' : 'id';
     }
 
     const documentMarket = typeof document === 'undefined' ? undefined : document.documentElement.dataset.market;
 
-    if (documentMarket === 'id' || documentMarket === 'ms') {
+    if (documentMarket === 'id' || documentMarket === 'ms' || documentMarket === 'vi') {
         return documentMarket;
     }
 
-    return locale === 'ms' ? 'ms' : 'id';
+    return locale === 'ms' ? 'ms' : locale === 'vi' ? 'vi' : 'id';
 };
 
 function LocaleBoundary({ children }: { children: ReactNode }) {
-    useTranslation();
+    const { locale } = useTranslation();
+
+    if (isValidElement(children)) {
+        return cloneElement(children as ReactElement<Record<string, unknown>>, {
+            'data-locale-version': locale,
+        });
+    }
 
     return <Fragment>{children}</Fragment>;
 }

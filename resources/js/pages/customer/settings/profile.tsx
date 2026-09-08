@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { translate } from '@/lib/i18n';
 import { previewStoreTheme } from '@/lib/store-theme';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
@@ -186,7 +187,7 @@ export default function Profile({
                             {subscription && (
                                 <Badge className="border-amber-300/20 bg-amber-300/15 text-amber-200 hover:bg-amber-300/15">
                                     <Crown className="mr-1 size-3" />
-                                    {subscription.plan_name}
+                                    {translate(subscription.plan_name)}
                                 </Badge>
                             )}
                         </div>
@@ -507,7 +508,7 @@ export default function Profile({
 
                 <aside className="space-y-5 xl:sticky xl:top-24 xl:self-start">
                     {subscription && (
-                        <SettingsCard icon={CreditCard} eyebrow="Langganan" title={subscription.plan_name}>
+                        <SettingsCard icon={CreditCard} eyebrow="Langganan" title={translate(subscription.plan_name)}>
                             <div className="flex items-center justify-between gap-3">
                                 <Badge
                                     className={

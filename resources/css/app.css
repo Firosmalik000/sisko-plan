@@ -2318,9 +2318,11 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 }
 .pricing-offers-head h2 {
     color: #2d2928;
-    font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+    max-width: 22ch;
+    font-size: clamp(1.75rem, 3vw, 2.75rem);
     font-weight: 750;
     letter-spacing: -0.03em;
+    line-height: 1.05;
 }
 .pricing-offers-head span {
     color: #5e6964;
@@ -2329,8 +2331,41 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 }
 .pricing-card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 26rem));
+    gap: 1.25rem;
+}
+.pricing-category-nav {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding: 0.75rem 0 2rem;
+    scrollbar-width: thin;
+}
+.pricing-category-nav a {
+    display: inline-flex;
+    min-height: 2.75rem;
+    flex: none;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    border: 1px solid rgb(45 41 40 / 18%);
+    border-radius: 10rem;
+    background: #fffaf7;
+    color: #2d2928;
+    font-size: 0.8rem;
+    font-weight: 750;
+    text-decoration: none;
+    transition:
+        border-color 180ms ease,
+        background-color 180ms ease,
+        color 180ms ease;
+}
+.pricing-category-nav a:hover,
+.pricing-category-nav a:focus-visible,
+.pricing-category-nav a[aria-current='location'] {
+    border-color: #ee4d2d;
+    background: #ee4d2d;
+    color: #fff;
+    outline: none;
 }
 .pricing-offer-groups {
     display: grid;
@@ -2340,17 +2375,44 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     min-width: 0;
     scroll-margin-top: 6rem;
 }
-.pricing-offer-group > h3 {
+.pricing-offer-group-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.5rem;
     margin-bottom: 1rem;
+}
+.pricing-offer-group-head h3 {
     color: #2d2928;
     font-size: clamp(1.15rem, 2vw, 1.5rem);
     font-weight: 800;
     letter-spacing: -0.025em;
 }
+.pricing-offer-group-head p {
+    max-width: 48ch;
+    margin-top: 0.35rem;
+    color: #5e6964;
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+.pricing-offer-group-head > span {
+    flex: none;
+    color: #6f6764;
+    font-size: 0.8rem;
+    font-weight: 750;
+}
 .pricing-offer-group.is-focused {
-    border-radius: 1rem;
-    outline: 3px solid rgb(238 77 45 / 24%);
-    outline-offset: 0.75rem;
+    scroll-margin-top: 7rem;
+}
+.pricing-offer-group.is-focused .pricing-offer-group-head {
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    background: #ee4d2d;
+}
+.pricing-offer-group.is-focused .pricing-offer-group-head h3,
+.pricing-offer-group.is-focused .pricing-offer-group-head p,
+.pricing-offer-group.is-focused .pricing-offer-group-head > span {
+    color: #fff;
 }
 .pricing-card-grid article {
     display: grid;
@@ -2360,7 +2422,16 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     padding: clamp(1.35rem, 2.2vw, 2rem);
     border: 1px solid rgb(45 41 40 / 18%);
     border-radius: 1rem;
-    background: #fffaf7;
+    background: #fffdfc;
+    transition:
+        border-color 180ms ease,
+        background-color 180ms ease;
+}
+.pricing-card-grid article.is-addon {
+    min-height: 27rem;
+}
+.pricing-card-grid article:not(.is-disabled):hover {
+    border-color: rgb(238 77 45 / 58%);
 }
 .pricing-card-grid article.is-trial {
     border-color: rgb(238 77 45 / 65%);
@@ -2375,6 +2446,9 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 }
 .pricing-card-head {
     min-height: 8.5rem;
+}
+.pricing-card-grid article.is-addon .pricing-card-head {
+    min-height: 6.75rem;
 }
 .pricing-card-head h3 {
     color: #2d2928;
@@ -2517,6 +2591,22 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     .pricing-card-head {
         min-height: 0;
         padding-bottom: 1.25rem;
+    }
+    .pricing-card-grid article.is-addon {
+        min-height: 0;
+    }
+    .pricing-offers-head,
+    .pricing-offer-group-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+    .pricing-category-nav {
+        margin-right: -1rem;
+        padding-right: 1rem;
+    }
+    .pricing-offer-group.is-focused .pricing-offer-group-head {
+        padding: 1rem;
     }
     .pricing-close .ledger-container {
         min-height: 22rem;

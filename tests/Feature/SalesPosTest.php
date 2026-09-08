@@ -10,6 +10,8 @@ use App\Actions\Sales\PostSaleReturn;
 use App\Enums\FinancialAccountType;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Models\Country;
+use App\Models\Customer;
 use App\Models\FinancialAccount;
 use App\Models\FinancialAccountBalance;
 use App\Models\InventoryBalance;
@@ -504,6 +506,107 @@ class SalesPosTest extends TestCase
         $this->assertSame([], Storage::disk('local')->allFiles('sale-payment-proofs'));
     }
 
+    public function test_optional_customer_is_reused_by_normalized_phone_and_sale_keeps_snapshots(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+
+        $firstSale = $this->postSale(
+            $store,
+            $owner,
+            $product,
+            $cash,
+            key: 'customer-first-sale',
+            customerName: 'Ayu Putri',
+            customerPhone: '+62 812-3456-7890',
+        );
+        $secondSale = $this->postSale(
+            $store,
+            $owner,
+            $product,
+            $cash,
+            key: 'customer-second-sale',
+            customerName: 'Ayu P.',
+            customerPhone: '+6281234567890',
+        );
+
+        $customer = Customer::query()->sole();
+        $this->assertSame('Ayu P.', $customer->name);
+        $this->assertSame('+6281234567890', $customer->phone_normalized);
+        $this->assertSame($customer->id, $firstSale->customer_id);
+        $this->assertSame($customer->id, $secondSale->customer_id);
+        $this->assertSame('1000.0000', $firstSale->total_amount);
+        $this->assertSame('Ayu Putri', $firstSale->customer_name);
+        $this->assertSame('+62 812-3456-7890', $firstSale->customer_phone);
+
+        $this->actingAs($owner)
+            ->withSession(['active_store_id' => $store->id])
+            ->get(route('sales.show', $firstSale))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('sale.customer_name', 'Ayu Putri')
+                ->where('sale.customer_phone', '+62 812-3456-7890'));
+    }
+
+    public function test_customer_fields_are_optional_but_must_be_complete_and_store_scoped(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $session = ['active_store_id' => $store->id];
+        $payload = [
+            'account_id' => $cash->public_id,
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '1000',
+            'occurred_at' => '2026-08-07T16:00',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '1',
+                'discount_amount' => '0',
+            ]],
+        ];
+
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)
+            ->assertRedirect();
+        $this->assertDatabaseCount('customers', 0);
+
+        $payload['idempotency_key'] = (string) Str::uuid();
+        $payload['customer_name'] = 'Pelanggan Tanpa Nomor';
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)
+            ->assertSessionHasErrors('customer_phone');
+
+        $payload['customer_phone'] = 'nomor tidak valid';
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)
+            ->assertSessionHasErrors('customer_phone');
+
+        [$otherOwner, $otherStore, $otherProduct, $otherCash] = $this->fixtures();
+        $otherStore->update(['country_id' => Country::query()->where('code', 'MY')->valueOrFail('id')]);
+        $otherStore->unsetRelation('country');
+        $this->openStock($otherStore, $otherOwner, $otherProduct, '5', '500');
+        $this->postSale(
+            $store,
+            $owner,
+            $product,
+            $cash,
+            key: 'first-store-customer',
+            customerName: 'Rina',
+            customerPhone: '08123456789',
+        );
+        $this->postSale(
+            $otherStore,
+            $otherOwner,
+            $otherProduct,
+            $otherCash,
+            key: 'second-store-customer',
+            customerName: 'Rina',
+            customerPhone: '08123456789',
+        );
+
+        $this->assertDatabaseCount('customers', 2);
+        $this->assertDatabaseHas('customers', ['store_id' => $store->id, 'phone_normalized' => '+628123456789']);
+        $this->assertDatabaseHas('customers', ['store_id' => $otherStore->id, 'phone_normalized' => '+608123456789']);
+    }
+
     public function test_owner_http_sale_redirects_to_printable_receipt_and_can_return(): void
     {
         [$owner, $store, $product, $cash] = $this->fixtures();
@@ -672,13 +775,13 @@ class SalesPosTest extends TestCase
         ]], '2026-08-07T08:00:00Z', null, 'sale-stock-'.class_basename($product).'-'.$product->id);
     }
 
-    private function postSale(Store $store, User $owner, Product $product, FinancialAccount $account, string $quantity = '1', string $itemDiscount = '0', string $transactionDiscount = '0', ?string $paid = null, string $key = 'sale-key', string $occurredAt = '2026-08-07T09:00:00Z'): Sale
+    private function postSale(Store $store, User $owner, Product $product, FinancialAccount $account, string $quantity = '1', string $itemDiscount = '0', string $transactionDiscount = '0', ?string $paid = null, string $key = 'sale-key', string $occurredAt = '2026-08-07T09:00:00Z', ?string $customerName = null, ?string $customerPhone = null): Sale
     {
         $gross = Decimal::multiply($quantity, (string) $product->productUnits()->sole()->selling_price);
         $paid ??= Decimal::subtract(Decimal::subtract($gross, $itemDiscount, Decimal::MONEY_SCALE), $transactionDiscount, Decimal::MONEY_SCALE);
 
         return app(PostSale::class)->handle($store, $owner, $account->id, [[
             'product_unit_id' => $product->productUnits()->sole()->id, 'quantity' => $quantity, 'item_discount' => $itemDiscount,
-        ]], $transactionDiscount, $paid, $occurredAt, null, $key);
+        ]], $transactionDiscount, $paid, $occurredAt, null, $key, null, null, $customerName, $customerPhone);
     }
 }

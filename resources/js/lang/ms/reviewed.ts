@@ -1,6 +1,38 @@
 import { malayOverrides } from './application';
 
 export const reviewedMalayOverrides: Record<string, string> = {
+    'Data pelanggan': 'Maklumat pelanggan',
+    Opsional: 'Pilihan',
+    'Nama pelanggan': 'Nama pelanggan',
+    'Hapus data pelanggan': 'Kosongkan maklumat pelanggan',
+    Pelanggan: 'Pelanggan',
+    'Checkout gagal. Periksa data pelanggan, stok, diskon, dan pembayaran.':
+        'Pembayaran gagal. Semak maklumat pelanggan, stok, diskaun dan bayaran.',
+    'Paket & add-on': 'Pelan & add-on',
+    'toko aktif': 'kedai aktif',
+    'Penawaran add-on': 'Tawaran add-on',
+    'Paket dasar': 'Pelan asas',
+    'paket dasar': 'pelan asas',
+    'Add-on akun': 'Add-on akaun',
+    'Belum ada add-on': 'Belum ada add-on',
+    'Hapus add-on': 'Padam add-on',
+    'Tambah add-on': 'Tambah add-on',
+    'Kapasitas tertulis jelas': 'Kapasiti dinyatakan dengan jelas',
+    'Masa aktif': 'Tempoh aktif',
+    pilihan: 'pilihan',
+    sekali: 'sekali',
+    Tim: 'Pasukan',
+    'Paket add-on': 'Pakej add-on',
+    'add-on aktif': 'add-on aktif',
+    'add-on terjadwal': 'add-on berjadual',
+    'Kapasitas setelah disimpan': 'Kapasiti selepas disimpan',
+    tersimpan: 'disimpan',
+    'Periksa hasil': 'Semak hasil',
+    'Pengenalan sedang terganggu. Coba lagi atau cari manual.': 'Pengecaman sedang terganggu. Cuba lagi atau cari secara manual.',
+    'Foto belum berhasil diproses. Coba lagi atau cari manual.': 'Gambar belum berjaya diproses. Cuba lagi atau cari secara manual.',
+    'Scanner toko sedang disiapkan. Coba lagi sebentar.': 'Pengimbas kedai sedang disediakan. Cuba lagi sebentar.',
+    'perlu dipilih': 'perlu dipilih',
+    dilewati: 'dilangkau',
     ...malayOverrides,
     'Kembali ke daftar toko': 'Kembali ke senarai kedai',
     'Toko & Anggota': 'Kedai & Ahli',
@@ -12,6 +44,8 @@ export const reviewedMalayOverrides: Record<string, string> = {
     'Tambah anggota': 'Tambah ahli',
     'Kategori add-on': 'Kategori add-on',
     'Lihat add-on toko': 'Lihat add-on kedai',
+    'Arus masuk': 'Tunai masuk',
+    'Arus keluar': 'Tunai keluar',
     'Negara toko': 'Negara kedai',
     'Mata uang': 'Mata wang',
     'Mata uang toko': 'Mata wang kedai',
@@ -214,6 +248,22 @@ export const reviewedMalayOverrides: Record<string, string> = {
     'Kamera belum tersedia': 'Kamera belum boleh digunakan',
     'Kembali ke transaksi': 'Kembali ke transaksi',
     'Scanner belum tersedia': 'Pengimbas belum boleh digunakan',
+    'Scanner sedang sibuk. Coba lagi sebentar.': 'Pengimbas sedang sibuk. Cuba lagi sebentar lagi.',
+    'Layanan scanner belum terhubung. Hubungi administrator.': 'Perkhidmatan pengimbas belum disambungkan. Hubungi pentadbir.',
+    'Kuota scan bulan ini sudah habis. Tambahkan kapasitas untuk melanjutkan.':
+        'Kuota imbasan bulan ini telah habis. Tambah kapasiti untuk meneruskan.',
+    'Akses kamera memerlukan HTTPS. Buka halaman ini melalui alamat HTTPS.':
+        'Akses kamera memerlukan HTTPS. Buka halaman ini menggunakan alamat HTTPS.',
+    'Browser ini tidak menyediakan akses kamera. Gunakan browser terbaru atau pilih foto dari galeri.':
+        'Pelayar ini tidak menyediakan akses kamera. Gunakan pelayar terkini atau pilih gambar daripada galeri.',
+    'Izin kamera ditolak. Izinkan kamera di pengaturan situs, lalu coba lagi.':
+        'Kebenaran kamera ditolak. Benarkan akses kamera dalam tetapan laman, kemudian cuba lagi.',
+    'Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut, lalu coba lagi.':
+        'Kamera sedang digunakan oleh aplikasi lain. Tutup aplikasi tersebut, kemudian cuba lagi.',
+    'Kamera tidak dapat dibuka. Periksa izin kamera, lalu coba lagi atau pilih foto dari galeri.':
+        'Kamera gagal dibuka. Semak kebenaran kamera, kemudian cuba lagi atau pilih gambar daripada galeri.',
+    'Kamera tidak ditemukan pada perangkat ini. Pilih foto dari galeri untuk melanjutkan.':
+        'Tiada kamera dikesan pada peranti ini. Pilih gambar daripada galeri untuk meneruskan.',
     'Kondisi bisnis dalam satu pandangan.': 'Keadaan perniagaan dalam satu paparan.',
     'Kritis ·': 'Kritikal ·',
     Kritis: 'Kritikal',
@@ -282,7 +332,6 @@ export const reviewedMalayOverrides: Record<string, string> = {
         'Apabila pengesahan dua faktor diaktifkan, anda perlu memasukkan PIN keselamatan semasa log masuk. PIN tersebut boleh didapati melalui aplikasi TOTP pada telefon anda.',
     'You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.':
         'Semasa log masuk, anda perlu memasukkan PIN keselamatan rawak yang boleh didapati melalui aplikasi TOTP pada telefon anda.',
-    Tim: 'Pasukan',
     'hasil tersimpan di sesi ini': 'hasil disimpan dalam sesi ini',
     'setelah periode sebelumnya selesai.': 'selepas tempoh sebelumnya tamat.',
     'stok kritis': 'stok kritikal',

@@ -92,7 +92,7 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
-    useTranslation();
+    const { t } = useTranslation();
 
     const { platformAdmin, name, branding } = usePage<{
         platformAdmin: PlatformAdmin;
@@ -140,7 +140,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                         return (
                             <section key={group.label} className="contents md:block">
                                 <p className="mb-1 hidden px-2 text-[10px] font-bold tracking-[0.16em] text-white/55 uppercase md:block">
-                                    {group.label}
+                                    {t(group.label)}
                                 </p>
                                 <div className="flex shrink-0 gap-1 md:block md:space-y-1">
                                     {items.map((item) => {
@@ -154,7 +154,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                                                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition ${active ? 'bg-white text-[#b83219] shadow-lg shadow-[#9f2f19]/20' : 'text-white/80 hover:bg-white/12 hover:text-white'}`}
                                             >
                                                 <item.icon className="size-4" />
-                                                {item.label}
+                                                {t(item.label)}
                                             </Link>
                                         );
                                     })}
@@ -178,6 +178,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 }
 
 function AccountMenu({ admin, compact = false }: { admin: PlatformAdmin; compact?: boolean }) {
+    const { t } = useTranslation();
     const initials = admin.name.slice(0, 2).toUpperCase();
 
     return (
@@ -202,7 +203,7 @@ function AccountMenu({ admin, compact = false }: { admin: PlatformAdmin; compact
                         <span className="min-w-0 flex-1">
                             <span className="block truncate text-xs font-semibold">{admin.name}</span>
                             <span className="block truncate text-[10px] text-white/65">
-                                {admin.role === 'super_admin' ? 'Super Admin' : 'Admin Platform'}
+                                {t(admin.role === 'super_admin' ? 'Super Admin' : 'Admin Platform')}
                             </span>
                         </span>
                         <ChevronUp className="size-4 text-white/65" />

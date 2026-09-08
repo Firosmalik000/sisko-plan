@@ -4,6 +4,7 @@ import { englishLexicon } from '@/lang/en/lexicon';
 import { indonesianCatalog } from '@/lang/id';
 import { malayCatalog } from '@/lang/ms';
 import { malayLexicon } from '@/lang/ms/lexicon';
+import { vietnameseCatalog } from '@/lang/vi';
 import type { AppLocale } from '@/lib/currency';
 
 let activeLocale: AppLocale = 'id';
@@ -76,15 +77,52 @@ export function translate(text: string, locale: AppLocale = activeLocale): strin
                 ? `Adakah anda pasti mahu memadam passkey "${passkeyRemoval[1]}"? Anda tidak lagi boleh menggunakannya untuk log masuk.`
                 : locale === 'en'
                   ? lookup
+                  : locale === 'vi'
+                    ? `Bạn có chắc muốn xóa passkey "${passkeyRemoval[1]}" không? Bạn sẽ không thể dùng passkey này để đăng nhập nữa.`
                   : `Yakin ingin menghapus passkey "${passkeyRemoval[1]}"? Passkey ini tidak dapat digunakan lagi untuk masuk.`;
 
         return text.replace(source, message);
     }
 
-    const translated = locale === 'ms' ? malayCatalog[lookup] : locale === 'en' ? englishCatalog[lookup] : indonesianCatalog[lookup];
+    const translated = locale === 'ms' ? malayCatalog[lookup] : locale === 'en' ? englishCatalog[lookup] : locale === 'vi' ? vietnameseCatalog[lookup] : indonesianCatalog[lookup];
 
     if (translated !== undefined) {
         return text.replace(source, translated);
+    }
+
+    if (locale === 'vi') {
+        const unreadNotifications = lookup.match(/^(\d+) notifikasi belum dibaca$/u);
+
+        if (unreadNotifications) {
+            return text.replace(source, `${unreadNotifications[1]} thông báo chưa đọc`);
+        }
+
+        const dynamicPatterns: Array<[RegExp, string]> = [
+            [/^Alur utama (.+)$/u, 'Quy trình chính $1'],
+            [/^Perbandingan (.+) dan pencatatan manual$/u, 'So sánh $1 với cách ghi chép thủ công'],
+            [/^(.+), beranda$/u, '$1, trang chủ'],
+            [/^(\d+) foto diambil$/u, 'Đã chụp $1 ảnh'],
+            [/^Buka tindakan untuk (.+)$/u, 'Mở thao tác cho $1'],
+            [/^Catat pembayaran (.+)$/u, 'Ghi nhận thanh toán cho $1'],
+            [/^Edit subscription (.+)$/u, 'Chỉnh sửa đăng ký của $1'],
+            [/^Hapus Produk (.+) dari antrean$/u, 'Xóa sản phẩm $1 khỏi hàng chờ'],
+            [/^Kapasitas (.+)$/u, 'Dung lượng $1'],
+            [/^Hapus (.+)$/u, 'Xóa $1'],
+            [/^Kurangi (.+)$/u, 'Giảm $1'],
+            [/^Jumlah (.+)$/u, 'Số lượng $1'],
+            [/^Tambah (.+)$/u, 'Thêm $1'],
+            [/^Edit (.+)$/u, 'Chỉnh sửa $1'],
+            [/^Kode error (.+)$/u, 'Mã lỗi $1'],
+            [/^Hasil stock opname (.+)$/u, 'Kết quả kiểm kê tồn kho $1'],
+        ];
+
+        for (const [pattern, replacement] of dynamicPatterns) {
+            if (pattern.test(lookup)) {
+                return text.replace(source, lookup.replace(pattern, replacement));
+            }
+        }
+
+        return text;
     }
 
     if (locale === 'ms') {

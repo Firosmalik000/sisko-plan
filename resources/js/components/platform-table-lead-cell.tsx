@@ -29,14 +29,16 @@ export function PlatformTableLeadCell({
     label,
     actions = [],
     overlays,
+    className = '',
 }: {
     index: number;
     label: string;
     actions?: PlatformRowAction[];
     overlays?: ReactNode;
+    className?: string;
 }) {
     return (
-        <td className="w-24 px-4 py-3.5">
+        <td className={`w-24 px-4 py-3.5 ${className}`}>
             <div className="flex items-center gap-2">
                 <span className="min-w-6 text-center text-xs font-bold text-slate-500 tabular-nums">{index}</span>
                 {actions.length > 0 && (

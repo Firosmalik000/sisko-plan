@@ -68,4 +68,5 @@ export const indonesianCore: Record<string, string> = {
     'Masukkan kode pemulihan': 'Masukkan kode pemulihan',
     Lanjutkan: 'Lanjutkan',
     'atau Anda dapat': 'atau Anda dapat',
+    'Lihat pilihan add-on': 'Lihat pilihan add-on',
 };

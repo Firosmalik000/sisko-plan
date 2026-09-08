@@ -1,8 +1,9 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowRight, Building2, Coins, LockKeyhole, MapPin, Plus, ShieldCheck, Users } from 'lucide-react';
+import { ArrowRight, Building2, Coins, LockKeyhole, MapPin, Plus, ScanLine, ShieldCheck, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { translate } from '@/lib/i18n';
 import type { StoreCreationState } from '@/types';
 
 type StoreItem = {
@@ -17,7 +18,17 @@ type StoreItem = {
     currency_symbol: string | null;
 };
 
-export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
+type AccountUsage = {
+    plan_name: string;
+    stores_used: number;
+    max_stores: number;
+    members_used: number;
+    max_members: number;
+    scans_used: number;
+    max_scans: number;
+};
+
+export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; usage: AccountUsage | null }) {
     const { storeCreation } = usePage<{
         storeCreation: StoreCreationState;
     }>().props;
@@ -26,22 +37,67 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
         <>
             <Head title="Toko & Anggota" />
             <div className="flex flex-1 flex-col gap-4 bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
-                <div className="flex flex-row items-center justify-between gap-3 rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
+                <div className="flex flex-col items-stretch justify-between gap-3 rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:p-5">
                     <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Toko & Anggota</h1>
                     {storeCreation.can_create ? (
-                        <Button asChild className="h-11 bg-emerald-700 hover:bg-emerald-800">
+                        <Button asChild className="h-11 w-full bg-emerald-700 hover:bg-emerald-800 sm:w-auto">
                             <Link href="/stores/create">
                                 <Plus /> Tambah toko
                             </Link>
                         </Button>
                     ) : (
-                        <Button asChild variant="outline" className="h-11">
+                        <Button asChild variant="outline" className="h-11 w-full sm:w-auto">
                             <Link href="/pricing?category=store_capacity#category-store_capacity">
                                 <LockKeyhole /> Tambah kapasitas toko
                             </Link>
                         </Button>
                     )}
                 </div>
+
+                {usage && (
+                    <section
+                        className="overflow-hidden rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white shadow-sm"
+                        aria-labelledby="account-capacity-title"
+                    >
+                        <header className="flex flex-col gap-3 border-b border-[var(--app-ink)]/8 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                            <div className="min-w-0">
+                                <h2 id="account-capacity-title" className="text-lg font-black tracking-[-0.025em] text-[var(--app-ink)]">
+                                    Sisa kapasitas akun
+                                </h2>
+                                <p className="mt-0.5 truncate text-sm font-semibold text-muted-foreground">{translate(usage.plan_name)}</p>
+                            </div>
+                            <Link
+                                href="/subscription"
+                                className="inline-flex min-h-11 items-center gap-2 self-start rounded-xl px-3 text-sm font-bold text-emerald-800 hover:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:outline-none sm:self-auto"
+                            >
+                                Detail paket <ArrowRight className="size-4" />
+                            </Link>
+                        </header>
+                        <div className="grid divide-y divide-[var(--app-ink)]/8 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                            <CapacityItem
+                                icon={Building2}
+                                title="Toko"
+                                used={usage.stores_used}
+                                limit={usage.max_stores}
+                                href="/pricing?category=store_capacity#category-store_capacity"
+                            />
+                            <CapacityItem
+                                icon={Users}
+                                title="Staf"
+                                used={usage.members_used}
+                                limit={usage.max_members}
+                                href="/pricing?category=staff_capacity#category-staff_capacity"
+                            />
+                            <CapacityItem
+                                icon={ScanLine}
+                                title="Scan bulan ini"
+                                used={usage.scans_used}
+                                limit={usage.max_scans}
+                                href="/pricing?category=scan_capacity#category-scan_capacity"
+                            />
+                        </div>
+                    </section>
+                )}
 
                 {stores.length === 0 ? (
                     <div className="rounded-3xl border border-dashed bg-muted/30 px-6 py-20 text-center">
@@ -148,3 +204,58 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
 StoresIndex.layout = {
     breadcrumbs: [{ title: 'Toko & Anggota', href: '/stores' }],
 };
+
+function CapacityItem({
+    icon: Icon,
+    title,
+    used,
+    limit,
+    href,
+}: {
+    icon: typeof Building2;
+    title: string;
+    used: number;
+    limit: number;
+    href: string;
+}) {
+    const unlimited = limit === 0;
+    const remaining = unlimited ? null : Math.max(0, limit - used);
+    const percentage = unlimited ? 0 : Math.min(100, (used / limit) * 100);
+    const depleted = remaining === 0;
+    const low = !depleted && percentage >= 80;
+    const status = unlimited ? 'Tanpa batas' : depleted ? 'Habis' : low ? 'Menipis' : 'Tersedia';
+    const statusClass = depleted ? 'bg-red-100 text-red-800' : low ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
+
+    return (
+        <Link
+            href={href}
+            aria-label={`Tambah kapasitas ${title}`}
+            className="group block min-w-0 p-4 transition-colors hover:bg-emerald-50/60 focus-visible:bg-emerald-50/60 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:outline-none focus-visible:ring-inset sm:p-5"
+        >
+            <div className="flex items-start justify-between gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
+                    <Icon className="size-5" />
+                </span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusClass}`}>{status}</span>
+            </div>
+            <p className="mt-4 text-sm font-bold text-muted-foreground">{title}</p>
+            <div className="mt-1 flex items-end justify-between gap-3">
+                <p className="text-2xl font-black tracking-[-0.03em] text-[var(--app-ink)] tabular-nums">
+                    {unlimited ? '∞' : `Sisa ${remaining}`}
+                </p>
+                <ArrowRight className="mb-1 size-4 shrink-0 text-emerald-800 transition-transform group-hover:translate-x-1" />
+            </div>
+            <p className="mt-1 text-xs font-semibold text-muted-foreground tabular-nums">
+                {unlimited ? `${used} terpakai` : `${used} dari ${limit} terpakai`}
+            </p>
+            {!unlimited && (
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
+                    <div
+                        className={`h-full rounded-full ${depleted ? 'bg-red-600' : low ? 'bg-amber-600' : 'bg-emerald-700'}`}
+                        style={{ width: `${percentage}%` }}
+                    />
+                </div>
+            )}
+        </Link>
+    );
+}

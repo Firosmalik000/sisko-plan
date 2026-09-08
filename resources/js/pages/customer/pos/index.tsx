@@ -3,11 +3,13 @@ import {
     Barcode,
     Banknote,
     Camera,
+    ChevronDown,
     FileCheck2,
     Keyboard,
     Minus,
     PackageOpen,
     Plus,
+    Phone,
     ReceiptText,
     RotateCcw,
     Search,
@@ -15,6 +17,7 @@ import {
     QrCode,
     Trash2,
     Upload,
+    UserRound,
     X,
 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
@@ -65,6 +68,8 @@ type SaleForm = {
     transaction_discount_amount: string;
     paid_amount: string;
     payment_proof: File | null;
+    customer_name: string;
+    customer_phone: string;
     occurred_at: string;
     notes: string;
     idempotency_key: string;
@@ -94,6 +99,7 @@ export default function PosPage({
         () => typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('scan') === '1',
     );
     const [scannerSummary, setScannerSummary] = useState('');
+    const [customerOpen, setCustomerOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
     const searchRef = useRef<HTMLInputElement>(null);
     const scanRef = useRef<HTMLInputElement>(null);
@@ -102,6 +108,8 @@ export default function PosPage({
         transaction_discount_amount: '0',
         paid_amount: '',
         payment_proof: null,
+        customer_name: '',
+        customer_phone: '',
         occurred_at: currentDateTime(timezone),
         notes: '',
         idempotency_key: postingToken(),
@@ -368,6 +376,7 @@ export default function PosPage({
         }));
         sale.post('/pos/sales', { preserveScroll: true });
     };
+    const customerExpanded = customerOpen || Boolean(sale.errors.customer_name || sale.errors.customer_phone);
 
     return (
         <>
@@ -702,6 +711,85 @@ export default function PosPage({
                                     <p className="mt-2 text-sm text-slate-500">Pilih produk untuk mulai.</p>
                                 </div>
                             )}
+
+                            <section className="overflow-hidden rounded-2xl border border-[#d6e5df] bg-[#f7fbf9]">
+                                <button
+                                    type="button"
+                                    aria-expanded={customerExpanded}
+                                    aria-controls="pos-customer-fields"
+                                    onClick={() => setCustomerOpen(!customerExpanded)}
+                                    className="flex min-h-14 w-full items-center gap-3 px-3.5 text-left transition hover:bg-[#eff7f3] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none focus-visible:ring-inset"
+                                >
+                                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#e3f3ed] text-[#176b57]">
+                                        <UserRound className="size-4.5" />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-sm font-bold text-[#173c35]">Data pelanggan</span>
+                                        <span className="block truncate text-xs text-[#58756c]">
+                                            {sale.data.customer_name || 'Opsional'}
+                                        </span>
+                                    </span>
+                                    <ChevronDown
+                                        aria-hidden="true"
+                                        className={`size-4 shrink-0 text-[#58756c] transition-transform ${customerExpanded ? 'rotate-180' : ''}`}
+                                    />
+                                </button>
+
+                                {customerExpanded && (
+                                    <div id="pos-customer-fields" className="grid gap-3 border-t border-[#d6e5df] p-3.5 sm:grid-cols-2">
+                                        <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
+                                            Nama pelanggan
+                                            <span className="relative">
+                                                <UserRound className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    className={`${fieldClass} pl-10`}
+                                                    autoComplete="name"
+                                                    value={sale.data.customer_name}
+                                                    onChange={(event) => sale.setData('customer_name', event.target.value)}
+                                                    maxLength={160}
+                                                />
+                                            </span>
+                                            {sale.errors.customer_name && (
+                                                <span role="alert" className="text-xs font-semibold text-red-700">
+                                                    {sale.errors.customer_name}
+                                                </span>
+                                            )}
+                                        </label>
+                                        <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
+                                            Nomor telepon
+                                            <span className="relative">
+                                                <Phone className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    className={`${fieldClass} pl-10`}
+                                                    type="tel"
+                                                    inputMode="tel"
+                                                    autoComplete="tel"
+                                                    value={sale.data.customer_phone}
+                                                    onChange={(event) => sale.setData('customer_phone', event.target.value)}
+                                                    maxLength={30}
+                                                />
+                                            </span>
+                                            {sale.errors.customer_phone && (
+                                                <span role="alert" className="text-xs font-semibold text-red-700">
+                                                    {sale.errors.customer_phone}
+                                                </span>
+                                            )}
+                                        </label>
+                                        {(sale.data.customer_name || sale.data.customer_phone) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    sale.setData((data) => ({ ...data, customer_name: '', customer_phone: '' }));
+                                                    sale.clearErrors('customer_name', 'customer_phone');
+                                                }}
+                                                className="min-h-10 justify-self-start text-sm font-bold text-[#34765f] underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none sm:col-span-2"
+                                            >
+                                                Hapus data pelanggan
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </section>
                         </div>
 
                         <div className="mt-5 space-y-3 border-t border-slate-200 pt-5">
@@ -881,7 +969,7 @@ export default function PosPage({
                             />
                             {Object.keys(sale.errors).length > 0 && (
                                 <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                                    Checkout gagal. Periksa stok, diskon, dan pembayaran.
+                                    Checkout gagal. Periksa data pelanggan, stok, diskon, dan pembayaran.
                                 </p>
                             )}
                             <button

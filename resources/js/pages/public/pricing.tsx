@@ -32,12 +32,20 @@ type Plan = {
 
 type OfferCategory = 'store_capacity' | 'staff_capacity' | 'scan_capacity' | 'product_capacity' | 'general';
 
-const categoryCopy: Record<OfferCategory, { title: string; label: string }> = {
-    store_capacity: { title: 'Tambah kapasitas toko', label: 'Toko' },
-    staff_capacity: { title: 'Tambah kapasitas staf', label: 'Staf' },
-    scan_capacity: { title: 'Tambah kuota scan', label: 'Scan' },
-    product_capacity: { title: 'Tambah kapasitas produk', label: 'Produk' },
-    general: { title: 'Paket kapasitas gabungan', label: 'Gabungan' },
+const categoryCopy: Record<OfferCategory, { title: string; label: string; description: string }> = {
+    store_capacity: {
+        title: 'Tambah kapasitas toko',
+        label: 'Toko',
+        description: 'Buka ruang untuk toko berikutnya dalam akun yang sama.',
+    },
+    staff_capacity: { title: 'Tambah kapasitas staf', label: 'Staf', description: 'Perluas akses tim tanpa mengganti paket utama.' },
+    scan_capacity: { title: 'Tambah kuota scan', label: 'Scan', description: 'Lanjutkan pemindaian ketika kuota bulan ini menipis.' },
+    product_capacity: {
+        title: 'Tambah kapasitas produk',
+        label: 'Produk',
+        description: 'Sediakan ruang untuk katalog produk yang terus bertambah.',
+    },
+    general: { title: 'Paket kapasitas gabungan', label: 'Gabungan', description: 'Tambahkan beberapa kapasitas akun dalam satu pilihan.' },
 };
 
 type Account = {
@@ -65,18 +73,24 @@ export default function Pricing({
         account.next_period_start && new Date(`${account.next_period_start}T00:00:00`).getTime() > new Date().setHours(0, 0, 0, 0),
     );
     const selectedScheduled = selectedPlan?.kind === 'base' && scheduled;
+    const focusedCopy = focusCategory ? categoryCopy[focusCategory] : null;
     const offerGroups = [
         {
             key: 'base',
             title: 'Paket utama',
+            description: 'Pilih paket berjangka untuk kapasitas operasional yang lebih besar.',
             plans: plans.filter((plan) => plan.kind === 'base'),
         },
         ...(['store_capacity', 'staff_capacity', 'scan_capacity', 'product_capacity', 'general'] as OfferCategory[]).map((category) => ({
             key: category,
             title: categoryCopy[category].title,
+            description: categoryCopy[category].description,
             plans: plans.filter((plan) => plan.kind === 'addon' && (plan.offer_category ?? 'general') === category),
         })),
     ].filter((group) => group.plans.length > 0);
+    const visibleChoiceCount = focusCategory
+        ? plans.filter((plan) => plan.kind === 'addon' && (plan.offer_category ?? 'general') === focusCategory).length
+        : plans.length;
 
     const openConfirmation = (plan: Plan) => {
         form.clearErrors();
@@ -95,8 +109,12 @@ export default function Pricing({
                 <div className="ledger-container">
                     <m.div className="pricing-hero-copy" initial="hidden" animate="visible" variants={revealLeft}>
                         <span className="scan-kicker">Paket {branding.brand_name}</span>
-                        <h1>Pilih ruang tumbuh untuk toko Anda.</h1>
-                        <p>Mulai dari kebutuhan hari ini. Tingkatkan kapasitas saat produk, anggota, dan toko bertambah.</p>
+                        <h1>{focusedCopy ? focusedCopy.title : 'Pilih ruang tumbuh untuk toko Anda.'}</h1>
+                        <p>
+                            {focusedCopy
+                                ? focusedCopy.description
+                                : 'Mulai dari kebutuhan hari ini. Tingkatkan kapasitas saat produk, anggota, dan toko bertambah.'}
+                        </p>
                     </m.div>
                     <m.div className="pricing-hero-aside" initial="hidden" animate="visible" variants={revealRight}>
                         <span className="pricing-proof-label">Dalam satu akun</span>
@@ -152,10 +170,31 @@ export default function Pricing({
                     >
                         <div>
                             <span className="scan-kicker">Pilihan paket</span>
-                            <h2 id="offers-title">Sesuai cara toko Anda berkembang.</h2>
+                            <h2 id="offers-title">
+                                {focusedCopy ? `Pilihan untuk ${focusedCopy.label.toLowerCase()}` : 'Sesuai cara toko Anda berkembang.'}
+                            </h2>
                         </div>
-                        <span>{plans.length} pilihan</span>
+                        <span>
+                            {visibleChoiceCount} {translate('pilihan')}
+                        </span>
                     </m.div>
+                    {offerGroups.length > 1 && (
+                        <nav className="pricing-category-nav" aria-label="Kategori penawaran">
+                            {offerGroups.map((group) => (
+                                <Link
+                                    key={group.key}
+                                    href={
+                                        group.key === 'base'
+                                            ? '/pricing#category-base'
+                                            : `/pricing?category=${group.key}#category-${group.key}`
+                                    }
+                                    aria-current={focusCategory === group.key ? 'location' : undefined}
+                                >
+                                    {group.key === 'base' ? 'Paket utama' : categoryCopy[group.key as OfferCategory].label}
+                                </Link>
+                            ))}
+                        </nav>
+                    )}
                     <div className="pricing-offer-groups">
                         {offerGroups.map((group) => (
                             <section
@@ -164,7 +203,15 @@ export default function Pricing({
                                 key={group.key}
                                 aria-labelledby={`category-${group.key}-title`}
                             >
-                                <h3 id={`category-${group.key}-title`}>{group.title}</h3>
+                                <header className="pricing-offer-group-head">
+                                    <div>
+                                        <h3 id={`category-${group.key}-title`}>{group.title}</h3>
+                                        <p>{group.description}</p>
+                                    </div>
+                                    <span>
+                                        {group.plans.length} {translate('pilihan')}
+                                    </span>
+                                </header>
                                 <m.div
                                     className="pricing-card-grid"
                                     initial="hidden"
@@ -174,7 +221,7 @@ export default function Pricing({
                                 >
                                     {group.plans.map((plan) => (
                                         <m.article
-                                            className={`${plan.is_trial ? 'is-trial' : ''} ${plan.is_current ? 'is-current' : ''} ${plan.disabled_reason ? 'is-disabled' : ''}`.trim()}
+                                            className={`${plan.kind === 'addon' ? 'is-addon' : ''} ${plan.is_trial ? 'is-trial' : ''} ${plan.is_current ? 'is-current' : ''} ${plan.disabled_reason ? 'is-disabled' : ''}`.trim()}
                                             key={plan.public_id}
                                             variants={staggerItem}
                                             whileHover={plan.disabled_reason ? undefined : { y: -5, scale: 1.006 }}
@@ -191,14 +238,14 @@ export default function Pricing({
                                                         <span>{categoryCopy[plan.offer_category ?? 'general'].label}</span>
                                                     )}
                                                 </div>
-                                                <h3>{plan.name}</h3>
+                                                <h3>{translate(plan.name)}</h3>
                                                 {plan.description && <p>{plan.description}</p>}
                                             </div>
                                             <div className="pricing-card-price">
                                                 <strong>{priceLabel(plan)}</strong>
                                                 {Number(plan.monthly_price) > 0 && plan.billing_cycle === 'fixed' && <span>/ bulan</span>}
                                             </div>
-                                            <ul aria-label={`Kapasitas ${plan.name}`}>
+                                            <ul aria-label={`${translate('Kapasitas')} ${translate(plan.name)}`}>
                                                 <li>
                                                     <Clock3 />
                                                     <span>
@@ -406,7 +453,7 @@ function PlanLimit({ value, label, additional = false }: { value: number; label:
         <li>
             <Check />
             <span>
-                <strong>{additional ? `+${value.toLocaleString(localeTag())}` : formatLimit(value)}</strong> {label}
+                <strong>{additional ? `+${value.toLocaleString(localeTag())}` : formatLimit(value)}</strong> {translate(label)}
             </span>
         </li>
     );
@@ -417,7 +464,15 @@ function formatLimit(value: number) {
 }
 
 function planTerm(plan: Pick<Plan, 'is_trial' | 'duration_months' | 'billing_cycle'>) {
-    return plan.billing_cycle === 'lifetime' ? 'Selamanya' : plan.is_trial ? '30 hari' : `${plan.duration_months} bulan`;
+    if (plan.billing_cycle === 'lifetime') {
+        return translate('Selamanya');
+    }
+
+    if (plan.is_trial) {
+        return translate('30 hari');
+    }
+
+    return `${plan.duration_months} ${translate('bulan')}`;
 }
 
 function priceLabel(plan: Pick<Plan, 'monthly_price' | 'billing_cycle'>) {
@@ -425,7 +480,7 @@ function priceLabel(plan: Pick<Plan, 'monthly_price' | 'billing_cycle'>) {
         return translate('Gratis');
     }
 
-    return `${formatMoney(plan.monthly_price)}${plan.billing_cycle === 'lifetime' ? ' sekali' : ''}`;
+    return `${formatMoney(plan.monthly_price)}${plan.billing_cycle === 'lifetime' ? ` ${translate('sekali')}` : ''}`;
 }
 
 function date(value: string) {

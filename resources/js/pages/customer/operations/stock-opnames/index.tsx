@@ -3,6 +3,7 @@ import { ArrowRight, ClipboardList, PackageCheck, Plus } from 'lucide-react';
 import { LedgerCard, ledgerDateTime, OperationsShell } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import { translate } from '@/lib/i18n';
 
 type StockCount = {
     public_id: string;
@@ -81,7 +82,7 @@ export default function StockOpnameIndex({
                     </LedgerCard>
                 )}
 
-                <LedgerCard title={`Riwayat Opname (${counts.total})`}>
+                <LedgerCard title={`${translate('Riwayat Opname')} (${counts.total.toLocaleString()})`}>
                     {counts.data.length > 0 ? (
                         <div className="grid gap-3 lg:grid-cols-2">
                             {counts.data.map((count) => {
@@ -110,7 +111,7 @@ export default function StockOpnameIndex({
                                             <span
                                                 className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-black ring-1 ${status.className}`}
                                             >
-                                                {status.label}
+                                                {translate(status.label)}
                                             </span>
                                         </div>
 
@@ -163,7 +164,7 @@ export default function StockOpnameIndex({
 function Metric({ label, value, danger = false }: { label: string; value: string | number; danger?: boolean }) {
     return (
         <div className={`rounded-xl px-3 py-2 ${danger ? 'bg-orange-50' : 'bg-[#fff3ef]'}`}>
-            <p className="text-[9px] font-bold tracking-wide text-stone-500 uppercase">{label}</p>
+            <p className="text-[9px] font-bold tracking-wide text-stone-500 uppercase">{translate(label)}</p>
             <p className={`mt-0.5 text-sm font-black tabular-nums ${danger ? 'text-orange-700' : 'text-[var(--app-ink)]'}`}>{value}</p>
         </div>
     );

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Actions\Sales\PostSaleReturn;
+use App\Actions\Sales\UpsertSaleCustomer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreSaleReturnRequest;
 use App\Models\FinancialAccount;
@@ -30,30 +31,68 @@ class SalesController extends Controller
         $store = $currentStore->get();
         Gate::authorize('viewSales', $store);
         $timezone = $store->settings()->value('timezone') ?? 'Asia/Jakarta';
-        $period = in_array($request->string('period')->toString(), ['today', 'week', 'month'], true)
-            ? $request->string('period')->toString()
-            : 'today';
-        $from = $request->string('from')->toString() === 'pos' ? 'pos' : null;
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:120'],
+            'period' => ['nullable', 'in:today,week,month,all,custom'],
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'payment_method' => ['nullable', 'in:cash,qris'],
+            'customer' => ['nullable', 'in:identified,guest'],
+            'view' => ['nullable', 'in:history,returns'],
+            'from' => ['nullable', 'in:pos'],
+        ]);
+        $search = trim((string) ($validated['search'] ?? ''));
+        $period = (string) ($validated['period'] ?? 'today');
+        $startDate = (string) ($validated['start_date'] ?? '');
+        $endDate = (string) ($validated['end_date'] ?? '');
+        $paymentMethod = (string) ($validated['payment_method'] ?? '');
+        $customer = (string) ($validated['customer'] ?? '');
+        $from = ($validated['from'] ?? null) === 'pos' ? 'pos' : null;
         $today = CarbonImmutable::now($timezone);
         $start = match ($period) {
+            'today' => $today->startOfDay(),
             'week' => $today->subDays(6)->startOfDay(),
             'month' => $today->startOfMonth(),
-            default => $today->startOfDay(),
+            'custom' => $startDate === '' ? null : CarbonImmutable::createFromFormat('Y-m-d H:i:s', "{$startDate} 00:00:00", $timezone),
+            default => null,
         };
-        $end = $today->endOfDay();
+        $end = match ($period) {
+            'today', 'week', 'month' => $today->endOfDay(),
+            'custom' => $endDate === '' ? null : CarbonImmutable::createFromFormat('Y-m-d H:i:s', "{$endDate} 23:59:59", $timezone),
+            default => null,
+        };
+        $phoneSearch = preg_match('/\d{5,}/', $search) === 1
+            ? UpsertSaleCustomer::normalizePhone($search, $store->country?->code)
+            : null;
         $canReturn = Gate::allows('manageSaleReturns', $store);
-        $view = $request->string('view')->toString() === 'returns' && $canReturn
+        $view = ($validated['view'] ?? null) === 'returns' && $canReturn
             ? 'returns'
             : 'history';
         $itemTotals = DB::table('sale_items')->select('sale_id')->selectRaw('SUM(cogs_amount) as cogs_amount, SUM(gross_profit) as gross_profit')->where('store_id', $store->id)->groupBy('sale_id');
         $returnTotals = DB::table('sale_returns')->select('sale_id')->selectRaw('SUM(refund_amount) as refund_amount, SUM(cogs_reversed) as cogs_reversed, SUM(gross_profit_reversed) as gross_profit_reversed')->where('store_id', $store->id)->groupBy('sale_id');
         $sales = Sale::query()->where('sales.store_id', $store->id)
-            ->whereBetween('sales.occurred_at', [$start->utc(), $end->utc()])
+            ->when($start !== null, fn ($query) => $query->where('sales.occurred_at', '>=', $start->utc()))
+            ->when($end !== null, fn ($query) => $query->where('sales.occurred_at', '<=', $end->utc()))
             ->join('sale_payments', 'sale_payments.sale_id', '=', 'sales.id')
             ->join('financial_accounts', 'financial_accounts.id', '=', 'sale_payments.financial_account_id')
+            ->leftJoin('customers', function ($join) use ($store): void {
+                $join->on('customers.id', '=', 'sales.customer_id')
+                    ->where('customers.store_id', '=', $store->id);
+            })
             ->leftJoinSub($itemTotals, 'item_totals', 'item_totals.sale_id', '=', 'sales.id')
             ->leftJoinSub($returnTotals, 'return_totals', 'return_totals.sale_id', '=', 'sales.id')
-            ->select(['sales.public_id', 'sales.document_number', 'sales.total_amount', 'sales.paid_amount', 'sales.change_amount', 'sales.occurred_at', 'financial_accounts.name as account_name'])
+            ->when($search !== '', function ($query) use ($phoneSearch, $search): void {
+                $query->where(function ($nested) use ($phoneSearch, $search): void {
+                    $nested->where('sales.document_number', 'like', "%{$search}%")
+                        ->orWhere('sales.customer_name', 'like', "%{$search}%")
+                        ->orWhere('sales.customer_phone', 'like', "%{$search}%")
+                        ->when($phoneSearch !== null, fn ($phoneQuery) => $phoneQuery->orWhere('customers.phone_normalized', 'like', "%{$phoneSearch}%"));
+                });
+            })
+            ->when($paymentMethod !== '', fn ($query) => $query->where('sale_payments.payment_method', $paymentMethod))
+            ->when($customer === 'identified', fn ($query) => $query->whereNotNull('sales.customer_id'))
+            ->when($customer === 'guest', fn ($query) => $query->whereNull('sales.customer_id'))
+            ->select(['sales.public_id', 'sales.document_number', 'sales.customer_name', 'sales.customer_phone', 'sales.total_amount', 'sales.paid_amount', 'sales.change_amount', 'sales.occurred_at', 'sale_payments.payment_method', 'financial_accounts.name as account_name'])
             ->selectRaw('COALESCE(item_totals.cogs_amount, 0) as cogs_amount, COALESCE(item_totals.gross_profit, 0) as gross_profit')
             ->selectRaw('COALESCE(return_totals.refund_amount, 0) as refund_amount, COALESCE(return_totals.cogs_reversed, 0) as cogs_reversed, COALESCE(return_totals.gross_profit_reversed, 0) as gross_profit_reversed')
             ->latest('sales.id')->paginate(25)->withQueryString();
@@ -61,7 +100,7 @@ class SalesController extends Controller
         $sales->through(function (Sale $sale) use ($canViewProfit): array {
             $refund = (string) ($sale->refund_amount ?? '0');
             $result = [
-                ...$sale->only(['public_id', 'document_number', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'account_name']),
+                ...$sale->only(['public_id', 'document_number', 'customer_name', 'customer_phone', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'payment_method', 'account_name']),
                 'refund_amount' => $refund,
                 'net_revenue' => Decimal::subtract($sale->total_amount, $refund, Decimal::MONEY_SCALE),
             ];
@@ -77,7 +116,16 @@ class SalesController extends Controller
             'sales' => $sales, 'canViewProfit' => $canViewProfit,
             'canReturn' => $canReturn,
             'timezone' => $timezone,
-            'filters' => ['period' => $period, 'view' => $view, 'from' => $from],
+            'filters' => [
+                'search' => $search,
+                'period' => $period,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'payment_method' => $paymentMethod,
+                'customer' => $customer,
+                'view' => $view,
+                'from' => $from,
+            ],
         ]);
     }
 
@@ -180,7 +228,7 @@ class SalesController extends Controller
         }
 
         return [
-            'sale' => $sale->only(['public_id', 'document_number', 'subtotal', 'item_discount_amount', 'transaction_discount_amount', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'notes', 'cashier_name']),
+            'sale' => $sale->only(['public_id', 'document_number', 'customer_name', 'customer_phone', 'subtotal', 'item_discount_amount', 'transaction_discount_amount', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'notes', 'cashier_name']),
             'items' => $items->map(function (array $item) use ($canViewProfit): array {
                 if (! $canViewProfit) {
                     unset($item['cogs_amount'], $item['gross_profit']);

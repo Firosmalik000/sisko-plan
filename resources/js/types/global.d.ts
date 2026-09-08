@@ -25,10 +25,10 @@ declare module '@inertiajs/core' {
                 social_image_url: string | null;
                 robots_index: boolean;
             };
-            locale?: 'en' | 'id' | 'ms';
-            market?: 'id' | 'ms';
+            locale?: 'en' | 'id' | 'ms' | 'vi';
+            market?: 'id' | 'ms' | 'vi';
             locales?: Array<{
-                code: 'en' | 'id' | 'ms';
+                code: 'en' | 'id' | 'ms' | 'vi';
                 label: string;
             }>;
             auth: Auth;

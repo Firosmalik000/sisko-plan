@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Plan;
 use App\Models\User;
+use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -17,12 +19,13 @@ class LocaleTest extends TestCase
         $indonesian = json_decode(file_get_contents(lang_path('id.json')), true, flags: JSON_THROW_ON_ERROR);
         $malay = json_decode(file_get_contents(lang_path('ms.json')), true, flags: JSON_THROW_ON_ERROR);
         $english = json_decode(file_get_contents(lang_path('en.json')), true, flags: JSON_THROW_ON_ERROR);
+        $vietnamese = json_decode(file_get_contents(lang_path('vi.json')), true, flags: JSON_THROW_ON_ERROR);
 
         $this->assertSame([], array_values(array_diff(array_keys($indonesian), array_keys($malay))));
         $this->assertSame([], array_values(array_diff(array_keys($malay), array_keys($indonesian), array_keys($english))));
         $this->assertSame([], array_values(array_diff(array_keys($english), array_keys($malay))));
 
-        foreach ([$indonesian, $malay, $english] as $translations) {
+        foreach ([$indonesian, $malay, $english, $vietnamese] as $translations) {
             $this->assertNotContains('', array_values($translations));
         }
     }
@@ -50,10 +53,31 @@ class LocaleTest extends TestCase
             'The limit of 3 stores for the Business plan has been reached.',
             __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Business']),
         );
+
+        App::setLocale('vi');
+        $this->assertSame('Đã đạt giới hạn 3 cửa hàng của gói Business.', __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Business']));
+        $this->assertSame('Trường tên là bắt buộc.', __('The name field is required.'));
     }
 
     public function test_public_pricing_reasons_follow_the_selected_market_language(): void
     {
+        $this->seed(PlanSeeder::class);
+        Plan::query()->create([
+            'code' => 'business-locale-test',
+            'name' => 'Business',
+            'description' => 'Test plan',
+            'kind' => Plan::KIND_BASE,
+            'billing_cycle' => Plan::BILLING_FIXED,
+            'monthly_price' => '100',
+            'duration_months' => 1,
+            'max_stores' => 3,
+            'max_products' => 1000,
+            'max_members' => 5,
+            'max_scans' => 100,
+            'is_default' => false,
+            'is_trial' => false,
+            'is_active' => true,
+        ]);
         $admin = User::factory()->superAdmin()->create();
 
         $this->actingAs($admin)
@@ -71,6 +95,15 @@ class LocaleTest extends TestCase
             ->assertRedirect(route('login'))
             ->assertSessionHas('market', 'ms')
             ->assertSessionHas('locale', 'ms');
+    }
+
+    public function test_guest_can_select_the_vietnam_market(): void
+    {
+        $this->from(route('login'))
+            ->post(route('locale.update'), ['locale' => 'vi'])
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('market', 'vi')
+            ->assertSessionHas('locale', 'vi');
     }
 
     public function test_public_pages_only_offer_indonesia_and_malaysia(): void

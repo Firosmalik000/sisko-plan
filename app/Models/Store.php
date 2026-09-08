@@ -110,6 +110,12 @@ class Store extends Model
         return $this->hasMany(Supplier::class);
     }
 
+    /** @return HasMany<Customer, $this> */
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
     /** @return HasMany<FinancialAccount, $this> */
     public function financialAccounts(): HasMany
     {

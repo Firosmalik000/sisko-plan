@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowUpRight, Building2, CheckCircle2, CreditCard, ReceiptText, ShieldCheck, Store, Users } from 'lucide-react';
 import { formatMoney, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 type Metrics = {
     users: number;
@@ -86,14 +87,14 @@ export default function SuperAdminDashboard({
         {
             label: 'Pengguna',
             value: metrics.users,
-            meta: `+${metrics.new_users_this_month} bulan ini`,
+            meta: `+${metrics.new_users_this_month} ${translate('bulan ini')}`,
             icon: Users,
             href: '/super-admin/users',
         },
         {
             label: 'Tenant toko',
             value: metrics.stores,
-            meta: `+${metrics.new_stores_this_month} bulan ini`,
+            meta: `+${metrics.new_stores_this_month} ${translate('bulan ini')}`,
             icon: Building2,
             href: '/super-admin/stores',
         },
@@ -150,8 +151,8 @@ export default function SuperAdminDashboard({
                             <ArrowUpRight className="size-4 text-slate-300 transition group-hover:text-[#c43b21]" />
                         </div>
                         <p className="mt-5 truncate text-2xl font-black tracking-tight text-[#3b211b]">{card.value}</p>
-                        <p className="mt-1 text-xs font-bold text-slate-600">{card.label}</p>
-                        <p className="mt-2 text-[11px] text-slate-400">{card.meta}</p>
+                        <p className="mt-1 text-xs font-bold text-slate-600">{translate(card.label)}</p>
+                        <p className="mt-2 text-[11px] text-slate-400">{translate(card.meta)}</p>
                     </Link>
                 ))}
             </section>
@@ -188,7 +189,7 @@ export default function SuperAdminDashboard({
                             return (
                                 <div key={status}>
                                     <div className="mb-1.5 flex items-center justify-between text-xs">
-                                        <span className="font-semibold text-slate-600">{statusLabels[status] ?? status}</span>
+                                        <span className="font-semibold text-slate-600">{translate(statusLabels[status] ?? status)}</span>
                                         <span className="font-black text-[#3b211b]">{count}</span>
                                     </div>
                                     <div className="h-2 overflow-hidden rounded-full bg-slate-100">
@@ -241,7 +242,7 @@ export default function SuperAdminDashboard({
                                 <div key={item.id} className="flex items-center gap-3 px-5 py-3.5">
                                     <span className="size-2 rounded-full bg-[#ee4d2d]" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-bold">{actionLabels[item.action] ?? item.action}</p>
+                                        <p className="truncate text-sm font-bold">{translate(actionLabels[item.action] ?? item.action)}</p>
                                         <p className="text-[11px] text-slate-400">
                                             {item.admin} · {relativeDate(item.created_at)}
                                         </p>
@@ -291,7 +292,7 @@ export default function SuperAdminDashboard({
 function HeroMetric({ label, value }: { label: string; value: string }) {
     return (
         <div className="min-w-36 rounded-xl border border-white/10 bg-white/8 p-4">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">{label}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">{translate(label)}</p>
             <p className="mt-2 text-xl font-black text-white">{value}</p>
         </div>
     );
@@ -300,8 +301,8 @@ function PanelHeader({ kicker, title, href }: { kicker: string; title: string; h
     return (
         <div className="flex items-end justify-between gap-3">
             <div>
-                <p className="platform-kicker">{kicker}</p>
-                <h2 className="mt-1 text-lg font-black tracking-tight text-[#3b211b]">{title}</h2>
+                <p className="platform-kicker">{translate(kicker)}</p>
+                <h2 className="mt-1 text-lg font-black tracking-tight text-[#3b211b]">{translate(title)}</h2>
             </div>
             {href && (
                 <Link href={href} className="text-xs font-bold text-[#b83219] hover:underline">
@@ -312,7 +313,7 @@ function PanelHeader({ kicker, title, href }: { kicker: string; title: string; h
     );
 }
 function EmptyState({ text }: { text: string }) {
-    return <p className="px-5 py-12 text-center text-sm text-slate-400">{text}</p>;
+    return <p className="px-5 py-12 text-center text-sm text-slate-400">{translate(text)}</p>;
 }
 function relativeDate(value: string) {
     return new Intl.DateTimeFormat(localeTag(), {

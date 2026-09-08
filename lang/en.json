@@ -183,5 +183,7 @@
     "Database atau metadata migration tidak dapat diperiksa.": "The database or migration metadata could not be checked.",
     "Currency masih digunakan oleh negara aktif.": "The currency is still used by an active country.",
     "Bukti pembayaran hanya dapat ditambahkan untuk QRIS.": "Payment proof can only be added for QRIS.",
-    "Bukti pembayaran gagal disimpan. Coba unggah kembali.": "The payment proof could not be saved. Upload it again."
+    "Bukti pembayaran gagal disimpan. Coba unggah kembali.": "The payment proof could not be saved. Upload it again.",
+    "Nama pelanggan dan nomor telepon harus diisi bersama.": "Customer name and phone number must be provided together.",
+    "Nomor telepon pelanggan tidak valid.": "The customer phone number is invalid."
 }

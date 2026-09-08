@@ -56,7 +56,7 @@ type CustomerPageProps = {
     auth: { user: User | null };
     stores: StoreSummary[];
     activeStore: StoreSummary | null;
-    storeCreation: StoreCreationState;
+    storeCreation: StoreCreationState | null;
     stockAlerts?: {
         count: number;
         unread_count: number;
@@ -609,36 +609,26 @@ function StoreMenu({
 }: {
     stores: StoreSummary[];
     activeStore: StoreSummary | null;
-    storeCreation: StoreCreationState;
+    storeCreation: StoreCreationState | null;
 }) {
+    const canCreateStore = storeCreation?.can_create ?? false;
+
     if (!activeStore) {
-        return storeCreation.can_create ? (
+        return (
             <Link
-                href="/stores/create"
+                href={canCreateStore ? '/stores/create' : '/pricing?category=store_capacity#category-store_capacity'}
                 className="flex min-w-0 items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-sm ring-1 ring-[var(--app-ink)]/8"
             >
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f5b942] text-[var(--app-ink)]">
-                    <Plus className="size-4" />
+                    {canCreateStore ? <Plus className="size-4" /> : <LockKeyhole className="size-4" />}
                 </span>
                 <span className="min-w-0">
-                    <span className="block truncate text-xs font-bold">Buat toko</span>
-                    <span className="block truncate text-[10px] text-[var(--muted-foreground)]">Mulai operasional</span>
+                    <span className="block truncate text-xs font-bold">{canCreateStore ? 'Buat toko' : 'Tambah kapasitas'}</span>
+                    <span className="block truncate text-xs text-[var(--muted-foreground)]">
+                        {canCreateStore ? 'Mulai operasional' : 'Lihat add-on toko'}
+                    </span>
                 </span>
             </Link>
-        ) : (
-            <button
-                type="button"
-                disabled
-                className="flex min-w-0 items-center gap-2 rounded-2xl bg-white px-3 py-2 text-left opacity-60 shadow-sm ring-1 ring-[var(--app-ink)]/8"
-            >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f3eee1] text-[#7a6740]">
-                    <LockKeyhole className="size-4" />
-                </span>
-                <span className="min-w-0">
-                    <span className="block truncate text-xs font-bold">Toko terkunci</span>
-                    <span className="block truncate text-xs text-[var(--muted-foreground)]">Batas paket tercapai</span>
-                </span>
-            </button>
         );
     }
 
@@ -686,7 +676,7 @@ function StoreMenu({
                     </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                {storeCreation.can_create ? (
+                {canCreateStore ? (
                     <DropdownMenuItem asChild className="rounded-xl p-3">
                         <Link href="/stores/create">
                             <Plus className="size-4" />
@@ -694,9 +684,11 @@ function StoreMenu({
                         </Link>
                     </DropdownMenuItem>
                 ) : (
-                    <DropdownMenuItem disabled className="rounded-xl p-3">
-                        <LockKeyhole className="size-4" />
-                        Batas toko tercapai
+                    <DropdownMenuItem asChild className="rounded-xl p-3">
+                        <Link href="/pricing?category=store_capacity#category-store_capacity">
+                            <LockKeyhole className="size-4" />
+                            Tambah kapasitas toko
+                        </Link>
                     </DropdownMenuItem>
                 )}
             </DropdownMenuContent>

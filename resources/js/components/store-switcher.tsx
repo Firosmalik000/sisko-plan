@@ -14,38 +14,31 @@ import type { StoreCreationState, StoreSummary } from '@/types';
 type PageProps = {
     stores: StoreSummary[];
     activeStore: StoreSummary | null;
-    storeCreation: StoreCreationState;
+    storeCreation: StoreCreationState | null;
 };
 
 export function StoreSwitcher() {
     const { stores, activeStore, storeCreation } = usePage<PageProps>().props;
+    const canCreateStore = storeCreation?.can_create ?? false;
 
     if (!activeStore) {
+        const href = canCreateStore ? '/stores/create' : '/pricing?category=store_capacity#category-store_capacity';
+
         return (
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild={storeCreation.can_create} disabled={!storeCreation.can_create} size="lg">
-                        {storeCreation.can_create ? (
-                            <Link href="/stores/create">
-                                <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-700 text-white">
-                                    <Plus className="size-4" />
-                                </span>
-                                <span className="grid flex-1 text-left text-sm">
-                                    <span className="font-semibold">Buat toko</span>
-                                    <span className="text-xs text-muted-foreground">Mulai operasional</span>
-                                </span>
-                            </Link>
-                        ) : (
-                            <span>
-                                <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                                    <LockKeyhole className="size-4" />
-                                </span>
-                                <span className="grid flex-1 text-left text-sm">
-                                    <span className="font-semibold">Toko terkunci</span>
-                                    <span className="text-xs text-muted-foreground">Batas paket tercapai</span>
+                    <SidebarMenuButton asChild size="lg">
+                        <Link href={href}>
+                            <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-700 text-white">
+                                {canCreateStore ? <Plus className="size-4" /> : <LockKeyhole className="size-4" />}
+                            </span>
+                            <span className="grid flex-1 text-left text-sm">
+                                <span className="font-semibold">{canCreateStore ? 'Buat toko' : 'Tambah kapasitas toko'}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {canCreateStore ? 'Mulai operasional' : 'Lihat pilihan add-on'}
                                 </span>
                             </span>
-                        )}
+                        </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
@@ -91,7 +84,7 @@ export function StoreSwitcher() {
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator />
-                        {storeCreation.can_create ? (
+                        {canCreateStore ? (
                             <DropdownMenuItem asChild>
                                 <Link href="/stores/create" className="gap-2">
                                     <Plus className="size-4" />
@@ -99,9 +92,11 @@ export function StoreSwitcher() {
                                 </Link>
                             </DropdownMenuItem>
                         ) : (
-                            <DropdownMenuItem disabled className="gap-2">
-                                <LockKeyhole className="size-4" />
-                                Batas toko tercapai
+                            <DropdownMenuItem asChild>
+                                <Link href="/pricing?category=store_capacity#category-store_capacity" className="gap-2">
+                                    <LockKeyhole className="size-4" />
+                                    Tambah kapasitas toko
+                                </Link>
                             </DropdownMenuItem>
                         )}
                     </DropdownMenuContent>

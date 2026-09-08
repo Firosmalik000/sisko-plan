@@ -253,7 +253,7 @@ export default function CashPage({
                                         <td className="py-3 font-semibold">{item.account_name}</td>
                                         <td>{reasonLabels[item.reason] ?? item.reason}</td>
                                         <td className={item.direction === 'in' ? 'font-bold text-teal-700' : 'font-bold text-red-700'}>
-                                            {item.direction === 'in' ? 'Masuk' : 'Keluar'}
+                                            {item.direction === 'in' ? 'Arus masuk' : 'Arus keluar'}
                                         </td>
                                         <td>{money(item.amount)}</td>
                                         <td>{money(item.balance_after)}</td>

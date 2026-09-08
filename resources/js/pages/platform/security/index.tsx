@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { translate } from '@/lib/i18n';
 import type { PlatformAdmin } from '@/types';
 
 type Props = {
@@ -105,7 +106,7 @@ function SettingsNavItem({
             onClick={onClick}
         >
             <Icon className={`size-4 ${active ? 'text-[#ffd5ca]' : ''}`} />
-            {label}
+            {translate(label)}
         </button>
     );
 }
@@ -240,8 +241,8 @@ function SettingsPanel({
                         <Icon className="size-5" />
                     </span>
                     <div>
-                        <h2 className="font-black text-[#3b211b]">{title}</h2>
-                        {status && <p className="text-xs font-semibold text-slate-500">{status}</p>}
+                        <h2 className="font-black text-[#3b211b]">{translate(title)}</h2>
+                        {status && <p className="text-xs font-semibold text-slate-500">{translate(status)}</p>}
                     </div>
                 </div>
                 {badge}
@@ -254,7 +255,7 @@ function SettingsPanel({
 function FormField({ htmlFor, label, error, children }: { htmlFor: string; label: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="grid gap-1.5">
-            <Label htmlFor={htmlFor}>{label}</Label>
+            <Label htmlFor={htmlFor}>{translate(label)}</Label>
             {children}
             <InputError message={error} />
         </div>
