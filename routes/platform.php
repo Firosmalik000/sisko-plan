@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Platform\AuthenticatedSessionController;
 use App\Http\Controllers\Platform\DashboardController;
+use App\Http\Controllers\Platform\GeographyController;
 use App\Http\Controllers\Platform\ImpersonationController;
 use App\Http\Controllers\Platform\PaymentController;
 use App\Http\Controllers\Platform\PlatformAdminController;
@@ -49,6 +50,11 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::patch('brand-seo', [PlatformSettingController::class, 'update'])->middleware('can:'.PlatformPermission::BRANDING_MANAGE)->name('brand-seo.update');
             Route::post('brand-seo/logo', [PlatformSettingController::class, 'updateLogo'])->middleware('can:'.PlatformPermission::BRANDING_MANAGE)->name('brand-seo.logo.update');
             Route::delete('brand-seo/logo', [PlatformSettingController::class, 'destroyLogo'])->middleware('can:'.PlatformPermission::BRANDING_MANAGE)->name('brand-seo.logo.destroy');
+            Route::get('geography', [GeographyController::class, 'index'])->middleware('can:'.PlatformPermission::GEOGRAPHY_VIEW)->name('geography.index');
+            Route::post('geography/countries', [GeographyController::class, 'storeCountry'])->middleware('can:'.PlatformPermission::GEOGRAPHY_MANAGE)->name('geography.countries.store');
+            Route::patch('geography/countries/{country}', [GeographyController::class, 'updateCountry'])->middleware('can:'.PlatformPermission::GEOGRAPHY_MANAGE)->name('geography.countries.update');
+            Route::post('geography/currencies', [GeographyController::class, 'storeCurrency'])->middleware('can:'.PlatformPermission::GEOGRAPHY_MANAGE)->name('geography.currencies.store');
+            Route::patch('geography/currencies/{currency}', [GeographyController::class, 'updateCurrency'])->middleware('can:'.PlatformPermission::GEOGRAPHY_MANAGE)->name('geography.currencies.update');
         });
     });
 });

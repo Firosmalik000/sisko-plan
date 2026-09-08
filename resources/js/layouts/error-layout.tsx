@@ -3,11 +3,7 @@ import AppLogoIcon from '@/components/app-logo-icon';
 import LanguageSwitcher from '@/components/language-switcher';
 import { useTranslation } from '@/lib/i18n';
 
-export default function ErrorLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function ErrorLayout({ children }: { children: React.ReactNode }) {
     useTranslation();
 
     const { appName = 'Sisko Plan' } = usePage<{ appName?: string }>().props;
@@ -24,9 +20,7 @@ export default function ErrorLayout({
                         <span className="flex size-9 items-center justify-center rounded-lg bg-[#0b292f] text-[#e7bd52]">
                             <AppLogoIcon className="size-4 fill-current" />
                         </span>
-                        <span className="text-sm font-black tracking-[0.12em] uppercase">
-                            {appName}
-                        </span>
+                        <span className="text-sm font-black tracking-[0.12em] uppercase">{appName}</span>
                     </Link>
                     <LanguageSwitcher />
                 </div>

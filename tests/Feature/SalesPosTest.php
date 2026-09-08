@@ -26,7 +26,9 @@ use App\Support\Decimal;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -358,6 +360,33 @@ class SalesPosTest extends TestCase
         $this->assertDatabaseHas('financial_accounts', ['store_id' => $store->id, 'name' => 'QRIS', 'type' => FinancialAccountType::EWallet->value, 'is_active' => true]);
     }
 
+    public function test_pos_payment_methods_remain_available_across_indonesian_and_malay_sessions(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+
+        foreach (['id', 'ms'] as $locale) {
+            $this->actingAs($owner)
+                ->withSession([
+                    'active_store_id' => $store->id,
+                    'market' => $locale,
+                    'locale' => $locale,
+                ])
+                ->get(route('pos.index'))
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('customer/pos/index')
+                    ->has('paymentMethods', 2)
+                    ->where('paymentMethods.0.method', 'cash')
+                    ->where('paymentMethods.1.method', 'qris'));
+        }
+
+        $this->assertDatabaseHas('financial_accounts', [
+            'store_id' => $store->id,
+            'type' => FinancialAccountType::Cash->value,
+            'is_active' => true,
+        ]);
+    }
+
     public function test_pos_variant_rows_share_their_parent_catalog_identity(): void
     {
         [$owner, $store, $product] = $this->fixtures();
@@ -404,6 +433,77 @@ class SalesPosTest extends TestCase
         ]);
     }
 
+    public function test_qris_sale_can_store_and_open_a_private_payment_proof(): void
+    {
+        Storage::fake('local');
+        [$owner, $store, $product, , $bank] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $session = ['active_store_id' => $store->id];
+
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), [
+            'account_id' => $bank->public_id,
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '1000',
+            'payment_proof' => UploadedFile::fake()->create('bukti-qris.pdf', 120, 'application/pdf'),
+            'occurred_at' => '2026-08-07T16:00',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '1',
+                'discount_amount' => '0',
+            ]],
+        ])->assertRedirect();
+
+        $sale = Sale::query()->sole();
+        $proofPath = DB::table('sale_payments')->where('sale_id', $sale->id)->value('payment_proof_path');
+        $this->assertIsString($proofPath);
+        $this->assertStringStartsWith("sale-payment-proofs/{$store->public_id}/", $proofPath);
+        Storage::disk('local')->assertExists($proofPath);
+
+        $this->actingAs($owner)
+            ->withSession($session)
+            ->get(route('sales.payment-proof', $sale))
+            ->assertOk()
+            ->assertHeader('cache-control', 'no-store, private');
+
+        $this->actingAs($owner)->withSession($session)->get(route('sales.show', $sale))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('payment.payment_method', 'qris')
+                ->where('payment.proof_url', route('sales.payment-proof', $sale)));
+
+        [$otherOwner, $otherStore] = $this->fixtures();
+        $this->actingAs($otherOwner)
+            ->withSession(['active_store_id' => $otherStore->id])
+            ->get(route('sales.payment-proof', $sale))
+            ->assertNotFound();
+    }
+
+    public function test_cash_sale_rejects_a_payment_proof(): void
+    {
+        Storage::fake('local');
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->post(route('pos.sales.store'), [
+            'account_id' => $cash->public_id,
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '1000',
+            'payment_proof' => UploadedFile::fake()->create('bukti.pdf', 20, 'application/pdf'),
+            'occurred_at' => '2026-08-07T16:00',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '1',
+                'discount_amount' => '0',
+            ]],
+        ])->assertSessionHasErrors('payment_proof');
+
+        $this->assertDatabaseCount('sales', 0);
+        $this->assertSame([], Storage::disk('local')->allFiles('sale-payment-proofs'));
+    }
+
     public function test_owner_http_sale_redirects_to_printable_receipt_and_can_return(): void
     {
         [$owner, $store, $product, $cash] = $this->fixtures();
@@ -440,6 +540,31 @@ class SalesPosTest extends TestCase
             'items' => [['sale_item_id' => SaleItem::query()->sole()->public_id, 'quantity' => '1']],
         ])->assertRedirect();
         $this->assertDatabaseCount('sale_returns', 1);
+    }
+
+    public function test_default_receipt_copy_follows_locale_without_translating_store_copy(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $sale = $this->postSale($store, $owner, $product, $cash);
+        $session = ['active_store_id' => $store->id, 'market' => 'ms', 'locale' => 'ms'];
+
+        $this->actingAs($owner)->withSession($session)->get(route('sales.show', $sale))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('receipt.header', 'Bukti jualan')
+                ->where('receipt.footer', 'Terima kasih. Simpan resit ini sebagai rujukan pemulangan.'));
+
+        $store->settings()->update([
+            'receipt_header' => 'My Store Receipt',
+            'receipt_footer' => 'Custom footer',
+        ]);
+
+        $this->actingAs($owner)
+            ->withSession(['active_store_id' => $store->id, 'market' => 'id', 'locale' => 'en'])
+            ->get(route('sales.show', $sale))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('receipt.header', 'My Store Receipt')
+                ->where('receipt.footer', 'Custom footer'));
     }
 
     public function test_sale_documents_are_immutable_and_non_cash_overpayment_is_rejected(): void

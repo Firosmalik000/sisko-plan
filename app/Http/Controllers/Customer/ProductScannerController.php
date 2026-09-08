@@ -3,22 +3,43 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Intelligence\RecognizeCatalogItems;
+use App\Exceptions\ScanQuotaExceeded;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Scanner\ConsumeScannerUsageRequest;
 use App\Http\Requests\Scanner\DiscoverCatalogItemRequest;
 use App\Http\Requests\Scanner\LookupCatalogItemRequest;
 use App\Http\Requests\Scanner\RecognizeCatalogItemsRequest;
 use App\Models\ProductUnit;
 use App\Services\Intelligence\CatalogIntelligenceClient;
+use App\Services\Subscriptions\ScanQuota;
 use App\Support\CurrentStore;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Throwable;
 
 class ProductScannerController extends Controller
 {
-    public function lookup(LookupCatalogItemRequest $request, CurrentStore $currentStore, RecognizeCatalogItems $recognizer): JsonResponse
+    public function consume(ConsumeScannerUsageRequest $request, CurrentStore $currentStore, ScanQuota $quota): JsonResponse
     {
+        try {
+            $quota->consume($currentStore->get(), $this->scanRequestKey(), 'barcode');
+        } catch (ScanQuotaExceeded $exception) {
+            return $this->quotaExceeded($request, $exception);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function lookup(LookupCatalogItemRequest $request, CurrentStore $currentStore, RecognizeCatalogItems $recognizer, ScanQuota $quota): JsonResponse
+    {
+        try {
+            $quota->consume($currentStore->get(), $this->scanRequestKey(), 'lookup');
+        } catch (ScanQuotaExceeded $exception) {
+            return $this->quotaExceeded($request, $exception);
+        }
+
         $type = $request->validated('type');
         $unit = ProductUnit::query()
             ->where('store_id', $currentStore->id())
@@ -47,7 +68,7 @@ class ProductScannerController extends Controller
         ]]);
     }
 
-    public function recognize(RecognizeCatalogItemsRequest $request, CurrentStore $currentStore, RecognizeCatalogItems $recognizer): JsonResponse
+    public function recognize(RecognizeCatalogItemsRequest $request, CurrentStore $currentStore, RecognizeCatalogItems $recognizer, ScanQuota $quota): JsonResponse
     {
         if (! config('services.catalog_intelligence.enabled')) {
             return $this->notConfigured($request);
@@ -56,6 +77,7 @@ class ProductScannerController extends Controller
         try {
             $images = $request->file('images');
             abort_unless(is_array($images), 422);
+            $quota->consume($currentStore->get(), $this->scanRequestKey(), 'recognize', count($images));
             $data = $recognizer->handle(
                 $currentStore->get(),
                 array_values($images),
@@ -64,12 +86,14 @@ class ProductScannerController extends Controller
             );
 
             return response()->json(['status' => 'success', 'data' => $data]);
+        } catch (ScanQuotaExceeded $exception) {
+            return $this->quotaExceeded($request, $exception);
         } catch (Throwable $exception) {
             return $this->failure($request, $exception);
         }
     }
 
-    public function discover(DiscoverCatalogItemRequest $request, CurrentStore $currentStore, CatalogIntelligenceClient $client): JsonResponse
+    public function discover(DiscoverCatalogItemRequest $request, CurrentStore $currentStore, CatalogIntelligenceClient $client, ScanQuota $quota): JsonResponse
     {
         if (! config('services.catalog_intelligence.enabled')) {
             return $this->notConfigured($request);
@@ -78,6 +102,7 @@ class ProductScannerController extends Controller
         try {
             $images = $request->file('images');
             abort_unless(is_array($images), 422);
+            $quota->consume($currentStore->get(), $this->scanRequestKey(), 'discover', count($images));
 
             return response()->json($client->discover(
                 $currentStore->get(),
@@ -85,6 +110,8 @@ class ProductScannerController extends Controller
                 $request->validated('market'),
                 $this->requestId($request),
             ));
+        } catch (ScanQuotaExceeded $exception) {
+            return $this->quotaExceeded($request, $exception);
         } catch (Throwable $exception) {
             return $this->failure($request, $exception);
         }
@@ -117,6 +144,25 @@ class ProductScannerController extends Controller
             'message' => $message,
             'request_id' => $this->requestId($request),
         ], $status);
+    }
+
+    private function quotaExceeded(Request $request, ScanQuotaExceeded $exception): JsonResponse
+    {
+        return response()->json([
+            'status' => 'error',
+            'code' => 'SCAN_LIMIT_REACHED',
+            'message' => __('Kuota :limit scan bulan ini sudah habis. Tambahkan kapasitas scan untuk melanjutkan.', [
+                'limit' => $exception->limit,
+            ]),
+            'used' => $exception->used,
+            'limit' => $exception->limit,
+            'request_id' => $this->requestId($request),
+        ], 429);
+    }
+
+    private function scanRequestKey(): string
+    {
+        return (string) Str::ulid();
     }
 
     private function requestId(Request $request): string

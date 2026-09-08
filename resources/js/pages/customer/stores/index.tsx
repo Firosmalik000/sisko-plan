@@ -1,29 +1,20 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import {
-    ArrowRight,
-    Building2,
-    LockKeyhole,
-    Plus,
-    ShieldCheck,
-    Users,
-} from 'lucide-react';
+import { ArrowRight, Building2, Coins, LockKeyhole, MapPin, Plus, ShieldCheck, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { StoreCreationState } from '@/types';
 
 type StoreItem = {
     public_id: string;
     name: string;
-    status: 'active' | 'suspended';
+    status: 'active' | 'suspended' | 'archived';
     role: 'owner' | 'admin' | 'cashier';
     membership_status: 'active' | 'suspended';
+    country: string | null;
+    country_code: string | null;
+    currency_code: string | null;
+    currency_symbol: string | null;
 };
 
 export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
@@ -36,21 +27,18 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
             <Head title="Toko & Anggota" />
             <div className="flex flex-1 flex-col gap-4 bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="flex flex-row items-center justify-between gap-3 rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
-                    <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
-                        Toko & Anggota
-                    </h1>
+                    <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Toko & Anggota</h1>
                     {storeCreation.can_create ? (
-                        <Button
-                            asChild
-                            className="bg-emerald-700 hover:bg-emerald-800"
-                        >
+                        <Button asChild className="h-11 bg-emerald-700 hover:bg-emerald-800">
                             <Link href="/stores/create">
                                 <Plus /> Tambah toko
                             </Link>
                         </Button>
                     ) : (
-                        <Button disabled variant="outline">
-                            <LockKeyhole /> Batas toko tercapai
+                        <Button asChild variant="outline" className="h-11">
+                            <Link href="/pricing?category=store_capacity#category-store_capacity">
+                                <LockKeyhole /> Tambah kapasitas toko
+                            </Link>
                         </Button>
                     )}
                 </div>
@@ -58,21 +46,18 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
                 {stores.length === 0 ? (
                     <div className="rounded-3xl border border-dashed bg-muted/30 px-6 py-20 text-center">
                         <Building2 className="mx-auto mb-5 size-10 text-emerald-700" />
-                        <h2 className="text-xl font-semibold">
-                            Belum ada toko
-                        </h2>
+                        <h2 className="text-xl font-semibold">Belum ada toko</h2>
                         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-                            Buat toko pertama untuk mengaktifkan dashboard dan
-                            mulai menyiapkan operasional.
+                            Buat toko pertama untuk mengaktifkan dashboard dan mulai menyiapkan operasional.
                         </p>
                         {storeCreation.can_create && (
-                            <Button
-                                asChild
-                                className="mt-6 bg-emerald-700 hover:bg-emerald-800"
-                            >
-                                <Link href="/stores/create">
-                                    Buat toko pertama
-                                </Link>
+                            <Button asChild className="mt-6 bg-emerald-700 hover:bg-emerald-800">
+                                <Link href="/stores/create">Buat toko pertama</Link>
+                            </Button>
+                        )}
+                        {!storeCreation.can_create && (
+                            <Button asChild className="mt-6">
+                                <Link href="/pricing?category=store_capacity#category-store_capacity">Lihat add-on toko</Link>
                             </Button>
                         )}
                     </div>
@@ -90,63 +75,66 @@ export default function StoresIndex({ stores }: { stores: StoreItem[] }) {
                                         </div>
                                         <Badge
                                             variant={
-                                                store.status === 'active' &&
-                                                store.membership_status ===
-                                                    'active'
+                                                store.status === 'active' && store.membership_status === 'active'
                                                     ? 'secondary'
                                                     : 'destructive'
                                             }
                                         >
-                                            {store.status === 'active' &&
-                                            store.membership_status === 'active'
+                                            {store.status === 'active' && store.membership_status === 'active'
                                                 ? 'Aktif'
-                                                : 'Nonaktif'}
+                                                : store.status === 'archived'
+                                                  ? 'Diarsipkan'
+                                                  : 'Nonaktif'}
                                         </Badge>
                                     </div>
-                                    <CardTitle className="mt-2 text-lg">
-                                        {store.name}
-                                    </CardTitle>
+                                    <CardTitle className="mt-2 text-lg">{store.name}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid grid-cols-2 gap-3 px-4 text-sm">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <ShieldCheck className="size-4" />
-                                        <span className="capitalize">
-                                            {store.role}
-                                        </span>
+                                        <span className="capitalize">{store.role}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <Users className="size-4" />
                                         Akses anggota
                                     </div>
+                                    <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                                        <MapPin className="size-4 shrink-0" />
+                                        <span className="truncate">{store.country ?? store.country_code ?? '-'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-muted-foreground">
+                                        <Coins className="size-4" />
+                                        {store.currency_code ?? '-'} {store.currency_symbol}
+                                    </div>
                                 </CardContent>
                                 <CardFooter className="justify-between border-t px-4 pt-3">
                                     {store.role === 'owner' ? (
-                                        <Button variant="ghost" asChild>
-                                            <Link
-                                                href={`/stores/${store.public_id}`}
-                                            >
+                                        <Button variant="ghost" asChild className="h-11">
+                                            <Link href={`/stores/${store.public_id}`}>
                                                 Kelola <ArrowRight />
                                             </Link>
                                         </Button>
                                     ) : (
-                                        <span className="text-xs text-muted-foreground capitalize">
-                                            Akses {store.role}
-                                        </span>
+                                        <span className="text-xs text-muted-foreground capitalize">Akses {store.role}</span>
                                     )}
-                                    {store.status === 'active' &&
-                                        store.membership_status ===
-                                            'active' && (
-                                            <Button
-                                                variant="outline"
-                                                onClick={() =>
-                                                    router.post(
-                                                        `/stores/${store.public_id}/switch`,
-                                                    )
-                                                }
-                                            >
-                                                Pilih toko
-                                            </Button>
-                                        )}
+                                    {store.status === 'active' && store.membership_status === 'active' && (
+                                        <Button
+                                            variant="outline"
+                                            className="h-11"
+                                            onClick={() =>
+                                                router.post(
+                                                    `/stores/${store.public_id}/switch`,
+                                                    {},
+                                                    {
+                                                        preserveState: false,
+                                                        preserveScroll: false,
+                                                    },
+                                                )
+                                            }
+                                        >
+                                            Pilih toko
+                                        </Button>
+                                    )}
                                 </CardFooter>
                             </Card>
                         ))}

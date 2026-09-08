@@ -175,7 +175,7 @@ class SaveProduct
                 Storage::disk('local')->delete($newPhotoPath);
             }
             Storage::disk('local')->delete($newVariantPhotoPaths);
-            throw ValidationException::withMessages(['name' => 'Produk atau varian dengan data yang sama sudah tersedia.']);
+            throw ValidationException::withMessages(['name' => __('Produk atau varian dengan data yang sama sudah tersedia.')]);
         } catch (Throwable $exception) {
             if ($newPhotoPath) {
                 Storage::disk('local')->delete($newPhotoPath);

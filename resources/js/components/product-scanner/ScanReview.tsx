@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import {
     AlertCircle,
     Check,
@@ -14,13 +15,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { formatMoney, localeTag } from '@/lib/currency';
-import type {
-    ScannerCapture,
-    ScannerProductCandidate,
-    ScannerPurpose,
-    ScannerSaleOption,
-    ScannerSelection,
-} from './types';
+import type { ScannerCapture, ScannerProductCandidate, ScannerPurpose, ScannerSaleOption, ScannerSelection } from './types';
 
 const actionLabels: Record<ScannerPurpose, string> = {
     sale: 'Tambahkan ke keranjang',
@@ -58,27 +53,11 @@ export function ScanReview({
     onRemoveResult: (captureId: string, itemIndex: number) => void;
     onRetry: (id: string) => void;
     onRetake: (id: string) => void;
-    onSelectProduct: (
-        captureId: string,
-        itemIndex: number,
-        candidate: ScannerProductCandidate,
-    ) => void;
-    onSelectOption: (
-        captureId: string,
-        itemIndex: number,
-        option: ScannerSaleOption,
-    ) => void;
+    onSelectProduct: (captureId: string, itemIndex: number, candidate: ScannerProductCandidate) => void;
+    onSelectOption: (captureId: string, itemIndex: number, option: ScannerSaleOption) => void;
     onClearProduct: (captureId: string, itemIndex: number) => void;
-    onSetSkipped: (
-        captureId: string,
-        itemIndex: number,
-        skipped: boolean,
-    ) => void;
-    onQuantityChange: (
-        captureId: string,
-        itemIndex: number,
-        quantity: number,
-    ) => void;
+    onSetSkipped: (captureId: string, itemIndex: number, skipped: boolean) => void;
+    onQuantityChange: (captureId: string, itemIndex: number, quantity: number) => void;
     onConfirm: (selections: ScannerSelection[]) => void;
     manualProducts?: ScannerProductCandidate[];
 }) {
@@ -88,37 +67,18 @@ export function ScanReview({
     } | null>(null);
     const [manualQuery, setManualQuery] = useState('');
     const confirmed = selections;
-    const pending = captures.some(
-        (capture) =>
-            capture.status === 'queued' || capture.status === 'recognizing',
-    );
+    const pending = captures.some((capture) => capture.status === 'queued' || capture.status === 'recognizing');
     const unresolved = captures.reduce((total, capture) => {
         if (capture.status === 'failed') {
             return total + 1;
         }
 
-        return (
-            total +
-            capture.results.filter(
-                (result) =>
-                    result.skipped !== true && result.selectedOption === null,
-            ).length
-        );
+        return total + capture.results.filter((result) => result.skipped !== true && result.selectedOption === null).length;
     }, 0);
-    const skipped = captures.reduce(
-        (total, capture) =>
-            total +
-            capture.results.filter((result) => result.skipped === true).length,
-        0,
-    );
-    const canConfirm =
-        captures.length > 0 &&
-        !pending &&
-        unresolved === 0 &&
-        confirmed.length + skipped > 0;
+    const skipped = captures.reduce((total, capture) => total + capture.results.filter((result) => result.skipped === true).length, 0);
+    const canConfirm = captures.length > 0 && !pending && unresolved === 0 && confirmed.length + skipped > 0;
     const estimatedTotal = confirmed.reduce((total, item) => {
-        const unitPrice =
-            purpose === 'purchase' ? item.purchasePrice : item.sellingPrice;
+        const unitPrice = purpose === 'purchase' ? item.purchasePrice : item.sellingPrice;
 
         return total + Number(unitPrice) * item.quantity;
     }, 0);
@@ -133,11 +93,7 @@ export function ScanReview({
             (product) =>
                 product.name.toLocaleLowerCase(localeTag()).includes(query) ||
                 product.options.some((option) =>
-                    [
-                        option.variantName,
-                        option.unitName,
-                        option.unitSymbol,
-                    ].some((value) =>
+                    [option.variantName, option.unitName, option.unitSymbol].some((value) =>
                         value?.toLocaleLowerCase(localeTag()).includes(query),
                     ),
                 ),
@@ -161,9 +117,7 @@ export function ScanReview({
                     <ChevronLeft className="size-5" />
                 </button>
                 <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-black tracking-[-0.03em]">
-                        Periksa hasil
-                    </h2>
+                    <h2 className="text-xl font-black tracking-[-0.03em]">Periksa hasil</h2>
                     <p className="text-xs font-semibold text-[var(--muted-foreground)]">
                         {confirmed.length} siap
                         {unresolved > 0 ? ` · ${unresolved} perlu dipilih` : ''}
@@ -182,26 +136,14 @@ export function ScanReview({
 
             <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-5">
                 {captures.map((capture, captureIndex) => {
-                    if (
-                        capture.status === 'queued' ||
-                        capture.status === 'recognizing'
-                    ) {
+                    if (capture.status === 'queued' || capture.status === 'recognizing') {
                         return (
-                            <div
-                                key={capture.id}
-                                className="flex min-h-24 items-center gap-3 rounded-2xl bg-white p-3 shadow-sm"
-                            >
-                                <CaptureImage
-                                    previewUrl={capture.previewUrl}
-                                    loading
-                                />
+                            <div key={capture.id} className="flex min-h-24 items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
+                                <CaptureImage previewUrl={capture.previewUrl} loading />
                                 <div className="min-w-0 flex-1">
-                                    <p className="font-black">
-                                        Mencari produk…
-                                    </p>
+                                    <p className="font-black">Mencari produk…</p>
                                     <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                                        Foto {captureIndex + 1} sedang
-                                        dicocokkan dengan katalog.
+                                        Foto {captureIndex + 1} sedang dicocokkan dengan katalog.
                                     </p>
                                 </div>
                             </div>
@@ -210,22 +152,23 @@ export function ScanReview({
 
                     if (capture.status === 'failed') {
                         return (
-                            <div
-                                key={capture.id}
-                                className="rounded-2xl bg-[#fff7f2] p-4 shadow-sm"
-                            >
+                            <div key={capture.id} className="rounded-2xl bg-[#fff7f2] p-4 shadow-sm">
                                 <div className="flex gap-3">
                                     <AlertCircle className="mt-0.5 size-5 shrink-0 text-[#bd572f]" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-black">
-                                            Foto belum berhasil diproses
-                                        </p>
-                                        <p className="mt-1 text-sm text-[#795f55]">
-                                            {capture.error}
-                                        </p>
+                                        <p className="font-black">Foto belum berhasil diproses</p>
+                                        <p className="mt-1 text-sm text-[#795f55]">{capture.error}</p>
                                     </div>
                                 </div>
                                 <div className="mt-3 flex flex-wrap gap-2">
+                                    {capture.errorCode === 'SCAN_LIMIT_REACHED' && (
+                                        <Link
+                                            href="/pricing?category=scan_capacity#category-scan_capacity"
+                                            className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none"
+                                        >
+                                            Tambah kuota scan
+                                        </Link>
+                                    )}
                                     {capture.retryable && (
                                         <button
                                             type="button"
@@ -244,9 +187,7 @@ export function ScanReview({
                                         <RotateCcw className="size-4" />
                                         Foto ulang
                                     </button>
-                                    <RemoveButton
-                                        onClick={() => onRemove(capture.id)}
-                                    />
+                                    <RemoveButton onClick={() => onRemove(capture.id)} />
                                 </div>
                             </div>
                         );
@@ -262,26 +203,15 @@ export function ScanReview({
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-black">
                                         {result.skipped
-                                            ? result.match?.name ||
-                                              'Produk dilewati'
+                                            ? result.match?.name || 'Produk dilewati'
                                             : result.match?.name ||
-                                              (result.status === 'uncertain'
-                                                  ? 'Pilih produk'
-                                                  : 'Tidak ditemukan di katalog')}
+                                              (result.status === 'uncertain' ? 'Pilih produk' : 'Tidak ditemukan di katalog')}
                                     </p>
-                                    <ResultStatus
-                                        skipped={result.skipped === true}
-                                        ready={result.selectedOption !== null}
-                                    />
+                                    <ResultStatus skipped={result.skipped === true} ready={result.selectedOption !== null} />
                                 </div>
                                 <RemoveButton
                                     onClick={() =>
-                                        capture.results.length > 1
-                                            ? onRemoveResult(
-                                                  capture.id,
-                                                  result.itemIndex,
-                                              )
-                                            : onRemove(capture.id)
+                                        capture.results.length > 1 ? onRemoveResult(capture.id, result.itemIndex) : onRemove(capture.id)
                                     }
                                 />
                             </div>
@@ -289,13 +219,7 @@ export function ScanReview({
                             {result.skipped ? (
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        onSetSkipped(
-                                            capture.id,
-                                            result.itemIndex,
-                                            false,
-                                        )
-                                    }
+                                    onClick={() => onSetSkipped(capture.id, result.itemIndex, false)}
                                     className="mt-2 min-h-11 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                 >
                                     Batalkan lewati
@@ -307,78 +231,32 @@ export function ScanReview({
                                             captureId={capture.id}
                                             itemIndex={result.itemIndex}
                                             product={result.match}
-                                            selectedOption={
-                                                result.selectedOption
-                                            }
+                                            selectedOption={result.selectedOption}
                                             quantity={result.quantity ?? 1}
-                                            canChangeProduct={
-                                                result.status === 'uncertain'
-                                            }
+                                            canChangeProduct={result.status === 'uncertain'}
                                             purpose={purpose}
                                             onSelectOption={onSelectOption}
                                             onClearProduct={onClearProduct}
-                                            onSkip={() =>
-                                                onSetSkipped(
-                                                    capture.id,
-                                                    result.itemIndex,
-                                                    true,
-                                                )
-                                            }
-                                            onQuantityChange={(quantity) =>
-                                                onQuantityChange(
-                                                    capture.id,
-                                                    result.itemIndex,
-                                                    quantity,
-                                                )
-                                            }
+                                            onSkip={() => onSetSkipped(capture.id, result.itemIndex, true)}
+                                            onQuantityChange={(quantity) => onQuantityChange(capture.id, result.itemIndex, quantity)}
                                         />
                                     ) : result.status === 'uncertain' ? (
                                         <UncertainProduct
                                             captureId={capture.id}
                                             itemIndex={result.itemIndex}
                                             candidates={result.candidates}
-                                            canSearchManual={
-                                                manualProducts.length > 0
-                                            }
+                                            canSearchManual={manualProducts.length > 0}
                                             onSelectProduct={onSelectProduct}
-                                            onManualSearch={() =>
-                                                openManualSearch(
-                                                    capture.id,
-                                                    result.itemIndex,
-                                                )
-                                            }
-                                            onRetake={() =>
-                                                onRetake(capture.id)
-                                            }
-                                            onSkip={() =>
-                                                onSetSkipped(
-                                                    capture.id,
-                                                    result.itemIndex,
-                                                    true,
-                                                )
-                                            }
+                                            onManualSearch={() => openManualSearch(capture.id, result.itemIndex)}
+                                            onRetake={() => onRetake(capture.id)}
+                                            onSkip={() => onSetSkipped(capture.id, result.itemIndex, true)}
                                         />
                                     ) : (
                                         <UnknownProduct
-                                            canSearchManual={
-                                                manualProducts.length > 0
-                                            }
-                                            onManualSearch={() =>
-                                                openManualSearch(
-                                                    capture.id,
-                                                    result.itemIndex,
-                                                )
-                                            }
-                                            onRetake={() =>
-                                                onRetake(capture.id)
-                                            }
-                                            onSkip={() =>
-                                                onSetSkipped(
-                                                    capture.id,
-                                                    result.itemIndex,
-                                                    true,
-                                                )
-                                            }
+                                            canSearchManual={manualProducts.length > 0}
+                                            onManualSearch={() => openManualSearch(capture.id, result.itemIndex)}
+                                            onRetake={() => onRetake(capture.id)}
+                                            onSkip={() => onSetSkipped(capture.id, result.itemIndex, true)}
                                         />
                                     )}
                                 </div>
@@ -391,12 +269,8 @@ export function ScanReview({
             <footer className="border-t border-[var(--app-ink)]/10 bg-[#fffdfc] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+.75rem)]">
                 {purpose === 'purchase' && confirmed.length > 0 && (
                     <div className="mb-3 flex items-center justify-between rounded-xl bg-[var(--app-soft)] px-3 py-2.5">
-                        <span className="text-xs font-bold text-[var(--muted-foreground)]">
-                            Estimasi total beli
-                        </span>
-                        <strong className="text-base font-black text-[var(--app-ink)]">
-                            {money.format(estimatedTotal)}
-                        </strong>
+                        <span className="text-xs font-bold text-[var(--muted-foreground)]">Estimasi total beli</span>
+                        <strong className="text-base font-black text-[var(--app-ink)]">{money.format(estimatedTotal)}</strong>
                     </div>
                 )}
                 <button
@@ -412,9 +286,7 @@ export function ScanReview({
                           : confirmed.length === 0
                             ? 'Selesai'
                             : actionLabels[purpose]}
-                    {canConfirm && confirmed.length > 0
-                        ? ` · ${confirmed.length}`
-                        : ''}
+                    {canConfirm && confirmed.length > 0 ? ` · ${confirmed.length}` : ''}
                 </button>
             </footer>
 
@@ -425,11 +297,7 @@ export function ScanReview({
                     onQueryChange={setManualQuery}
                     onClose={() => setManualTarget(null)}
                     onSelect={(product) => {
-                        onSelectProduct(
-                            manualTarget.captureId,
-                            manualTarget.itemIndex,
-                            product,
-                        );
+                        onSelectProduct(manualTarget.captureId, manualTarget.itemIndex, product);
                         setManualTarget(null);
                     }}
                 />
@@ -458,116 +326,77 @@ function MatchedProduct({
     quantity: number;
     canChangeProduct: boolean;
     purpose: ScannerPurpose;
-    onSelectOption: (
-        captureId: string,
-        itemIndex: number,
-        option: ScannerSaleOption,
-    ) => void;
+    onSelectOption: (captureId: string, itemIndex: number, option: ScannerSaleOption) => void;
     onClearProduct: (captureId: string, itemIndex: number) => void;
     onSkip: () => void;
     onQuantityChange: (quantity: number) => void;
 }) {
-    const [editingOptions, setEditingOptions] = useState(
-        selectedOption === null,
-    );
-    const unitPrice = selectedOption
-        ? Number(
-              purpose === 'purchase'
-                  ? selectedOption.purchasePrice
-                  : selectedOption.sellingPrice,
-          )
-        : 0;
+    const [editingOptions, setEditingOptions] = useState(selectedOption === null);
+    const unitPrice = selectedOption ? Number(purpose === 'purchase' ? selectedOption.purchasePrice : selectedOption.sellingPrice) : 0;
     const subtotal = unitPrice * quantity;
 
     return (
         <>
             {selectedOption && !editingOptions && (
                 <div className="flex items-center justify-between gap-3">
-                    <p className="min-w-0 truncate text-sm font-bold text-[var(--muted-foreground)]">
-                        {optionName(selectedOption)}
-                    </p>
-                    <span className="shrink-0 text-sm font-black text-[var(--app-ink)]">
-                        {money.format(unitPrice)} / unit
-                    </span>
+                    <p className="min-w-0 truncate text-sm font-bold text-[var(--muted-foreground)]">{optionName(selectedOption)}</p>
+                    <span className="shrink-0 text-sm font-black text-[var(--app-ink)]">{money.format(unitPrice)} / unit</span>
                 </div>
             )}
 
-            {product.options.length > 1 &&
-                (selectedOption === null || editingOptions) && (
-                    <fieldset className="mt-3">
-                        <legend className="text-xs font-black text-[var(--muted-foreground)]">
-                            Pilih ukuran/satuan
-                        </legend>
-                        <div className="mt-2 space-y-2">
-                            {product.options.map((option) => {
-                                const checked =
-                                    selectedOption?.id === option.id;
+            {product.options.length > 1 && (selectedOption === null || editingOptions) && (
+                <fieldset className="mt-3">
+                    <legend className="text-xs font-black text-[var(--muted-foreground)]">Pilih ukuran/satuan</legend>
+                    <div className="mt-2 space-y-2">
+                        {product.options.map((option) => {
+                            const checked = selectedOption?.id === option.id;
 
-                                return (
-                                    <label
-                                        key={option.id}
-                                        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 focus-within:ring-2 focus-within:ring-[var(--app-primary)] ${
-                                            checked
-                                                ? 'border-[var(--app-primary)] bg-[var(--app-soft)]'
-                                                : 'border-[var(--app-ink)]/12 bg-[#fffaf7]'
-                                        }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name={`sale-option-${captureId}-${itemIndex}`}
-                                            checked={checked}
-                                            onChange={() => {
-                                                onSelectOption(
-                                                    captureId,
-                                                    itemIndex,
-                                                    option,
-                                                );
-                                                setEditingOptions(false);
-                                            }}
-                                            className="size-4 accent-[var(--app-primary)]"
-                                        />
-                                        <span className="min-w-0 flex-1">
-                                            <span className="block text-sm font-black">
-                                                {optionName(option)}
+                            return (
+                                <label
+                                    key={option.id}
+                                    className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 focus-within:ring-2 focus-within:ring-[var(--app-primary)] ${
+                                        checked
+                                            ? 'border-[var(--app-primary)] bg-[var(--app-soft)]'
+                                            : 'border-[var(--app-ink)]/12 bg-[#fffaf7]'
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name={`sale-option-${captureId}-${itemIndex}`}
+                                        checked={checked}
+                                        onChange={() => {
+                                            onSelectOption(captureId, itemIndex, option);
+                                            setEditingOptions(false);
+                                        }}
+                                        className="size-4 accent-[var(--app-primary)]"
+                                    />
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-sm font-black">{optionName(option)}</span>
+                                        {purpose === 'sale' && (
+                                            <span className="block text-xs text-[var(--muted-foreground)]">
+                                                Stok {Number(option.stockQuantity).toLocaleString(localeTag())}
                                             </span>
-                                            {purpose === 'sale' && (
-                                                <span className="block text-xs text-[var(--muted-foreground)]">
-                                                    Stok{' '}
-                                                    {Number(
-                                                        option.stockQuantity,
-                                                    ).toLocaleString(
-                                                        localeTag(),
-                                                    )}
-                                                </span>
-                                            )}
-                                        </span>
-                                        <span className="shrink-0 text-sm font-black">
-                                            {money.format(
-                                                Number(
-                                                    purpose === 'purchase'
-                                                        ? option.purchasePrice
-                                                        : option.sellingPrice,
-                                                ),
-                                            )}
-                                        </span>
-                                    </label>
-                                );
-                            })}
-                        </div>
-                    </fieldset>
-                )}
+                                        )}
+                                    </span>
+                                    <span className="shrink-0 text-sm font-black">
+                                        {money.format(Number(purpose === 'purchase' ? option.purchasePrice : option.sellingPrice))}
+                                    </span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                </fieldset>
+            )}
 
-            {selectedOption &&
-                product.options.length > 1 &&
-                !editingOptions && (
-                    <button
-                        type="button"
-                        onClick={() => setEditingOptions(true)}
-                        className="mt-2 min-h-10 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
-                    >
-                        Ubah ukuran/satuan
-                    </button>
-                )}
+            {selectedOption && product.options.length > 1 && !editingOptions && (
+                <button
+                    type="button"
+                    onClick={() => setEditingOptions(true)}
+                    className="mt-2 min-h-10 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
+                >
+                    Ubah ukuran/satuan
+                </button>
+            )}
 
             {selectedOption && (
                 <div className="mt-3 space-y-2">
@@ -578,26 +407,15 @@ function MatchedProduct({
                             min="0.000001"
                             step="any"
                             value={quantity}
-                            onChange={(event) =>
-                                onQuantityChange(
-                                    Math.max(
-                                        0.000001,
-                                        Number(event.target.value) || 1,
-                                    ),
-                                )
-                            }
+                            onChange={(event) => onQuantityChange(Math.max(0.000001, Number(event.target.value) || 1))}
                             className="h-10 w-24 rounded-xl border border-[var(--app-ink)]/15 px-3 text-right text-sm font-black outline-none focus:border-[var(--app-primary)]"
                         />
                     </label>
                     <div className="flex items-center justify-between rounded-xl bg-[#fffaf7] px-3 py-2 text-xs">
                         <span className="font-bold text-[var(--muted-foreground)]">
-                            {purpose === 'purchase'
-                                ? 'Subtotal beli'
-                                : 'Subtotal'}
+                            {purpose === 'purchase' ? 'Subtotal beli' : 'Subtotal'}
                         </span>
-                        <strong className="text-sm font-black text-[var(--app-ink)]">
-                            {money.format(subtotal)}
-                        </strong>
+                        <strong className="text-sm font-black text-[var(--app-ink)]">{money.format(subtotal)}</strong>
                     </div>
                 </div>
             )}
@@ -640,11 +458,7 @@ function UncertainProduct({
     itemIndex: number;
     candidates: ScannerProductCandidate[];
     canSearchManual: boolean;
-    onSelectProduct: (
-        captureId: string,
-        itemIndex: number,
-        candidate: ScannerProductCandidate,
-    ) => void;
+    onSelectProduct: (captureId: string, itemIndex: number, candidate: ScannerProductCandidate) => void;
     onManualSearch: () => void;
     onRetake: () => void;
     onSkip: () => void;
@@ -657,37 +471,20 @@ function UncertainProduct({
                     <button
                         type="button"
                         key={candidate.productPublicId}
-                        onClick={() =>
-                            onSelectProduct(captureId, itemIndex, candidate)
-                        }
+                        onClick={() => onSelectProduct(captureId, itemIndex, candidate)}
                         className="flex min-h-12 w-full items-center gap-3 rounded-xl bg-[var(--app-soft)] px-3 py-2 text-left hover:bg-[var(--app-soft-strong)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                     >
-                        {candidate.photoUrl && (
-                            <img
-                                src={candidate.photoUrl}
-                                alt=""
-                                className="size-9 shrink-0 rounded-lg object-cover"
-                            />
-                        )}
+                        {candidate.photoUrl && <img src={candidate.photoUrl} alt="" className="size-9 shrink-0 rounded-lg object-cover" />}
                         <span className="min-w-0 flex-1">
                             {index === 0 && (
-                                <span className="block text-[11px] font-bold text-[var(--muted-foreground)]">
-                                    Paling cocok
-                                </span>
+                                <span className="block text-[11px] font-bold text-[var(--muted-foreground)]">Paling cocok</span>
                             )}
-                            <span className="block truncate text-sm font-black">
-                                {candidate.name}
-                            </span>
+                            <span className="block truncate text-sm font-black">{candidate.name}</span>
                         </span>
                     </button>
                 ))}
             </div>
-            <RecoveryActions
-                canSearchManual={canSearchManual}
-                onManualSearch={onManualSearch}
-                onRetake={onRetake}
-                onSkip={onSkip}
-            />
+            <RecoveryActions canSearchManual={canSearchManual} onManualSearch={onManualSearch} onRetake={onRetake} onSkip={onSkip} />
         </>
     );
 }
@@ -706,12 +503,7 @@ function UnknownProduct({
     return (
         <>
             <p className="font-black">Tidak ditemukan di katalog</p>
-            <RecoveryActions
-                canSearchManual={canSearchManual}
-                onManualSearch={onManualSearch}
-                onRetake={onRetake}
-                onSkip={onSkip}
-            />
+            <RecoveryActions canSearchManual={canSearchManual} onManualSearch={onManualSearch} onRetake={onRetake} onSkip={onSkip} />
         </>
     );
 }
@@ -763,13 +555,7 @@ function ManualButton({ onClick }: { onClick: () => void }) {
     );
 }
 
-function ResultStatus({
-    skipped,
-    ready,
-}: {
-    skipped: boolean;
-    ready: boolean;
-}) {
+function ResultStatus({ skipped, ready }: { skipped: boolean; ready: boolean }) {
     if (skipped) {
         return (
             <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[var(--muted-foreground)]">
@@ -788,11 +574,7 @@ function ResultStatus({
         );
     }
 
-    return (
-        <span className="mt-1 inline-flex text-xs font-bold text-[#a55a38]">
-            Perlu dipilih
-        </span>
-    );
+    return <span className="mt-1 inline-flex text-xs font-bold text-[#a55a38]">Perlu dipilih</span>;
 }
 
 function ManualProductPicker({
@@ -820,12 +602,8 @@ function ManualProductPicker({
                     <ChevronLeft className="size-5" />
                 </button>
                 <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-black tracking-[-0.03em]">
-                        Cari produk
-                    </h2>
-                    <p className="text-xs font-semibold text-[var(--muted-foreground)]">
-                        Pilih untuk foto ini
-                    </p>
+                    <h2 className="text-xl font-black tracking-[-0.03em]">Cari produk</h2>
+                    <p className="text-xs font-semibold text-[var(--muted-foreground)]">Pilih untuk foto ini</p>
                 </div>
                 <button
                     type="button"
@@ -861,13 +639,9 @@ function ManualProductPicker({
                     >
                         <CaptureImage previewUrl={product.photoUrl ?? ''} />
                         <span className="min-w-0 flex-1">
-                            <span className="line-clamp-2 text-sm font-black">
-                                {product.name}
-                            </span>
+                            <span className="line-clamp-2 text-sm font-black">{product.name}</span>
                             <span className="mt-1 block text-xs font-semibold text-[var(--muted-foreground)]">
-                                {product.options.length > 1
-                                    ? `${product.options.length} pilihan`
-                                    : optionName(product.options[0])}
+                                {product.options.length > 1 ? `${product.options.length} pilihan` : optionName(product.options[0])}
                             </span>
                         </span>
                     </button>
@@ -877,12 +651,8 @@ function ManualProductPicker({
                     <div className="grid min-h-40 place-items-center px-6 text-center">
                         <div>
                             <PackageSearch className="mx-auto size-7 text-[var(--muted-foreground)]" />
-                            <p className="mt-2 text-sm font-black">
-                                Produk tidak ditemukan
-                            </p>
-                            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                                Coba kata pencarian lain.
-                            </p>
+                            <p className="mt-2 text-sm font-black">Produk tidak ditemukan</p>
+                            <p className="mt-1 text-xs text-[var(--muted-foreground)]">Coba kata pencarian lain.</p>
                         </div>
                     </div>
                 )}
@@ -891,22 +661,10 @@ function ManualProductPicker({
     );
 }
 
-function CaptureImage({
-    previewUrl,
-    loading = false,
-}: {
-    previewUrl: string;
-    loading?: boolean;
-}) {
+function CaptureImage({ previewUrl, loading = false }: { previewUrl: string; loading?: boolean }) {
     return (
         <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-[var(--app-soft)]">
-            {previewUrl && (
-                <img
-                    src={previewUrl}
-                    alt=""
-                    className={`size-full object-cover ${loading ? 'opacity-70' : ''}`}
-                />
-            )}
+            {previewUrl && <img src={previewUrl} alt="" className={`size-full object-cover ${loading ? 'opacity-70' : ''}`} />}
             {loading && (
                 <span className="absolute inset-0 grid place-items-center bg-[var(--app-primary)]/20">
                     <LoaderCircle className="size-6 animate-spin text-white" />

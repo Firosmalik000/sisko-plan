@@ -41,9 +41,7 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">
-                                    {t('Nama lengkap')}
-                                </Label>
+                                <Label htmlFor="name">{t('Nama lengkap')}</Label>
                                 <Input
                                     id="name"
                                     type="text"
@@ -54,16 +52,11 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                     name="name"
                                     placeholder={t('Nama lengkap')}
                                 />
-                                <InputError
-                                    message={errors.name}
-                                    className="mt-2"
-                                />
+                                <InputError message={errors.name} className="mt-2" />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">
-                                    {t('Alamat email')}
-                                </Label>
+                                <Label htmlFor="email">{t('Alamat email')}</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -77,9 +70,7 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password">
-                                    {t('Kata sandi')}
-                                </Label>
+                                <Label htmlFor="password">{t('Kata sandi')}</Label>
                                 <PasswordInput
                                     id="password"
                                     required
@@ -93,9 +84,7 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    {t('Konfirmasi kata sandi')}
-                                </Label>
+                                <Label htmlFor="password_confirmation">{t('Konfirmasi kata sandi')}</Label>
                                 <PasswordInput
                                     id="password_confirmation"
                                     required
@@ -105,17 +94,10 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                     placeholder={t('Konfirmasi kata sandi')}
                                     passwordrules={passwordRules}
                                 />
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
+                                <InputError message={errors.password_confirmation} />
                             </div>
 
-                            <Button
-                                type="submit"
-                                className="mt-2 w-full"
-                                tabIndex={5}
-                                data-test="register-user-button"
-                            >
+                            <Button type="submit" className="mt-2 w-full" tabIndex={5} data-test="register-user-button">
                                 {processing && <Spinner />}
                                 {t('Buat akun')}
                             </Button>

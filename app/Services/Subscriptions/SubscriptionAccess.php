@@ -3,6 +3,7 @@
 namespace App\Services\Subscriptions;
 
 use App\Enums\MembershipStatus;
+use App\Enums\StoreStatus;
 use App\Enums\SubscriptionStatus;
 use App\Models\Plan;
 use App\Models\Product;
@@ -15,16 +16,21 @@ use Illuminate\Validation\ValidationException;
 
 class SubscriptionAccess
 {
-    public function __construct(private SubscriptionPeriods $periods) {}
+    public function __construct(
+        private SubscriptionPeriods $periods,
+        private SubscriptionEntitlements $entitlements,
+    ) {}
 
-    /** @return array{can_write:bool,reason:?string,status:string,plan_name:string,max_stores:int,max_products:int,max_members:int,stores_used:int,products_used:int,members_used:int} */
+    /** @return array{can_write:bool,reason:?string,status:string,plan_name:string,max_stores:int,max_products:int,max_members:int,max_scans:int,stores_used:int,products_used:int,members_used:int,scans_used:int,scan_period_start:?string,scan_period_end:?string} */
     public function summary(Store $store): array
     {
         $subscription = $this->subscriptionFor($store);
-        $storesUsed = Store::query()->where('owner_user_id', $store->owner_user_id)->count();
+        $storesUsed = $this->storesUsed($store->owner_user_id);
         $productsUsed = Product::query()
             ->where('is_active', true)
-            ->whereHas('store', fn ($query) => $query->where('owner_user_id', $store->owner_user_id))
+            ->whereHas('store', fn ($query) => $query
+                ->where('owner_user_id', $store->owner_user_id)
+                ->where('status', '!=', StoreStatus::Archived->value))
             ->count();
         $membersUsed = $this->activeMembersCount($store->owner_user_id);
 
@@ -37,25 +43,34 @@ class SubscriptionAccess
                 'max_stores' => 0,
                 'max_products' => 0,
                 'max_members' => 0,
+                'max_scans' => 0,
                 'stores_used' => $storesUsed,
                 'products_used' => $productsUsed,
                 'members_used' => $membersUsed,
+                'scans_used' => 0,
+                'scan_period_start' => null,
+                'scan_period_end' => null,
             ];
         }
 
         $reason = $this->blockedReason($subscription);
+        $limits = $this->entitlements->forOwner($store->owner_user_id, $subscription->plan);
 
         return [
             'can_write' => $reason === null,
             'reason' => $reason === null ? null : __($reason),
             'status' => $subscription->status->value,
             'plan_name' => $subscription->plan->name,
-            'max_stores' => $subscription->plan->max_stores,
-            'max_products' => $subscription->plan->max_products,
-            'max_members' => $subscription->plan->max_members,
+            'max_stores' => $limits['max_stores'],
+            'max_products' => $limits['max_products'],
+            'max_members' => $limits['max_members'],
+            'max_scans' => $limits['max_scans'],
             'stores_used' => $storesUsed,
             'products_used' => $productsUsed,
             'members_used' => $membersUsed,
+            'scans_used' => $limits['scans_used'],
+            'scan_period_start' => $limits['scan_period_start'],
+            'scan_period_end' => $limits['scan_period_end'],
         ];
     }
 
@@ -65,7 +80,9 @@ class SubscriptionAccess
 
         if ($reason !== null) {
             throw ValidationException::withMessages([
-                'subscription' => $reason.' Akses portal toko dinonaktifkan.',
+                'subscription' => __('Akses portal toko dinonaktifkan. :reason', [
+                    'reason' => __($reason),
+                ]),
             ]);
         }
     }
@@ -96,21 +113,26 @@ class SubscriptionAccess
         $subscription = Subscription::query()->with('plan')->where('user_id', $owner->id)->first();
         $plan = ($subscription === null ? null : $subscription->plan)
             ?? Plan::query()->where(['is_default' => true, 'is_active' => true])->firstOrFail();
-        $storesUsed = Store::query()->where('owner_user_id', $owner->id)->count();
+        $storesUsed = $this->storesUsed($owner->id);
         $reason = null;
 
         if ($subscription !== null && ($blockedReason = $this->blockedReason($subscription)) !== null) {
-            $reason = $blockedReason.' Toko baru tidak dapat dibuat.';
+            $reason = __('Toko baru tidak dapat dibuat. :reason', [
+                'reason' => __($blockedReason),
+            ]);
         }
 
-        $limit = $plan->max_stores;
+        $limit = $this->entitlements->forOwner($owner->id, $plan)['max_stores'];
         if ($reason === null && $limit > 0 && $storesUsed >= $limit) {
-            $reason = "Batas {$limit} toko pada paket {$plan->name} sudah tercapai.";
+            $reason = __('Batas :limit toko pada paket :plan sudah tercapai.', [
+                'limit' => $limit,
+                'plan' => $plan->name,
+            ]);
         }
 
         return [
             'can_create' => $reason === null,
-            'reason' => $reason === null ? null : __($reason),
+            'reason' => $reason,
             'plan_name' => $plan->name,
             'stores_used' => $storesUsed,
             'max_stores' => $limit,
@@ -121,15 +143,20 @@ class SubscriptionAccess
     {
         $subscription = $this->lockedSubscriptionFor($store);
         $this->assertOperational($subscription);
-        $limit = $subscription->plan->max_products;
+        $limit = $this->entitlements->forOwner($store->owner_user_id, $subscription->plan)['max_products'];
         $productsUsed = Product::query()
             ->where('is_active', true)
-            ->whereHas('store', fn ($query) => $query->where('owner_user_id', $store->owner_user_id))
+            ->whereHas('store', fn ($query) => $query
+                ->where('owner_user_id', $store->owner_user_id)
+                ->where('status', '!=', StoreStatus::Archived->value))
             ->count();
 
         if ($limit > 0 && $productsUsed >= $limit) {
             throw ValidationException::withMessages([
-                'name' => "Batas {$limit} produk aktif untuk seluruh toko pada paket {$subscription->plan->name} sudah tercapai.",
+                'name' => __('Batas :limit produk aktif untuk seluruh toko pada paket :plan sudah tercapai.', [
+                    'limit' => $limit,
+                    'plan' => $subscription->plan->name,
+                ]),
             ]);
         }
     }
@@ -143,37 +170,54 @@ class SubscriptionAccess
             return;
         }
 
-        $limit = $subscription->plan->max_members;
+        $limit = $this->entitlements->forOwner($store->owner_user_id, $subscription->plan)['max_members'];
         if ($limit > 0 && $this->activeMembersCount($store->owner_user_id) >= $limit) {
             throw ValidationException::withMessages([
-                'email' => "Batas {$limit} staf aktif untuk seluruh toko pada paket {$subscription->plan->name} sudah tercapai.",
+                'email' => __('Batas :limit staf aktif untuk seluruh toko pada paket :plan sudah tercapai.', [
+                    'limit' => $limit,
+                    'plan' => $subscription->plan->name,
+                ]),
             ]);
         }
     }
 
     public function assertPlanCapacity(User $owner, Plan $plan): void
     {
-        $storesUsed = Store::query()->where('owner_user_id', $owner->id)->count();
+        $limits = $this->entitlements->forOwner($owner->id, $plan);
+        $storesUsed = $this->storesUsed($owner->id);
         $productsUsed = Product::query()
             ->where('is_active', true)
-            ->whereHas('store', fn ($query) => $query->where('owner_user_id', $owner->id))
+            ->whereHas('store', fn ($query) => $query
+                ->where('owner_user_id', $owner->id)
+                ->where('status', '!=', StoreStatus::Archived->value))
             ->count();
         $membersUsed = $this->activeMembersCount($owner->id);
 
         $messages = [];
-        if ($plan->max_stores > 0 && $storesUsed > $plan->max_stores) {
-            $messages[] = "{$storesUsed} toko aktif melebihi batas {$plan->max_stores}.";
+        if ($limits['max_stores'] > 0 && $storesUsed > $limits['max_stores']) {
+            $messages[] = __(':used toko aktif melebihi batas :limit.', [
+                'used' => $storesUsed,
+                'limit' => $limits['max_stores'],
+            ]);
         }
-        if ($plan->max_products > 0 && $productsUsed > $plan->max_products) {
-            $messages[] = "{$productsUsed} produk aktif melebihi batas {$plan->max_products}.";
+        if ($limits['max_products'] > 0 && $productsUsed > $limits['max_products']) {
+            $messages[] = __(':used produk aktif melebihi batas :limit.', [
+                'used' => $productsUsed,
+                'limit' => $limits['max_products'],
+            ]);
         }
-        if ($plan->max_members > 0 && $membersUsed > $plan->max_members) {
-            $messages[] = "{$membersUsed} staf aktif melebihi batas {$plan->max_members}.";
+        if ($limits['max_members'] > 0 && $membersUsed > $limits['max_members']) {
+            $messages[] = __(':used staf aktif melebihi batas :limit.', [
+                'used' => $membersUsed,
+                'limit' => $limits['max_members'],
+            ]);
         }
 
         if ($messages !== []) {
             throw ValidationException::withMessages([
-                'plan_id' => 'Paket belum dapat dipilih: '.implode(' ', $messages),
+                'plan_id' => __('Paket belum dapat dipilih: :reasons', [
+                    'reasons' => implode(' ', $messages),
+                ]),
             ]);
         }
     }
@@ -200,7 +244,9 @@ class SubscriptionAccess
     {
         if (($reason = $this->blockedReason($subscription)) !== null) {
             throw ValidationException::withMessages([
-                'subscription' => $reason.' Akses portal toko dinonaktifkan.',
+                'subscription' => __('Akses portal toko dinonaktifkan. :reason', [
+                    'reason' => __($reason),
+                ]),
             ]);
         }
     }
@@ -210,6 +256,7 @@ class SubscriptionAccess
         return DB::table('store_memberships')
             ->join('stores', 'stores.id', '=', 'store_memberships.store_id')
             ->where('stores.owner_user_id', $ownerId)
+            ->where('stores.status', '!=', StoreStatus::Archived->value)
             ->where('store_memberships.user_id', '!=', $ownerId)
             ->where('store_memberships.status', MembershipStatus::Active->value)
             ->distinct()
@@ -221,6 +268,7 @@ class SubscriptionAccess
         return DB::table('store_memberships')
             ->join('stores', 'stores.id', '=', 'store_memberships.store_id')
             ->where('stores.owner_user_id', $ownerId)
+            ->where('stores.status', '!=', StoreStatus::Archived->value)
             ->where('store_memberships.user_id', $memberId)
             ->where('store_memberships.status', MembershipStatus::Active->value)
             ->exists();
@@ -259,5 +307,13 @@ class SubscriptionAccess
             SubscriptionStatus::Suspended => 'Subscription ditangguhkan oleh platform.',
             SubscriptionStatus::Cancelled => 'Subscription telah dibatalkan.',
         };
+    }
+
+    private function storesUsed(int $ownerId): int
+    {
+        return Store::query()
+            ->where('owner_user_id', $ownerId)
+            ->where('status', '!=', StoreStatus::Archived->value)
+            ->count();
     }
 }

@@ -1,10 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    CalendarDays,
-    ReceiptText,
-    RotateCcw,
-    ShoppingCart,
-} from 'lucide-react';
+import { CalendarDays, ReceiptText, RotateCcw, ShoppingCart } from 'lucide-react';
 import { ledgerDateTime, money } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
@@ -65,9 +60,7 @@ export default function SalesIndex({
 
     return (
         <>
-            <Head
-                title={returnMode ? 'Retur penjualan' : 'Riwayat penjualan'}
-            />
+            <Head title={returnMode ? 'Retur penjualan' : 'Riwayat penjualan'} />
             <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto max-w-6xl space-y-4">
                     <header className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
@@ -76,21 +69,13 @@ export default function SalesIndex({
                                 <span
                                     className={`grid size-11 shrink-0 place-items-center rounded-xl ${returnMode ? 'bg-red-50 text-red-700' : 'bg-[var(--app-soft)] text-[var(--app-primary)]'}`}
                                 >
-                                    {returnMode ? (
-                                        <RotateCcw className="size-5" />
-                                    ) : (
-                                        <ReceiptText className="size-5" />
-                                    )}
+                                    {returnMode ? <RotateCcw className="size-5" /> : <ReceiptText className="size-5" />}
                                 </span>
                                 <div className="min-w-0">
                                     <h1 className="text-lg leading-tight font-black tracking-[-0.03em] text-[var(--app-ink)] sm:text-2xl">
-                                        {returnMode
-                                            ? 'Pilih Transaksi Retur'
-                                            : 'Riwayat Transaksi'}
+                                        {returnMode ? 'Pilih Transaksi Retur' : 'Riwayat Transaksi'}
                                     </h1>
-                                    <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">
-                                        {sales.total} transaksi
-                                    </p>
+                                    <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">{sales.total} transaksi</p>
                                 </div>
                             </div>
                             <Link
@@ -109,19 +94,11 @@ export default function SalesIndex({
                             <select
                                 id="sales-period"
                                 value={filters.period}
-                                onChange={(event) =>
-                                    updatePeriod(
-                                        event.target
-                                            .value as SalesFilters['period'],
-                                    )
-                                }
+                                onChange={(event) => updatePeriod(event.target.value as SalesFilters['period'])}
                                 className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--app-ink)]/10 bg-[#fffaf7] px-3 text-sm font-bold text-[var(--app-ink)] outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15 sm:max-w-56"
                             >
                                 {periodOptions.map((option) => (
-                                    <option
-                                        key={option.value}
-                                        value={option.value}
-                                    >
+                                    <option key={option.value} value={option.value}>
                                         {option.label}
                                     </option>
                                 ))}
@@ -136,69 +113,37 @@ export default function SalesIndex({
                                     className="grid gap-3 p-4 transition hover:bg-[#fffaf7] sm:p-5 md:grid-cols-[1.4fr_1fr_1fr_auto] md:items-center"
                                 >
                                     <div>
-                                        <p className="font-bold text-slate-900">
-                                            {sale.document_number}
-                                        </p>
+                                        <p className="font-bold text-slate-900">{sale.document_number}</p>
                                         <p className="mt-1 text-xs text-slate-500">
-                                            {ledgerDateTime(
-                                                sale.occurred_at,
-                                                timezone,
-                                            )}{' '}
-                                            · {sale.account_name}
+                                            {ledgerDateTime(sale.occurred_at, timezone)} · {sale.account_name}
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-slate-500">
-                                            Pendapatan neto
-                                        </p>
-                                        <p className="font-black text-[var(--app-ink)]">
-                                            {money(sale.net_revenue)}
-                                        </p>
+                                        <p className="text-xs text-slate-500">Pendapatan neto</p>
+                                        <p className="font-black text-[var(--app-ink)]">{money(sale.net_revenue)}</p>
                                         {Number(sale.refund_amount) > 0 && (
-                                            <p className="text-xs font-semibold text-red-600">
-                                                Refund{' '}
-                                                {money(sale.refund_amount)}
-                                            </p>
+                                            <p className="text-xs font-semibold text-red-600">Refund {money(sale.refund_amount)}</p>
                                         )}
                                     </div>
                                     {canViewProfit ? (
                                         <div>
-                                            <p className="text-xs text-slate-500">
-                                                HPP / laba kotor neto
-                                            </p>
+                                            <p className="text-xs text-slate-500">HPP / laba kotor neto</p>
                                             <p className="font-semibold text-slate-800">
                                                 {money(sale.net_cogs ?? 0)} /{' '}
-                                                <span className="text-teal-700">
-                                                    {money(
-                                                        sale.net_gross_profit ??
-                                                            0,
-                                                    )}
-                                                </span>
+                                                <span className="text-teal-700">{money(sale.net_gross_profit ?? 0)}</span>
                                             </p>
                                         </div>
                                     ) : (
                                         <div />
                                     )}
                                     <div className="flex items-center justify-end gap-2">
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            variant="outline"
-                                        >
-                                            <Link
-                                                href={`/sales/${sale.public_id}?${contextQuery}`}
-                                            >
-                                                Invoice
-                                            </Link>
+                                        <Button asChild size="sm" variant="outline">
+                                            <Link href={`/sales/${sale.public_id}?${contextQuery}`}>Invoice</Link>
                                         </Button>
                                         {canReturn && (
                                             <Button asChild size="sm">
-                                                <Link
-                                                    href={`/sales/${sale.public_id}/returns/create?${contextQuery}`}
-                                                >
-                                                    {returnMode
-                                                        ? 'Pilih'
-                                                        : 'Retur'}
+                                                <Link href={`/sales/${sale.public_id}/returns/create?${contextQuery}`}>
+                                                    {returnMode ? 'Pilih' : 'Retur'}
                                                 </Link>
                                             </Button>
                                         )}
@@ -208,13 +153,8 @@ export default function SalesIndex({
                         </div>
                         {sales.data.length === 0 && (
                             <div className="px-5 py-14 text-center">
-                                <p className="text-lg font-black text-[var(--app-ink)]">
-                                    Tidak ada transaksi pada periode ini
-                                </p>
-                                <Link
-                                    href="/pos"
-                                    className="mt-3 inline-block text-sm font-bold text-orange-700"
-                                >
+                                <p className="text-lg font-black text-[var(--app-ink)]">Tidak ada transaksi pada periode ini</p>
+                                <Link href="/pos" className="mt-3 inline-block text-sm font-bold text-orange-700">
                                     Mulai transaksi pertama
                                 </Link>
                             </div>

@@ -31,7 +31,7 @@ class PostStockAdjustment
                     return $existing;
                 }
                 if (! in_array($type, ['opening', 'increase', 'decrease', 'damaged', 'lost', 'opname_in', 'opname_out'], true)) {
-                    throw ValidationException::withMessages(['type' => 'Jenis penyesuaian stok tidak valid.']);
+                    throw ValidationException::withMessages(['type' => __('Jenis penyesuaian stok tidak valid.')]);
                 }
                 $document = StockAdjustment::create([
                     'store_id' => $store->id, 'stock_count_id' => $stockCountId,

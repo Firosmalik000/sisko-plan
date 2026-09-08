@@ -1,14 +1,4 @@
-import {
-    Camera,
-    Images,
-    Pause,
-    Play,
-    ScanLine,
-    SwitchCamera,
-    X,
-    Zap,
-    ZapOff,
-} from 'lucide-react';
+import { Camera, Images, Pause, Play, ScanLine, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
 import type { ChangeEvent, RefObject } from 'react';
 import { CaptureTray } from './CaptureTray';
 import type { ScannerCapture } from './types';
@@ -66,13 +56,7 @@ export function CameraViewport({
 
     return (
         <div className="relative flex h-svh w-full flex-col overflow-hidden bg-[var(--app-ink)] text-white">
-            <video
-                ref={videoRef}
-                muted
-                playsInline
-                className="absolute inset-0 size-full object-cover"
-                aria-label="Pratinjau kamera"
-            />
+            <video ref={videoRef} muted playsInline className="absolute inset-0 size-full object-cover" aria-label="Pratinjau kamera" />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,28,24,.7)_0%,transparent_25%,transparent_62%,rgba(8,28,24,.9)_100%)]" />
 
             <header className="relative z-10 grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-start gap-2 px-[max(1rem,env(safe-area-inset-left))] pt-[calc(env(safe-area-inset-top)+.75rem)] sm:gap-3">
@@ -85,15 +69,9 @@ export function CameraViewport({
                     <X className="size-5" />
                 </button>
                 <div className="min-w-0 rounded-xl bg-[var(--app-ink)]/75 px-2 py-2 text-center backdrop-blur-sm sm:px-3">
-                    <p className="text-sm font-black">
-                        {scanMode === 'photo'
-                            ? 'Arahkan, tahan stabil'
-                            : 'Arahkan ke barcode'}
-                    </p>
+                    <p className="text-sm font-black">{scanMode === 'photo' ? 'Arahkan, tahan stabil' : 'Arahkan ke barcode'}</p>
                     <p className="text-[11px] text-[var(--app-soft-strong)]">
-                        {scanMode === 'photo'
-                            ? 'Foto otomatis setelah stabil 1,5 detik'
-                            : 'Hasil terbaca langsung diperiksa'}
+                        {scanMode === 'photo' ? 'Foto otomatis setelah stabil 1,5 detik' : 'Hasil terbaca langsung diperiksa'}
                     </p>
                 </div>
                 <button
@@ -103,11 +81,7 @@ export function CameraViewport({
                     className="grid size-11 place-items-center rounded-full bg-[var(--app-ink)]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
                     aria-label={torchOn ? 'Matikan lampu' : 'Nyalakan lampu'}
                 >
-                    {torchOn ? (
-                        <Zap className="size-5" />
-                    ) : (
-                        <ZapOff className="size-5" />
-                    )}
+                    {torchOn ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
                 </button>
             </header>
 
@@ -119,12 +93,8 @@ export function CameraViewport({
                         aria-live="polite"
                     >
                         <Camera className="mx-auto size-8 text-[#d66a35]" />
-                        <p className="mt-3 text-base font-black">
-                            Kamera belum tersedia
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">
-                            {error}
-                        </p>
+                        <p className="mt-3 text-base font-black">Kamera belum tersedia</p>
+                        <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{error}</p>
                         <button
                             type="button"
                             onClick={onRetry}
@@ -198,9 +168,7 @@ export function CameraViewport({
                         disabled={scanMode === 'barcode'}
                         className="flex min-h-12 shrink-0 items-center gap-1.5 rounded-full bg-[var(--app-ink)]/80 px-3 text-[11px] font-bold text-[var(--app-soft-strong)] backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-45"
                         aria-label={
-                            scanMode === 'barcode'
-                                ? 'Barcode terbaca otomatis'
-                                : `Foto otomatis ${autoPaused ? 'dijeda' : 'aktif'}`
+                            scanMode === 'barcode' ? 'Barcode terbaca otomatis' : `Foto otomatis ${autoPaused ? 'dijeda' : 'aktif'}`
                         }
                     >
                         {scanMode === 'barcode' ? (
@@ -210,20 +178,11 @@ export function CameraViewport({
                         ) : (
                             <Pause className="size-4" />
                         )}
-                        <span>
-                            {scanMode === 'barcode'
-                                ? 'Otomatis'
-                                : autoPaused
-                                  ? 'Auto jeda'
-                                  : 'Auto aktif'}
-                        </span>
+                        <span>{scanMode === 'barcode' ? 'Otomatis' : autoPaused ? 'Auto jeda' : 'Auto aktif'}</span>
                     </button>
                 </div>
                 {barcodeError && (
-                    <p
-                        role="alert"
-                        className="mx-5 mb-3 rounded-xl bg-red-950/75 px-3 py-2 text-center text-xs font-bold text-red-100"
-                    >
+                    <p role="alert" className="mx-5 mb-3 rounded-xl bg-red-950/75 px-3 py-2 text-center text-xs font-bold text-red-100">
                         {barcodeError}
                     </p>
                 )}
@@ -239,8 +198,7 @@ export function CameraViewport({
                               ? 'Produk dikenali. Membuka hasil…'
                               : photoStatus === 'not_found'
                                 ? 'Produk belum dikenali. Ubah posisi, lalu tahan stabil.'
-                                : photoError ||
-                                  'Foto gagal diproses. Ubah posisi, lalu coba lagi.'}
+                                : photoError || 'Foto gagal diproses. Ubah posisi, lalu coba lagi.'}
                     </p>
                 )}
                 {scanMode === 'barcode' && (
@@ -262,13 +220,7 @@ export function CameraViewport({
                     <label className="grid size-12 cursor-pointer place-items-center rounded-2xl bg-white/12 text-white focus-within:ring-2 focus-within:ring-white">
                         <Images className="size-5" />
                         <span className="sr-only">Pilih dari galeri</span>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={onGallery}
-                            className="sr-only"
-                        />
+                        <input type="file" accept="image/*" multiple onChange={onGallery} className="sr-only" />
                     </label>
                     <button
                         type="button"

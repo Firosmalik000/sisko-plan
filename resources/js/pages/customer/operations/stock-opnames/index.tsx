@@ -1,10 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ArrowRight, ClipboardList, PackageCheck, Plus } from 'lucide-react';
-import {
-    LedgerCard,
-    ledgerDateTime,
-    OperationsShell,
-} from '@/components/operations-shell';
+import { LedgerCard, ledgerDateTime, OperationsShell } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 
@@ -50,25 +46,14 @@ export default function StockOpnameIndex({
     return (
         <>
             <Head title="Stock Opname" />
-            <OperationsShell
-                active="/operations/stock-opnames"
-                eyebrow="Persediaan"
-                title="Stock Opname"
-                description=""
-            >
+            <OperationsShell active="/operations/stock-opnames" eyebrow="Persediaan" title="Stock Opname" description="">
                 {canManage && (
                     <LedgerCard title="Mulai Opname">
-                        <Form
-                            action="/operations/stock-opnames"
-                            method="post"
-                            className="flex flex-col gap-3 sm:flex-row sm:items-end"
-                        >
+                        <Form action="/operations/stock-opnames" method="post" className="flex flex-col gap-3 sm:flex-row sm:items-end">
                             {({ processing, errors }) => (
                                 <>
                                     <label className="min-w-0 flex-1">
-                                        <span className="mb-1.5 block text-xs font-bold text-stone-600">
-                                            Catatan
-                                        </span>
+                                        <span className="mb-1.5 block text-xs font-bold text-stone-600">Catatan</span>
                                         <input
                                             name="notes"
                                             maxLength={500}
@@ -76,14 +61,10 @@ export default function StockOpnameIndex({
                                             placeholder="Contoh: Opname akhir bulan"
                                         />
                                         {errors.notes && (
-                                            <span className="mt-1 block text-xs font-semibold text-red-600">
-                                                {errors.notes}
-                                            </span>
+                                            <span className="mt-1 block text-xs font-semibold text-red-600">{errors.notes}</span>
                                         )}
                                         {errors.stock_count && (
-                                            <span className="mt-1 block text-xs font-semibold text-red-600">
-                                                {errors.stock_count}
-                                            </span>
+                                            <span className="mt-1 block text-xs font-semibold text-red-600">{errors.stock_count}</span>
                                         )}
                                     </label>
                                     <button
@@ -106,13 +87,7 @@ export default function StockOpnameIndex({
                             {counts.data.map((count) => {
                                 const status = statuses[count.status];
                                 const progress =
-                                    count.items_count === 0
-                                        ? 0
-                                        : Math.round(
-                                              (count.counted_items_count /
-                                                  count.items_count) *
-                                                  100,
-                                          );
+                                    count.items_count === 0 ? 0 : Math.round((count.counted_items_count / count.items_count) * 100);
 
                                 return (
                                     <Link
@@ -126,15 +101,9 @@ export default function StockOpnameIndex({
                                                     <ClipboardList className="size-5" />
                                                 </span>
                                                 <div className="min-w-0">
-                                                    <p className="truncate font-black text-[var(--app-ink)]">
-                                                        {count.document_number}
-                                                    </p>
+                                                    <p className="truncate font-black text-[var(--app-ink)]">{count.document_number}</p>
                                                     <p className="mt-0.5 truncate text-xs text-stone-500">
-                                                        {ledgerDateTime(
-                                                            count.snapshot_at,
-                                                            timezone,
-                                                        )}{' '}
-                                                        · {count.created_by}
+                                                        {ledgerDateTime(count.snapshot_at, timezone)} · {count.created_by}
                                                     </p>
                                                 </div>
                                             </div>
@@ -146,23 +115,12 @@ export default function StockOpnameIndex({
                                         </div>
 
                                         <div className="mt-4 grid grid-cols-3 gap-2">
-                                            <Metric
-                                                label="Produk"
-                                                value={count.items_count}
-                                            />
-                                            <Metric
-                                                label="Dihitung"
-                                                value={`${count.counted_items_count}/${count.items_count}`}
-                                            />
+                                            <Metric label="Produk" value={count.items_count} />
+                                            <Metric label="Dihitung" value={`${count.counted_items_count}/${count.items_count}`} />
                                             <Metric
                                                 label="Selisih"
-                                                value={
-                                                    count.discrepancy_items_count
-                                                }
-                                                danger={
-                                                    count.discrepancy_items_count >
-                                                    0
-                                                }
+                                                value={count.discrepancy_items_count}
+                                                danger={count.discrepancy_items_count > 0}
                                             />
                                         </div>
 
@@ -179,8 +137,7 @@ export default function StockOpnameIndex({
                                             </div>
                                         )}
                                         <div className="mt-3 flex items-center justify-end gap-1 text-xs font-black text-teal-700">
-                                            Buka{' '}
-                                            <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+                                            Buka <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
                                         </div>
                                     </Link>
                                 );
@@ -191,9 +148,7 @@ export default function StockOpnameIndex({
                             <span className="flex size-12 items-center justify-center rounded-2xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                                 <PackageCheck className="size-6" />
                             </span>
-                            <p className="mt-3 font-black text-stone-700">
-                                Belum ada stock opname
-                            </p>
+                            <p className="mt-3 font-black text-stone-700">Belum ada stock opname</p>
                         </div>
                     )}
                     <div className="mt-4">
@@ -205,27 +160,11 @@ export default function StockOpnameIndex({
     );
 }
 
-function Metric({
-    label,
-    value,
-    danger = false,
-}: {
-    label: string;
-    value: string | number;
-    danger?: boolean;
-}) {
+function Metric({ label, value, danger = false }: { label: string; value: string | number; danger?: boolean }) {
     return (
-        <div
-            className={`rounded-xl px-3 py-2 ${danger ? 'bg-orange-50' : 'bg-[#fff3ef]'}`}
-        >
-            <p className="text-[9px] font-bold tracking-wide text-stone-500 uppercase">
-                {label}
-            </p>
-            <p
-                className={`mt-0.5 text-sm font-black tabular-nums ${danger ? 'text-orange-700' : 'text-[var(--app-ink)]'}`}
-            >
-                {value}
-            </p>
+        <div className={`rounded-xl px-3 py-2 ${danger ? 'bg-orange-50' : 'bg-[#fff3ef]'}`}>
+            <p className="text-[9px] font-bold tracking-wide text-stone-500 uppercase">{label}</p>
+            <p className={`mt-0.5 text-sm font-black tabular-nums ${danger ? 'text-orange-700' : 'text-[var(--app-ink)]'}`}>{value}</p>
         </div>
     );
 }

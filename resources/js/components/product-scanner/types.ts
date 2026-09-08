@@ -6,6 +6,7 @@ export type ScannerErrorCode =
     | 'SCANNER_NOT_CONNECTED'
     | 'SCANNER_BUSY'
     | 'SCANNER_UNAVAILABLE'
+    | 'SCAN_LIMIT_REACHED'
     | 'SCANNER_REQUEST_FAILED';
 
 export type ScannerSaleOption = {

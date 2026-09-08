@@ -5,10 +5,7 @@ import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { SubscriptionBanner } from '@/components/subscription-banner';
 import type { AppLayoutProps } from '@/types';
 
-export default function AppSidebarLayout({
-    children,
-    breadcrumbs = [],
-}: AppLayoutProps) {
+export default function AppSidebarLayout({ children, breadcrumbs = [] }: AppLayoutProps) {
     return (
         <AppShell variant="sidebar">
             <AppSidebar />

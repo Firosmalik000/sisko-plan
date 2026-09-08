@@ -19,6 +19,11 @@ export type StoreSummary = {
     name: string;
     role: 'owner' | 'admin' | 'cashier';
     theme_color?: string;
+    country_code?: string;
+    currency_code?: string;
+    currency_symbol?: string;
+    currency_decimal_places?: number;
+    currency_symbol_position?: 'before' | 'after';
 };
 
 export type StoreCreationState = {

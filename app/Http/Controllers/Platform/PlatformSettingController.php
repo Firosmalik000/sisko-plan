@@ -87,7 +87,7 @@ class PlatformSettingController extends Controller
             ]);
 
             throw ValidationException::withMessages([
-                'logo' => 'Penyimpanan logo di server belum siap. Periksa volume storage aplikasi lalu coba lagi.',
+                'logo' => __('Penyimpanan logo di server belum siap. Periksa volume storage aplikasi lalu coba lagi.'),
             ]);
         }
 
@@ -165,7 +165,7 @@ class PlatformSettingController extends Controller
         }
 
         throw ValidationException::withMessages([
-            $errorKey => 'Database Brand & SEO belum siap. Jalankan migration produksi lalu coba lagi.',
+            $errorKey => __('Database Brand & SEO belum siap. Jalankan migration produksi lalu coba lagi.'),
         ]);
     }
 }

@@ -9,19 +9,13 @@ export default function AppLogo() {
         <>
             <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
                 {branding.logo_url ? (
-                    <img
-                        src={branding.logo_url}
-                        alt=""
-                        className="size-full rounded-md object-contain"
-                    />
+                    <img src={branding.logo_url} alt="" className="size-full rounded-md object-contain" />
                 ) : (
                     <AppLogoIcon className="size-5 fill-current text-white dark:text-black" />
                 )}
             </div>
             <div className="ml-1 grid flex-1 text-left text-sm">
-                <span className="mb-0.5 truncate leading-tight font-semibold">
-                    {name}
-                </span>
+                <span className="mb-0.5 truncate leading-tight font-semibold">{name}</span>
             </div>
         </>
     );

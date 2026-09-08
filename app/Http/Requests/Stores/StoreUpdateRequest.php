@@ -5,6 +5,7 @@ namespace App\Http\Requests\Stores;
 use App\Support\Authentication\AuthenticatedUser;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUpdateRequest extends FormRequest
 {
@@ -16,6 +17,18 @@ class StoreUpdateRequest extends FormRequest
     /** @return array<string, array<int, ValidationRule|array<mixed>|string>> */
     public function rules(): array
     {
-        return ['name' => ['required', 'string', 'max:120']];
+        $store = $this->route('store');
+
+        return [
+            'name' => ['required', 'string', 'max:120'],
+            'country' => [
+                'sometimes',
+                'required',
+                'string',
+                Rule::exists('countries', 'code')->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->when($store, fn ($query) => $query->orWhere('id', $store->country_id))),
+            ],
+        ];
     }
 }

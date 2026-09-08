@@ -1,15 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    Clock3,
-    House,
-    LockKeyhole,
-    RefreshCw,
-    SearchX,
-    ServerCog,
-    ShieldAlert,
-    TriangleAlert,
-} from 'lucide-react';
+import { ArrowLeft, Clock3, House, LockKeyhole, RefreshCw, SearchX, ServerCog, ShieldAlert, TriangleAlert } from 'lucide-react';
 import type { ComponentType } from 'react';
 
 type Props = {
@@ -31,140 +21,112 @@ type ErrorContent = {
 const errors: Record<number, ErrorContent> = {
     400: {
         title: 'Permintaan tidak dapat diproses',
-        description:
-            'Data yang dikirim tidak sesuai dengan yang dibutuhkan halaman ini.',
+        description: 'Data yang dikirim tidak sesuai dengan yang dibutuhkan halaman ini.',
         icon: TriangleAlert,
         primary: 'back',
     },
     401: {
         title: 'Silakan masuk kembali',
-        description:
-            'Sesi masuk tidak ditemukan atau akses akun perlu dikonfirmasi ulang.',
+        description: 'Sesi masuk tidak ditemukan atau akses akun perlu dikonfirmasi ulang.',
         icon: LockKeyhole,
         primary: 'login',
     },
     403: {
         title: 'Akses tidak tersedia',
-        description:
-            'Akun Anda tidak memiliki izin untuk membuka halaman atau menjalankan tindakan ini.',
+        description: 'Akun Anda tidak memiliki izin untuk membuka halaman atau menjalankan tindakan ini.',
         icon: ShieldAlert,
         primary: 'home',
     },
     404: {
         title: 'Halaman tidak ditemukan',
-        description:
-            'Alamat mungkin berubah, sudah tidak digunakan, atau tidak pernah tersedia.',
+        description: 'Alamat mungkin berubah, sudah tidak digunakan, atau tidak pernah tersedia.',
         icon: SearchX,
         primary: 'back',
     },
     405: {
         title: 'Cara akses tidak didukung',
-        description:
-            'Halaman menerima jenis permintaan yang berbeda. Kembali lalu coba tindakan semula.',
+        description: 'Halaman menerima jenis permintaan yang berbeda. Kembali lalu coba tindakan semula.',
         icon: TriangleAlert,
         primary: 'back',
     },
     408: {
         title: 'Permintaan terlalu lama',
-        description:
-            'Koneksi terputus sebelum proses selesai. Periksa jaringan lalu coba kembali.',
+        description: 'Koneksi terputus sebelum proses selesai. Periksa jaringan lalu coba kembali.',
         icon: Clock3,
         primary: 'reload',
     },
     409: {
         title: 'Data sedang berubah',
-        description:
-            'Kondisi data sudah berbeda dari saat halaman dibuka. Muat ulang sebelum melanjutkan.',
+        description: 'Kondisi data sudah berbeda dari saat halaman dibuka. Muat ulang sebelum melanjutkan.',
         icon: RefreshCw,
         primary: 'reload',
     },
     410: {
         title: 'Halaman sudah tidak tersedia',
-        description:
-            'Konten ini telah dipindahkan atau dihapus dan tidak dapat dibuka lagi.',
+        description: 'Konten ini telah dipindahkan atau dihapus dan tidak dapat dibuka lagi.',
         icon: SearchX,
         primary: 'home',
     },
     413: {
         title: 'Data yang dikirim terlalu besar',
-        description:
-            'Kurangi ukuran data atau file, lalu kirim kembali dari halaman sebelumnya.',
+        description: 'Kurangi ukuran data atau file, lalu kirim kembali dari halaman sebelumnya.',
         icon: TriangleAlert,
         primary: 'back',
     },
     419: {
         title: 'Sesi Anda telah berakhir',
-        description:
-            'Halaman terlalu lama terbuka. Muat ulang untuk mendapatkan sesi yang baru.',
+        description: 'Halaman terlalu lama terbuka. Muat ulang untuk mendapatkan sesi yang baru.',
         icon: Clock3,
         primary: 'reload',
     },
     422: {
         title: 'Data belum dapat diproses',
-        description:
-            'Periksa kembali data yang dimasukkan, lalu perbaiki bagian yang belum sesuai.',
+        description: 'Periksa kembali data yang dimasukkan, lalu perbaiki bagian yang belum sesuai.',
         icon: TriangleAlert,
         primary: 'back',
     },
     423: {
         title: 'Data sedang dikunci',
-        description:
-            'Proses lain sedang menggunakan data ini. Tunggu sebentar lalu coba kembali.',
+        description: 'Proses lain sedang menggunakan data ini. Tunggu sebentar lalu coba kembali.',
         icon: LockKeyhole,
         primary: 'reload',
     },
     429: {
         title: 'Terlalu banyak percobaan',
-        description:
-            'Batas permintaan sementara tercapai. Tunggu beberapa saat sebelum mencoba lagi.',
+        description: 'Batas permintaan sementara tercapai. Tunggu beberapa saat sebelum mencoba lagi.',
         icon: Clock3,
         primary: 'reload',
     },
     500: {
         title: 'Terjadi kendala pada sistem',
-        description:
-            'Permintaan belum dapat diselesaikan. Data error telah diberi ID untuk penelusuran.',
+        description: 'Permintaan belum dapat diselesaikan. Data error telah diberi ID untuk penelusuran.',
         icon: ServerCog,
         primary: 'reload',
     },
     502: {
         title: 'Layanan penghubung bermasalah',
-        description:
-            'Salah satu layanan belum memberikan respons yang valid. Coba kembali sebentar lagi.',
+        description: 'Salah satu layanan belum memberikan respons yang valid. Coba kembali sebentar lagi.',
         icon: ServerCog,
         primary: 'reload',
     },
     503: {
         title: 'Layanan sedang tidak tersedia',
-        description:
-            'Sistem sedang dirawat atau menerima beban tinggi. Silakan coba kembali nanti.',
+        description: 'Sistem sedang dirawat atau menerima beban tinggi. Silakan coba kembali nanti.',
         icon: ServerCog,
         primary: 'reload',
     },
     504: {
         title: 'Respons layanan terlalu lama',
-        description:
-            'Sistem belum menerima jawaban tepat waktu. Tunggu sebentar lalu coba kembali.',
+        description: 'Sistem belum menerima jawaban tepat waktu. Tunggu sebentar lalu coba kembali.',
         icon: Clock3,
         primary: 'reload',
     },
 };
 
-export default function ErrorPage({
-    status,
-    requestId,
-    homeUrl,
-    loginUrl,
-    isAuthenticated,
-    isPlatformAdmin,
-}: Props) {
+export default function ErrorPage({ status, requestId, homeUrl, loginUrl, isAuthenticated, isPlatformAdmin }: Props) {
     const content = errors[status] ?? fallbackContent(status);
     const Icon = content.icon;
-    const homeLabel = isPlatformAdmin
-        ? 'Kembali ke portal'
-        : isAuthenticated
-          ? 'Kembali ke dashboard'
-          : 'Kembali ke beranda';
+    const homeLabel = isPlatformAdmin ? 'Kembali ke portal' : isAuthenticated ? 'Kembali ke dashboard' : 'Kembali ke beranda';
 
     return (
         <>
@@ -182,17 +144,10 @@ export default function ErrorPage({
                         <h1 className="max-w-xl text-4xl leading-[1.05] font-black tracking-[-0.035em] text-balance text-[#0b292f] sm:text-5xl">
                             {content.title}
                         </h1>
-                        <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-                            {content.description}
-                        </p>
+                        <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">{content.description}</p>
 
                         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                            <PrimaryAction
-                                action={content.primary}
-                                homeUrl={homeUrl}
-                                homeLabel={homeLabel}
-                                loginUrl={loginUrl}
-                            />
+                            <PrimaryAction action={content.primary} homeUrl={homeUrl} homeLabel={homeLabel} loginUrl={loginUrl} />
                             {content.primary !== 'home' && (
                                 <Link
                                     href={homeUrl}
@@ -205,10 +160,7 @@ export default function ErrorPage({
                         </div>
 
                         <p className="mt-8 text-xs font-semibold text-slate-500">
-                            ID permintaan:{' '}
-                            <code className="rounded bg-[#0b292f]/6 px-1.5 py-1 font-mono text-[#0b292f]">
-                                {requestId}
-                            </code>
+                            ID permintaan: <code className="rounded bg-[#0b292f]/6 px-1.5 py-1 font-mono text-[#0b292f]">{requestId}</code>
                         </p>
                     </section>
 
@@ -253,11 +205,7 @@ function PrimaryAction({
 
     if (action === 'reload') {
         return (
-            <button
-                type="button"
-                className={className}
-                onClick={() => window.location.reload()}
-            >
+            <button type="button" className={className} onClick={() => window.location.reload()}>
                 <RefreshCw className="size-4" />
                 Muat ulang halaman
             </button>
@@ -265,11 +213,7 @@ function PrimaryAction({
     }
 
     return (
-        <button
-            type="button"
-            className={className}
-            onClick={() => window.history.back()}
-        >
+        <button type="button" className={className} onClick={() => window.history.back()}>
             <ArrowLeft className="size-4" />
             Kembali
         </button>
@@ -283,15 +227,11 @@ function ErrorReceipt({ status }: { status: number }) {
             className="w-full max-w-md overflow-hidden rounded-2xl bg-[#0b292f] text-white shadow-2xl shadow-[#0b292f]/20 lg:w-[26rem]"
         >
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <span className="text-xs font-black tracking-[0.14em] text-[#e7bd52] uppercase">
-                    Status sistem
-                </span>
+                <span className="text-xs font-black tracking-[0.14em] text-[#e7bd52] uppercase">Status sistem</span>
                 <span className="size-2 rounded-full bg-[#e7bd52]" />
             </div>
             <div className="px-5 py-7 sm:px-7 sm:py-9">
-                <p className="text-[5rem] leading-none font-black tracking-[-0.04em] tabular-nums sm:text-[6rem]">
-                    {status}
-                </p>
+                <p className="text-[5rem] leading-none font-black tracking-[-0.04em] tabular-nums sm:text-[6rem]">{status}</p>
                 <div className="mt-8 space-y-3" aria-hidden="true">
                     <span className="block h-px bg-white/15" />
                     <span className="block h-px w-4/5 bg-white/10" />
@@ -310,15 +250,13 @@ function fallbackContent(status: number): ErrorContent {
     return status >= 500
         ? {
               title: 'Layanan belum dapat digunakan',
-              description:
-                  'Sistem mengalami kendala sementara. Muat ulang atau kembali beberapa saat lagi.',
+              description: 'Sistem mengalami kendala sementara. Muat ulang atau kembali beberapa saat lagi.',
               icon: ServerCog,
               primary: 'reload',
           }
         : {
               title: 'Permintaan belum dapat diselesaikan',
-              description:
-                  'Kembali ke halaman sebelumnya atau buka halaman utama untuk melanjutkan.',
+              description: 'Kembali ke halaman sebelumnya atau buka halaman utama untuk melanjutkan.',
               icon: TriangleAlert,
               primary: 'back',
           };

@@ -32,7 +32,7 @@ class PostCapitalTransaction
                     return $existing;
                 }
                 if (! in_array($type, ['cash_contribution', 'cash_withdrawal', 'inventory_contribution', 'inventory_withdrawal'], true)) {
-                    throw ValidationException::withMessages(['type' => 'Jenis transaksi modal tidak valid.']);
+                    throw ValidationException::withMessages(['type' => __('Jenis transaksi modal tidak valid.')]);
                 }
                 $cashType = str_starts_with($type, 'cash_');
                 if ($cashType && ($accountId === null || $amount === null)) {

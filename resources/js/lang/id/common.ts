@@ -16,11 +16,9 @@ export const indonesianCore: Record<string, string> = {
     'Stok real-time': 'Stok real-time',
     'Laporan ringkas': 'Laporan ringkas',
     'Ruang kerja toko Anda': 'Ruang kerja toko Anda',
-    'Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan':
-        'Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan',
+    'Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan': 'Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan',
     'Navigasi utama': 'Navigasi utama',
-    'Scan barangnya. Sisanya langsung tercatat.':
-        'Scan barangnya. Sisanya langsung tercatat.',
+    'Scan barangnya. Sisanya langsung tercatat.': 'Scan barangnya. Sisanya langsung tercatat.',
     'Masuk dengan Google': 'Masuk dengan Google',
     'Alamat email': 'Alamat email',
     'Kata sandi': 'Kata sandi',
@@ -40,18 +38,13 @@ export const indonesianCore: Record<string, string> = {
     'Sembunyikan kata sandi': 'Sembunyikan kata sandi',
     'Tampilkan kata sandi': 'Tampilkan kata sandi',
     Passkey: 'Passkey',
-    'Kelola passkey untuk masuk tanpa kata sandi':
-        'Kelola passkey untuk masuk tanpa kata sandi',
-    'Semua pekerjaan toko, terasa lebih terarah.':
-        'Semua pekerjaan toko, terasa lebih terarah.',
+    'Kelola passkey untuk masuk tanpa kata sandi': 'Kelola passkey untuk masuk tanpa kata sandi',
+    'Semua pekerjaan toko, terasa lebih terarah.': 'Semua pekerjaan toko, terasa lebih terarah.',
     'Masuk untuk melanjutkan transaksi, memantau stok, dan melihat perkembangan usaha dari satu tempat.':
         'Masuk untuk melanjutkan transaksi, memantau stok, dan melihat perkembangan usaha dari satu tempat.',
-    'Akses aman dan terkontrol untuk setiap peran.':
-        'Akses aman dan terkontrol untuk setiap peran.',
-    'Kategori biaya berhasil ditambahkan.':
-        'Kategori biaya berhasil ditambahkan.',
-    'Kategori biaya berhasil diperbarui.':
-        'Kategori biaya berhasil diperbarui.',
+    'Akses aman dan terkontrol untuk setiap peran.': 'Akses aman dan terkontrol untuk setiap peran.',
+    'Kategori biaya berhasil ditambahkan.': 'Kategori biaya berhasil ditambahkan.',
+    'Kategori biaya berhasil diperbarui.': 'Kategori biaya berhasil diperbarui.',
     'Biaya toko berhasil diposting.': 'Biaya toko berhasil diposting.',
     'Produk berhasil ditambahkan.': 'Produk berhasil ditambahkan.',
     'Produk berhasil diperbarui.': 'Produk berhasil diperbarui.',
@@ -59,8 +52,7 @@ export const indonesianCore: Record<string, string> = {
     'Supplier berhasil ditambahkan.': 'Supplier berhasil ditambahkan.',
     'Supplier berhasil diperbarui.': 'Supplier berhasil diperbarui.',
     'Penjualan berhasil diposting.': 'Penjualan berhasil diposting.',
-    'Retur dan refund berhasil diposting.':
-        'Retur dan refund berhasil diposting.',
+    'Retur dan refund berhasil diposting.': 'Retur dan refund berhasil diposting.',
     'Verifikasi email': 'Verifikasi email',
     'Tautan verifikasi baru telah dikirim ke alamat email yang Anda gunakan saat mendaftar.':
         'Tautan verifikasi baru telah dikirim ke alamat email yang Anda gunakan saat mendaftar.',
@@ -69,8 +61,7 @@ export const indonesianCore: Record<string, string> = {
     'Kode pemulihan': 'Kode pemulihan',
     'Konfirmasi akses akun dengan memasukkan salah satu kode pemulihan darurat.':
         'Konfirmasi akses akun dengan memasukkan salah satu kode pemulihan darurat.',
-    'Masukkan kode autentikasi dari aplikasi autentikator Anda.':
-        'Masukkan kode autentikasi dari aplikasi autentikator Anda.',
+    'Masukkan kode autentikasi dari aplikasi autentikator Anda.': 'Masukkan kode autentikasi dari aplikasi autentikator Anda.',
     'masuk menggunakan kode autentikasi': 'masuk menggunakan kode autentikasi',
     'Kode autentikasi': 'Kode autentikasi',
     'masuk menggunakan kode pemulihan': 'masuk menggunakan kode pemulihan',

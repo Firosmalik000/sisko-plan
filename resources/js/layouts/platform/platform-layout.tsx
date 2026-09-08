@@ -1,16 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import {
-    Building2,
-    ChevronUp,
-    CreditCard,
-    Gauge,
-    Globe2,
-    LogOut,
-    LockKeyhole,
-    ReceiptText,
-    UserCog,
-    Users,
-} from 'lucide-react';
+import { Building2, ChevronUp, CreditCard, Gauge, Globe2, LogOut, LockKeyhole, MapPinned, ReceiptText, UserCog, Users } from 'lucide-react';
 import type { ComponentType } from 'react';
 import LanguageSwitcher from '@/components/language-switcher';
 import {
@@ -81,6 +70,12 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
         label: 'Platform',
         items: [
             {
+                label: 'Negara & mata uang',
+                href: '/super-admin/geography',
+                icon: MapPinned,
+                permission: 'platform.geography.view',
+            },
+            {
                 label: 'Brand & SEO',
                 href: '/super-admin/brand-seo',
                 icon: Globe2,
@@ -96,11 +91,7 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
     },
 ];
 
-export default function SuperAdminLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
     useTranslation();
 
     const { platformAdmin, name, branding } = usePage<{
@@ -114,28 +105,17 @@ export default function SuperAdminLayout({
         <div className="platform-shell min-h-screen text-slate-950 md:flex">
             <aside className="border-b border-white/20 bg-[#d83f22] text-white shadow-2xl shadow-[#b83219]/15 md:sticky md:top-0 md:flex md:h-screen md:w-72 md:shrink-0 md:flex-col md:border-r md:border-b-0">
                 <div className="flex items-center justify-between px-4 py-4 md:px-5 md:py-5">
-                    <Link
-                        href={platformAdmin.home_url}
-                        className="flex items-center gap-3"
-                    >
+                    <Link href={platformAdmin.home_url} className="flex items-center gap-3">
                         <span className="flex size-9 items-center justify-center overflow-hidden rounded-lg bg-white text-[#ee4d2d] shadow-sm">
                             {branding.logo_url ? (
-                                <img
-                                    src={branding.logo_url}
-                                    alt=""
-                                    className="size-full object-contain"
-                                />
+                                <img src={branding.logo_url} alt="" className="size-full object-contain" />
                             ) : (
                                 <Globe2 className="size-5" />
                             )}
                         </span>
                         <span>
-                            <span className="block text-sm font-black tracking-[0.12em]">
-                                {name.toUpperCase()}
-                            </span>
-                            <span className="block text-[11px] text-white/70">
-                                SaaS administration
-                            </span>
+                            <span className="block text-sm font-black tracking-[0.12em]">{name.toUpperCase()}</span>
+                            <span className="block text-[11px] text-white/70">SaaS administration</span>
                         </span>
                     </Link>
                     <div className="flex items-center gap-2 md:hidden">
@@ -150,9 +130,7 @@ export default function SuperAdminLayout({
                             (item) =>
                                 item.permission === undefined ||
                                 platformAdmin.role === 'super_admin' ||
-                                platformAdmin.permissions.includes(
-                                    item.permission,
-                                ),
+                                platformAdmin.permissions.includes(item.permission),
                         );
 
                         if (items.length === 0) {
@@ -160,19 +138,13 @@ export default function SuperAdminLayout({
                         }
 
                         return (
-                            <section
-                                key={group.label}
-                                className="contents md:block"
-                            >
+                            <section key={group.label} className="contents md:block">
                                 <p className="mb-1 hidden px-2 text-[10px] font-bold tracking-[0.16em] text-white/55 uppercase md:block">
                                     {group.label}
                                 </p>
                                 <div className="flex shrink-0 gap-1 md:block md:space-y-1">
                                     {items.map((item) => {
-                                        const active =
-                                            item.href === '/super-admin'
-                                                ? path === item.href
-                                                : path.startsWith(item.href);
+                                        const active = item.href === '/super-admin' ? path === item.href : path.startsWith(item.href);
 
                                         return (
                                             <Link
@@ -199,21 +171,13 @@ export default function SuperAdminLayout({
             </aside>
 
             <main className="min-w-0 flex-1">
-                <div className="relative mx-auto max-w-[1500px] px-4 py-5 sm:px-6 md:px-8 md:py-8 xl:px-10">
-                    {children}
-                </div>
+                <div className="relative mx-auto max-w-[1500px] px-4 py-5 sm:px-6 md:px-8 md:py-8 xl:px-10">{children}</div>
             </main>
         </div>
     );
 }
 
-function AccountMenu({
-    admin,
-    compact = false,
-}: {
-    admin: PlatformAdmin;
-    compact?: boolean;
-}) {
+function AccountMenu({ admin, compact = false }: { admin: PlatformAdmin; compact?: boolean }) {
     const initials = admin.name.slice(0, 2).toUpperCase();
 
     return (
@@ -236,13 +200,9 @@ function AccountMenu({
                             {initials}
                         </span>
                         <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-semibold">
-                                {admin.name}
-                            </span>
+                            <span className="block truncate text-xs font-semibold">{admin.name}</span>
                             <span className="block truncate text-[10px] text-white/65">
-                                {admin.role === 'super_admin'
-                                    ? 'Super Admin'
-                                    : 'Admin Platform'}
+                                {admin.role === 'super_admin' ? 'Super Admin' : 'Admin Platform'}
                             </span>
                         </span>
                         <ChevronUp className="size-4 text-white/65" />
@@ -256,12 +216,8 @@ function AccountMenu({
                 className="w-64 rounded-xl border-slate-200 p-1.5 shadow-xl"
             >
                 <DropdownMenuLabel className="px-3 py-2">
-                    <span className="block truncate text-sm font-bold text-[#3b211b]">
-                        {admin.name}
-                    </span>
-                    <span className="mt-0.5 block truncate text-xs font-normal text-slate-500">
-                        {admin.email}
-                    </span>
+                    <span className="block truncate text-sm font-bold text-[#3b211b]">{admin.name}</span>
+                    <span className="mt-0.5 block truncate text-xs font-normal text-slate-500">{admin.email}</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="min-h-10 rounded-lg px-3">
@@ -271,17 +227,8 @@ function AccountMenu({
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                    asChild
-                    variant="destructive"
-                    className="min-h-10 rounded-lg px-3"
-                >
-                    <Link
-                        href="/super-admin/logout"
-                        method="post"
-                        as="button"
-                        className="w-full"
-                    >
+                <DropdownMenuItem asChild variant="destructive" className="min-h-10 rounded-lg px-3">
+                    <Link href="/super-admin/logout" method="post" as="button" className="w-full">
                         <LogOut className="size-4" />
                         Keluar
                     </Link>

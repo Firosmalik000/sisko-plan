@@ -23,6 +23,7 @@ class StoreController extends Controller
 
         $stores = Store::query()
             ->with('owner:id,name,email')
+            ->with(['country.currency', 'settings'])
             ->with('subscription.plan:id,name')
             ->withCount(['users as active_members_count' => fn ($query) => $query->where('store_memberships.status', 'active')])
             ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
@@ -35,6 +36,11 @@ class StoreController extends Controller
                 'status' => $store->status->value,
                 'owner' => $store->owner->only(['name', 'email']),
                 'active_members_count' => $store->active_members_count,
+                'country' => $store->country === null ? null : [
+                    'code' => $store->country->code,
+                    'name' => $store->country->localizedName(),
+                ],
+                'currency' => $store->settings?->currency ?? $store->country?->currency_code ?? 'IDR',
                 'subscription' => $store->subscription === null ? null : ['status' => $store->subscription->status->value, 'plan_name' => $store->subscription->plan->name],
                 'created_at' => $store->created_at?->toDateString(),
             ]);
@@ -52,15 +58,17 @@ class StoreController extends Controller
         RecordAdminAudit $recordAudit,
     ): RedirectResponse {
         $validated = $request->validate([
-            'status' => ['required', Rule::enum(StoreStatus::class)],
+            'status' => ['required', Rule::in([StoreStatus::Active->value, StoreStatus::Suspended->value])],
         ]);
 
         $admin = AuthenticatedPlatformAdmin::get($request);
 
         DB::transaction(function () use ($store, $validated, $admin, $request, $recordAudit): void {
-            $before = $store->status->value;
-            $store->update(['status' => $validated['status']]);
-            $recordAudit->handle($admin, 'store.status_updated', $store, $request->ip(), [
+            $lockedStore = Store::query()->lockForUpdate()->findOrFail($store->id);
+            abort_if($lockedStore->status === StoreStatus::Archived, 409);
+            $before = $lockedStore->status->value;
+            $lockedStore->update(['status' => $validated['status']]);
+            $recordAudit->handle($admin, 'store.status_updated', $lockedStore, $request->ip(), [
                 'before' => $before,
                 'after' => $validated['status'],
             ]);

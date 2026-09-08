@@ -1,4 +1,9 @@
 export const indonesianOverrides: Record<string, string> = {
+    Gratis: 'Gratis',
+    'Add-on': 'Add-on',
+    'Add-on aktif': 'Add-on aktif',
+    'Add-on kapasitas': 'Add-on kapasitas',
+    'Tambahkan add-on': 'Tambahkan add-on',
     '2FA admin': '2FA admin',
     Admin: 'Admin',
     'Admin Platform': 'Admin Platform',
@@ -9,13 +14,10 @@ export const indonesianOverrides: Record<string, string> = {
     'Each recovery code can be used once to access your account and will be removed after use. If you need more, click':
         'Setiap kode pemulihan hanya dapat digunakan sekali dan akan dihapus setelah dipakai. Jika perlu kode baru, pilih',
     'Kembali ke Super Admin': 'Kembali ke Super Admin',
-    'Login memerlukan authenticator atau satu recovery code.':
-        'Login memerlukan aplikasi autentikator atau satu kode pemulihan.',
-    'Menunggu owner/admin memposting hasil':
-        'Menunggu pemilik atau admin memposting hasil',
+    'Login memerlukan authenticator atau satu recovery code.': 'Login memerlukan aplikasi autentikator atau satu kode pemulihan.',
+    'Menunggu owner/admin memposting hasil': 'Menunggu pemilik atau admin memposting hasil',
     'Or continue with email': 'Atau lanjutkan dengan email',
-    'Please enter your new password below':
-        'Masukkan kata sandi baru Anda di bawah ini',
+    'Please enter your new password below': 'Masukkan kata sandi baru Anda di bawah ini',
     'Please verify your email address by clicking on the link we just emailed to you.':
         'Verifikasi alamat email dengan membuka tautan yang baru kami kirim.',
     'Recovery code': 'Kode pemulihan',
@@ -37,8 +39,7 @@ export const indonesianOverrides: Record<string, string> = {
     'SaaS administration': 'Administrasi SaaS',
     'Security posture': 'Status keamanan',
     'Enable two-factor authentication': 'Aktifkan autentikasi dua faktor',
-    'Enter the 6-digit code from your authenticator app':
-        'Masukkan kode 6 digit dari aplikasi autentikator',
+    'Enter the 6-digit code from your authenticator app': 'Masukkan kode 6 digit dari aplikasi autentikator',
     'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app':
         'Untuk menyelesaikan aktivasi autentikasi dua faktor, pindai kode QR atau masukkan kunci pengaturan di aplikasi autentikator',
     'Two-factor authentication enabled': 'Autentikasi dua faktor telah aktif',
@@ -72,10 +73,8 @@ export const indonesianOverrides: Record<string, string> = {
     Loading: 'Memuat',
     'Loading recovery codes': 'Memuat kode pemulihan',
     'Log out': 'Keluar',
-    'Manage your passkeys for passwordless sign-in':
-        'Kelola passkey untuk masuk tanpa kata sandi',
-    'Manage your two-factor authentication settings':
-        'Kelola pengaturan autentikasi dua faktor',
+    'Manage your passkeys for passwordless sign-in': 'Kelola passkey untuk masuk tanpa kata sandi',
+    'Manage your two-factor authentication settings': 'Kelola pengaturan autentikasi dua faktor',
     More: 'Lainnya',
     'New password': 'Kata sandi baru',
     'No passkeys yet': 'Belum ada passkey',
@@ -93,11 +92,9 @@ export const indonesianOverrides: Record<string, string> = {
     'Toggle sidebar': 'Buka atau tutup sidebar',
     'Two-factor authentication': 'Autentikasi dua faktor',
     breadcrumb: 'Navigasi halaman',
-    'Add a passkey to sign in without a password':
-        'Tambahkan passkey untuk masuk tanpa kata sandi',
+    'Add a passkey to sign in without a password': 'Tambahkan passkey untuk masuk tanpa kata sandi',
     'Add passkey': 'Tambah passkey',
-    'A name helps you identify this passkey later.':
-        'Nama membantu Anda mengenali passkey ini nanti.',
+    'A name helps you identify this passkey later.': 'Nama membantu Anda mengenali passkey ini nanti.',
     'Commercial ledger': 'Catatan komersial',
     'Confirm with passkey': 'Konfirmasi dengan passkey',
     'Confirming...': 'Mengonfirmasi...',
@@ -105,13 +102,11 @@ export const indonesianOverrides: Record<string, string> = {
     Dashboard: 'Dashboard',
     'Disable 2FA': 'Nonaktifkan 2FA',
     'Enable 2FA': 'Aktifkan 2FA',
-    'Enter your email to receive a password reset link':
-        'Masukkan email untuk menerima tautan pengaturan ulang kata sandi',
+    'Enter your email to receive a password reset link': 'Masukkan email untuk menerima tautan pengaturan ulang kata sandi',
     'Forgot password': 'Lupa kata sandi',
     'Last used': 'Terakhir digunakan',
     'Or confirm with password': 'Atau konfirmasi dengan kata sandi',
-    'Passkeys are not supported in this browser.':
-        'Browser ini tidak mendukung passkey.',
+    'Passkeys are not supported in this browser.': 'Browser ini tidak mendukung passkey.',
     'Register passkey': 'Daftarkan passkey',
     'Registering...': 'Mendaftarkan...',
     'Removing...': 'Menghapus...',

@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
     Boxes,
@@ -15,15 +15,7 @@ import {
     Settings2,
     Trash2,
 } from 'lucide-react';
-import {
-    lazy,
-    Suspense,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
@@ -32,12 +24,7 @@ import type { PaginationLink } from '@/components/pagination';
 import BarcodeScannerDialog from '@/components/product-scanner/BarcodeScannerDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatMoney, localeTag } from '@/lib/currency';
@@ -57,9 +44,7 @@ type UnitOption = Option & {
 };
 type VariantMode = 'none' | 'separate' | 'shared';
 type ScannerFlow = 'create' | 'form-photo';
-type BarcodeTarget =
-    | { kind: 'product'; label: string }
-    | { kind: 'variant'; index: number; label: string };
+type BarcodeTarget = { kind: 'product'; label: string } | { kind: 'variant'; index: number; label: string };
 
 function ProductPhoto({
     src,
@@ -82,14 +67,7 @@ function ProductPhoto({
         );
     }
 
-    return (
-        <img
-            src={src}
-            alt={alt}
-            className={className}
-            onError={() => setFailedSrc(src)}
-        />
-    );
+    return <img src={src} alt={alt} className={className} onError={() => setFailedSrc(src)} />;
 }
 
 type ProductVariant = {
@@ -144,6 +122,11 @@ type ProductForm = {
     photo: File | null;
     remove_photo: boolean;
     is_active: boolean;
+};
+type SubscriptionState = {
+    can_write: boolean;
+    max_products: number;
+    products_used: number;
 };
 
 const unitCodeAliases: Record<'large' | 'retail', Record<string, string[]>> = {
@@ -208,8 +191,7 @@ const unitCodeAliases: Record<'large' | 'retail', Record<string, string[]>> = {
     },
 };
 
-const normalizeUnitLabel = (value: string) =>
-    value.trim().toLocaleLowerCase(localeTag());
+const normalizeUnitLabel = (value: string) => value.trim().toLocaleLowerCase(localeTag());
 
 const createIdempotencyKey = () => {
     if (globalThis.crypto?.randomUUID) {
@@ -258,55 +240,35 @@ const blankForm = (): ProductForm => ({
     remove_photo: false,
     is_active: true,
 });
-const ProductScanner = lazy(
-    () => import('@/components/product-scanner/ProductScanner'),
-);
-function Field({
-    label,
-    error,
-    children,
-    className,
-}: {
-    label: string;
-    error?: string;
-    children: React.ReactNode;
-    className?: string;
-}) {
+
+const formatFormDecimal = (value: string | number | null | undefined) => {
+    if (value === null || value === undefined || value === '') {
+        return '';
+    }
+
+    const numeric = Number(value);
+
+    return Number.isFinite(numeric) ? numeric.toFixed(2) : String(value);
+};
+
+const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
+function Field({ label, error, children, className }: { label: string; error?: string; children: React.ReactNode; className?: string }) {
     return (
         <div className={className}>
-            <Label className="mb-2 block text-xs font-bold tracking-wide text-slate-700 uppercase">
-                {label}
-            </Label>
+            <Label className="mb-2 block text-xs font-bold tracking-wide text-slate-700 uppercase">{label}</Label>
             {children}
             <InputError message={error} className="mt-1.5" />
         </div>
     );
 }
 
-function BarcodeField({
-    value,
-    error,
-    onScan,
-    onClear,
-}: {
-    value: string;
-    error?: string;
-    onScan: () => void;
-    onClear: () => void;
-}) {
+function BarcodeField({ value, error, onScan, onClear }: { value: string; error?: string; onScan: () => void; onClear: () => void }) {
     return (
         <Field label="Barcode / QR" error={error}>
             <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)]/15">
                 <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
                     <ScanBarcode className="size-4 shrink-0 text-[var(--app-primary)]" />
-                    <span
-                        className={cn(
-                            'truncate text-sm',
-                            value
-                                ? 'font-bold text-slate-800'
-                                : 'text-slate-400',
-                        )}
-                    >
+                    <span className={cn('truncate text-sm', value ? 'font-bold text-slate-800' : 'text-slate-400')}>
                         {value || 'Belum dipindai'}
                     </span>
                 </div>
@@ -352,10 +314,7 @@ function VariantPhotoInput({
     onChange: (file: File) => void;
     onRemove: () => void;
 }) {
-    const previewUrl = useMemo(
-        () => (photo ? URL.createObjectURL(photo) : (photoUrl ?? null)),
-        [photo, photoUrl],
-    );
+    const previewUrl = useMemo(() => (photo ? URL.createObjectURL(photo) : (photoUrl ?? null)), [photo, photoUrl]);
 
     useEffect(
         () => () => {
@@ -418,15 +377,13 @@ function Section({
     children: React.ReactNode;
 }) {
     return (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-5">
+        <section className="rounded-2xl border border-[#e7d8d2] bg-white p-3.5 shadow-[0_10px_28px_rgba(80,39,28,0.06)] sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--app-primary)] text-xs font-black text-[var(--app-primary-foreground)]">
                         {number}
                     </span>
-                    <h3 className="font-serif text-lg font-bold text-slate-900">
-                        {title}
-                    </h3>
+                    <h3 className="font-serif text-lg font-bold text-slate-900">{title}</h3>
                 </div>
                 {action}
             </div>
@@ -491,59 +448,30 @@ function ReferenceManager({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] overflow-y-auto border-slate-200 bg-white p-0 shadow-2xl sm:max-h-[88svh] sm:w-full sm:max-w-xl">
                 <DialogHeader className="border-b border-slate-200 bg-gradient-to-r from-teal-50 to-white px-5 py-4 text-left">
-                    <DialogTitle className="font-serif text-xl text-slate-900">
-                        Kelola {isCategory ? 'Kategori' : 'Satuan'}
-                    </DialogTitle>
+                    <DialogTitle className="font-serif text-xl text-slate-900">Kelola {isCategory ? 'Kategori' : 'Satuan'}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-5 p-5">
-                    <form
-                        onSubmit={submit}
-                        className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-                    >
+                    <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                         <div className="grid gap-3 sm:grid-cols-2">
                             <Field
-                                label={
-                                    isCategory ? 'Nama kategori' : 'Nama satuan'
-                                }
-                                error={
-                                    isCategory
-                                        ? categoryForm.errors.name
-                                        : unitForm.errors.name
-                                }
+                                label={isCategory ? 'Nama kategori' : 'Nama satuan'}
+                                error={isCategory ? categoryForm.errors.name : unitForm.errors.name}
                             >
                                 <Input
-                                    value={
-                                        isCategory
-                                            ? categoryForm.data.name
-                                            : unitForm.data.name
-                                    }
+                                    value={isCategory ? categoryForm.data.name : unitForm.data.name}
                                     onChange={(event) =>
                                         isCategory
-                                            ? categoryForm.setData(
-                                                  'name',
-                                                  event.target.value,
-                                              )
-                                            : unitForm.setData(
-                                                  'name',
-                                                  event.target.value,
-                                              )
+                                            ? categoryForm.setData('name', event.target.value)
+                                            : unitForm.setData('name', event.target.value)
                                     }
                                     className="border-slate-200 bg-white"
                                 />
                             </Field>
                             {!isCategory && (
-                                <Field
-                                    label="Singkatan"
-                                    error={unitForm.errors.symbol}
-                                >
+                                <Field label="Singkatan" error={unitForm.errors.symbol}>
                                     <Input
                                         value={unitForm.data.symbol}
-                                        onChange={(event) =>
-                                            unitForm.setData(
-                                                'symbol',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => unitForm.setData('symbol', event.target.value)}
                                         className="border-slate-200 bg-white"
                                     />
                                 </Field>
@@ -555,9 +483,7 @@ function ReferenceManager({
                                     <button
                                         key={group}
                                         type="button"
-                                        onClick={() =>
-                                            unitForm.setData('unit_type', group)
-                                        }
+                                        onClick={() => unitForm.setData('unit_type', group)}
                                         className={cn(
                                             'h-10 rounded-xl border text-sm font-semibold',
                                             unitForm.data.unit_type === group
@@ -571,11 +497,7 @@ function ReferenceManager({
                             </div>
                         )}
                         <Button
-                            disabled={
-                                isCategory
-                                    ? categoryForm.processing
-                                    : unitForm.processing
-                            }
+                            disabled={isCategory ? categoryForm.processing : unitForm.processing}
                             className="mt-4 w-full bg-[var(--app-primary)] hover:bg-[var(--app-primary)]"
                         >
                             <Plus className="size-4" /> Tambah
@@ -590,35 +512,20 @@ function ReferenceManager({
                                 <div className="min-w-0">
                                     <p className="truncate text-sm font-semibold text-slate-800">
                                         {item.name}
-                                        {'symbol' in item &&
-                                            ` (${item.symbol})`}
+                                        {'symbol' in item && ` (${item.symbol})`}
                                     </p>
                                     {'unit_type' in item && (
-                                        <p className="text-xs text-slate-500">
-                                            {item.unit_type === 'retail'
-                                                ? 'Ecer'
-                                                : 'Besar'}
-                                        </p>
+                                        <p className="text-xs text-slate-500">{item.unit_type === 'retail' ? 'Ecer' : 'Besar'}</p>
                                     )}
                                 </div>
                                 <Button
                                     type="button"
                                     size="sm"
                                     variant="outline"
-                                    onClick={() =>
-                                        isCategory
-                                            ? toggleCategory(item)
-                                            : toggleUnit(item as UnitOption)
-                                    }
-                                    className={cn(
-                                        'shrink-0',
-                                        !item.is_active &&
-                                            'border-[var(--app-primary)] text-[var(--app-primary)]',
-                                    )}
+                                    onClick={() => (isCategory ? toggleCategory(item) : toggleUnit(item as UnitOption))}
+                                    className={cn('shrink-0', !item.is_active && 'border-[var(--app-primary)] text-[var(--app-primary)]')}
                                 >
-                                    {item.is_active
-                                        ? 'Nonaktifkan'
-                                        : 'Aktifkan'}
+                                    {item.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                                 </Button>
                             </div>
                         ))}
@@ -644,6 +551,14 @@ export default function ProductsIndex({
     status: string;
     canManage: boolean;
 }) {
+    const { subscriptionState } = usePage<{
+        subscriptionState: SubscriptionState | null;
+    }>().props;
+    const productLimitReached = Boolean(
+        subscriptionState?.can_write &&
+        subscriptionState.max_products > 0 &&
+        subscriptionState.products_used >= subscriptionState.max_products,
+    );
     const [editing, setEditing] = useState<Product | null>(null);
     const [deleting, setDeleting] = useState<Product | null>(null);
     const [deleteProcessing, setDeleteProcessing] = useState(false);
@@ -656,13 +571,12 @@ export default function ProductsIndex({
     const [scannerOpen, setScannerOpen] = useState(
         () =>
             canManage &&
+            !productLimitReached &&
             typeof window !== 'undefined' &&
             new URL(window.location.href).searchParams.get('scan') === '1',
     );
     const [scannerFlow, setScannerFlow] = useState<ScannerFlow>('create');
-    const [barcodeTarget, setBarcodeTarget] = useState<BarcodeTarget | null>(
-        null,
-    );
+    const [barcodeTarget, setBarcodeTarget] = useState<BarcodeTarget | null>(null);
     const [discoveryPrefill, setDiscoveryPrefill] = useState(false);
     const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
     const formBodyRef = useRef<HTMLDivElement>(null);
@@ -670,16 +584,11 @@ export default function ProductsIndex({
     const detectedProductBarcodeRef = useRef('');
     const productDrafts = useProductDrafts();
     const form = useForm<ProductForm>(blankForm());
-    const errorFor = (key: string) =>
-        (form.errors as Record<string, string | undefined>)[key];
+    const errorFor = (key: string) => (form.errors as Record<string, string | undefined>)[key];
     const retailUnits = units.filter((unit) => unit.unit_type === 'retail');
     const largeUnits = units.filter((unit) => unit.unit_type === 'large');
-    const activeDraft = productDrafts.drafts.find(
-        (draft) => draft.id === activeDraftId,
-    );
-    const activeDraftIndex = productDrafts.drafts.findIndex(
-        (draft) => draft.id === activeDraftId,
-    );
+    const activeDraft = productDrafts.drafts.find((draft) => draft.id === activeDraftId);
+    const activeDraftIndex = productDrafts.drafts.findIndex((draft) => draft.id === activeDraftId);
 
     const submitDelete = () => {
         if (!deleting || deleteProcessing) {
@@ -692,10 +601,7 @@ export default function ProductsIndex({
             preserveScroll: true,
             onSuccess: () => setDeleting(null),
             onError: (errors) => {
-                setDeleteError(
-                    errors.product ??
-                        'Produk belum dapat dihapus. Silakan coba lagi.',
-                );
+                setDeleteError(errors.product ?? 'Produk belum dapat dihapus. Silakan coba lagi.');
             },
             onFinish: () => setDeleteProcessing(false),
         });
@@ -714,18 +620,13 @@ export default function ProductsIndex({
                 preserveScroll: true,
                 onSuccess: () => setDeleting(null),
                 onError: (errors) => {
-                    setDeleteError(
-                        errors.product ??
-                            'Produk belum dapat dinonaktifkan. Silakan coba lagi.',
-                    );
+                    setDeleteError(errors.product ?? 'Produk belum dapat dinonaktifkan. Silakan coba lagi.');
                 },
                 onFinish: () => setDeleteProcessing(false),
             },
         );
     };
-    const analyzingDrafts = productDrafts.drafts.filter((draft) =>
-        ['waiting', 'analyzing'].includes(draft.status),
-    ).length;
+    const analyzingDrafts = productDrafts.drafts.filter((draft) => ['waiting', 'analyzing'].includes(draft.status)).length;
 
     useEffect(() => {
         return () => {
@@ -824,15 +725,20 @@ export default function ProductsIndex({
             retail_unit_public_id: product.retail_unit_public_id,
             large_unit_public_id: product.large_unit_public_id,
             variant_mode: product.variant_mode,
-            purchase_price: product.purchase_price,
-            selling_price: product.selling_price,
-            current_stock: product.current_stock,
-            minimum_stock: product.minimum_stock,
+            purchase_price: formatFormDecimal(product.purchase_price),
+            selling_price: formatFormDecimal(product.selling_price),
+            current_stock: formatFormDecimal(product.current_stock),
+            minimum_stock: formatFormDecimal(product.minimum_stock),
             variants: product.variants.map((variant) => ({
                 ...variant,
                 client_id: variant.public_id ?? createIdempotencyKey(),
                 sku: variant.sku ?? '',
                 barcode: variant.barcode ?? '',
+                purchase_price: formatFormDecimal(variant.purchase_price),
+                selling_price: formatFormDecimal(variant.selling_price),
+                current_stock: formatFormDecimal(variant.current_stock),
+                minimum_stock: formatFormDecimal(variant.minimum_stock),
+                conversion_factor: formatFormDecimal(variant.conversion_factor),
                 photo: null,
                 remove_photo: false,
             })),
@@ -849,72 +755,40 @@ export default function ProductsIndex({
         form.setData({
             ...form.data,
             variant_mode: mode,
-            variants:
-                mode === 'none'
-                    ? []
-                    : form.data.variants.length
-                      ? form.data.variants
-                      : [firstVariant],
+            variants: mode === 'none' ? [] : form.data.variants.length ? form.data.variants : [firstVariant],
         });
     };
-    const updateVariantFields = (
-        index: number,
-        changes: Partial<ProductVariant>,
-    ) =>
+    const updateVariantFields = (index: number, changes: Partial<ProductVariant>) =>
         form.setData(
             'variants',
-            form.data.variants.map((variant, current) =>
-                current === index ? { ...variant, ...changes } : variant,
-            ),
+            form.data.variants.map((variant, current) => (current === index ? { ...variant, ...changes } : variant)),
         );
-    const updateVariant = (
-        index: number,
-        key: keyof ProductVariant,
-        value: ProductVariant[keyof ProductVariant],
-    ) => updateVariantFields(index, { [key]: value });
+    const updateVariant = (index: number, key: keyof ProductVariant, value: ProductVariant[keyof ProductVariant]) =>
+        updateVariantFields(index, { [key]: value });
     const suggestionValues = useCallback(
         (suggestion: DiscoverySuggestion) => {
             const category = categories.find(
                 (item) =>
                     item.is_active &&
                     item.name.toLocaleLowerCase(localeTag()) ===
-                        suggestion.classification.category_suggestion?.toLocaleLowerCase(
-                            localeTag(),
-                        ),
+                        suggestion.classification.category_suggestion?.toLocaleLowerCase(localeTag()),
             );
-            const findUnit = (
-                code: string | null,
-                type: UnitOption['unit_type'],
-            ) => {
+            const findUnit = (code: string | null, type: UnitOption['unit_type']) => {
                 if (!code) {
                     return undefined;
                 }
 
-                const acceptedLabels = new Set(
-                    (
-                        unitCodeAliases[type][normalizeUnitLabel(code)] ?? [
-                            code,
-                        ]
-                    ).map(normalizeUnitLabel),
-                );
+                const acceptedLabels = new Set((unitCodeAliases[type][normalizeUnitLabel(code)] ?? [code]).map(normalizeUnitLabel));
 
                 return units.find(
                     (item) =>
                         item.is_active &&
                         item.unit_type === type &&
-                        [item.name, item.symbol].some((value) =>
-                            acceptedLabels.has(normalizeUnitLabel(value)),
-                        ),
+                        [item.name, item.symbol].some((value) => acceptedLabels.has(normalizeUnitLabel(value))),
                 );
             };
-            const retailUnit = findUnit(
-                suggestion.quantity.sale_unit_code,
-                'retail',
-            );
-            const largeUnit = findUnit(
-                suggestion.quantity.larger_unit_code,
-                'large',
-            );
+            const retailUnit = findUnit(suggestion.quantity.sale_unit_code, 'retail');
+            const largeUnit = findUnit(suggestion.quantity.larger_unit_code, 'large');
 
             return {
                 name: suggestion.identity.display_name,
@@ -923,21 +797,15 @@ export default function ProductsIndex({
                 category_public_id: category?.public_id ?? '',
                 retail_unit_public_id: retailUnit?.public_id ?? '',
                 large_unit_public_id: largeUnit?.public_id ?? '',
-                purchase_price: String(
-                    suggestion.pricing.estimated_purchase_price ?? '',
-                ),
-                selling_price: String(
-                    suggestion.pricing.recommended_selling_price ?? '',
-                ),
+                purchase_price: String(suggestion.pricing.estimated_purchase_price ?? ''),
+                selling_price: String(suggestion.pricing.recommended_selling_price ?? ''),
             };
         },
         [categories, units],
     );
     const openDraft = (draft: ProductDraft) => {
         const next = blankForm();
-        const suggestion = draft.suggestion
-            ? suggestionValues(draft.suggestion)
-            : null;
+        const suggestion = draft.suggestion ? suggestionValues(draft.suggestion) : null;
         form.setData({
             ...next,
             ...suggestion,
@@ -945,8 +813,7 @@ export default function ProductsIndex({
             large_unit_public_id: suggestion?.large_unit_public_id ?? '',
             current_stock: '0',
             minimum_stock: '0',
-            barcode:
-                suggestion?.barcode || detectedProductBarcodeRef.current || '',
+            barcode: suggestion?.barcode || detectedProductBarcodeRef.current || '',
             photo: draft.file,
         });
         setEditing(null);
@@ -1007,16 +874,9 @@ export default function ProductsIndex({
     };
 
     useEffect(() => {
-        const active = productDrafts.drafts.find(
-            (draft) => draft.id === activeDraftId,
-        );
+        const active = productDrafts.drafts.find((draft) => draft.id === activeDraftId);
 
-        if (
-            !active ||
-            active.status !== 'ready' ||
-            active.applied ||
-            !active.suggestion
-        ) {
+        if (!active || active.status !== 'ready' || active.applied || !active.suggestion) {
             return;
         }
 
@@ -1028,19 +888,11 @@ export default function ProductsIndex({
                 ...form.data,
                 name: form.data.name || suggestion.name,
                 description: form.data.description || suggestion.description,
-                category_public_id:
-                    form.data.category_public_id ||
-                    suggestion.category_public_id,
-                retail_unit_public_id:
-                    form.data.retail_unit_public_id ||
-                    suggestion.retail_unit_public_id,
-                large_unit_public_id:
-                    form.data.large_unit_public_id ||
-                    suggestion.large_unit_public_id,
-                purchase_price:
-                    form.data.purchase_price || suggestion.purchase_price,
-                selling_price:
-                    form.data.selling_price || suggestion.selling_price,
+                category_public_id: form.data.category_public_id || suggestion.category_public_id,
+                retail_unit_public_id: form.data.retail_unit_public_id || suggestion.retail_unit_public_id,
+                large_unit_public_id: form.data.large_unit_public_id || suggestion.large_unit_public_id,
+                purchase_price: form.data.purchase_price || suggestion.purchase_price,
+                selling_price: form.data.selling_price || suggestion.selling_price,
                 barcode: form.data.barcode || suggestion.barcode,
             });
             setDiscoveryPrefill(true);
@@ -1048,9 +900,7 @@ export default function ProductsIndex({
         });
     }, [activeDraftId, form, productDrafts, suggestionValues]);
     const removeDraft = (draftId: string) => {
-        const remaining = productDrafts.drafts.filter(
-            (draft) => draft.id !== draftId,
-        );
+        const remaining = productDrafts.drafts.filter((draft) => draft.id !== draftId);
         const wasActive = draftId === activeDraftId;
         productDrafts.remove(draftId);
 
@@ -1096,46 +946,29 @@ export default function ProductsIndex({
                 return submittedVariant;
             }),
         }));
-        form.post(
-            editing
-                ? `/master-data/products/${editing.public_id}`
-                : '/master-data/products',
-            {
-                forceFormData: true,
-                preserveScroll: true,
-                onSuccess: () => {
-                    if (!activeDraftId) {
-                        closeForm();
+        form.post(editing ? `/master-data/products/${editing.public_id}` : '/master-data/products', {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                if (!activeDraftId) {
+                    closeForm();
 
-                        return;
-                    }
+                    return;
+                }
 
-                    const remaining = productDrafts.drafts.filter(
-                        (draft) => draft.id !== activeDraftId,
-                    );
-                    productDrafts.remove(activeDraftId);
+                const remaining = productDrafts.drafts.filter((draft) => draft.id !== activeDraftId);
+                productDrafts.remove(activeDraftId);
 
-                    if (remaining[0]) {
-                        openDraft(remaining[0]);
-                    } else {
-                        closeForm(false);
-                    }
-                },
+                if (remaining[0]) {
+                    openDraft(remaining[0]);
+                } else {
+                    closeForm(false);
+                }
             },
-        );
+        });
     };
-    const applyFilters = () =>
-        router.get(
-            '/master-data/products',
-            { search, status },
-            { preserveState: true, replace: true },
-        );
-    const modeLabel = (mode: VariantMode) =>
-        mode === 'none'
-            ? 'Tanpa varian'
-            : mode === 'separate'
-              ? 'Stok terpisah'
-              : 'Stok gabungan';
+    const applyFilters = () => router.get('/master-data/products', { search, status }, { preserveState: true, replace: true });
+    const modeLabel = (mode: VariantMode) => (mode === 'none' ? 'Tanpa varian' : mode === 'separate' ? 'Stok terpisah' : 'Stok gabungan');
 
     return (
         <>
@@ -1144,10 +977,8 @@ export default function ProductsIndex({
                 <div className="mx-auto max-w-7xl space-y-4">
                     <div className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
                         <div className="flex items-center justify-between gap-3">
-                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
-                                Produk
-                            </h1>
-                            {canManage && (
+                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Produk</h1>
+                            {canManage && !productLimitReached && (
                                 <div className="flex flex-wrap justify-end gap-2">
                                     <Button
                                         onClick={() => openManualCreate()}
@@ -1160,10 +991,16 @@ export default function ProductsIndex({
                                         onClick={openCreate}
                                         className="min-h-11 bg-[var(--app-primary)] px-4 font-bold text-[var(--app-primary-foreground)] hover:bg-[var(--app-primary)]"
                                     >
-                                        <Camera className="size-5" /> Scan
-                                        produk
+                                        <Camera className="size-5" /> Scan produk
                                     </Button>
                                 </div>
+                            )}
+                            {canManage && productLimitReached && (
+                                <Button asChild variant="outline" className="min-h-11">
+                                    <Link href="/pricing?category=product_capacity#category-product_capacity">
+                                        <PackagePlus className="size-5" /> Tambah kapasitas produk
+                                    </Link>
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -1173,12 +1010,8 @@ export default function ProductsIndex({
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                             <Input
                                 value={search}
-                                onChange={(event) =>
-                                    setSearch(event.target.value)
-                                }
-                                onKeyDown={(event) =>
-                                    event.key === 'Enter' && applyFilters()
-                                }
+                                onChange={(event) => setSearch(event.target.value)}
+                                onKeyDown={(event) => event.key === 'Enter' && applyFilters()}
                                 placeholder="Cari produk"
                                 className="h-11 border-[#ded7cd] bg-[#fbfaf7] pl-9"
                             />
@@ -1192,11 +1025,7 @@ export default function ProductsIndex({
                             <option value="active">Aktif</option>
                             <option value="inactive">Nonaktif</option>
                         </select>
-                        <Button
-                            onClick={applyFilters}
-                            variant="outline"
-                            className="h-11"
-                        >
+                        <Button onClick={applyFilters} variant="outline" className="h-11">
                             Terapkan
                         </Button>
                     </div>
@@ -1204,10 +1033,8 @@ export default function ProductsIndex({
                     {products.data.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-[#cfc5b8] bg-white/70 py-16 text-center">
                             <Boxes className="mx-auto size-10 text-[var(--app-primary)]" />
-                            <p className="mt-3 font-serif text-xl font-bold text-slate-800">
-                                Belum ada produk
-                            </p>
-                            {canManage && (
+                            <p className="mt-3 font-serif text-xl font-bold text-slate-800">Belum ada produk</p>
+                            {canManage && !productLimitReached && (
                                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                                     <Button
                                         onClick={() => openManualCreate()}
@@ -1216,14 +1043,15 @@ export default function ProductsIndex({
                                     >
                                         Isi manual
                                     </Button>
-                                    <Button
-                                        onClick={openCreate}
-                                        className="bg-[var(--app-primary)]"
-                                    >
-                                        <Camera className="size-4" /> Scan
-                                        produk
+                                    <Button onClick={openCreate} className="bg-[var(--app-primary)]">
+                                        <Camera className="size-4" /> Scan produk
                                     </Button>
                                 </div>
+                            )}
+                            {canManage && productLimitReached && (
+                                <Button asChild>
+                                    <Link href="/pricing?category=product_capacity#category-product_capacity">Tambah kapasitas produk</Link>
+                                </Button>
                             )}
                         </div>
                     ) : (
@@ -1233,16 +1061,9 @@ export default function ProductsIndex({
                                     const criticalStock =
                                         product.variant_mode === 'separate'
                                             ? product.variants.some(
-                                                  (variant) =>
-                                                      Number(
-                                                          variant.current_stock,
-                                                      ) <=
-                                                      Number(
-                                                          variant.minimum_stock,
-                                                      ),
+                                                  (variant) => Number(variant.current_stock) <= Number(variant.minimum_stock),
                                               )
-                                            : Number(product.current_stock) <=
-                                              Number(product.minimum_stock);
+                                            : Number(product.current_stock) <= Number(product.minimum_stock);
 
                                     return (
                                         <article
@@ -1265,50 +1086,30 @@ export default function ProductsIndex({
                                                                 {product.name}
                                                             </p>
                                                             <p className="truncate text-sm text-slate-500">
-                                                                {product
-                                                                    .category
-                                                                    ?.name ??
-                                                                    'Tanpa kategori'}
+                                                                {product.category?.name ?? 'Tanpa kategori'}
                                                             </p>
                                                         </div>
                                                         <div className="flex shrink-0 flex-wrap justify-end gap-1">
                                                             <Badge
-                                                                variant={
-                                                                    product.is_active
-                                                                        ? 'default'
-                                                                        : 'secondary'
-                                                                }
+                                                                variant={product.is_active ? 'default' : 'secondary'}
                                                                 className={cn(
-                                                                    product.is_active &&
-                                                                        'bg-[var(--app-soft)] text-[var(--app-primary)]',
+                                                                    product.is_active && 'bg-[var(--app-soft)] text-[var(--app-primary)]',
                                                                 )}
                                                             >
-                                                                {product.is_active
-                                                                    ? 'Aktif'
-                                                                    : 'Nonaktif'}
+                                                                {product.is_active ? 'Aktif' : 'Nonaktif'}
                                                             </Badge>
                                                             {criticalStock && (
-                                                                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
-                                                                    Kritis
-                                                                </Badge>
+                                                                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Kritis</Badge>
                                                             )}
                                                         </div>
                                                     </div>
                                                     <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
                                                         <span className="rounded-full bg-[#fff0e6] px-2.5 py-1 font-semibold text-[#a44b25]">
-                                                            {modeLabel(
-                                                                product.variant_mode,
-                                                            )}
+                                                            {modeLabel(product.variant_mode)}
                                                         </span>
-                                                        {product.variants
-                                                            .length > 0 && (
+                                                        {product.variants.length > 0 && (
                                                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                                                                {
-                                                                    product
-                                                                        .variants
-                                                                        .length
-                                                                }{' '}
-                                                                varian
+                                                                {product.variants.length} varian
                                                             </span>
                                                         )}
                                                     </div>
@@ -1316,11 +1117,8 @@ export default function ProductsIndex({
                                             </div>
                                             <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-4 py-3">
                                                 <span className="text-sm font-bold text-slate-700">
-                                                    {product.variant_mode ===
-                                                    'none'
-                                                        ? formatMoney(
-                                                              product.selling_price,
-                                                          )
+                                                    {product.variant_mode === 'none'
+                                                        ? formatMoney(product.selling_price)
                                                         : `${product.variants.length} harga`}
                                                 </span>
                                                 {canManage && (
@@ -1328,15 +1126,10 @@ export default function ProductsIndex({
                                                         <Button
                                                             size="sm"
                                                             variant="ghost"
-                                                            onClick={() =>
-                                                                openEdit(
-                                                                    product,
-                                                                )
-                                                            }
+                                                            onClick={() => openEdit(product)}
                                                             className="text-[var(--app-primary)] hover:bg-[var(--app-soft)] hover:text-[var(--app-primary)]"
                                                         >
-                                                            <Edit3 className="size-4" />{' '}
-                                                            Edit
+                                                            <Edit3 className="size-4" /> Edit
                                                         </Button>
                                                         <Button
                                                             type="button"
@@ -1345,12 +1138,8 @@ export default function ProductsIndex({
                                                             aria-label={`Hapus ${product.name}`}
                                                             title="Hapus produk"
                                                             onClick={() => {
-                                                                setDeleteError(
-                                                                    '',
-                                                                );
-                                                                setDeleting(
-                                                                    product,
-                                                                );
+                                                                setDeleteError('');
+                                                                setDeleting(product);
                                                             }}
                                                             className="size-9 text-red-600 hover:bg-red-50 hover:text-red-700"
                                                         >
@@ -1385,11 +1174,11 @@ export default function ProductsIndex({
                     closeForm();
                 }}
             >
-                <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-full grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-slate-200 bg-white p-0 shadow-[0_28px_80px_rgba(15,23,42,0.24)] sm:h-auto sm:max-h-[94dvh] sm:w-full sm:max-w-5xl sm:rounded-3xl">
-                    <DialogHeader className="relative overflow-hidden border-b border-slate-200 bg-white px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pr-14 pb-4 text-left sm:px-7 sm:py-5 sm:pr-14">
-                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--app-primary)] via-[#ff8066] to-[#ffb6a5]" />
-                        <div className="absolute top-0 right-8 size-24 rounded-full bg-teal-100/70 blur-2xl" />
-                        <p className="relative text-xs font-black tracking-[0.16em] text-[#b4532d] uppercase">
+                <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-full grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-[#e7d8d2] bg-white p-0 shadow-[0_28px_80px_rgba(80,39,28,0.24)] sm:h-auto sm:max-h-[92dvh] sm:w-full sm:max-w-6xl sm:rounded-3xl">
+                    <DialogHeader className="relative overflow-hidden border-b-2 border-[#f1d3ca] bg-[#fffaf8] px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pr-14 pb-4 text-left sm:px-7 sm:py-5 sm:pr-14">
+                        <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--app-primary)] via-[#f86b4b] to-[#ffb199]" />
+                        <div className="absolute top-0 right-8 size-24 rounded-full bg-orange-100/90 blur-2xl" />
+                        <p className="relative inline-flex rounded-full border border-[#f4c4b7] bg-[#fff0eb] px-2.5 py-1 text-[11px] font-black tracking-[0.14em] text-[#c24120] uppercase">
                             {editing ? 'Perbarui katalog' : 'Produk baru'}
                         </p>
                         <DialogTitle className="relative mt-1 font-serif text-2xl font-black text-[var(--app-ink)] sm:text-3xl">
@@ -1397,31 +1186,21 @@ export default function ProductsIndex({
                         </DialogTitle>
                     </DialogHeader>
 
-                    <form
-                        onSubmit={submit}
-                        className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto]"
-                    >
+                    <form onSubmit={submit} className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto]">
                         <div
                             ref={formBodyRef}
-                            className="min-h-0 space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain bg-slate-50/60 p-3 pb-5 sm:p-5"
+                            className="min-h-0 space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#fffaf8] p-2.5 pb-5 sm:space-y-4 sm:p-5 lg:p-6"
                         >
                             {productDrafts.drafts.length > 0 && !editing && (
-                                <div className="rounded-2xl border border-[var(--border)] bg-white p-3 shadow-sm">
+                                <div className="rounded-2xl border border-[#e7d8d2] bg-white p-3 shadow-[0_6px_18px_rgba(80,39,28,0.05)]">
                                     <div className="mb-3 flex items-center justify-between gap-3">
                                         <div>
                                             <p className="text-sm font-black text-[var(--app-ink)]">
-                                                {productDrafts.drafts.length}{' '}
-                                                produk dalam antrean
+                                                {productDrafts.drafts.length} produk dalam antrean
                                             </p>
                                             {analyzingDrafts > 0 && (
                                                 <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">
-                                                    Menganalisis{' '}
-                                                    {analyzingDrafts} dari{' '}
-                                                    {
-                                                        productDrafts.drafts
-                                                            .length
-                                                    }{' '}
-                                                    foto
+                                                    Menganalisis {analyzingDrafts} dari {productDrafts.drafts.length} foto
                                                 </p>
                                             )}
                                         </div>
@@ -1436,183 +1215,120 @@ export default function ProductsIndex({
                                             }}
                                             className="border-[var(--app-soft-strong)] text-[var(--app-primary)]"
                                         >
-                                            <Camera className="size-4" /> Tambah
-                                            produk lain
+                                            <Camera className="size-4" /> Tambah produk lain
                                         </Button>
                                     </div>
                                     <div className="flex gap-2 overflow-x-auto pb-1">
-                                        {productDrafts.drafts.map(
-                                            (draft, index) => (
-                                                <div
-                                                    key={draft.id}
-                                                    className={cn(
-                                                        'relative flex min-w-52 items-center rounded-xl border text-left transition',
-                                                        draft.id ===
-                                                            activeDraftId
-                                                            ? 'border-[var(--app-primary)] bg-[var(--app-soft)] ring-2 ring-[var(--app-primary)]/10'
-                                                            : 'border-slate-200 bg-white hover:border-[var(--app-primary)]',
-                                                    )}
+                                        {productDrafts.drafts.map((draft, index) => (
+                                            <div
+                                                key={draft.id}
+                                                className={cn(
+                                                    'relative flex min-w-52 items-center rounded-xl border text-left transition',
+                                                    draft.id === activeDraftId
+                                                        ? 'border-[var(--app-primary)] bg-[var(--app-soft)] ring-2 ring-[var(--app-primary)]/10'
+                                                        : 'border-slate-200 bg-white hover:border-[var(--app-primary)]',
+                                                )}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openDraft(draft)}
+                                                    className="flex min-w-0 flex-1 items-center gap-2 rounded-l-xl p-2 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                                 >
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openDraft(draft)
-                                                        }
-                                                        className="flex min-w-0 flex-1 items-center gap-2 rounded-l-xl p-2 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
-                                                    >
-                                                        <ProductPhoto
-                                                            src={
-                                                                draft.previewUrl
-                                                            }
-                                                            alt=""
-                                                            className="size-12 rounded-lg object-cover"
-                                                            fallbackClassName="grid size-12 place-items-center rounded-lg bg-slate-100"
-                                                        />
-                                                        <span className="min-w-0 flex-1">
-                                                            <span className="block truncate text-xs font-black text-slate-800">
-                                                                {draft.suggestion &&
-                                                                draft.suggestion
-                                                                    .identity
-                                                                    .display_name
-                                                                    ? draft
-                                                                          .suggestion
-                                                                          .identity
-                                                                          .display_name
-                                                                    : `Produk ${index + 1}`}
-                                                            </span>
-                                                            <span
-                                                                className={cn(
-                                                                    'mt-1 flex items-center gap-1 text-[11px] font-bold',
-                                                                    draft.status ===
-                                                                        'failed'
-                                                                        ? 'text-amber-700'
-                                                                        : draft.status ===
-                                                                            'ready'
-                                                                          ? 'text-[var(--app-primary)]'
-                                                                          : 'text-slate-500',
-                                                                )}
-                                                            >
-                                                                {(draft.status ===
-                                                                    'analyzing' ||
-                                                                    draft.status ===
-                                                                        'waiting') && (
-                                                                    <LoaderCircle className="size-3 animate-spin" />
-                                                                )}
-                                                                {draft.status ===
-                                                                'analyzing'
-                                                                    ? 'Mencari data…'
-                                                                    : draft.status ===
-                                                                        'ready'
-                                                                      ? 'Data ditemukan'
-                                                                      : draft.status ===
-                                                                          'failed'
-                                                                        ? 'Perlu diisi manual'
-                                                                        : 'Menunggu giliran'}
-                                                            </span>
+                                                    <ProductPhoto
+                                                        src={draft.previewUrl}
+                                                        alt=""
+                                                        className="size-12 rounded-lg object-cover"
+                                                        fallbackClassName="grid size-12 place-items-center rounded-lg bg-slate-100"
+                                                    />
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate text-xs font-black text-slate-800">
+                                                            {draft.suggestion && draft.suggestion.identity.display_name
+                                                                ? draft.suggestion.identity.display_name
+                                                                : `Produk ${index + 1}`}
                                                         </span>
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            removeDraft(
-                                                                draft.id,
-                                                            )
-                                                        }
-                                                        aria-label={`Hapus Produk ${index + 1} dari antrean`}
-                                                        className="grid size-11 shrink-0 place-items-center rounded-lg text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </button>
-                                                </div>
-                                            ),
-                                        )}
+                                                        <span
+                                                            className={cn(
+                                                                'mt-1 flex items-center gap-1 text-[11px] font-bold',
+                                                                draft.status === 'failed'
+                                                                    ? 'text-amber-700'
+                                                                    : draft.status === 'ready'
+                                                                      ? 'text-[var(--app-primary)]'
+                                                                      : 'text-slate-500',
+                                                            )}
+                                                        >
+                                                            {(draft.status === 'analyzing' || draft.status === 'waiting') && (
+                                                                <LoaderCircle className="size-3 animate-spin" />
+                                                            )}
+                                                            {draft.status === 'analyzing'
+                                                                ? 'Mencari data…'
+                                                                : draft.status === 'ready'
+                                                                  ? 'Data ditemukan'
+                                                                  : draft.status === 'failed'
+                                                                    ? 'Perlu diisi manual'
+                                                                    : 'Menunggu giliran'}
+                                                        </span>
+                                                    </span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeDraft(draft.id)}
+                                                    aria-label={`Hapus Produk ${index + 1} dari antrean`}
+                                                    className="grid size-11 shrink-0 place-items-center rounded-lg text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
-                            {activeDraft &&
-                                ['waiting', 'analyzing'].includes(
-                                    activeDraft.status,
-                                ) && (
-                                    <div className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-sm font-bold text-teal-900">
-                                        <LoaderCircle className="size-4 shrink-0 animate-spin" />
-                                        Membaca foto produk…
-                                    </div>
-                                )}
+                            {activeDraft && ['waiting', 'analyzing'].includes(activeDraft.status) && (
+                                <div className="flex items-center gap-2 rounded-xl border border-[#f4c4b7] bg-[#fff0eb] px-3 py-2.5 text-sm font-bold text-[#9f351d]">
+                                    <LoaderCircle className="size-4 shrink-0 animate-spin" />
+                                    Membaca foto produk…
+                                </div>
+                            )}
                             {activeDraft?.status === 'failed' && (
                                 <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                                     <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                                    <p className="flex-1">
-                                        Foto belum berhasil dibaca.
-                                    </p>
+                                    <p className="flex-1">Foto belum berhasil dibaca.</p>
                                     <Button
                                         type="button"
                                         size="sm"
                                         variant="outline"
-                                        onClick={() =>
-                                            productDrafts.retry(activeDraft.id)
-                                        }
+                                        onClick={() => productDrafts.retry(activeDraft.id)}
                                         className="border-amber-300 bg-white text-amber-900"
                                     >
-                                        <RefreshCw className="size-4" /> Coba
-                                        lagi
+                                        <RefreshCw className="size-4" /> Coba lagi
                                     </Button>
                                 </div>
                             )}
-                            {Object.keys(form.errors).length > 0 && (
-                                <AlertError
-                                    errors={Object.values(form.errors)}
-                                />
-                            )}
+                            {Object.keys(form.errors).length > 0 && <AlertError errors={Object.values(form.errors)} />}
                             <Section number="1" title="Informasi Produk">
                                 <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_210px] lg:grid-cols-[minmax(0,1fr)_220px]">
                                     <div className="space-y-4">
-                                        <Field
-                                            label="Nama produk"
-                                            error={form.errors.name}
-                                        >
+                                        <Field label="Nama produk" error={form.errors.name}>
                                             <Input
                                                 autoFocus
                                                 value={form.data.name}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'name',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => form.setData('name', event.target.value)}
                                                 className="h-11 border-slate-200 bg-white shadow-sm"
                                             />
                                         </Field>
-                                        <Field
-                                            label="Deskripsi"
-                                            error={form.errors.description}
-                                        >
+                                        <Field label="Deskripsi" error={form.errors.description}>
                                             <textarea
                                                 value={form.data.description}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'description',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => form.setData('description', event.target.value)}
                                                 rows={3}
                                                 className="w-full resize-y rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15"
                                             />
                                         </Field>
                                         {form.data.variant_mode === 'none' && (
                                             <div className="grid gap-3 sm:grid-cols-2">
-                                                <Field
-                                                    label="SKU"
-                                                    error={form.errors.sku}
-                                                >
+                                                <Field label="SKU" error={form.errors.sku}>
                                                     <Input
                                                         value={form.data.sku}
-                                                        onChange={(event) =>
-                                                            form.setData(
-                                                                'sku',
-                                                                event.target
-                                                                    .value,
-                                                            )
-                                                        }
+                                                        onChange={(event) => form.setData('sku', event.target.value)}
                                                         className="h-11 border-slate-200 bg-white shadow-sm"
                                                     />
                                                 </Field>
@@ -1622,68 +1338,35 @@ export default function ProductsIndex({
                                                     onScan={() =>
                                                         setBarcodeTarget({
                                                             kind: 'product',
-                                                            label:
-                                                                form.data
-                                                                    .name ||
-                                                                'produk',
+                                                            label: form.data.name || 'produk',
                                                         })
                                                     }
-                                                    onClear={() =>
-                                                        form.setData(
-                                                            'barcode',
-                                                            '',
-                                                        )
-                                                    }
+                                                    onClear={() => form.setData('barcode', '')}
                                                 />
                                             </div>
                                         )}
-                                        <Field
-                                            label="Kategori"
-                                            error={
-                                                form.errors.category_public_id
-                                            }
-                                        >
+                                        <Field label="Kategori" error={form.errors.category_public_id}>
                                             <div className="flex gap-2">
                                                 <select
-                                                    value={
-                                                        form.data
-                                                            .category_public_id
-                                                    }
-                                                    onChange={(event) =>
-                                                        form.setData(
-                                                            'category_public_id',
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                    value={form.data.category_public_id}
+                                                    onChange={(event) => form.setData('category_public_id', event.target.value)}
                                                     className="h-11 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 text-sm shadow-sm"
                                                 >
-                                                    <option value="">
-                                                        Pilih kategori
-                                                    </option>
-                                                    {categories.map(
-                                                        (category) => (
-                                                            <option
-                                                                key={
-                                                                    category.public_id
-                                                                }
-                                                                value={
-                                                                    category.public_id
-                                                                }
-                                                                disabled={
-                                                                    !category.is_active
-                                                                }
-                                                            >
-                                                                {category.name}
-                                                            </option>
-                                                        ),
-                                                    )}
+                                                    <option value="">Pilih kategori</option>
+                                                    {categories.map((category) => (
+                                                        <option
+                                                            key={category.public_id}
+                                                            value={category.public_id}
+                                                            disabled={!category.is_active}
+                                                        >
+                                                            {category.name}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                                 <Button
                                                     type="button"
                                                     variant="outline"
-                                                    onClick={() =>
-                                                        setManager('category')
-                                                    }
+                                                    onClick={() => setManager('category')}
                                                     className="size-11 shrink-0 border-[var(--app-soft-strong)] text-[var(--app-primary)]"
                                                     aria-label="Kelola kategori"
                                                 >
@@ -1692,11 +1375,7 @@ export default function ProductsIndex({
                                             </div>
                                         </Field>
                                     </div>
-                                    <Field
-                                        label="Foto produk"
-                                        error={form.errors.photo}
-                                        className="mx-auto w-full max-w-[220px] lg:mx-0"
-                                    >
+                                    <Field label="Foto produk" error={form.errors.photo} className="mx-auto w-full max-w-[220px] lg:mx-0">
                                         <label className="group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-[var(--app-primary)] hover:bg-teal-50/40">
                                             {preview ? (
                                                 <ProductPhoto
@@ -1708,9 +1387,7 @@ export default function ProductsIndex({
                                             ) : (
                                                 <div className="text-center text-slate-500">
                                                     <ImagePlus className="mx-auto size-7 text-[var(--app-primary)]" />
-                                                    <span className="mt-2 block text-xs font-semibold">
-                                                        Pilih foto
-                                                    </span>
+                                                    <span className="mt-2 block text-xs font-semibold">Pilih foto</span>
                                                 </div>
                                             )}
                                             <input
@@ -1718,21 +1395,12 @@ export default function ProductsIndex({
                                                 accept="image/jpeg,image/png,image/webp"
                                                 className="sr-only"
                                                 onChange={(event) => {
-                                                    const file =
-                                                        event.target
-                                                            .files?.[0] ?? null;
+                                                    const file = event.target.files?.[0] ?? null;
                                                     form.setData('photo', file);
-                                                    form.setData(
-                                                        'remove_photo',
-                                                        false,
-                                                    );
+                                                    form.setData('remove_photo', false);
 
                                                     if (file) {
-                                                        setPreview(
-                                                            URL.createObjectURL(
-                                                                file,
-                                                            ),
-                                                        );
+                                                        setPreview(URL.createObjectURL(file));
                                                     }
                                                 }}
                                             />
@@ -1750,9 +1418,7 @@ export default function ProductsIndex({
                                             className="mt-2 w-full border-[var(--app-soft-strong)] text-[var(--app-primary)] hover:bg-[var(--app-soft)]"
                                         >
                                             <Camera className="size-4" />
-                                            {preview
-                                                ? 'Ambil ulang dengan kamera'
-                                                : 'Ambil foto dengan kamera'}
+                                            {preview ? 'Ambil ulang dengan kamera' : 'Ambil foto dengan kamera'}
                                         </Button>
                                         {preview && (
                                             <button
@@ -1760,10 +1426,7 @@ export default function ProductsIndex({
                                                 onClick={() => {
                                                     setPreview(null);
                                                     form.setData('photo', null);
-                                                    form.setData(
-                                                        'remove_photo',
-                                                        true,
-                                                    );
+                                                    form.setData('remove_photo', true);
                                                 }}
                                                 className="mt-2 text-xs font-semibold text-red-600"
                                             >
@@ -1786,70 +1449,34 @@ export default function ProductsIndex({
                                         className="text-[var(--app-primary)]"
                                     >
                                         <Settings2 className="size-4" />
-                                        <span className="hidden sm:inline">
-                                            Kelola satuan
-                                        </span>
+                                        <span className="hidden sm:inline">Kelola satuan</span>
                                     </Button>
                                 }
                             >
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <Field
-                                        label="Satuan besar"
-                                        error={form.errors.large_unit_public_id}
-                                    >
+                                    <Field label="Satuan besar" error={form.errors.large_unit_public_id}>
                                         <select
-                                            value={
-                                                form.data.large_unit_public_id
-                                            }
-                                            onChange={(event) =>
-                                                form.setData(
-                                                    'large_unit_public_id',
-                                                    event.target.value,
-                                                )
-                                            }
+                                            value={form.data.large_unit_public_id}
+                                            onChange={(event) => form.setData('large_unit_public_id', event.target.value)}
                                             className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm shadow-sm"
                                         >
-                                            <option value="">
-                                                Pilih satuan besar
-                                            </option>
+                                            <option value="">Pilih satuan besar</option>
                                             {largeUnits.map((unit) => (
-                                                <option
-                                                    key={unit.public_id}
-                                                    value={unit.public_id}
-                                                    disabled={!unit.is_active}
-                                                >
+                                                <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
                                                     {unit.name} ({unit.symbol})
                                                 </option>
                                             ))}
                                         </select>
                                     </Field>
-                                    <Field
-                                        label="Satuan ecer"
-                                        error={
-                                            form.errors.retail_unit_public_id
-                                        }
-                                    >
+                                    <Field label="Satuan ecer" error={form.errors.retail_unit_public_id}>
                                         <select
-                                            value={
-                                                form.data.retail_unit_public_id
-                                            }
-                                            onChange={(event) =>
-                                                form.setData(
-                                                    'retail_unit_public_id',
-                                                    event.target.value,
-                                                )
-                                            }
+                                            value={form.data.retail_unit_public_id}
+                                            onChange={(event) => form.setData('retail_unit_public_id', event.target.value)}
                                             className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm shadow-sm"
                                         >
-                                            <option value="">
-                                                Pilih satuan ecer
-                                            </option>
+                                            <option value="">Pilih satuan ecer</option>
                                             {retailUnits.map((unit) => (
-                                                <option
-                                                    key={unit.public_id}
-                                                    value={unit.public_id}
-                                                    disabled={!unit.is_active}
-                                                >
+                                                <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
                                                     {unit.name} ({unit.symbol})
                                                 </option>
                                             ))}
@@ -1862,43 +1489,26 @@ export default function ProductsIndex({
                                 <button
                                     type="button"
                                     role="switch"
-                                    aria-checked={
-                                        form.data.variant_mode !== 'none'
-                                    }
-                                    onClick={() =>
-                                        setMode(
-                                            form.data.variant_mode === 'none'
-                                                ? 'separate'
-                                                : 'none',
-                                        )
-                                    }
-                                    className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left"
+                                    aria-checked={form.data.variant_mode !== 'none'}
+                                    onClick={() => setMode(form.data.variant_mode === 'none' ? 'separate' : 'none')}
+                                    className="flex w-full items-center justify-between gap-4 rounded-2xl border border-[#e7d8d2] bg-[#fffaf8] p-3 text-left shadow-sm"
                                 >
                                     <span>
-                                        <span className="block text-sm font-bold text-slate-800">
-                                            Varian ukuran / jenis
-                                        </span>
+                                        <span className="block text-sm font-bold text-slate-800">Varian ukuran / jenis</span>
                                         <span className="text-xs text-slate-500">
-                                            {form.data.variant_mode === 'none'
-                                                ? 'Tidak aktif'
-                                                : 'Aktif'}
+                                            {form.data.variant_mode === 'none' ? 'Tidak aktif' : 'Aktif'}
                                         </span>
                                     </span>
                                     <span
                                         className={cn(
                                             'relative h-7 w-12 rounded-full transition',
-                                            form.data.variant_mode === 'none'
-                                                ? 'bg-slate-300'
-                                                : 'bg-[var(--app-primary)]',
+                                            form.data.variant_mode === 'none' ? 'bg-slate-300' : 'bg-[var(--app-primary)]',
                                         )}
                                     >
                                         <span
                                             className={cn(
                                                 'absolute top-1 size-5 rounded-full bg-white shadow transition',
-                                                form.data.variant_mode ===
-                                                    'none'
-                                                    ? 'left-1'
-                                                    : 'left-6',
+                                                form.data.variant_mode === 'none' ? 'left-1' : 'left-6',
                                             )}
                                         />
                                     </span>
@@ -1907,11 +1517,7 @@ export default function ProductsIndex({
                                 {form.data.variant_mode === 'none' ? (
                                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                                         <Field
-                                            label={
-                                                discoveryPrefill
-                                                    ? 'Estimasi HPP'
-                                                    : 'HPP per 1 ecer'
-                                            }
+                                            label={discoveryPrefill ? 'Estimasi HPP' : 'HPP per 1 ecer'}
                                             error={form.errors.purchase_price}
                                         >
                                             <Input
@@ -1919,20 +1525,14 @@ export default function ProductsIndex({
                                                 value={form.data.purchase_price}
                                                 onChange={(event) => {
                                                     setDiscoveryPrefill(false);
-                                                    form.setData(
-                                                        'purchase_price',
-                                                        event.target.value,
-                                                    );
+                                                    form.setData('purchase_price', event.target.value);
                                                 }}
+                                                onBlur={() => form.setData('purchase_price', formatFormDecimal(form.data.purchase_price))}
                                                 className="h-11 border-slate-200 bg-white shadow-sm"
                                             />
                                         </Field>
                                         <Field
-                                            label={
-                                                discoveryPrefill
-                                                    ? 'Rekomendasi harga jual'
-                                                    : 'Harga jual per 1 ecer'
-                                            }
+                                            label={discoveryPrefill ? 'Rekomendasi harga jual' : 'Harga jual per 1 ecer'}
                                             error={form.errors.selling_price}
                                         >
                                             <Input
@@ -1940,43 +1540,31 @@ export default function ProductsIndex({
                                                 value={form.data.selling_price}
                                                 onChange={(event) => {
                                                     setDiscoveryPrefill(false);
-                                                    form.setData(
-                                                        'selling_price',
-                                                        event.target.value,
-                                                    );
+                                                    form.setData('selling_price', event.target.value);
                                                 }}
+                                                onBlur={() => form.setData('selling_price', formatFormDecimal(form.data.selling_price))}
                                                 className="h-11 border-slate-200 bg-white shadow-sm"
                                             />
                                         </Field>
-                                        <Field
-                                            label="Stok saat ini"
-                                            error={form.errors.current_stock}
-                                        >
+                                        <Field label="Stok saat ini" error={form.errors.current_stock}>
                                             <Input
                                                 inputMode="decimal"
+                                                step="0.01"
+                                                min="0"
                                                 value={form.data.current_stock}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'current_stock',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => form.setData('current_stock', event.target.value)}
+                                                onBlur={() => form.setData('current_stock', formatFormDecimal(form.data.current_stock))}
                                                 className="h-11 border-slate-200 bg-white shadow-sm"
                                             />
                                         </Field>
-                                        <Field
-                                            label="Ingatkan saat stok tinggal"
-                                            error={form.errors.minimum_stock}
-                                        >
+                                        <Field label="Ingatkan saat stok tinggal" error={form.errors.minimum_stock}>
                                             <Input
                                                 inputMode="decimal"
+                                                step="0.01"
+                                                min="0"
                                                 value={form.data.minimum_stock}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'minimum_stock',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => form.setData('minimum_stock', event.target.value)}
+                                                onBlur={() => form.setData('minimum_stock', formatFormDecimal(form.data.minimum_stock))}
                                                 className="h-11 border-slate-200 bg-white shadow-sm"
                                             />
                                         </Field>
@@ -1984,20 +1572,14 @@ export default function ProductsIndex({
                                 ) : (
                                     <div className="mt-4 space-y-4">
                                         <div className="grid gap-2 sm:grid-cols-2">
-                                            {(
-                                                ['separate', 'shared'] as const
-                                            ).map((mode) => (
+                                            {(['separate', 'shared'] as const).map((mode) => (
                                                 <button
                                                     type="button"
                                                     key={mode}
-                                                    onClick={() =>
-                                                        setMode(mode)
-                                                    }
+                                                    onClick={() => setMode(mode)}
                                                     className={cn(
                                                         'flex items-center gap-3 rounded-2xl border p-3 text-left',
-                                                        form.data
-                                                            .variant_mode ===
-                                                            mode
+                                                        form.data.variant_mode === mode
                                                             ? 'border-[var(--app-primary)] bg-[var(--app-soft)] text-[var(--app-primary)]'
                                                             : 'border-slate-200 bg-white text-slate-700',
                                                     )}
@@ -2005,23 +1587,17 @@ export default function ProductsIndex({
                                                     <span
                                                         className={cn(
                                                             'size-4 rounded-full border-4',
-                                                            form.data
-                                                                .variant_mode ===
-                                                                mode
+                                                            form.data.variant_mode === mode
                                                                 ? 'border-[var(--app-primary)] bg-white'
                                                                 : 'border-slate-300',
                                                         )}
                                                     />
                                                     <span>
                                                         <span className="block text-sm font-bold">
-                                                            {mode === 'separate'
-                                                                ? 'Beda rasa / jenis'
-                                                                : 'Beda satuan / grosir'}
+                                                            {mode === 'separate' ? 'Beda rasa / jenis' : 'Beda satuan / grosir'}
                                                         </span>
                                                         <span className="text-xs opacity-70">
-                                                            {mode === 'separate'
-                                                                ? 'Stok terpisah'
-                                                                : 'Stok gabungan'}
+                                                            {mode === 'separate' ? 'Stok terpisah' : 'Stok gabungan'}
                                                         </span>
                                                     </span>
                                                 </button>
@@ -2029,291 +1605,188 @@ export default function ProductsIndex({
                                         </div>
 
                                         <div className="space-y-3">
-                                            {form.data.variants.map(
-                                                (variant, index) => (
-                                                    <div
-                                                        key={
-                                                            variant.public_id ??
-                                                            variant.client_id ??
-                                                            index
-                                                        }
-                                                        data-variant-card
-                                                        className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 shadow-sm sm:p-4"
-                                                    >
-                                                        <div className="mb-3 flex items-center justify-between">
-                                                            <p className="font-serif font-bold text-slate-800">
-                                                                Varian{' '}
-                                                                {index + 1}
-                                                            </p>
-                                                            <Button
-                                                                type="button"
-                                                                size="icon"
-                                                                variant="ghost"
-                                                                onClick={() =>
-                                                                    removeVariant(
-                                                                        index,
-                                                                    )
-                                                                }
-                                                                className="size-9 text-red-600"
-                                                            >
-                                                                <Trash2 className="size-4" />
-                                                            </Button>
-                                                        </div>
-                                                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                                            <Field
-                                                                label="Nama varian"
-                                                                error={errorFor(
-                                                                    `variants.${index}.name`,
-                                                                )}
-                                                                className="sm:col-span-2 lg:col-span-1"
-                                                            >
-                                                                <Input
-                                                                    id={`variant-name-${variant.public_id ?? variant.client_id ?? index}`}
-                                                                    value={
-                                                                        variant.name
-                                                                    }
-                                                                    onChange={(
-                                                                        event,
-                                                                    ) =>
-                                                                        updateVariant(
-                                                                            index,
-                                                                            'name',
-                                                                            event
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    className="border-slate-200 bg-white"
-                                                                />
-                                                            </Field>
-                                                            <Field
-                                                                label="SKU varian"
-                                                                error={errorFor(
-                                                                    `variants.${index}.sku`,
-                                                                )}
-                                                            >
-                                                                <Input
-                                                                    value={
-                                                                        variant.sku
-                                                                    }
-                                                                    onChange={(
-                                                                        event,
-                                                                    ) =>
-                                                                        updateVariant(
-                                                                            index,
-                                                                            'sku',
-                                                                            event
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    className="border-slate-200 bg-white"
-                                                                />
-                                                            </Field>
-                                                            <BarcodeField
-                                                                value={
-                                                                    variant.barcode
-                                                                }
-                                                                error={errorFor(
-                                                                    `variants.${index}.barcode`,
-                                                                )}
-                                                                onScan={() =>
-                                                                    setBarcodeTarget(
-                                                                        {
-                                                                            kind: 'variant',
-                                                                            index,
-                                                                            label:
-                                                                                variant.name ||
-                                                                                `varian ${index + 1}`,
-                                                                        },
-                                                                    )
-                                                                }
-                                                                onClear={() =>
+                                            {form.data.variants.map((variant, index) => (
+                                                <div
+                                                    key={variant.public_id ?? variant.client_id ?? index}
+                                                    data-variant-card
+                                                    className="rounded-2xl border border-[#e7d8d2] bg-[#fffaf8] p-3 shadow-sm sm:p-4"
+                                                >
+                                                    <div className="mb-3 flex items-center justify-between">
+                                                        <p className="font-serif font-bold text-slate-800">Varian {index + 1}</p>
+                                                        <Button
+                                                            type="button"
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            onClick={() => removeVariant(index)}
+                                                            className="size-9 text-red-600"
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </Button>
+                                                    </div>
+                                                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                                        <Field
+                                                            label="Nama varian"
+                                                            error={errorFor(`variants.${index}.name`)}
+                                                            className="sm:col-span-2 lg:col-span-1"
+                                                        >
+                                                            <Input
+                                                                id={`variant-name-${variant.public_id ?? variant.client_id ?? index}`}
+                                                                value={variant.name}
+                                                                onChange={(event) => updateVariant(index, 'name', event.target.value)}
+                                                                onBlur={() =>
                                                                     updateVariant(
                                                                         index,
-                                                                        'barcode',
-                                                                        '',
+                                                                        'purchase_price',
+                                                                        formatFormDecimal(variant.purchase_price),
                                                                     )
                                                                 }
+                                                                className="border-slate-200 bg-white"
                                                             />
-                                                            <Field
-                                                                label="Foto varian"
-                                                                error={errorFor(
-                                                                    `variants.${index}.photo`,
-                                                                )}
-                                                                className="sm:col-span-2 lg:col-span-3"
-                                                            >
-                                                                <VariantPhotoInput
-                                                                    photo={
-                                                                        variant.photo
-                                                                    }
-                                                                    photoUrl={
-                                                                        variant.photo_url
-                                                                    }
-                                                                    variantName={
-                                                                        variant.name
-                                                                    }
-                                                                    onChange={(
-                                                                        file,
-                                                                    ) =>
-                                                                        updateVariantFields(
-                                                                            index,
-                                                                            {
-                                                                                photo: file,
-                                                                                remove_photo: false,
-                                                                            },
-                                                                        )
-                                                                    }
-                                                                    onRemove={() =>
-                                                                        updateVariantFields(
-                                                                            index,
-                                                                            {
-                                                                                photo: null,
-                                                                                remove_photo:
-                                                                                    Boolean(
-                                                                                        variant.photo_url,
-                                                                                    ),
-                                                                            },
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </Field>
-                                                            <Field
-                                                                label="HPP varian"
-                                                                error={errorFor(
-                                                                    `variants.${index}.purchase_price`,
-                                                                )}
-                                                            >
-                                                                <Input
-                                                                    inputMode="decimal"
-                                                                    value={
-                                                                        variant.purchase_price
-                                                                    }
-                                                                    onChange={(
-                                                                        event,
-                                                                    ) =>
-                                                                        updateVariant(
-                                                                            index,
-                                                                            'purchase_price',
-                                                                            event
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    className="border-slate-200 bg-white"
-                                                                />
-                                                            </Field>
-                                                            <Field
-                                                                label="Harga jual varian"
-                                                                error={errorFor(
-                                                                    `variants.${index}.selling_price`,
-                                                                )}
-                                                            >
-                                                                <Input
-                                                                    inputMode="decimal"
-                                                                    value={
-                                                                        variant.selling_price
-                                                                    }
-                                                                    onChange={(
-                                                                        event,
-                                                                    ) =>
-                                                                        updateVariant(
-                                                                            index,
-                                                                            'selling_price',
-                                                                            event
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    className="border-slate-200 bg-white"
-                                                                />
-                                                            </Field>
-                                                            {form.data
-                                                                .variant_mode ===
-                                                            'separate' ? (
-                                                                <>
-                                                                    <Field
-                                                                        label="Stok saat ini"
-                                                                        error={errorFor(
-                                                                            `variants.${index}.current_stock`,
-                                                                        )}
-                                                                    >
-                                                                        <Input
-                                                                            inputMode="decimal"
-                                                                            value={
-                                                                                variant.current_stock
-                                                                            }
-                                                                            onChange={(
-                                                                                event,
-                                                                            ) =>
-                                                                                updateVariant(
-                                                                                    index,
-                                                                                    'current_stock',
-                                                                                    event
-                                                                                        .target
-                                                                                        .value,
-                                                                                )
-                                                                            }
-                                                                            className="border-slate-200 bg-white"
-                                                                        />
-                                                                    </Field>
-                                                                    <Field
-                                                                        label="Batas stok minimal"
-                                                                        error={errorFor(
-                                                                            `variants.${index}.minimum_stock`,
-                                                                        )}
-                                                                    >
-                                                                        <Input
-                                                                            inputMode="decimal"
-                                                                            value={
-                                                                                variant.minimum_stock
-                                                                            }
-                                                                            onChange={(
-                                                                                event,
-                                                                            ) =>
-                                                                                updateVariant(
-                                                                                    index,
-                                                                                    'minimum_stock',
-                                                                                    event
-                                                                                        .target
-                                                                                        .value,
-                                                                                )
-                                                                            }
-                                                                            className="border-slate-200 bg-white"
-                                                                        />
-                                                                    </Field>
-                                                                </>
-                                                            ) : (
+                                                        </Field>
+                                                        <Field label="SKU varian" error={errorFor(`variants.${index}.sku`)}>
+                                                            <Input
+                                                                value={variant.sku}
+                                                                onChange={(event) => updateVariant(index, 'sku', event.target.value)}
+                                                                onBlur={() =>
+                                                                    updateVariant(
+                                                                        index,
+                                                                        'selling_price',
+                                                                        formatFormDecimal(variant.selling_price),
+                                                                    )
+                                                                }
+                                                                className="border-slate-200 bg-white"
+                                                            />
+                                                        </Field>
+                                                        <BarcodeField
+                                                            value={variant.barcode}
+                                                            error={errorFor(`variants.${index}.barcode`)}
+                                                            onScan={() =>
+                                                                setBarcodeTarget({
+                                                                    kind: 'variant',
+                                                                    index,
+                                                                    label: variant.name || `varian ${index + 1}`,
+                                                                })
+                                                            }
+                                                            onClear={() => updateVariant(index, 'barcode', '')}
+                                                        />
+                                                        <Field
+                                                            label="Foto varian"
+                                                            error={errorFor(`variants.${index}.photo`)}
+                                                            className="sm:col-span-2 lg:col-span-3"
+                                                        >
+                                                            <VariantPhotoInput
+                                                                photo={variant.photo}
+                                                                photoUrl={variant.photo_url}
+                                                                variantName={variant.name}
+                                                                onChange={(file) =>
+                                                                    updateVariantFields(index, {
+                                                                        photo: file,
+                                                                        remove_photo: false,
+                                                                    })
+                                                                }
+                                                                onRemove={() =>
+                                                                    updateVariantFields(index, {
+                                                                        photo: null,
+                                                                        remove_photo: Boolean(variant.photo_url),
+                                                                    })
+                                                                }
+                                                            />
+                                                        </Field>
+                                                        <Field label="HPP varian" error={errorFor(`variants.${index}.purchase_price`)}>
+                                                            <Input
+                                                                inputMode="decimal"
+                                                                value={variant.purchase_price}
+                                                                onChange={(event) =>
+                                                                    updateVariant(index, 'purchase_price', event.target.value)
+                                                                }
+                                                                className="border-slate-200 bg-white"
+                                                            />
+                                                        </Field>
+                                                        <Field
+                                                            label="Harga jual varian"
+                                                            error={errorFor(`variants.${index}.selling_price`)}
+                                                        >
+                                                            <Input
+                                                                inputMode="decimal"
+                                                                value={variant.selling_price}
+                                                                onChange={(event) =>
+                                                                    updateVariant(index, 'selling_price', event.target.value)
+                                                                }
+                                                                className="border-slate-200 bg-white"
+                                                            />
+                                                        </Field>
+                                                        {form.data.variant_mode === 'separate' ? (
+                                                            <>
                                                                 <Field
-                                                                    label="Isi per kemasan"
-                                                                    error={errorFor(
-                                                                        `variants.${index}.conversion_factor`,
-                                                                    )}
+                                                                    label="Stok saat ini"
+                                                                    error={errorFor(`variants.${index}.current_stock`)}
                                                                 >
                                                                     <Input
                                                                         inputMode="decimal"
-                                                                        value={
-                                                                            variant.conversion_factor
+                                                                        step="0.01"
+                                                                        min="0"
+                                                                        value={variant.current_stock}
+                                                                        onChange={(event) =>
+                                                                            updateVariant(index, 'current_stock', event.target.value)
                                                                         }
-                                                                        onChange={(
-                                                                            event,
-                                                                        ) =>
+                                                                        onBlur={() =>
                                                                             updateVariant(
                                                                                 index,
-                                                                                'conversion_factor',
-                                                                                event
-                                                                                    .target
-                                                                                    .value,
+                                                                                'current_stock',
+                                                                                formatFormDecimal(variant.current_stock),
                                                                             )
                                                                         }
                                                                         className="border-slate-200 bg-white"
                                                                     />
                                                                 </Field>
-                                                            )}
-                                                        </div>
+                                                                <Field
+                                                                    label="Batas stok minimal"
+                                                                    error={errorFor(`variants.${index}.minimum_stock`)}
+                                                                >
+                                                                    <Input
+                                                                        inputMode="decimal"
+                                                                        step="0.01"
+                                                                        min="0"
+                                                                        value={variant.minimum_stock}
+                                                                        onChange={(event) =>
+                                                                            updateVariant(index, 'minimum_stock', event.target.value)
+                                                                        }
+                                                                        onBlur={() =>
+                                                                            updateVariant(
+                                                                                index,
+                                                                                'minimum_stock',
+                                                                                formatFormDecimal(variant.minimum_stock),
+                                                                            )
+                                                                        }
+                                                                        className="border-slate-200 bg-white"
+                                                                    />
+                                                                </Field>
+                                                            </>
+                                                        ) : (
+                                                            <Field
+                                                                label="Isi per kemasan"
+                                                                error={errorFor(`variants.${index}.conversion_factor`)}
+                                                            >
+                                                                <Input
+                                                                    inputMode="decimal"
+                                                                    value={variant.conversion_factor}
+                                                                    onChange={(event) =>
+                                                                        updateVariant(index, 'conversion_factor', event.target.value)
+                                                                    }
+                                                                    onBlur={() =>
+                                                                        updateVariant(
+                                                                            index,
+                                                                            'conversion_factor',
+                                                                            formatFormDecimal(variant.conversion_factor),
+                                                                        )
+                                                                    }
+                                                                    className="border-slate-200 bg-white"
+                                                                />
+                                                            </Field>
+                                                        )}
                                                     </div>
-                                                ),
-                                            )}
+                                                </div>
+                                            ))}
                                         </div>
                                         <Button
                                             type="button"
@@ -2321,59 +1794,25 @@ export default function ProductsIndex({
                                             onClick={addVariant}
                                             className="w-full border-dashed border-[var(--app-primary)] text-[var(--app-primary)]"
                                         >
-                                            <Plus className="size-4" /> Tambah
-                                            varian
+                                            <Plus className="size-4" /> Tambah varian
                                         </Button>
-                                        <InputError
-                                            message={form.errors.variants}
-                                        />
+                                        <InputError message={form.errors.variants} />
 
-                                        {form.data.variant_mode ===
-                                            'shared' && (
+                                        {form.data.variant_mode === 'shared' && (
                                             <div className="grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--app-soft)] p-4 sm:grid-cols-2">
-                                                <Field
-                                                    label="Stok gabungan saat ini"
-                                                    error={
-                                                        form.errors
-                                                            .current_stock
-                                                    }
-                                                >
+                                                <Field label="Stok gabungan saat ini" error={form.errors.current_stock}>
                                                     <Input
                                                         inputMode="decimal"
-                                                        value={
-                                                            form.data
-                                                                .current_stock
-                                                        }
-                                                        onChange={(event) =>
-                                                            form.setData(
-                                                                'current_stock',
-                                                                event.target
-                                                                    .value,
-                                                            )
-                                                        }
+                                                        value={form.data.current_stock}
+                                                        onChange={(event) => form.setData('current_stock', event.target.value)}
                                                         className="h-11 border-[var(--app-soft-strong)] bg-white"
                                                     />
                                                 </Field>
-                                                <Field
-                                                    label="Ingatkan saat stok tinggal"
-                                                    error={
-                                                        form.errors
-                                                            .minimum_stock
-                                                    }
-                                                >
+                                                <Field label="Ingatkan saat stok tinggal" error={form.errors.minimum_stock}>
                                                     <Input
                                                         inputMode="decimal"
-                                                        value={
-                                                            form.data
-                                                                .minimum_stock
-                                                        }
-                                                        onChange={(event) =>
-                                                            form.setData(
-                                                                'minimum_stock',
-                                                                event.target
-                                                                    .value,
-                                                            )
-                                                        }
+                                                        value={form.data.minimum_stock}
+                                                        onChange={(event) => form.setData('minimum_stock', event.target.value)}
                                                         className="h-11 border-[var(--app-soft-strong)] bg-white"
                                                     />
                                                 </Field>
@@ -2389,42 +1828,34 @@ export default function ProductsIndex({
                                     <input
                                         type="checkbox"
                                         checked={form.data.is_active}
-                                        onChange={(event) =>
-                                            form.setData(
-                                                'is_active',
-                                                event.target.checked,
-                                            )
-                                        }
+                                        onChange={(event) => form.setData('is_active', event.target.checked)}
                                         className="size-5 accent-[var(--app-primary)]"
                                     />
                                 </label>
                             )}
                         </div>
 
-                        <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+.75rem)] shadow-[0_-10px_30px_rgba(15,23,42,0.04)] sm:flex-row sm:justify-end sm:px-6 sm:py-3">
+                        <div className="flex shrink-0 flex-col-reverse gap-2 border-t-2 border-[#f1d3ca] bg-[#fffaf8] px-3 pt-3 pb-[calc(env(safe-area-inset-bottom)+.75rem)] shadow-[0_-10px_30px_rgba(80,39,28,0.08)] sm:flex-row sm:justify-end sm:px-6 sm:py-3">
                             <Button
                                 type="button"
                                 variant="ghost"
                                 onClick={() => closeForm()}
-                                className="h-11 sm:min-w-28"
+                                className="h-11 border border-[#e7d8d2] bg-white px-5 font-bold text-[#6b3b2d] hover:bg-[#fff0eb] hover:text-[#6b3b2d] sm:min-w-28"
                             >
                                 Batal
                             </Button>
                             <Button
                                 disabled={form.processing}
-                                className="h-11 bg-[var(--app-primary)] px-6 font-bold hover:bg-[var(--app-primary)] sm:min-w-44"
+                                className="h-11 bg-[#ee4d2d] px-6 font-bold text-white shadow-[0_8px_18px_rgba(238,77,45,0.24)] hover:bg-[#d94326] hover:text-white sm:min-w-44"
                             >
                                 {form.processing
                                     ? 'Menyimpan...'
                                     : editing
                                       ? 'Simpan perubahan'
-                                      : productDrafts.drafts.length > 1 &&
-                                          activeDraftIndex >= 0
+                                      : productDrafts.drafts.length > 1 && activeDraftIndex >= 0
                                         ? `Simpan & lanjut · ${activeDraftIndex + 1} dari ${productDrafts.drafts.length}`
                                         : 'Tambah produk'}
-                                {!form.processing && (
-                                    <ChevronRight className="size-4" />
-                                )}
+                                {!form.processing && <ChevronRight className="size-4" />}
                             </Button>
                         </div>
                     </form>
@@ -2442,27 +1873,20 @@ export default function ProductsIndex({
             >
                 <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] gap-0 overflow-y-auto rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
                     <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 text-left">
-                        <DialogTitle className="text-lg font-black text-slate-900">
-                            Hapus produk {deleting?.name}?
-                        </DialogTitle>
+                        <DialogTitle className="text-lg font-black text-slate-900">Hapus produk {deleting?.name}?</DialogTitle>
                         <p className="mt-2 text-sm text-slate-600">
-                            Produk yang sudah dipakai dalam transaksi atau stok
-                            tidak bisa dihapus.
+                            Produk yang sudah dipakai dalam transaksi atau stok tidak bisa dihapus.
                         </p>
                     </DialogHeader>
                     {deleteError && (
-                        <p
-                            role="alert"
-                            className="mx-5 mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700"
-                        >
+                        <p role="alert" className="mx-5 mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
                             {deleteError}
                         </p>
                     )}
                     {deleteError && (
                         <div className="mx-5 mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
                             <p className="text-sm font-bold text-amber-900">
-                                Product ini masih bisa dipakai sebagai riwayat,
-                                tetapi tidak akan muncul untuk transaksi baru.
+                                Product ini masih bisa dipakai sebagai riwayat, tetapi tidak akan muncul untuk transaksi baru.
                             </p>
                             <Button
                                 type="button"
@@ -2471,27 +1895,15 @@ export default function ProductsIndex({
                                 onClick={deactivateProduct}
                                 className="mt-3 w-full border-amber-300 bg-white text-amber-900 hover:bg-amber-100"
                             >
-                                {deleteProcessing
-                                    ? 'Menonaktifkan...'
-                                    : 'Nonaktifkan product'}
+                                {deleteProcessing ? 'Menonaktifkan...' : 'Nonaktifkan product'}
                             </Button>
                         </div>
                     )}
                     <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={deleteProcessing}
-                            onClick={() => setDeleting(null)}
-                        >
+                        <Button type="button" variant="outline" disabled={deleteProcessing} onClick={() => setDeleting(null)}>
                             Batal
                         </Button>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            disabled={deleteProcessing}
-                            onClick={submitDelete}
-                        >
+                        <Button type="button" variant="destructive" disabled={deleteProcessing} onClick={submitDelete}>
                             {deleteProcessing ? 'Menghapus...' : 'Hapus produk'}
                         </Button>
                     </div>
@@ -2520,11 +1932,7 @@ export default function ProductsIndex({
             <Suspense fallback={null}>
                 <ProductScanner
                     purpose="product"
-                    title={
-                        scannerFlow === 'form-photo'
-                            ? `Foto ${form.data.name || 'produk'}`
-                            : 'Foto produk baru'
-                    }
+                    title={scannerFlow === 'form-photo' ? `Foto ${form.data.name || 'produk'}` : 'Foto produk baru'}
                     open={scannerOpen}
                     onOpenChange={handleScannerOpenChange}
                     onConfirm={() => undefined}
@@ -2539,11 +1947,7 @@ export default function ProductsIndex({
                         openManualCreate(value);
                     }}
                     singleCapture={scannerFlow === 'form-photo'}
-                    manualActionLabel={
-                        scannerFlow === 'form-photo'
-                            ? 'Lanjut tanpa ganti foto'
-                            : undefined
-                    }
+                    manualActionLabel={scannerFlow === 'form-photo' ? 'Lanjut tanpa ganti foto' : undefined}
                     onManualSearch={() => {
                         setScannerOpen(false);
 

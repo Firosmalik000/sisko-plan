@@ -18,7 +18,7 @@ class ActivateAllSubscriptions
     {
         return DB::transaction(function () use ($admin, $ipAddress): int {
             $subscriptions = Subscription::query()
-                ->with('plan:id,monthly_price,duration_months,is_trial')
+                ->with('plan:id,monthly_price,billing_cycle,duration_months,is_trial')
                 ->whereNotNull('user_id')
                 ->lockForUpdate()
                 ->orderBy('id')
@@ -40,6 +40,7 @@ class ActivateAllSubscriptions
                     'trial_used_at' => $subscription->plan->is_trial ? ($subscription->trial_used_at ?? $now) : $subscription->trial_used_at,
                     'current_period_start' => $subscription->plan->is_trial ? null : $periodStart,
                     'current_period_end' => $subscription->plan->is_trial
+                        || $subscription->plan->billing_cycle === Plan::BILLING_LIFETIME
                         ? null
                         : $periodStart->addMonthsNoOverflow($subscription->plan->duration_months)->subDay(),
                     'cancelled_at' => null,

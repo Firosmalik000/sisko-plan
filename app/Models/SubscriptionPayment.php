@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property string $public_id
+ * @property int|null $store_id
  * @property string $receipt_number
  * @property string $amount
  * @property Carbon $period_start
@@ -20,7 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $external_reference
  * @property Carbon $paid_at
  * @property string|null $notes
- * @property-read Store $store
+ * @property-read Store|null $store
  * @property-read Subscription $subscription
  * @property-read User|null $creator
  */

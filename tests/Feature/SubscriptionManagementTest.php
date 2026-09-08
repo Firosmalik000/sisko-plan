@@ -41,8 +41,9 @@ class SubscriptionManagementTest extends TestCase
         $subscription = Subscription::query()->with('plan')->sole();
         $this->assertSame($store->id, $subscription->store_id);
         $this->assertSame($owner->id, $subscription->user_id);
-        $this->assertSame(SubscriptionStatus::Trialing, $subscription->status);
-        $this->assertSame(now()->addDays(30)->toDateString(), $subscription->trial_ends_at?->toDateString());
+        $this->assertSame(SubscriptionStatus::Active, $subscription->status);
+        $this->assertNull($subscription->trial_ends_at);
+        $this->assertNull($subscription->current_period_end);
         $this->assertTrue($subscription->plan->is_default);
         $this->assertDatabaseHas('audit_logs', ['store_id' => $store->id, 'action' => 'store.created']);
     }
@@ -167,6 +168,139 @@ class SubscriptionManagementTest extends TestCase
         ]);
     }
 
+    public function test_flexible_entitlement_migration_is_reversible_and_restores_the_free_default(): void
+    {
+        $store = Store::factory()->create();
+        $restrictedStore = Store::factory()->create();
+        $restrictedStore->subscription()->sole()->update(['status' => SubscriptionStatus::Suspended]);
+        $migration = require database_path('migrations/2026_09_09_000000_add_flexible_subscription_entitlements.php');
+
+        $migration->down();
+        $this->assertFalse(Schema::hasColumn('plans', 'kind'));
+        $this->assertFalse(Schema::hasTable('subscription_addons'));
+        $this->assertTrue(Plan::query()->where('code', 'starter-default')->sole()->is_trial);
+
+        $migration->up();
+        $free = Plan::query()->where('code', 'starter-default')->sole();
+        $this->assertTrue(Schema::hasColumns('plans', ['kind', 'billing_cycle', 'max_scans']));
+        $this->assertTrue(Schema::hasTable('subscription_addons'));
+        $this->assertSame('Gratis Selamanya', $free->name);
+        $this->assertFalse($free->is_trial);
+        $this->assertSame(SubscriptionStatus::Active, $store->subscription()->sole()->status);
+        $this->assertSame(SubscriptionStatus::Suspended, $restrictedStore->subscription()->sole()->status);
+        $this->assertDatabaseHas('subscription_periods', [
+            'subscription_id' => $store->subscription()->sole()->id,
+            'plan_name' => 'Gratis Selamanya',
+            'period_end' => null,
+            'was_trial' => false,
+        ]);
+    }
+
+    public function test_offer_category_migration_backfills_plans_and_addon_snapshots_reversibly(): void
+    {
+        $storeOffer = Plan::create([
+            'code' => 'legacy-store-addon', 'name' => 'Legacy Store Add-on',
+            'kind' => Plan::KIND_ADDON, 'billing_cycle' => Plan::BILLING_FIXED,
+            'monthly_price' => 0, 'duration_months' => 1,
+            'max_stores' => 1, 'max_products' => 0, 'max_members' => 0, 'max_scans' => 0,
+            'is_active' => true, 'is_default' => false, 'is_trial' => false,
+        ]);
+        $mixedOffer = Plan::create([
+            'code' => 'legacy-mixed-addon', 'name' => 'Legacy Mixed Add-on',
+            'kind' => Plan::KIND_ADDON, 'billing_cycle' => Plan::BILLING_FIXED,
+            'monthly_price' => 0, 'duration_months' => 1,
+            'max_stores' => 1, 'max_products' => 0, 'max_members' => 1, 'max_scans' => 0,
+            'is_active' => true, 'is_default' => false, 'is_trial' => false,
+        ]);
+        $migration = require database_path('migrations/2026_09_11_000000_add_offer_categories_to_subscription_addons.php');
+
+        $migration->down();
+        $this->assertFalse(Schema::hasColumn('plans', 'offer_category'));
+        $this->assertFalse(Schema::hasColumn('subscription_addons', 'offer_category'));
+
+        $migration->up();
+        $this->assertSame(Plan::CATEGORY_STORE, DB::table('plans')->where('id', $storeOffer->id)->value('offer_category'));
+        $this->assertSame(Plan::CATEGORY_GENERAL, DB::table('plans')->where('id', $mixedOffer->id)->value('offer_category'));
+        $this->assertNull(DB::table('plans')->where('is_default', true)->value('offer_category'));
+    }
+
+    public function test_free_subscription_backfill_covers_existing_customers_and_retires_old_offers_safely(): void
+    {
+        $legacy = Plan::create([
+            'code' => 'legacy-monthly', 'name' => 'Legacy Monthly', 'kind' => Plan::KIND_BASE,
+            'billing_cycle' => Plan::BILLING_FIXED, 'monthly_price' => '100000', 'duration_months' => 1,
+            'max_stores' => 2, 'max_products' => 100, 'max_members' => 2, 'max_scans' => 0,
+            'is_default' => false, 'is_trial' => false, 'is_active' => true,
+        ]);
+        $unused = Plan::create([
+            'code' => 'unused-monthly', 'name' => 'Unused Monthly', 'kind' => Plan::KIND_BASE,
+            'billing_cycle' => Plan::BILLING_FIXED, 'monthly_price' => '200000', 'duration_months' => 1,
+            'max_stores' => 3, 'max_products' => 500, 'max_members' => 5, 'max_scans' => 500,
+            'is_default' => false, 'is_trial' => false, 'is_active' => true,
+        ]);
+        $customerWithoutStore = User::factory()->create();
+        $existingFreeOwner = User::factory()->create();
+        $existingFreeStore = Store::factory()->for($existingFreeOwner, 'owner')->create();
+        $existingFreeSubscription = $existingFreeStore->subscription()->sole();
+        $existingFreeSubscription->update(['current_period_start' => '2026-01-01']);
+        $existingFreeSubscription->periods()->whereNull('period_end')->update(['period_start' => '2026-01-01']);
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+        $staff = User::factory()->create();
+        $store->users()->attach($staff, [
+            'role' => MembershipRole::Cashier->value,
+            'status' => MembershipStatus::Active->value,
+        ]);
+        $subscription = $store->subscription()->sole();
+        $subscription->update(['plan_id' => $legacy->id, 'status' => SubscriptionStatus::Active]);
+        DB::table('subscription_periods')->insert([
+            'public_id' => (string) Str::ulid(), 'subscription_id' => $subscription->id,
+            'user_id' => $owner->id, 'plan_id' => $legacy->id, 'plan_name' => $legacy->name,
+            'monthly_price' => $legacy->monthly_price, 'duration_months' => 1, 'was_trial' => false,
+            'period_start' => now()->subMonth()->toDateString(), 'period_end' => now()->subDay()->toDateString(),
+            'source' => 'self_service', 'activated_at' => now()->subMonth(), 'created_by_user_id' => $owner->id,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $scheduledId = (string) Str::ulid();
+        DB::table('subscription_periods')->insert([
+            'public_id' => $scheduledId, 'subscription_id' => $subscription->id,
+            'user_id' => $owner->id, 'plan_id' => $legacy->id, 'plan_name' => $legacy->name,
+            'monthly_price' => $legacy->monthly_price, 'duration_months' => 1, 'was_trial' => false,
+            'period_start' => now()->addMonth()->toDateString(), 'period_end' => now()->addMonths(2)->subDay()->toDateString(),
+            'source' => 'self_service', 'activated_at' => null, 'created_by_user_id' => $owner->id,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $restrictedOwner = User::factory()->create();
+        $restrictedStore = Store::factory()->for($restrictedOwner, 'owner')->create();
+        $restrictedStore->subscription()->sole()->update([
+            'plan_id' => $legacy->id,
+            'status' => SubscriptionStatus::Suspended,
+        ]);
+        $admin = User::factory()->superAdmin()->create();
+        $migration = require database_path('migrations/2026_09_10_000000_backfill_free_subscriptions_and_seed_addons.php');
+
+        $migration->up();
+        $migration->up();
+
+        $free = Plan::query()->where('code', 'starter-default')->sole();
+        $this->assertSame(1, $free->max_stores);
+        $this->assertSame(1, $free->max_members);
+        $this->assertSame(100, $free->max_scans);
+        $this->assertSame($free->id, $customerWithoutStore->subscription()->sole()->plan_id);
+        $this->assertSame(SubscriptionStatus::Active, $customerWithoutStore->subscription()->sole()->status);
+        $this->assertSame('2026-01-01', $existingFreeSubscription->fresh()->current_period_start?->toDateString());
+        $this->assertSame($free->id, $subscription->fresh()->plan_id);
+        $this->assertSame($free->id, $restrictedStore->subscription()->sole()->plan_id);
+        $this->assertSame(SubscriptionStatus::Suspended, $restrictedStore->subscription()->sole()->status);
+        $this->assertFalse($admin->subscription()->exists());
+        $this->assertFalse($staff->subscription()->exists());
+        $this->assertDatabaseMissing('subscription_periods', ['public_id' => $scheduledId]);
+        $this->assertFalse($legacy->fresh()->is_active);
+        $this->assertDatabaseMissing('plans', ['id' => $unused->id]);
+        $this->assertSame(3, Plan::query()->where('kind', Plan::KIND_ADDON)->count());
+        $this->assertSame(0, Plan::query()->where('kind', Plan::KIND_ADDON)->where('is_active', true)->count());
+    }
+
     public function test_public_pricing_page_only_lists_active_plans(): void
     {
         $this->withoutVite();
@@ -183,23 +317,26 @@ class SubscriptionManagementTest extends TestCase
             ->component('public/pricing')
             ->has('plans', 2)
             ->where('plans.1.name', 'Growth')
-            ->where('plans.0.max_stores', 3)
+            ->where('plans.0.max_stores', 1)
             ->where('plans.0.duration_months', 1)
             ->where('plans.0.is_current', false)
             ->where('plans.1.is_current', false));
     }
 
-    public function test_trial_plan_seeder_is_idempotent_and_marks_the_canonical_trial(): void
+    public function test_plan_seeder_is_idempotent_and_marks_the_free_forever_default(): void
     {
         $this->seed(PlanSeeder::class);
         $this->seed(PlanSeeder::class);
 
-        $trial = Plan::query()->where('is_trial', true)->sole();
-        $this->assertSame('starter-default', $trial->code);
-        $this->assertSame('Trial 30 Hari', $trial->name);
-        $this->assertTrue($trial->is_default);
-        $this->assertTrue($trial->is_active);
-        $this->assertSame(2, $trial->max_members);
+        $free = Plan::query()->where('is_default', true)->sole();
+        $this->assertSame('starter-default', $free->code);
+        $this->assertSame('Gratis Selamanya', $free->name);
+        $this->assertTrue($free->is_default);
+        $this->assertTrue($free->is_active);
+        $this->assertFalse($free->is_trial);
+        $this->assertSame(Plan::BILLING_LIFETIME, $free->billing_cycle);
+        $this->assertSame(1, $free->max_members);
+        $this->assertSame(100, $free->max_scans);
     }
 
     public function test_plan_code_is_generated_server_side_and_stays_internal(): void
@@ -239,11 +376,127 @@ class SubscriptionManagementTest extends TestCase
         $this->assertDatabaseMissing('plans', ['name' => 'Paket Durasi']);
     }
 
+    public function test_addon_offer_increases_account_entitlements_without_replacing_the_base_plan(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create(['name' => 'Toko Utama']);
+        $subscription = $store->subscription()->with('plan')->sole();
+        $basePlanId = $subscription->plan_id;
+        $admin = User::factory()->superAdmin()->create();
+
+        $this->actingAs($admin)->post(route('super-admin.plans.store'), [
+            'name' => 'Tambah Kapasitas Dasar',
+            'description' => null,
+            'kind' => Plan::KIND_ADDON,
+            'offer_category' => Plan::CATEGORY_GENERAL,
+            'billing_cycle' => Plan::BILLING_LIFETIME,
+            'monthly_price' => '0',
+            'duration_months' => 1,
+            'max_stores' => 1,
+            'max_products' => 0,
+            'max_members' => 1,
+            'max_scans' => 50,
+            'is_active' => true,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $addon = Plan::query()->where('name', 'Tambah Kapasitas Dasar')->sole();
+
+        $this->actingAs($owner)->get(route('pricing'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('plans.1.name', 'Tambah Kapasitas Dasar')
+                ->where('plans.1.kind', Plan::KIND_ADDON)
+                ->where('plans.1.can_select', true));
+        $this->actingAs($owner)->post(route('pricing.subscribe'), ['plan_id' => $addon->public_id])
+            ->assertRedirect(route('subscription.index'))->assertSessionHasNoErrors();
+
+        $this->assertSame($basePlanId, $subscription->fresh()?->plan_id);
+        $this->assertDatabaseHas('subscription_addons', [
+            'subscription_id' => $subscription->id,
+            'user_id' => $owner->id,
+            'plan_id' => $addon->id,
+            'offer_category' => Plan::CATEGORY_GENERAL,
+            'stores' => 1,
+            'members' => 1,
+            'scans' => 50,
+            'ends_on' => null,
+        ]);
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('subscription.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('usage.max_stores', 2)
+                ->where('usage.max_members', 2)
+                ->where('usage.max_scans', 150)
+                ->has('addons', 1));
+        $this->actingAs($admin)->get(route('super-admin.subscriptions.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('subscriptions.data.0.active_addons', 1)
+                ->where('subscriptions.data.0.active_addons.0.plan_name', 'Tambah Kapasitas Dasar')
+                ->where('subscriptions.data.0.active_addons.0.scans', 50));
+
+        $this->actingAs($owner)->post(route('stores.store'), ['name' => 'Toko Kedua'])
+            ->assertRedirect(route('dashboard'))->assertSessionHasNoErrors();
+        $this->actingAs($owner)->post(route('stores.store'), ['name' => 'Toko Ketiga'])
+            ->assertSessionHasErrors('name');
+    }
+
+    public function test_addon_category_must_match_its_single_capacity_and_pricing_accepts_context(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $payload = [
+            'name' => 'Tambah Staf', 'description' => null,
+            'kind' => Plan::KIND_ADDON, 'offer_category' => Plan::CATEGORY_STORE,
+            'billing_cycle' => Plan::BILLING_FIXED, 'monthly_price' => '50000',
+            'duration_months' => 1, 'max_stores' => 0, 'max_products' => 0,
+            'max_members' => 1, 'max_scans' => 0, 'is_active' => true,
+        ];
+
+        $this->actingAs($admin)->post(route('super-admin.plans.store'), $payload)
+            ->assertSessionHasErrors('offer_category');
+        $this->actingAs($admin)->post(route('super-admin.plans.store'), [
+            ...$payload,
+            'offer_category' => Plan::CATEGORY_STAFF,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->get(route('pricing', ['category' => Plan::CATEGORY_STAFF]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('focus_category', Plan::CATEGORY_STAFF)
+                ->where('plans.1.offer_category', Plan::CATEGORY_STAFF));
+        $this->get(route('pricing', ['category' => 'unknown']))
+            ->assertInertia(fn (Assert $page) => $page->where('focus_category', null));
+    }
+
+    public function test_paid_plan_can_replace_the_free_lifetime_plan_immediately(): void
+    {
+        $this->travelTo('2026-09-07 10:00:00');
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+        $subscription = $store->subscription()->sole();
+        $paid = Plan::create([
+            'code' => 'growth-from-free', 'name' => 'Growth', 'kind' => Plan::KIND_BASE,
+            'billing_cycle' => Plan::BILLING_FIXED, 'monthly_price' => '250000', 'duration_months' => 1,
+            'max_stores' => 3, 'max_products' => 1000, 'max_members' => 5, 'max_scans' => 1000,
+            'is_active' => true, 'is_default' => false, 'is_trial' => false,
+        ]);
+
+        $this->actingAs($owner)->post(route('pricing.subscribe'), ['plan_id' => $paid->public_id])
+            ->assertRedirect(route('dashboard'))->assertSessionHasNoErrors();
+
+        $subscription->refresh();
+        $this->assertSame($paid->id, $subscription->plan_id);
+        $this->assertSame('2026-09-07', $subscription->current_period_start?->format('Y-m-d'));
+        $this->assertSame('2026-10-06', $subscription->current_period_end?->format('Y-m-d'));
+    }
+
     public function test_expired_trial_is_disabled_on_pricing_while_paid_plan_can_be_selected(): void
     {
         $owner = User::factory()->create();
         $store = Store::factory()->for($owner, 'owner')->create();
+        $trial = Plan::create([
+            'code' => 'legacy-trial', 'name' => 'Legacy Trial', 'monthly_price' => '0',
+            'max_stores' => 1, 'max_products' => 100, 'max_members' => 1,
+            'is_active' => true, 'is_default' => false, 'is_trial' => true,
+        ]);
         $store->subscription()->update([
+            'plan_id' => $trial->id,
             'status' => SubscriptionStatus::Trialing,
             'trial_ends_at' => now()->subDay(),
             'trial_used_at' => now()->subDays(31),
@@ -259,11 +512,11 @@ class SubscriptionManagementTest extends TestCase
                 ->component('public/pricing')
                 ->where('account.can_access_dashboard', false)
                 ->where('account.trial_used', true)
-                ->where('plans.0.is_trial', true)
-                ->where('plans.0.can_select', false)
-                ->where('plans.0.disabled_reason', 'Trial sudah digunakan.')
-                ->where('plans.1.name', 'Growth')
-                ->where('plans.1.can_select', true));
+                ->where('plans.1.is_trial', true)
+                ->where('plans.1.can_select', false)
+                ->where('plans.1.disabled_reason', 'Trial sudah digunakan.')
+                ->where('plans.2.name', 'Growth')
+                ->where('plans.2.can_select', true));
     }
 
     public function test_owner_can_confirm_paid_plan_after_trial_expiry_and_dashboard_is_unlocked(): void
@@ -366,8 +619,8 @@ class SubscriptionManagementTest extends TestCase
                 ->where('history.data.1.status', 'scheduled')
                 ->where('history.data.2.plan_name', 'Owner Growth')
                 ->where('history.data.2.status', 'active')
-                ->where('history.data.3.plan_name', 'Trial 30 Hari')
-                ->where('history.data.3.is_trial', true)
+                ->where('history.data.3.plan_name', 'Gratis Selamanya')
+                ->where('history.data.3.is_trial', false)
                 ->where('history.data.3.status', 'completed'));
 
         $this->travelTo('2026-11-24 09:00:00');
@@ -394,7 +647,11 @@ class SubscriptionManagementTest extends TestCase
             'trial_ends_at' => now()->subDay(),
             'trial_used_at' => now()->subDays(31),
         ]);
-        $trial = Plan::query()->where('is_trial', true)->sole();
+        $trial = Plan::create([
+            'code' => 'one-time-trial', 'name' => 'Trial 30 Hari', 'monthly_price' => '0',
+            'max_stores' => 1, 'max_products' => 100, 'max_members' => 1,
+            'is_active' => true, 'is_default' => false, 'is_trial' => true,
+        ]);
 
         $this->actingAs($owner)->post(route('pricing.subscribe'), ['plan_id' => $trial->public_id])
             ->assertSessionHasErrors('plan_id');
@@ -468,10 +725,9 @@ class SubscriptionManagementTest extends TestCase
 
         $freeSubscription = $freeStore->subscription()->sole();
         $paidSubscription = $paidStore->subscription()->sole();
-        $this->assertSame(SubscriptionStatus::Trialing, $freeSubscription->status);
+        $this->assertSame(SubscriptionStatus::Active, $freeSubscription->status);
         $this->assertSame('2026-08-22', $freeSubscription->starts_at->format('Y-m-d'));
-        $this->assertSame('2026-09-21', $freeSubscription->trial_ends_at?->format('Y-m-d'));
-        $this->assertNotNull($freeSubscription->trial_used_at);
+        $this->assertNull($freeSubscription->trial_ends_at);
         $this->assertNull($freeSubscription->current_period_end);
         $this->assertNull($freeSubscription->cancelled_at);
         $this->assertSame(SubscriptionStatus::Active, $paidSubscription->status);
@@ -747,7 +1003,7 @@ class SubscriptionManagementTest extends TestCase
         $this->actingAs($owner)->get(route('super-admin.subscriptions.index'))->assertForbidden();
         $this->actingAs($admin)->get(route('super-admin.subscriptions.index'))
             ->assertInertia(fn (Assert $page) => $page->component('platform/subscriptions/index')
-                ->has('plans', 2)
+                ->has('plans', 5)
                 ->has('subscriptions.data', 2)
                 ->where('subscriptions.data.0.plan.monthly_price', '200000.0000')
                 ->where('subscriptions.data.0.plan.is_active', true));

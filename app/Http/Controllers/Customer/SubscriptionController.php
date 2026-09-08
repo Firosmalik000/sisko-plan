@@ -26,7 +26,7 @@ class SubscriptionController extends Controller
             ->with('plan:id,is_trial')
             ->latest('period_start')
             ->latest('id')
-            ->paginate(20, ['public_id', 'plan_id', 'plan_name', 'monthly_price', 'duration_months', 'period_start', 'period_end', 'source', 'activated_at'], 'history_page')
+            ->paginate(20, ['public_id', 'plan_id', 'plan_name', 'monthly_price', 'duration_months', 'was_trial', 'period_start', 'period_end', 'source', 'activated_at'], 'history_page')
             ->through(function ($period) use ($today, $subscription): array {
                 $currentStart = $subscription->status->value === 'trialing'
                     ? $subscription->starts_at->toDateString()
@@ -43,7 +43,7 @@ class SubscriptionController extends Controller
 
                 return [
                     ...$period->only(['public_id', 'plan_name', 'monthly_price', 'duration_months', 'period_start', 'period_end', 'source']),
-                    'is_trial' => $period->plan->is_trial,
+                    'is_trial' => $period->was_trial,
                     'status' => $status,
                 ];
             });
@@ -53,9 +53,14 @@ class SubscriptionController extends Controller
             'subscription' => [
                 ...$subscription->only(['public_id', 'status', 'starts_at', 'trial_ends_at', 'current_period_start', 'current_period_end']),
                 'status' => $subscription->status->value,
-                'plan' => $subscription->plan->only(['name', 'description', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members']),
+                'plan' => $subscription->plan->only(['name', 'description', 'billing_cycle', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans']),
             ],
             'usage' => $access->summary($store),
+            'addons' => $subscription->addons()
+                ->whereDate('starts_on', '<=', $today)
+                ->where(fn ($query) => $query->whereNull('ends_on')->orWhereDate('ends_on', '>=', $today))
+                ->latest('id')
+                ->get(['public_id', 'plan_name', 'price', 'stores', 'products', 'members', 'scans', 'starts_on', 'ends_on']),
             'history' => $history,
             'payments' => $payments,
         ]);

@@ -3,6 +3,7 @@ import {
     Barcode,
     Banknote,
     Camera,
+    FileCheck2,
     Keyboard,
     Minus,
     PackageOpen,
@@ -13,27 +14,16 @@ import {
     ShoppingCart,
     QrCode,
     Trash2,
+    Upload,
+    X,
 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import {
-    currentDateTime,
-    money,
-    postingToken,
-    quantity,
-} from '@/components/operations-shell';
-import type {
-    ScannerProductCandidate,
-    ScannerSelection,
-} from '@/components/product-scanner/types';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { localeTag } from '@/lib/currency';
+import { currentDateTime, money, postingToken, quantity } from '@/components/operations-shell';
+import type { ScannerProductCandidate, ScannerSelection } from '@/components/product-scanner/types';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { cashTenderSuggestions, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 type ProductOption = {
     catalog_product_id: string;
@@ -74,6 +64,7 @@ type SaleForm = {
     account_id: string;
     transaction_discount_amount: string;
     paid_amount: string;
+    payment_proof: File | null;
     occurred_at: string;
     notes: string;
     idempotency_key: string;
@@ -81,9 +72,7 @@ type SaleForm = {
 };
 type EntryMode = 'input' | 'scan';
 
-const ProductScanner = lazy(
-    () => import('@/components/product-scanner/ProductScanner'),
-);
+const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
 
 const fieldClass =
     'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15';
@@ -102,19 +91,17 @@ export default function PosPage({
     const [barcode, setBarcode] = useState('');
     const [scanError, setScanError] = useState('');
     const [scannerOpen, setScannerOpen] = useState(
-        () =>
-            typeof window !== 'undefined' &&
-            new URL(window.location.href).searchParams.get('scan') === '1',
+        () => typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('scan') === '1',
     );
     const [scannerSummary, setScannerSummary] = useState('');
-    const [selectedProduct, setSelectedProduct] =
-        useState<CatalogProduct | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
     const searchRef = useRef<HTMLInputElement>(null);
     const scanRef = useRef<HTMLInputElement>(null);
     const sale = useForm<SaleForm>({
         account_id: paymentMethods[0]?.account_id ?? '',
         transaction_discount_amount: '0',
         paid_amount: '',
+        payment_proof: null,
         occurred_at: currentDateTime(timezone),
         notes: '',
         idempotency_key: postingToken(),
@@ -149,29 +136,19 @@ export default function PosPage({
     const visibleProducts = catalog.filter(
         (product) =>
             !normalizedSearch ||
-            product.name
-                .toLocaleLowerCase(localeTag())
-                .includes(normalizedSearch) ||
-            product.sku
-                ?.toLocaleLowerCase(localeTag())
-                .includes(normalizedSearch) ||
+            product.name.toLocaleLowerCase(localeTag()).includes(normalizedSearch) ||
+            product.sku?.toLocaleLowerCase(localeTag()).includes(normalizedSearch) ||
             product.barcode?.includes(normalizedSearch) ||
             product.options.some(
                 (option) =>
-                    option.variant_name
-                        ?.toLocaleLowerCase(localeTag())
-                        .includes(normalizedSearch) ||
-                    option.sku
-                        ?.toLocaleLowerCase(localeTag())
-                        .includes(normalizedSearch) ||
+                    option.variant_name?.toLocaleLowerCase(localeTag()).includes(normalizedSearch) ||
+                    option.sku?.toLocaleLowerCase(localeTag()).includes(normalizedSearch) ||
                     option.barcode?.includes(normalizedSearch),
             ),
     );
-    const available = (product: ProductOption) =>
-        Number(product.stock_quantity) / Number(product.conversion_factor);
+    const available = (product: ProductOption) => Number(product.stock_quantity) / Number(product.conversion_factor);
     const isCritical = (product: ProductOption) =>
-        available(product) <=
-        Number(product.minimum_quantity) / Number(product.conversion_factor);
+        available(product) <= Number(product.minimum_quantity) / Number(product.conversion_factor);
     const scannerProducts = useMemo<ScannerProductCandidate[]>(
         () =>
             catalog.map((product) => ({
@@ -184,49 +161,39 @@ export default function PosPage({
                     id: `${option.product_id}:${option.unit_id}`,
                     productId: option.product_id,
                     productPublicId: product.id,
-                    variantPublicId:
-                        option.product_id === product.id
-                            ? null
-                            : option.product_id,
+                    variantPublicId: option.product_id === product.id ? null : option.product_id,
                     variantName: option.variant_name,
                     unitId: option.unit_id,
                     unitName: option.unit_name,
                     unitSymbol: option.unit_symbol,
                     purchasePrice: '0',
                     sellingPrice: option.selling_price,
-                    stockQuantity: String(
-                        Number(option.stock_quantity) /
-                            Number(option.conversion_factor),
-                    ),
+                    stockQuantity: String(Number(option.stock_quantity) / Number(option.conversion_factor)),
                 })),
             })),
         [catalog],
     );
-    const subtotal = sale.data.items.reduce(
-        (sum, item) => sum + Number(item.quantity) * Number(item.selling_price),
-        0,
-    );
-    const itemDiscount = sale.data.items.reduce(
-        (sum, item) => sum + Number(item.discount_amount || 0),
-        0,
-    );
-    const total = Math.max(
-        0,
-        subtotal -
-            itemDiscount -
-            Number(sale.data.transaction_discount_amount || 0),
-    );
-    const selectedMethod = paymentMethods.find(
-        (method) => method.account_id === sale.data.account_id,
-    );
+    const subtotal = sale.data.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.selling_price), 0);
+    const itemDiscount = sale.data.items.reduce((sum, item) => sum + Number(item.discount_amount || 0), 0);
+    const total = Math.max(0, subtotal - itemDiscount - Number(sale.data.transaction_discount_amount || 0));
+    const selectedMethod = paymentMethods.find((method) => method.account_id === sale.data.account_id) ?? paymentMethods[0];
     const change = Math.max(0, Number(sale.data.paid_amount || 0) - total);
-    const cashSuggestions = Array.from(
-        new Set([
-            Math.ceil(total / 1000) * 1000,
-            Math.ceil(total / 5000) * 5000,
-            Math.ceil(total / 10000) * 10000,
-        ]),
-    ).filter((amount) => amount >= total && amount > 0);
+    const cashSuggestions = cashTenderSuggestions(total);
+
+    useEffect(() => {
+        const fallback = paymentMethods[0];
+
+        if (!fallback || paymentMethods.some((method) => method.account_id === sale.data.account_id)) {
+            return;
+        }
+
+        sale.setData((data) => ({
+            ...data,
+            account_id: fallback.account_id,
+            paid_amount: fallback.method === 'qris' ? String(total) : '',
+            payment_proof: fallback.method === 'qris' ? data.payment_proof : null,
+        }));
+    }, [paymentMethods, sale, total]);
 
     useEffect(() => {
         const url = new URL(window.location.href);
@@ -240,10 +207,7 @@ export default function PosPage({
     }, [scannerOpen]);
 
     const focusEntry = (mode: EntryMode = entryMode) => {
-        window.setTimeout(
-            () => (mode === 'input' ? searchRef : scanRef).current?.focus(),
-            0,
-        );
+        window.setTimeout(() => (mode === 'input' ? searchRef : scanRef).current?.focus(), 0);
     };
     const restoreEntry = () => {
         if (entryMode === 'input') {
@@ -259,11 +223,7 @@ export default function PosPage({
             return;
         }
 
-        const existing = sale.data.items.find(
-            (item) =>
-                item.product_id === product.product_id &&
-                item.unit_id === product.unit_id,
-        );
+        const existing = sale.data.items.find((item) => item.product_id === product.product_id && item.unit_id === product.unit_id);
 
         if (existing) {
             sale.setData(
@@ -272,21 +232,13 @@ export default function PosPage({
                     item === existing
                         ? {
                               ...item,
-                              quantity: String(
-                                  Math.min(
-                                      Number(item.quantity) + 1,
-                                      available(product),
-                                  ),
-                              ),
+                              quantity: String(Math.min(Number(item.quantity) + 1, available(product))),
                           }
                         : item,
                 ),
             );
         } else {
-            sale.setData('items', [
-                ...sale.data.items,
-                { ...product, quantity: '1', discount_amount: '0' },
-            ]);
+            sale.setData('items', [...sale.data.items, { ...product, quantity: '1', discount_amount: '0' }]);
         }
 
         setSelectedProduct(null);
@@ -300,9 +252,7 @@ export default function PosPage({
             const items = [...data.items];
             selections.forEach((selection) => {
                 const option = products.find(
-                    (product) =>
-                        product.product_id === selection.productId &&
-                        product.unit_id === selection.unitId,
+                    (product) => product.product_id === selection.productId && product.unit_id === selection.unitId,
                 );
 
                 if (!option || available(option) <= 0) {
@@ -311,29 +261,17 @@ export default function PosPage({
                     return;
                 }
 
-                const index = items.findIndex(
-                    (item) =>
-                        item.product_id === option.product_id &&
-                        item.unit_id === option.unit_id,
-                );
+                const index = items.findIndex((item) => item.product_id === option.product_id && item.unit_id === option.unit_id);
 
                 if (index >= 0) {
                     items[index] = {
                         ...items[index],
-                        quantity: String(
-                            Math.min(
-                                Number(items[index].quantity) +
-                                    selection.quantity,
-                                available(option),
-                            ),
-                        ),
+                        quantity: String(Math.min(Number(items[index].quantity) + selection.quantity, available(option))),
                     };
                 } else {
                     items.push({
                         ...option,
-                        quantity: String(
-                            Math.min(selection.quantity, available(option)),
-                        ),
+                        quantity: String(Math.min(selection.quantity, available(option))),
                         discount_amount: '0',
                     });
                 }
@@ -355,9 +293,7 @@ export default function PosPage({
     const updateItem = (index: number, changes: Partial<CartItem>) =>
         sale.setData(
             'items',
-            sale.data.items.map((item, itemIndex) =>
-                itemIndex === index ? { ...item, ...changes } : item,
-            ),
+            sale.data.items.map((item, itemIndex) => (itemIndex === index ? { ...item, ...changes } : item)),
         );
     const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key !== 'Enter') {
@@ -366,14 +302,9 @@ export default function PosPage({
 
         event.preventDefault();
         const exactMatches = products.filter(
-            (product) =>
-                product.barcode === search ||
-                product.sku?.toLocaleLowerCase(localeTag()) ===
-                    normalizedSearch,
+            (product) => product.barcode === search || product.sku?.toLocaleLowerCase(localeTag()) === normalizedSearch,
         );
-        const exact =
-            exactMatches.find((product) => Boolean(product.is_base_unit)) ??
-            exactMatches[0];
+        const exact = exactMatches.find((product) => Boolean(product.is_base_unit)) ?? exactMatches[0];
 
         if (exactMatches.length === 1 && exact) {
             addProduct(exact);
@@ -383,12 +314,8 @@ export default function PosPage({
     };
     const scanBarcode = () => {
         const scannedBarcode = barcode.trim();
-        const exactMatches = products.filter(
-            (product) => product.barcode === scannedBarcode,
-        );
-        const exact =
-            exactMatches.find((product) => Boolean(product.is_base_unit)) ??
-            exactMatches[0];
+        const exactMatches = products.filter((product) => product.barcode === scannedBarcode);
+        const exact = exactMatches.find((product) => Boolean(product.is_base_unit)) ?? exactMatches[0];
 
         if (!exact) {
             setScanError('Barcode tidak ditemukan.');
@@ -429,16 +356,15 @@ export default function PosPage({
             ...data,
             account_id: method.account_id,
             paid_amount: method.method === 'qris' ? String(total) : '',
+            payment_proof: method.method === 'qris' ? data.payment_proof : null,
         }));
     };
     const submit = (event: FormEvent) => {
         event.preventDefault();
         sale.transform((data) => ({
             ...data,
-            paid_amount:
-                selectedMethod?.method === 'qris'
-                    ? String(total)
-                    : data.paid_amount,
+            paid_amount: selectedMethod?.method === 'qris' ? String(total) : data.paid_amount,
+            payment_proof: selectedMethod?.method === 'qris' ? data.payment_proof : null,
         }));
         sale.post('/pos/sales', { preserveScroll: true });
     };
@@ -450,29 +376,27 @@ export default function PosPage({
                 <div className="mx-auto grid max-w-[1500px] gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(380px,0.75fr)]">
                     <section className="min-w-0 space-y-4">
                         <header className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm">
-                            <div className="flex items-center justify-between gap-3">
-                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
-                                    Kasir
-                                </h1>
-                                <div className="flex gap-2">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Kasir</h1>
+                                <div className="grid grid-cols-3 gap-2 sm:flex">
                                     <button
                                         type="button"
                                         onClick={() => setScannerOpen(true)}
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] hover:bg-[var(--workspace-700)]"
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-2 text-center text-xs font-black text-[var(--app-primary-foreground)] hover:bg-[var(--workspace-700)] sm:px-3"
                                     >
                                         <Camera className="size-4" />
                                         Scan kamera
                                     </button>
                                     <Link
                                         href="/sales?view=history&from=pos"
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--app-soft)] px-3 text-xs font-bold text-[var(--app-primary)] hover:bg-[var(--app-soft-strong)]"
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--app-soft)] px-2 text-center text-xs font-bold text-[var(--app-primary)] hover:bg-[var(--app-soft-strong)] sm:px-3"
                                     >
                                         <ReceiptText className="size-4" />
                                         Riwayat
                                     </Link>
                                     <Link
                                         href="/sales?view=returns&from=pos"
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100"
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-50 px-2 text-center text-xs font-bold text-red-700 hover:bg-red-100 sm:px-3"
                                     >
                                         <RotateCcw className="size-4" />
                                         Retur
@@ -488,11 +412,7 @@ export default function PosPage({
                                 </p>
                             )}
                             <div className="mt-4 rounded-2xl bg-[var(--app-soft)] p-1.5 shadow-[var(--app-ink)]/5 shadow-inner">
-                                <div
-                                    className="grid grid-cols-2 gap-1"
-                                    role="tablist"
-                                    aria-label="Mode tambah produk"
-                                >
+                                <div className="grid grid-cols-2 gap-1" role="tablist" aria-label="Mode tambah produk">
                                     <button
                                         type="button"
                                         role="tab"
@@ -527,19 +447,13 @@ export default function PosPage({
                             </div>
 
                             {entryMode === 'input' ? (
-                                <div
-                                    id="input-product-panel"
-                                    role="tabpanel"
-                                    className="relative mt-3"
-                                >
+                                <div id="input-product-panel" role="tabpanel" className="relative mt-3">
                                     <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-slate-400" />
                                     <input
                                         ref={searchRef}
                                         autoFocus
                                         value={search}
-                                        onChange={(event) =>
-                                            setSearch(event.target.value)
-                                        }
+                                        onChange={(event) => setSearch(event.target.value)}
                                         onKeyDown={onSearchKeyDown}
                                         placeholder="Cari nama produk atau SKU"
                                         aria-label="Cari produk"
@@ -559,17 +473,13 @@ export default function PosPage({
                                                 ref={scanRef}
                                                 value={barcode}
                                                 onChange={(event) => {
-                                                    setBarcode(
-                                                        event.target.value,
-                                                    );
+                                                    setBarcode(event.target.value);
                                                     setScanError('');
                                                 }}
                                                 onKeyDown={onScanKeyDown}
                                                 placeholder="Scan barcode"
                                                 aria-label="Scan barcode"
-                                                aria-invalid={Boolean(
-                                                    scanError,
-                                                )}
+                                                aria-invalid={Boolean(scanError)}
                                                 className="h-12 w-full rounded-xl border border-[var(--app-ink)]/10 bg-white pr-3 pl-11 text-base font-bold text-slate-950 outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15"
                                             />
                                         </div>
@@ -582,11 +492,7 @@ export default function PosPage({
                                             Tambah
                                         </button>
                                     </div>
-                                    {scanError && (
-                                        <p className="mt-2 text-sm font-semibold text-red-600">
-                                            {scanError}
-                                        </p>
-                                    )}
+                                    {scanError && <p className="mt-2 text-sm font-semibold text-red-600">{scanError}</p>}
                                 </div>
                             )}
                         </header>
@@ -594,22 +500,16 @@ export default function PosPage({
                         {entryMode === 'input' && (
                             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                                 {visibleProducts.map((product) => {
-                                    const prices = product.options.map(
-                                        (option) =>
-                                            Number(option.selling_price),
-                                    );
+                                    const prices = product.options.map((option) => Number(option.selling_price));
                                     const minimumPrice = Math.min(...prices);
                                     const maximumPrice = Math.max(...prices);
-                                    const criticalStock =
-                                        product.options.some(isCritical);
+                                    const criticalStock = product.options.some(isCritical);
 
                                     return (
                                         <button
                                             type="button"
                                             key={product.id}
-                                            onClick={() =>
-                                                chooseProduct(product)
-                                            }
+                                            onClick={() => chooseProduct(product)}
                                             className="group min-w-0 overflow-hidden rounded-2xl border border-[var(--app-ink)]/10 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--app-primary)]/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                         >
                                             <div className="aspect-[4/3] overflow-hidden bg-[var(--app-soft)]">
@@ -632,13 +532,9 @@ export default function PosPage({
                                                 </p>
                                                 <p className="text-base font-black tracking-[-0.02em] text-[var(--app-primary)] sm:text-lg">
                                                     {money(minimumPrice)}
-                                                    {maximumPrice !==
-                                                        minimumPrice && (
+                                                    {maximumPrice !== minimumPrice && (
                                                         <span className="block text-[11px] leading-tight font-bold text-slate-500 sm:text-xs">
-                                                            sampai{' '}
-                                                            {money(
-                                                                maximumPrice,
-                                                            )}
+                                                            sampai {money(maximumPrice)}
                                                         </span>
                                                     )}
                                                 </p>
@@ -651,15 +547,7 @@ export default function PosPage({
                                                     <p
                                                         className={`text-[11px] font-bold ${criticalStock ? 'text-red-600' : 'text-slate-500'}`}
                                                     >
-                                                        Stok tersisa{' '}
-                                                        {Math.min(
-                                                            ...product.options.map(
-                                                                (option) =>
-                                                                    available(
-                                                                        option,
-                                                                    ),
-                                                            ),
-                                                        )}
+                                                        Stok tersisa {Math.min(...product.options.map((option) => available(option)))}
                                                     </p>
                                                 </div>
                                             </div>
@@ -668,12 +556,11 @@ export default function PosPage({
                                 })}
                             </div>
                         )}
-                        {entryMode === 'input' &&
-                            visibleProducts.length === 0 && (
-                                <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">
-                                    Produk tidak ditemukan.
-                                </div>
-                            )}
+                        {entryMode === 'input' && visibleProducts.length === 0 && (
+                            <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500">
+                                Produk tidak ditemukan.
+                            </div>
+                        )}
                     </section>
 
                     <form
@@ -686,12 +573,8 @@ export default function PosPage({
                                     <ShoppingCart className="size-5" />
                                 </span>
                                 <div className="min-w-0">
-                                    <h2 className="font-serif text-2xl text-slate-900">
-                                        Keranjang
-                                    </h2>
-                                    <p className="text-xs text-slate-500">
-                                        {sale.data.items.length} jenis barang
-                                    </p>
+                                    <h2 className="font-serif text-2xl text-slate-900">Keranjang</h2>
+                                    <p className="text-xs text-slate-500">{sale.data.items.length} jenis barang</p>
                                 </div>
                             </div>
                             {sale.data.items.length > 0 && (
@@ -709,9 +592,7 @@ export default function PosPage({
                             {sale.data.items.map((item, index) => {
                                 const lineTotal = Math.max(
                                     0,
-                                    Number(item.quantity) *
-                                        Number(item.selling_price) -
-                                        Number(item.discount_amount || 0),
+                                    Number(item.quantity) * Number(item.selling_price) - Number(item.discount_amount || 0),
                                 );
 
                                 return (
@@ -721,45 +602,26 @@ export default function PosPage({
                                     >
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
-                                                <p className="truncate text-sm font-bold text-slate-900">
-                                                    {item.catalog_product_name}
-                                                </p>
+                                                <p className="truncate text-sm font-bold text-slate-900">{item.catalog_product_name}</p>
                                                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
                                                     <span className="rounded-md bg-white px-2 py-0.5 font-semibold text-teal-800 ring-1 ring-slate-200">
-                                                        {item.variant_name ||
-                                                            item.unit_name}
+                                                        {item.variant_name || item.unit_name}
                                                     </span>
-                                                    <span>
-                                                        {money(
-                                                            item.selling_price,
-                                                        )}
-                                                    </span>
-                                                    <span
-                                                        className={`font-bold ${isCritical(item) ? 'text-red-600' : 'text-slate-500'}`}
-                                                    >
-                                                        {isCritical(item) &&
-                                                            'Kritis · '}
+                                                    <span>{money(item.selling_price)}</span>
+                                                    <span className={`font-bold ${isCritical(item) ? 'text-red-600' : 'text-slate-500'}`}>
+                                                        {isCritical(item) && 'Kritis · '}
                                                         Stok {available(item)}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="flex shrink-0 items-start gap-2">
-                                                <strong className="pt-1 text-sm text-[var(--app-ink)]">
-                                                    {money(lineTotal)}
-                                                </strong>
+                                                <strong className="pt-1 text-sm text-[var(--app-ink)]">{money(lineTotal)}</strong>
                                                 <button
                                                     type="button"
                                                     onClick={() =>
                                                         sale.setData(
                                                             'items',
-                                                            sale.data.items.filter(
-                                                                (
-                                                                    _,
-                                                                    itemIndex,
-                                                                ) =>
-                                                                    itemIndex !==
-                                                                    index,
-                                                            ),
+                                                            sale.data.items.filter((_, itemIndex) => itemIndex !== index),
                                                         )
                                                     }
                                                     aria-label={`Hapus ${item.catalog_product_name}`}
@@ -772,9 +634,7 @@ export default function PosPage({
 
                                         <div className="mt-3 grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)]">
                                             <div>
-                                                <span className="mb-1 block text-[11px] font-semibold text-slate-500">
-                                                    Jumlah
-                                                </span>
+                                                <span className="mb-1 block text-[11px] font-semibold text-slate-500">Jumlah</span>
                                                 <div className="flex w-full items-center overflow-hidden rounded-xl border border-slate-300 bg-white sm:w-fit">
                                                     <button
                                                         type="button"
@@ -782,16 +642,7 @@ export default function PosPage({
                                                         className="grid size-11 shrink-0 place-items-center transition hover:bg-slate-50"
                                                         onClick={() =>
                                                             updateItem(index, {
-                                                                quantity:
-                                                                    String(
-                                                                        Math.max(
-                                                                            0.000001,
-                                                                            Number(
-                                                                                item.quantity,
-                                                                            ) -
-                                                                                1,
-                                                                        ),
-                                                                    ),
+                                                                quantity: String(Math.max(0.000001, Number(item.quantity) - 1)),
                                                             })
                                                         }
                                                     >
@@ -807,9 +658,7 @@ export default function PosPage({
                                                         value={item.quantity}
                                                         onChange={(event) =>
                                                             updateItem(index, {
-                                                                quantity:
-                                                                    event.target
-                                                                        .value,
+                                                                quantity: event.target.value,
                                                             })
                                                         }
                                                     />
@@ -819,18 +668,7 @@ export default function PosPage({
                                                         className="grid size-11 shrink-0 place-items-center transition hover:bg-slate-50"
                                                         onClick={() =>
                                                             updateItem(index, {
-                                                                quantity:
-                                                                    String(
-                                                                        Math.min(
-                                                                            available(
-                                                                                item,
-                                                                            ),
-                                                                            Number(
-                                                                                item.quantity,
-                                                                            ) +
-                                                                                1,
-                                                                        ),
-                                                                    ),
+                                                                quantity: String(Math.min(available(item), Number(item.quantity) + 1)),
                                                             })
                                                         }
                                                     >
@@ -839,9 +677,7 @@ export default function PosPage({
                                                 </div>
                                             </div>
                                             <label className="block min-w-0">
-                                                <span className="mb-1 block text-[11px] font-semibold text-slate-500">
-                                                    Diskon item
-                                                </span>
+                                                <span className="mb-1 block text-[11px] font-semibold text-slate-500">Diskon item</span>
                                                 <input
                                                     className={fieldClass}
                                                     type="number"
@@ -851,9 +687,7 @@ export default function PosPage({
                                                     value={item.discount_amount}
                                                     onChange={(event) =>
                                                         updateItem(index, {
-                                                            discount_amount:
-                                                                event.target
-                                                                    .value,
+                                                            discount_amount: event.target.value,
                                                         })
                                                     }
                                                 />
@@ -865,9 +699,7 @@ export default function PosPage({
                             {sale.data.items.length === 0 && (
                                 <div className="grid place-items-center rounded-2xl border border-dashed border-slate-300 px-4 py-9 text-center">
                                     <PackageOpen className="size-7 text-slate-400" />
-                                    <p className="mt-2 text-sm text-slate-500">
-                                        Pilih produk untuk mulai.
-                                    </p>
+                                    <p className="mt-2 text-sm text-slate-500">Pilih produk untuk mulai.</p>
                                 </div>
                             )}
                         </div>
@@ -892,52 +724,34 @@ export default function PosPage({
                                     min="0"
                                     step="0.0001"
                                     inputMode="decimal"
-                                    value={
-                                        sale.data.transaction_discount_amount
-                                    }
-                                    onChange={(event) =>
-                                        sale.setData(
-                                            'transaction_discount_amount',
-                                            event.target.value,
-                                        )
-                                    }
+                                    value={sale.data.transaction_discount_amount}
+                                    onChange={(event) => sale.setData('transaction_discount_amount', event.target.value)}
                                 />
                             </label>
                             <div className="flex items-end justify-between gap-3 rounded-2xl bg-[var(--app-primary)] p-4 text-[var(--app-primary-foreground)]">
-                                <span className="text-sm text-teal-50/70">
-                                    Total
-                                </span>
-                                <strong className="text-right text-2xl text-orange-300">
-                                    {money(total)}
-                                </strong>
+                                <span className="text-sm text-teal-50/70">Total</span>
+                                <strong className="text-right text-2xl text-orange-300">{money(total)}</strong>
                             </div>
 
                             <fieldset>
-                                <legend className="mb-2 text-sm font-semibold text-slate-700">
-                                    Metode bayar
-                                </legend>
+                                <legend className="mb-2 text-sm font-semibold text-slate-700">Metode bayar</legend>
                                 <div className="grid grid-cols-2 gap-2">
                                     {paymentMethods.map((method) => {
-                                        const active =
-                                            method.account_id ===
-                                            sale.data.account_id;
+                                        const active = method.account_id === sale.data.account_id;
                                         const pillClass = active
                                             ? 'border-[var(--app-ink)] bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-sm'
-                                            : 'border-slate-300 bg-white text-slate-700 hover:border-teal-500 hover:bg-teal-50';
+                                            : 'border-slate-300 bg-white text-teal-900 hover:border-teal-500 hover:bg-teal-50';
 
                                         return (
                                             <button
                                                 key={method.account_id}
                                                 type="button"
                                                 aria-pressed={active}
-                                                onClick={() =>
-                                                    selectPaymentMethod(method)
-                                                }
+                                                onClick={() => selectPaymentMethod(method)}
                                                 className={`flex min-h-12 items-center justify-center rounded-xl border px-4 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none ${pillClass}`}
                                             >
                                                 <span className="mr-2 inline-flex">
-                                                    {method.method ===
-                                                    'cash' ? (
+                                                    {method.method === 'cash' ? (
                                                         <Banknote className="size-4" />
                                                     ) : (
                                                         <QrCode className="size-4" />
@@ -961,12 +775,7 @@ export default function PosPage({
                                             step="0.0001"
                                             inputMode="decimal"
                                             value={sale.data.paid_amount}
-                                            onChange={(event) =>
-                                                sale.setData(
-                                                    'paid_amount',
-                                                    event.target.value,
-                                                )
-                                            }
+                                            onChange={(event) => sale.setData('paid_amount', event.target.value)}
                                             required
                                         />
                                     </label>
@@ -976,13 +785,8 @@ export default function PosPage({
                                                 <button
                                                     type="button"
                                                     key={amount}
-                                                    onClick={() =>
-                                                        sale.setData(
-                                                            'paid_amount',
-                                                            String(amount),
-                                                        )
-                                                    }
-                                                    className="min-h-10 flex-1 rounded-xl border border-slate-300 bg-white px-2 text-xs font-bold text-slate-700 transition hover:border-teal-500 hover:bg-teal-50"
+                                                    onClick={() => sale.setData('paid_amount', String(amount))}
+                                                    className="min-h-10 flex-1 rounded-xl border border-slate-300 bg-white px-2 text-xs font-bold text-teal-900 transition hover:border-teal-500 hover:bg-teal-50"
                                                 >
                                                     {money(amount)}
                                                 </button>
@@ -995,18 +799,76 @@ export default function PosPage({
                                     </div>
                                 </div>
                             ) : selectedMethod?.method === 'qris' ? (
-                                <div className="flex items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50 px-3 py-3 text-sm">
-                                    <span className="font-semibold text-teal-800">
-                                        Nominal QRIS
-                                    </span>
-                                    <strong className="text-teal-900">
-                                        {money(total)}
-                                    </strong>
+                                <div className="space-y-3 rounded-2xl border border-[#b8d8cd] bg-[#f1f8f5] p-3.5">
+                                    <div className="flex items-center justify-between gap-3 text-sm">
+                                        <span className="font-semibold text-[#245c4f]">Nominal QRIS</span>
+                                        <strong className="text-base text-[#173c35]">{money(total)}</strong>
+                                    </div>
+                                    <div className="border-t border-[#cfe3dc] pt-3">
+                                        {sale.data.payment_proof ? (
+                                            <div className="flex min-w-0 items-center gap-3 rounded-xl bg-white p-3 ring-1 ring-[#b8d8cd]">
+                                                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#e3f3ed] text-[#176b57]">
+                                                    <FileCheck2 className="size-5" />
+                                                </span>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-sm font-bold text-[#173c35]">
+                                                        {sale.data.payment_proof.name}
+                                                    </p>
+                                                    <p className="text-xs text-[#58756c]">
+                                                        {(sale.data.payment_proof.size / 1024 / 1024).toFixed(1)} MB
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        sale.setData('payment_proof', null);
+                                                        sale.clearErrors('payment_proof');
+                                                    }}
+                                                    aria-label="Hapus bukti pembayaran"
+                                                    className="grid size-10 shrink-0 place-items-center rounded-lg text-[#6f817b] transition hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#76a898] bg-white px-3 text-sm font-bold text-[#245c4f] transition focus-within:ring-2 focus-within:ring-[#34765f] hover:border-[#34765f] hover:bg-[#f9fcfb]">
+                                                <Upload className="size-4" />
+                                                Tambah bukti pembayaran
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                                                    className="sr-only"
+                                                    onChange={(event) => {
+                                                        const file = event.target.files?.[0] ?? null;
+
+                                                        if (file && file.size > 5 * 1024 * 1024) {
+                                                            sale.setData('payment_proof', null);
+                                                            sale.setError(
+                                                                'payment_proof',
+                                                                translate('Ukuran bukti pembayaran maksimal 5 MB.'),
+                                                            );
+                                                            event.target.value = '';
+
+                                                            return;
+                                                        }
+
+                                                        sale.setData('payment_proof', file);
+                                                        sale.clearErrors('payment_proof');
+                                                        event.target.value = '';
+                                                    }}
+                                                />
+                                            </label>
+                                        )}
+                                        <p className="mt-2 text-xs text-[#58756c]">JPG, PNG, WebP, atau PDF · maksimal 5 MB</p>
+                                        {sale.errors.payment_proof && (
+                                            <p role="alert" className="mt-2 text-xs font-bold text-red-700">
+                                                {sale.errors.payment_proof}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
-                                <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                                    Metode bayar belum tersedia.
-                                </p>
+                                <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">Metode bayar belum tersedia.</p>
                             )}
 
                             <input
@@ -1014,29 +876,21 @@ export default function PosPage({
                                 aria-label="Catatan"
                                 placeholder="Catatan opsional"
                                 value={sale.data.notes}
-                                onChange={(event) =>
-                                    sale.setData('notes', event.target.value)
-                                }
+                                onChange={(event) => sale.setData('notes', event.target.value)}
                                 maxLength={500}
                             />
                             {Object.keys(sale.errors).length > 0 && (
                                 <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                                    Checkout gagal. Periksa stok, diskon, dan
-                                    pembayaran.
+                                    Checkout gagal. Periksa stok, diskon, dan pembayaran.
                                 </p>
                             )}
                             <button
                                 disabled={
-                                    sale.processing ||
-                                    sale.data.items.length === 0 ||
-                                    !selectedMethod ||
-                                    sale.data.paid_amount === ''
+                                    sale.processing || sale.data.items.length === 0 || !selectedMethod || sale.data.paid_amount === ''
                                 }
                                 className="h-14 w-full rounded-2xl bg-orange-600 text-base font-black text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                {sale.processing
-                                    ? 'Memproses...'
-                                    : `Bayar ${money(total)}`}
+                                {sale.processing ? 'Memproses...' : `Bayar ${money(total)}`}
                             </button>
                         </div>
                     </form>
@@ -1080,26 +934,15 @@ export default function PosPage({
                                 <DialogTitle className="text-xl leading-tight font-black tracking-[-0.03em] text-[var(--app-ink)] sm:text-2xl">
                                     {selectedProduct?.name}
                                 </DialogTitle>
-                                {(selectedProduct?.sku ||
-                                    selectedProduct?.barcode) && (
+                                {(selectedProduct?.sku || selectedProduct?.barcode) && (
                                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold text-slate-500">
-                                        {selectedProduct.sku && (
-                                            <span>
-                                                SKU {selectedProduct.sku}
-                                            </span>
-                                        )}
-                                        {selectedProduct.barcode && (
-                                            <span>
-                                                {selectedProduct.barcode}
-                                            </span>
-                                        )}
+                                        {selectedProduct.sku && <span>SKU {selectedProduct.sku}</span>}
+                                        {selectedProduct.barcode && <span>{selectedProduct.barcode}</span>}
                                     </div>
                                 )}
                             </div>
                         </div>
-                        <DialogDescription className="sr-only">
-                            Detail stok dan pilihan produk
-                        </DialogDescription>
+                        <DialogDescription className="sr-only">Detail stok dan pilihan produk</DialogDescription>
                     </DialogHeader>
                     <div className="grid max-h-[calc(100dvh-7.5rem)] gap-2 overflow-y-auto p-3 sm:p-5">
                         {selectedProduct?.options.map((option) => {
@@ -1114,20 +957,9 @@ export default function PosPage({
                                     className="flex min-h-20 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-[var(--app-primary)]/50 hover:bg-[#fffaf7] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60"
                                 >
                                     <div className="min-w-0">
-                                        <p className="font-black text-slate-900">
-                                            {option.variant_name ||
-                                                option.unit_name}
-                                        </p>
-                                        <p
-                                            className={`mt-1 text-xs font-bold ${
-                                                stock > 0
-                                                    ? 'text-[var(--app-primary)]'
-                                                    : 'text-red-600'
-                                            }`}
-                                        >
-                                            {stock > 0
-                                                ? `Stok ${quantity(stock)} ${option.unit_symbol}`
-                                                : 'Stok habis'}
+                                        <p className="font-black text-slate-900">{option.variant_name || option.unit_name}</p>
+                                        <p className={`mt-1 text-xs font-bold ${stock > 0 ? 'text-[var(--app-primary)]' : 'text-red-600'}`}>
+                                            {stock > 0 ? `Stok ${quantity(stock)} ${option.unit_symbol}` : 'Stok habis'}
                                         </p>
                                     </div>
                                     <div className="flex shrink-0 items-center gap-2">

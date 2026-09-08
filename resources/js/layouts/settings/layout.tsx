@@ -27,9 +27,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 lg:px-8">
-            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
-                Pengaturan
-            </h1>
+            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Pengaturan</h1>
 
             <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start">
                 <aside className="w-full lg:sticky lg:top-24 lg:w-56 lg:shrink-0">
@@ -43,18 +41,12 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 size="sm"
                                 variant="ghost"
                                 asChild
-                                className={cn(
-                                    'min-w-max justify-start rounded-xl lg:w-full',
-                                    {
-                                        'bg-[var(--app-soft-strong)] text-[var(--app-ink)]':
-                                            isCurrentOrParentUrl(item.href),
-                                    },
-                                )}
+                                className={cn('min-w-max justify-start rounded-xl lg:w-full', {
+                                    'bg-[var(--app-soft-strong)] text-[var(--app-ink)]': isCurrentOrParentUrl(item.href),
+                                })}
                             >
                                 <Link href={item.href}>
-                                    {item.icon && (
-                                        <item.icon className="h-4 w-4" />
-                                    )}
+                                    {item.icon && <item.icon className="h-4 w-4" />}
                                     {item.title}
                                 </Link>
                             </Button>

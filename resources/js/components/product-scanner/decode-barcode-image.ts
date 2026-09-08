@@ -57,9 +57,7 @@ const createScanImages = async (image: Blob): Promise<Blob[]> => {
         context.filter = 'none';
         context.drawImage(bitmap, -x, -y, sourceWidth, sourceHeight);
 
-        const blob = await new Promise<Blob | null>((resolve) =>
-            canvas.toBlob(resolve, 'image/jpeg', 0.94),
-        );
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.94));
 
         if (blob) {
             images.push(blob);
@@ -72,8 +70,7 @@ const createScanImages = async (image: Blob): Promise<Blob[]> => {
 };
 
 const decodeWithZxingWasm = async (images: Blob[]): Promise<string> => {
-    const { prepareZXingModule, readBarcodes } =
-        await import('zxing-wasm/reader');
+    const { prepareZXingModule, readBarcodes } = await import('zxing-wasm/reader');
     prepareZXingModule({
         overrides: { locateFile: locateZxingWasm },
     });
@@ -86,9 +83,7 @@ const decodeWithZxingWasm = async (images: Blob[]): Promise<string> => {
         formats: ['Linear-Codes', 'Matrix-Codes'],
         maxNumberOfSymbols: 1,
     };
-    const results = await Promise.all(
-        images.map((image) => readBarcodes(image, options)),
-    );
+    const results = await Promise.all(images.map((image) => readBarcodes(image, options)));
 
     return results.flat()[0]?.text.trim() ?? '';
 };
@@ -102,10 +97,5 @@ export async function decodeBarcodeImage(image: Blob): Promise<string> {
 
     const images = await createScanImages(image);
 
-    return Promise.race([
-        decodeWithZxingWasm(images),
-        new Promise<string>((resolve) =>
-            window.setTimeout(() => resolve(''), 12000),
-        ),
-    ]);
+    return Promise.race([decodeWithZxingWasm(images), new Promise<string>((resolve) => window.setTimeout(() => resolve(''), 12000))]);
 }

@@ -18,21 +18,31 @@ use App\Models\Store;
 use App\Models\User;
 use App\Support\Decimal;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class PostSale
 {
     public function __construct(private NextDocumentNumber $numbers, private ApplyStockMovement $stock, private ApplyCashTransaction $cash, private SaleCalculator $calculator, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
     /** @param array<int, array{product_unit_id:int, quantity:string, item_discount:string}> $items */
-    public function handle(Store $store, User $actor, int $accountId, array $items, string $transactionDiscount, string $paidAmount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): Sale
+    public function handle(Store $store, User $actor, int $accountId, array $items, string $transactionDiscount, string $paidAmount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null, ?UploadedFile $paymentProof = null): Sale
     {
         $date = $this->timestamps->parse($store, $occurredAt);
-        $requestHash = $this->idempotency->hash(compact('accountId', 'items', 'transactionDiscount', 'paidAmount', 'notes') + ['occurred_at' => $date->toISOString()]);
+        $proofChecksum = $paymentProof?->isValid() ? hash_file('sha256', $paymentProof->getRealPath()) : null;
+        $requestPayload = compact('accountId', 'items', 'transactionDiscount', 'paidAmount', 'notes') + ['occurred_at' => $date->toISOString()];
+        if (is_string($proofChecksum)) {
+            $requestPayload['payment_proof_sha256'] = $proofChecksum;
+        }
+        $requestHash = $this->idempotency->hash($requestPayload);
+        $newProofPath = null;
 
         try {
-            return DB::transaction(function () use ($store, $actor, $accountId, $items, $transactionDiscount, $paidAmount, $date, $notes, $idempotencyKey, $requestHash, $ipAddress): Sale {
+            return DB::transaction(function () use ($store, $actor, $accountId, $items, $transactionDiscount, $paidAmount, $date, $notes, $idempotencyKey, $requestHash, $ipAddress, $paymentProof, &$newProofPath): Sale {
                 $existing = $this->idempotency->existing(fn (): ?Sale => Sale::query()->where(['store_id' => $store->id, 'idempotency_key' => $idempotencyKey])->lockForUpdate()->first(), $requestHash);
                 if ($existing !== null) {
                     return $existing;
@@ -69,6 +79,20 @@ class PostSale
                 if ($account->type !== FinancialAccountType::Cash && Decimal::compare($change, '0', Decimal::MONEY_SCALE) > 0) {
                     throw ValidationException::withMessages(['paid_amount' => 'Pembayaran non-tunai harus sama dengan total penjualan.']);
                 }
+                if ($account->type === FinancialAccountType::Cash && $paymentProof !== null) {
+                    throw ValidationException::withMessages(['payment_proof' => __('Bukti pembayaran hanya dapat ditambahkan untuk QRIS.')]);
+                }
+                if ($paymentProof !== null) {
+                    $storedProofPath = $paymentProof->storeAs(
+                        "sale-payment-proofs/{$store->public_id}",
+                        Str::ulid().'.'.$paymentProof->extension(),
+                        'local',
+                    );
+                    if (! is_string($storedProofPath)) {
+                        throw ValidationException::withMessages(['payment_proof' => __('Bukti pembayaran gagal disimpan. Coba unggah kembali.')]);
+                    }
+                    $newProofPath = $storedProofPath;
+                }
                 $sale = Sale::create([
                     'store_id' => $store->id, 'document_number' => $this->numbers->handle($store->id, 'sale', $date),
                     'subtotal' => $calculation['subtotal'], 'item_discount_amount' => $calculation['item_discount'],
@@ -99,6 +123,7 @@ class PostSale
                 $payment = SalePayment::create([
                     'store_id' => $store->id, 'sale_id' => $sale->id, 'financial_account_id' => $accountId,
                     'payment_method' => $account->type === FinancialAccountType::Cash ? 'cash' : 'qris',
+                    'payment_proof_path' => $newProofPath,
                     'amount' => $calculation['total'], 'tendered_amount' => $paidAmount, 'change_amount' => $change,
                     'occurred_at' => $date, 'created_by_user_id' => $actor->id,
                 ]);
@@ -108,7 +133,17 @@ class PostSale
                 return $sale;
             }, 3);
         } catch (UniqueConstraintViolationException $exception) {
+            if ($newProofPath !== null) {
+                Storage::disk('local')->delete($newProofPath);
+            }
+
             return $this->idempotency->recover(fn (): ?Sale => Sale::query()->where(['store_id' => $store->id, 'idempotency_key' => $idempotencyKey])->first(), $requestHash, $exception);
+        } catch (Throwable $exception) {
+            if ($newProofPath !== null) {
+                Storage::disk('local')->delete($newProofPath);
+            }
+
+            throw $exception;
         }
     }
 }

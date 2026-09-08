@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light" style="color-scheme: light" data-market="{{ $page['props']['market'] ?? 'id' }}" data-app-name="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light" style="color-scheme: light" data-market="{{ $page['props']['market'] ?? 'id' }}" data-currency="{{ $page['props']['activeStore']['currency_code'] ?? (($page['props']['market'] ?? 'id') === 'ms' ? 'MYR' : 'IDR') }}" data-currency-symbol="{{ $page['props']['activeStore']['currency_symbol'] ?? (($page['props']['market'] ?? 'id') === 'ms' ? 'RM' : 'Rp') }}" data-currency-decimals="{{ $page['props']['activeStore']['currency_decimal_places'] ?? 0 }}" data-currency-position="{{ $page['props']['activeStore']['currency_symbol_position'] ?? 'before' }}" data-app-name="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">

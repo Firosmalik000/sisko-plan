@@ -40,18 +40,13 @@ export const malayOverrides: Record<string, string> = {
     'Menu lainnya': 'Menu lain',
     ...indonesianOverrides,
     ...landingMalayOverrides,
-    'Login Google belum dikonfigurasi.':
-        'Log masuk Google belum dikonfigurasikan.',
+    'Login Google belum dikonfigurasi.': 'Log masuk Google belum dikonfigurasikan.',
     'Respons akun Google tidak valid.': 'Respons akaun Google tidak sah.',
-    'Login Google tidak dapat diselesaikan. Silakan coba lagi.':
-        'Log masuk Google tidak dapat diselesaikan. Sila cuba lagi.',
+    'Login Google tidak dapat diselesaikan. Silakan coba lagi.': 'Log masuk Google tidak dapat diselesaikan. Sila cuba lagi.',
     'Akun Anda sedang dinonaktifkan.': 'Akaun anda sedang dinyahaktifkan.',
-    'Admin platform harus masuk menggunakan metode utama.':
-        'Pentadbir platform mesti log masuk menggunakan kaedah utama.',
-    'Google tidak memberikan email terverifikasi.':
-        'Google tidak memberikan e-mel yang disahkan.',
-    'Email ini sudah terhubung ke akun Google lain.':
-        'E-mel ini telah dipautkan kepada akaun Google lain.',
+    'Admin platform harus masuk menggunakan metode utama.': 'Pentadbir platform mesti log masuk menggunakan kaedah utama.',
+    'Google tidak memberikan email terverifikasi.': 'Google tidak memberikan e-mel yang disahkan.',
+    'Email ini sudah terhubung ke akun Google lain.': 'E-mel ini telah dipautkan kepada akaun Google lain.',
     '2FA admin': '2FA admin',
     Admin: 'Admin',
     'Admin Platform': 'Admin Platform',
@@ -62,19 +57,15 @@ export const malayOverrides: Record<string, string> = {
     'Each recovery code can be used once to access your account and will be removed after use. If you need more, click':
         'Setiap kod pemulihan hanya boleh digunakan sekali dan akan dipadam selepas digunakan. Jika perlu kod baharu, pilih',
     'Kembali ke Super Admin': 'Kembali ke Super Admin',
-    'Login memerlukan authenticator atau satu recovery code.':
-        'Log masuk memerlukan aplikasi pengesah atau satu kod pemulihan.',
-    'Menunggu owner/admin memposting hasil':
-        'Menunggu pemilik atau admin merekodkan hasil',
+    'Login memerlukan authenticator atau satu recovery code.': 'Log masuk memerlukan aplikasi pengesah atau satu kod pemulihan.',
+    'Menunggu owner/admin memposting hasil': 'Menunggu pemilik atau admin merekodkan hasil',
     'Or continue with email': 'Atau teruskan dengan e-mel',
-    'Please enter your new password below':
-        'Masukkan kata laluan baharu anda di bawah',
+    'Please enter your new password below': 'Masukkan kata laluan baharu anda di bawah',
     'Please verify your email address by clicking on the link we just emailed to you.':
         'Sahkan alamat e-mel dengan membuka pautan yang baru kami hantar.',
     'Recovery code': 'Kod pemulihan',
     'SEO default': 'SEO utama',
-    'Seluruh penerimaan subscription yang dicatat oleh admin platform.':
-        'Semua penerimaan langganan yang direkodkan oleh admin platform.',
+    'Seluruh penerimaan subscription yang dicatat oleh admin platform.': 'Semua penerimaan langganan yang direkodkan oleh admin platform.',
     'Sign in with a passkey': 'Log masuk dengan passkey',
     'Super Admin': 'Super Admin',
     'Tambah admin platform': 'Tambah admin platform',
@@ -90,8 +81,7 @@ export const malayOverrides: Record<string, string> = {
     'SaaS administration': 'Pentadbiran SaaS',
     'Security posture': 'Status keselamatan',
     'Enable two-factor authentication': 'Aktifkan pengesahan dua faktor',
-    'Enter the 6-digit code from your authenticator app':
-        'Masukkan kod 6 digit daripada aplikasi pengesah',
+    'Enter the 6-digit code from your authenticator app': 'Masukkan kod 6 digit daripada aplikasi pengesah',
     'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app':
         'Untuk menyelesaikan pengaktifan pengesahan dua faktor, imbas kod QR atau masukkan kunci persediaan dalam aplikasi pengesah',
     'Two-factor authentication enabled': 'Pengesahan dua faktor telah aktif',
@@ -125,10 +115,8 @@ export const malayOverrides: Record<string, string> = {
     Loading: 'Memuatkan',
     'Loading recovery codes': 'Memuatkan kod pemulihan',
     'Log out': 'Log keluar',
-    'Manage your passkeys for passwordless sign-in':
-        'Urus passkey untuk log masuk tanpa kata laluan',
-    'Manage your two-factor authentication settings':
-        'Urus tetapan pengesahan dua faktor',
+    'Manage your passkeys for passwordless sign-in': 'Urus passkey untuk log masuk tanpa kata laluan',
+    'Manage your two-factor authentication settings': 'Urus tetapan pengesahan dua faktor',
     More: 'Lain-lain',
     'New password': 'Kata laluan baharu',
     'No passkeys yet': 'Tiada passkey lagi',
@@ -145,11 +133,9 @@ export const malayOverrides: Record<string, string> = {
     'Toggle sidebar': 'Buka atau tutup bar sisi',
     'Two-factor authentication': 'Pengesahan dua faktor',
     breadcrumb: 'Navigasi halaman',
-    'Add a passkey to sign in without a password':
-        'Tambah passkey untuk log masuk tanpa kata laluan',
+    'Add a passkey to sign in without a password': 'Tambah passkey untuk log masuk tanpa kata laluan',
     'Add passkey': 'Tambah passkey',
-    'A name helps you identify this passkey later.':
-        'Nama membantu anda mengenal pasti passkey ini kemudian.',
+    'A name helps you identify this passkey later.': 'Nama membantu anda mengenal pasti passkey ini kemudian.',
     'Commercial ledger': 'Lejar komersial',
     'Confirm with passkey': 'Sahkan dengan passkey',
     'Confirming...': 'Mengesahkan...',
@@ -157,13 +143,11 @@ export const malayOverrides: Record<string, string> = {
     Dashboard: 'Papan pemuka',
     'Disable 2FA': 'Nyahaktifkan 2FA',
     'Enable 2FA': 'Aktifkan 2FA',
-    'Enter your email to receive a password reset link':
-        'Masukkan e-mel untuk menerima pautan tetapan semula kata laluan',
+    'Enter your email to receive a password reset link': 'Masukkan e-mel untuk menerima pautan tetapan semula kata laluan',
     'Forgot password': 'Lupa kata laluan',
     'Last used': 'Kali terakhir digunakan',
     'Or confirm with password': 'Atau sahkan dengan kata laluan',
-    'Passkeys are not supported in this browser.':
-        'Pelayar ini tidak menyokong passkey.',
+    'Passkeys are not supported in this browser.': 'Pelayar ini tidak menyokong passkey.',
     'Register passkey': 'Daftar passkey',
     'Registering...': 'Mendaftarkan...',
     'Removing...': 'Memadam...',
@@ -246,8 +230,7 @@ export const malayOverrides: Record<string, string> = {
     'Filter status stok': 'Tapis status stok',
     'Foto ulang': 'Ambil gambar semula',
     'Grafik penjualan 14 hari terakhir': 'Carta jualan 14 hari terakhir',
-    'Grafik penjualan bersih dan estimasi laba':
-        'Carta jualan bersih dan anggaran keuntungan',
+    'Grafik penjualan bersih dan estimasi laba': 'Carta jualan bersih dan anggaran keuntungan',
     'Harga bulanan': 'Harga bulanan',
     Hapus: 'Padam',
     'Hapus akun': 'Padam akaun',
@@ -270,8 +253,7 @@ export const malayOverrides: Record<string, string> = {
     'Kelola Pengguna': 'Urus Pengguna',
     'Kelola Toko': 'Urus Kedai',
     'Kelola langganan': 'Urus langganan',
-    'Kelola passkey untuk masuk tanpa kata sandi':
-        'Urus passkey untuk log masuk tanpa kata laluan',
+    'Kelola passkey untuk masuk tanpa kata sandi': 'Urus passkey untuk log masuk tanpa kata laluan',
     Keluar: 'Log keluar',
     Kembalian: 'Baki',
     'Kode autentikasi': 'Kod pengesahan',
@@ -324,8 +306,7 @@ export const malayOverrides: Record<string, string> = {
     'Pengaturan subscription akun.': 'Tetapan langganan akaun.',
     Pengguna: 'Pengguna',
     Peran: 'Peranan',
-    'Perbandingan Sisko Plan dan pencatatan manual':
-        'Perbandingan Sisko Plan dan rekod manual',
+    'Perbandingan Sisko Plan dan pencatatan manual': 'Perbandingan Sisko Plan dan rekod manual',
     Periode: 'Tempoh',
     'Periode paket': 'Tempoh pelan',
     'Perlu ditangani': 'Perlu ditangani',
@@ -335,6 +316,8 @@ export const malayOverrides: Record<string, string> = {
     'Pilih paket': 'Pilih pelan',
     'Pilih periode': 'Pilih tempoh',
     'Posisi kas': 'Kedudukan tunai',
+    Posisi: 'Kedudukan',
+    'Posisi simbol': 'Kedudukan simbol',
     'Posting pembayaran': 'Rekod pembayaran',
     'Pratinjau kamera': 'Pratonton kamera',
     Produk: 'Produk',
@@ -382,8 +365,7 @@ export const malayOverrides: Record<string, string> = {
     'Tema terang aktif': 'Tema cerah aktif',
     Terapkan: 'Gunakan',
     Terdaftar: 'Berdaftar',
-    'Tidak ada subscription pada filter ini':
-        'Tiada langganan untuk penapis ini',
+    'Tidak ada subscription pada filter ini': 'Tiada langganan untuk penapis ini',
     'Tidak ditemukan di katalog': 'Tidak ditemui dalam katalog',
     'Tindakan permanen': 'Tindakan kekal',
     Toko: 'Kedai',
@@ -407,40 +389,30 @@ export const malayOverrides: Record<string, string> = {
     'atau Anda dapat': 'atau anda boleh',
     'dan tindakan': 'dan tindakan',
     masuk: 'log masuk',
-    'Akses aman dan terkontrol untuk setiap peran.':
-        'Akses selamat dan terkawal untuk setiap peranan.',
+    'Akses aman dan terkontrol untuk setiap peran.': 'Akses selamat dan terkawal untuk setiap peranan.',
     'Aktifkan dan konfirmasi autentikasi dua langkah sebelum mengakses panel produksi.':
         'Aktifkan dan sahkan pengesahan dua langkah sebelum mengakses panel produksi.',
     'Belum memiliki akun?': 'Belum mempunyai akaun?',
-    'Debit dan kredit kas diposting atomik.':
-        'Debit dan kredit tunai direkodkan secara atomik.',
+    'Debit dan kredit kas diposting atomik.': 'Debit dan kredit tunai direkodkan secara atomik.',
     'Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan':
         'Dengan meneruskan, anda bersetuju dengan dasar penggunaan perkhidmatan',
     'Form pengaturan paket subscription.': 'Borang tetapan pelan langganan.',
-    'Hanya untuk akun yang belum pernah memiliki transaksi.':
-        'Hanya untuk akaun yang belum pernah mempunyai transaksi.',
-    'Hapus akun dan seluruh data pribadi secara permanen':
-        'Padam akaun dan semua data peribadi secara kekal',
+    'Hanya untuk akun yang belum pernah memiliki transaksi.': 'Hanya untuk akaun yang belum pernah mempunyai transaksi.',
+    'Hapus akun dan seluruh data pribadi secara permanen': 'Padam akaun dan semua data peribadi secara kekal',
     'Hasil terbaca langsung diperiksa': 'Hasil bacaan diperiksa terus',
-    'Kelola pengaturan autentikasi dua faktor':
-        'Urus tetapan pengesahan dua faktor',
+    'Kelola pengaturan autentikasi dua faktor': 'Urus tetapan pengesahan dua faktor',
     'Konfirmasi akses akun dengan memasukkan salah satu kode pemulihan darurat.':
         'Sahkan akses akaun dengan memasukkan salah satu kod pemulihan kecemasan.',
     'Masuk untuk melanjutkan transaksi, memantau stok, dan melihat perkembangan usaha dari satu tempat.':
         'Log masuk untuk meneruskan transaksi, memantau stok dan melihat perkembangan perniagaan dari satu tempat.',
-    'Masukkan kode autentikasi dari aplikasi autentikator Anda.':
-        'Masukkan kod pengesahan daripada aplikasi pengesah anda.',
+    'Masukkan kode autentikasi dari aplikasi autentikator Anda.': 'Masukkan kod pengesahan daripada aplikasi pengesah anda.',
     'Pembayaran subscription akun.': 'Pembayaran langganan akaun.',
-    'Periode seluruh subscription akan dimulai ulang dari':
-        'Tempoh semua langganan akan dimulakan semula dari',
-    'Pilih ruang tumbuh untuk toko Anda.':
-        'Pilih ruang pertumbuhan untuk kedai anda.',
-    'Semua pekerjaan toko, terasa lebih terarah.':
-        'Semua kerja kedai terasa lebih tersusun.',
+    'Periode seluruh subscription akan dimulai ulang dari': 'Tempoh semua langganan akan dimulakan semula dari',
+    'Pilih ruang tumbuh untuk toko Anda.': 'Pilih ruang pertumbuhan untuk kedai anda.',
+    'Semua pekerjaan toko, terasa lebih terarah.': 'Semua kerja kedai terasa lebih tersusun.',
     'Setiap rupiah bergerak melalui cash transaction. Transfer memindahkan posisi antar-akun tanpa mengubah total kas toko.':
         'Setiap ringgit bergerak melalui transaksi tunai. Pindahan mengubah kedudukan antara akaun tanpa mengubah jumlah tunai kedai.',
-    'Simpan recovery code untuk akses darurat.':
-        'Simpan kod pemulihan untuk akses kecemasan.',
+    'Simpan recovery code untuk akses darurat.': 'Simpan kod pemulihan untuk akses kecemasan.',
     'Sudah memiliki akun?': 'Sudah mempunyai akaun?',
     'Tautan verifikasi baru telah dikirim ke alamat email yang Anda gunakan saat mendaftar.':
         'Pautan pengesahan baharu telah dihantar ke alamat e-mel yang anda gunakan semasa mendaftar.',
@@ -448,5 +420,10 @@ export const malayOverrides: Record<string, string> = {
     'Ubah password, aktifkan autentikasi dua langkah, dan kelola passkey.':
         'Tukar kata laluan, aktifkan pengesahan dua langkah dan urus passkey.',
     'Tak terbatas': 'Tanpa had',
+    'Toko tidak dapat dipakai bertransaksi, tetapi seluruh data dan riwayat tetap tersimpan.':
+        'Kedai tidak boleh digunakan untuk transaksi, tetapi semua data dan sejarah kekal disimpan.',
+    'Negara terkunci karena toko sudah memiliki transaksi.': 'Negara dikunci kerana kedai sudah mempunyai transaksi.',
+    'Semua produk, transaksi, anggota, dan riwayat toko akan dihapus dan tidak dapat dipulihkan.':
+        'Semua produk, transaksi, ahli dan sejarah kedai akan dipadam secara kekal dan tidak boleh dipulihkan.',
     'tanpa batas akhir': 'tanpa tarikh akhir',
 };

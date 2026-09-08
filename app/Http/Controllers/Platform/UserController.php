@@ -70,14 +70,14 @@ class UserController extends Controller
             abort_unless($admin->can(PlatformPermission::ADMINS_MANAGE), 403);
             if ($admin->is($user) && $validated['status'] !== UserStatus::Active->value) {
                 throw ValidationException::withMessages([
-                    'status' => 'Anda tidak dapat menonaktifkan akun sendiri.',
+                    'status' => __('Anda tidak dapat menonaktifkan akun sendiri.'),
                 ]);
             }
             if ($user->platform_role === PlatformAdminRole::SuperAdmin
                 && $validated['status'] !== UserStatus::Active->value
                 && User::query()->where('platform_role', PlatformAdminRole::SuperAdmin)->where('status', UserStatus::Active)->count() <= 1) {
                 throw ValidationException::withMessages([
-                    'status' => 'Minimal satu Super Admin harus tetap aktif.',
+                    'status' => __('Minimal satu Super Admin harus tetap aktif.'),
                 ]);
             }
         }

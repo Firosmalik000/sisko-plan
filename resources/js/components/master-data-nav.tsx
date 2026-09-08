@@ -11,18 +11,11 @@ const links = [
 
 type MasterDataLink = (typeof links)[number];
 
-export function MasterDataNav({
-    links: visibleLinks = links,
-}: {
-    links?: MasterDataLink[];
-}) {
+export function MasterDataNav({ links: visibleLinks = links }: { links?: MasterDataLink[] }) {
     const { url } = usePage();
 
     return (
-        <nav
-            className="flex max-w-full gap-1.5 overflow-x-auto pb-0.5"
-            aria-label="Master data"
-        >
+        <nav className="flex max-w-full gap-1.5 overflow-x-auto pb-0.5" aria-label="Master data">
             {visibleLinks.map((link) => (
                 <Link
                     key={link.href}

@@ -5,9 +5,7 @@ type BarcodeDetectorResult = { rawValue: string };
 type BarcodeDetectorInstance = {
     detect(source: ImageBitmapSource): Promise<BarcodeDetectorResult[]>;
 };
-type BarcodeDetectorConstructor = new (options?: {
-    formats?: string[];
-}) => BarcodeDetectorInstance;
+type BarcodeDetectorConstructor = new (options?: { formats?: string[] }) => BarcodeDetectorInstance;
 
 declare global {
     interface Window {
@@ -51,25 +49,15 @@ export async function normalizeImage(source: Blob): Promise<Blob> {
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(width * scale));
     canvas.height = Math.max(1, Math.round(height * scale));
-    canvas
-        .getContext('2d')
-        ?.drawImage(image, 0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d')?.drawImage(image, 0, 0, canvas.width, canvas.height);
     release();
 
     return new Promise((resolve, reject) =>
-        canvas.toBlob(
-            (blob) => (blob ? resolve(blob) : reject(new Error('encode'))),
-            'image/jpeg',
-            0.82,
-        ),
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('encode'))), 'image/jpeg', 0.82),
     );
 }
 
-export function useCamera(
-    open: boolean,
-    onBarcode: (value: string) => void,
-    barcodeEnabled = true,
-) {
+export function useCamera(open: boolean, onBarcode: (value: string) => void, barcodeEnabled = true) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -102,26 +90,19 @@ export function useCamera(
             setError(null);
 
             if (!window.isSecureContext) {
-                setError(
-                    'Akses kamera memerlukan HTTPS. Buka halaman ini melalui alamat HTTPS.',
-                );
+                setError('Akses kamera memerlukan HTTPS. Buka halaman ini melalui alamat HTTPS.');
 
                 return;
             }
 
             if (!navigator.mediaDevices?.getUserMedia) {
-                setError(
-                    'Browser ini tidak menyediakan akses kamera. Gunakan browser terbaru atau pilih foto dari galeri.',
-                );
+                setError('Browser ini tidak menyediakan akses kamera. Gunakan browser terbaru atau pilih foto dari galeri.');
 
                 return;
             }
 
             try {
-                const stream =
-                    await navigator.mediaDevices.getUserMedia(
-                        cameraConstraints,
-                    );
+                const stream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
 
                 if (cancelled) {
                     stream.getTracks().forEach((track) => track.stop());
@@ -137,9 +118,7 @@ export function useCamera(
                     await video.play();
                 }
 
-                const capabilities = stream
-                    .getVideoTracks()[0]
-                    ?.getCapabilities() as
+                const capabilities = stream.getVideoTracks()[0]?.getCapabilities() as
                     (MediaTrackCapabilities & { torch?: boolean }) | undefined;
                 setTorchAvailable(Boolean(capabilities?.torch));
                 setReady(true);
@@ -169,9 +148,7 @@ export function useCamera(
 
         let cancelled = false;
         let detectionBusy = false;
-        const detector = window.BarcodeDetector
-            ? new window.BarcodeDetector()
-            : null;
+        const detector = window.BarcodeDetector ? new window.BarcodeDetector() : null;
 
         if (!detector) {
             // Older browsers do not expose BarcodeDetector. The frame decoder
@@ -182,12 +159,7 @@ export function useCamera(
             async () => {
                 const video = videoRef.current;
 
-                if (
-                    !video ||
-                    video.readyState < 2 ||
-                    cancelled ||
-                    detectionBusy
-                ) {
+                if (!video || video.readyState < 2 || cancelled || detectionBusy) {
                     return;
                 }
 
@@ -197,9 +169,7 @@ export function useCamera(
                 try {
                     value = detector
                         ? ((await detector.detect(video))[0]?.rawValue ?? '')
-                        : await decodeBarcodeImage(
-                              await captureVideoFrame(video),
-                          );
+                        : await decodeBarcodeImage(await captureVideoFrame(video));
                 } catch {
                     value = '';
                 } finally {
@@ -211,14 +181,10 @@ export function useCamera(
                 }
 
                 const agreement = agreementRef.current;
-                agreement.count =
-                    agreement.value === value ? agreement.count + 1 : 1;
+                agreement.count = agreement.value === value ? agreement.count + 1 : 1;
                 agreement.value = value;
 
-                if (
-                    agreement.count >= 2 &&
-                    Date.now() - agreement.lastSent > 1800
-                ) {
+                if (agreement.count >= 2 && Date.now() - agreement.lastSent > 1800) {
                     agreement.lastSent = Date.now();
                     onBarcode(value);
                 }
@@ -232,31 +198,21 @@ export function useCamera(
         };
     }, [barcodeEnabled, open, ready, onBarcode]);
 
-    const capture = useCallback(
-        async (maxDimension = 1280, quality = 0.82): Promise<Blob | null> => {
-            const video = videoRef.current;
+    const capture = useCallback(async (maxDimension = 1280, quality = 0.82): Promise<Blob | null> => {
+        const video = videoRef.current;
 
-            if (!video || video.readyState < 2) {
-                return null;
-            }
+        if (!video || video.readyState < 2) {
+            return null;
+        }
 
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(
-                1,
-                maxDimension / Math.max(video.videoWidth, video.videoHeight),
-            );
-            canvas.width = Math.round(video.videoWidth * scale);
-            canvas.height = Math.round(video.videoHeight * scale);
-            canvas
-                .getContext('2d')
-                ?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight));
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            return new Promise((resolve) =>
-                canvas.toBlob(resolve, 'image/jpeg', quality),
-            );
-        },
-        [],
-    );
+        return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+    }, []);
 
     const toggleTorch = useCallback(async () => {
         const track = streamRef.current?.getVideoTracks()[0];
@@ -292,22 +248,13 @@ export function useCamera(
 
 async function captureVideoFrame(video: HTMLVideoElement): Promise<Blob> {
     const canvas = document.createElement('canvas');
-    const scale = Math.min(
-        1,
-        1280 / Math.max(video.videoWidth, video.videoHeight),
-    );
+    const scale = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
     canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
     canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-    canvas
-        .getContext('2d')
-        ?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     return new Promise((resolve, reject) =>
-        canvas.toBlob(
-            (blob) => (blob ? resolve(blob) : reject(new Error('capture'))),
-            'image/jpeg',
-            0.82,
-        ),
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('capture'))), 'image/jpeg', 0.82),
     );
 }
 
@@ -322,11 +269,7 @@ function cameraErrorMessage(reason: unknown): string {
         return 'Kamera tidak ditemukan pada perangkat ini. Pilih foto dari galeri untuk melanjutkan.';
     }
 
-    if (
-        name === 'NotReadableError' ||
-        name === 'TrackStartError' ||
-        name === 'AbortError'
-    ) {
+    if (name === 'NotReadableError' || name === 'TrackStartError' || name === 'AbortError') {
         return 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut, lalu coba lagi.';
     }
 

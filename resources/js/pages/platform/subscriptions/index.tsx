@@ -1,33 +1,13 @@
 import { Form, Head, Link, router, useForm } from '@inertiajs/react';
 import type { InertiaFormProps } from '@inertiajs/react';
-import {
-    CreditCard,
-    PackagePlus,
-    Pencil,
-    ReceiptText,
-    RefreshCw,
-    Search,
-    Store,
-} from 'lucide-react';
+import { CreditCard, PackagePlus, Pencil, ReceiptText, RefreshCw, Search, Store } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { useState } from 'react';
 import { postingToken } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
-import {
-    paginatedRowNumber,
-    PlatformTableLeadCell,
-    PlatformTableLeadHeader,
-} from '@/components/platform-table-lead-cell';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+import { paginatedRowNumber, PlatformTableLeadCell, PlatformTableLeadHeader } from '@/components/platform-table-lead-cell';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { formatMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
 
@@ -35,11 +15,15 @@ type Plan = {
     public_id: string;
     name: string;
     description: string | null;
+    kind: 'base' | 'addon';
+    offer_category: OfferCategory | null;
+    billing_cycle: 'fixed' | 'lifetime';
     monthly_price: string;
     duration_months: number;
     max_stores: number;
     max_products: number;
     max_members: number;
+    max_scans: number;
     is_default: boolean;
     is_trial: boolean;
     is_active: boolean;
@@ -65,6 +49,16 @@ type Subscription = {
         duration_months: number;
         is_active: boolean;
     };
+    active_addons: Array<{
+        public_id: string;
+        plan_name: string;
+        stores: number;
+        products: number;
+        members: number;
+        scans: number;
+        starts_on: string;
+        ends_on: string | null;
+    }>;
     scheduled_periods: Array<{
         public_id: string;
         plan_name: string;
@@ -86,11 +80,25 @@ type PlanData = {
     name: string;
     description: string;
     monthly_price: string;
+    kind: 'base' | 'addon';
+    offer_category: OfferCategory | '';
+    billing_cycle: 'fixed' | 'lifetime';
     duration_months: string;
     max_stores: string;
     max_products: string;
     max_members: string;
+    max_scans: string;
     is_active: boolean;
+};
+
+type OfferCategory = 'store_capacity' | 'staff_capacity' | 'scan_capacity' | 'product_capacity' | 'general';
+
+const offerCategoryLabels: Record<OfferCategory, string> = {
+    store_capacity: 'Kapasitas toko',
+    staff_capacity: 'Kapasitas staf',
+    scan_capacity: 'Kuota scan',
+    product_capacity: 'Kapasitas produk',
+    general: 'Paket gabungan',
 };
 
 const inputClass =
@@ -147,9 +155,7 @@ export default function AdminSubscriptions({
             <Head title="Subscription & Paket" />
             <header className="platform-enter flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">
-                        Subscription & paket
-                    </h1>
+                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">Subscription & paket</h1>
                     <p className="mt-1 text-sm font-semibold text-slate-500">
                         {plans.length} paket · {subscriptions.total} akun
                     </p>
@@ -157,10 +163,7 @@ export default function AdminSubscriptions({
                 <div className="flex flex-col gap-2 min-[480px]:flex-row">
                     {access.activate_all && <ActivateAllDialog />}
                     {access.view_payments && (
-                        <Link
-                            href="/super-admin/payments"
-                            className={secondaryButton}
-                        >
+                        <Link href="/super-admin/payments" className={secondaryButton}>
                             <ReceiptText className="size-4" />
                             Riwayat pembayaran
                         </Link>
@@ -170,18 +173,11 @@ export default function AdminSubscriptions({
             </header>
 
             <section className="platform-panel mt-5 overflow-hidden">
-                <SectionHeader
-                    title="Katalog paket"
-                    count={`${plans.length} paket`}
-                />
+                <SectionHeader title="Katalog paket" count={`${plans.length} paket`} />
                 {plans.length ? (
                     <div className="divide-y divide-slate-200">
                         {plans.map((plan) => (
-                            <PlanRow
-                                key={plan.public_id}
-                                plan={plan}
-                                canManage={access.manage_plans}
-                            />
+                            <PlanRow key={plan.public_id} plan={plan} canManage={access.manage_plans} />
                         ))}
                     </div>
                 ) : (
@@ -192,17 +188,10 @@ export default function AdminSubscriptions({
             <section className="platform-panel mt-5 overflow-hidden">
                 <div className="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <h2 className="text-lg font-black text-[#3b211b]">
-                            Subscription akun
-                        </h2>
-                        <p className="mt-1 text-sm font-semibold text-slate-500">
-                            {subscriptions.total} akun
-                        </p>
+                        <h2 className="text-lg font-black text-[#3b211b]">Subscription akun</h2>
+                        <p className="mt-1 text-sm font-semibold text-slate-500">{subscriptions.total} akun</p>
                     </div>
-                    <form
-                        onSubmit={submitFilter}
-                        className="flex flex-col gap-2 sm:flex-row"
-                    >
+                    <form onSubmit={submitFilter} className="flex flex-col gap-2 sm:flex-row">
                         <label className="relative min-w-0 sm:w-64">
                             <span className="sr-only">Cari akun</span>
                             <Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-slate-400" />
@@ -210,9 +199,7 @@ export default function AdminSubscriptions({
                                 className={`${inputClass} pl-9`}
                                 placeholder="Cari nama, email, atau toko"
                                 value={filter.data.search}
-                                onChange={(event) =>
-                                    filter.setData('search', event.target.value)
-                                }
+                                onChange={(event) => filter.setData('search', event.target.value)}
                             />
                         </label>
                         <label>
@@ -220,18 +207,14 @@ export default function AdminSubscriptions({
                             <select
                                 className={inputClass}
                                 value={filter.data.status}
-                                onChange={(event) =>
-                                    filter.setData('status', event.target.value)
-                                }
+                                onChange={(event) => filter.setData('status', event.target.value)}
                             >
                                 <option value="">Semua status</option>
-                                {Object.entries(statusLabels).map(
-                                    ([value, label]) => (
-                                        <option key={value} value={value}>
-                                            {label}
-                                        </option>
-                                    ),
-                                )}
+                                {Object.entries(statusLabels).map(([value, label]) => (
+                                    <option key={value} value={value}>
+                                        {label}
+                                    </option>
+                                ))}
                             </select>
                         </label>
                         <button className={primaryButton}>Terapkan</button>
@@ -240,9 +223,7 @@ export default function AdminSubscriptions({
                 {subscriptions.data.length ? (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[980px] text-left text-sm">
-                            <caption className="sr-only">
-                                Daftar subscription akun
-                            </caption>
+                            <caption className="sr-only">Daftar subscription akun</caption>
                             <thead className="platform-table-head">
                                 <tr>
                                     <PlatformTableLeadHeader />
@@ -253,34 +234,21 @@ export default function AdminSubscriptions({
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
-                                {subscriptions.data.map(
-                                    (subscription, index) => (
-                                        <SubscriptionRow
-                                            key={subscription.public_id}
-                                            subscription={subscription}
-                                            plans={plans}
-                                            canManage={
-                                                access.manage_subscriptions
-                                            }
-                                            canCreatePayment={
-                                                access.create_payments
-                                            }
-                                            index={paginatedRowNumber(
-                                                subscriptions.current_page,
-                                                subscriptions.per_page,
-                                                index,
-                                            )}
-                                        />
-                                    ),
-                                )}
+                                {subscriptions.data.map((subscription, index) => (
+                                    <SubscriptionRow
+                                        key={subscription.public_id}
+                                        subscription={subscription}
+                                        plans={plans}
+                                        canManage={access.manage_subscriptions}
+                                        canCreatePayment={access.create_payments}
+                                        index={paginatedRowNumber(subscriptions.current_page, subscriptions.per_page, index)}
+                                    />
+                                ))}
                             </tbody>
                         </table>
                     </div>
                 ) : (
-                    <Empty
-                        label="Tidak ada subscription pada filter ini"
-                        icon
-                    />
+                    <Empty label="Tidak ada subscription pada filter ini" icon />
                 )}
                 {subscriptions.links.length > 3 && (
                     <div className="border-t border-slate-200 px-4 py-4 sm:px-5">
@@ -305,11 +273,7 @@ function Empty({ label, icon = false }: { label: string; icon?: boolean }) {
     return (
         <div className="px-4 py-12 text-center sm:px-5">
             {icon && <Store className="mx-auto size-8 text-slate-300" />}
-            <p
-                className={`${icon ? 'mt-3' : ''}text-sm font-bold text-slate-600`}
-            >
-                {label}
-            </p>
+            <p className={`${icon ? 'mt-3' : ''}text-sm font-bold text-slate-600`}>{label}</p>
         </div>
     );
 }
@@ -327,36 +291,19 @@ function ActivateAllDialog() {
             </DialogTrigger>
             <DialogContent className="gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
                 <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 text-left">
-                    <DialogTitle className="text-lg font-black text-[#3b211b]">
-                        Aktifkan semua subscription?
-                    </DialogTitle>
+                    <DialogTitle className="text-lg font-black text-[#3b211b]">Aktifkan semua subscription?</DialogTitle>
                     <DialogDescription className="mt-2 text-sm text-slate-600">
-                        Periode seluruh subscription akan dimulai ulang dari
-                        hari ini.
+                        Periode seluruh subscription akan dimulai ulang dari hari ini.
                     </DialogDescription>
                 </DialogHeader>
-                <Form
-                    action="/super-admin/subscriptions/activate-all"
-                    method="post"
-                    onSuccess={() => setOpen(false)}
-                >
+                <Form action="/super-admin/subscriptions/activate-all" method="post" onSuccess={() => setOpen(false)}>
                     {({ processing }) => (
                         <DialogFooter className="px-5 py-4">
-                            <button
-                                type="button"
-                                className={secondaryButton}
-                                disabled={processing}
-                                onClick={() => setOpen(false)}
-                            >
+                            <button type="button" className={secondaryButton} disabled={processing} onClick={() => setOpen(false)}>
                                 Batal
                             </button>
-                            <button
-                                className={primaryButton}
-                                disabled={processing}
-                            >
-                                {processing
-                                    ? 'Mengaktifkan...'
-                                    : 'Aktifkan mulai hari ini'}
+                            <button className={primaryButton} disabled={processing}>
+                                {processing ? 'Mengaktifkan...' : 'Aktifkan mulai hari ini'}
                             </button>
                         </DialogFooter>
                     )}
@@ -372,10 +319,14 @@ function CreatePlanDialog() {
         name: '',
         description: '',
         monthly_price: '0',
+        kind: 'base',
+        offer_category: '',
+        billing_cycle: 'fixed',
         duration_months: '1',
         max_stores: '1',
         max_products: '100',
         max_members: '5',
+        max_scans: '100',
         is_active: true,
     });
     const changeOpen = modalChange(setOpen, form);
@@ -402,6 +353,8 @@ function CreatePlanDialog() {
                 close={() => changeOpen(false)}
                 submitLabel="Buat paket"
                 trial={false}
+                kindLocked={false}
+                defaultPlan={false}
             />
         </Dialog>
     );
@@ -413,10 +366,14 @@ function PlanRow({ plan, canManage }: { plan: Plan; canManage: boolean }) {
         name: plan.name,
         description: plan.description ?? '',
         monthly_price: plan.monthly_price,
+        kind: plan.kind,
+        offer_category: plan.offer_category ?? '',
+        billing_cycle: plan.billing_cycle,
         duration_months: String(plan.duration_months),
         max_stores: String(plan.max_stores),
         max_products: String(plan.max_products),
         max_members: String(plan.max_members),
+        max_scans: String(plan.max_scans),
         is_active: plan.is_active,
     });
     const changeOpen = modalChange(setOpen, form);
@@ -432,32 +389,30 @@ function PlanRow({ plan, canManage }: { plan: Plan; canManage: boolean }) {
         <div className="grid gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5">
             <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate text-base font-black text-[#3b211b]">
-                        {plan.name}
-                    </h3>
-                    {plan.is_default && (
-                        <Badge className="bg-[#ffe1d8] text-[#9f2f19]">
-                            Default
+                    <h3 className="truncate text-base font-black text-[#3b211b]">{plan.name}</h3>
+                    {plan.is_default && <Badge className="bg-[#ffe1d8] text-[#9f2f19]">Default</Badge>}
+                    {plan.is_trial && <Badge className="bg-sky-100 text-sky-800">Trial</Badge>}
+                    {plan.kind === 'addon' && (
+                        <Badge className="bg-violet-100 text-violet-800">
+                            {plan.offer_category ? offerCategoryLabels[plan.offer_category] : 'Add-on'}
                         </Badge>
                     )}
-                    {plan.is_trial && (
-                        <Badge className="bg-sky-100 text-sky-800">Trial</Badge>
-                    )}
-                    {!plan.is_active && (
-                        <Badge className="bg-slate-200 text-slate-700">
-                            Nonaktif
-                        </Badge>
-                    )}
+                    {plan.billing_cycle === 'lifetime' && <Badge className="bg-emerald-100 text-emerald-800">Selamanya</Badge>}
+                    {!plan.is_active && <Badge className="bg-slate-200 text-slate-700">Nonaktif</Badge>}
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                     <span className="font-semibold">
-                        {formatMoney(plan.monthly_price)}/bulan
+                        {formatMoney(plan.monthly_price)}
+                        {plan.billing_cycle === 'fixed' ? '/bulan' : ''}
                     </span>
                     <span>{planTerm(plan)}</span>
-                    <span>{plan.subscriptions_count} akun</span>
-                    <span>{limit(plan.max_stores)} toko / akun</span>
-                    <span>{limit(plan.max_products)} produk / akun</span>
-                    <span>{limit(plan.max_members)} staf / akun</span>
+                    <span>
+                        {plan.subscriptions_count} {plan.kind === 'addon' ? 'aktivasi' : 'akun'}
+                    </span>
+                    {(plan.kind === 'base' || plan.max_stores > 0) && <span>{capacity(plan, plan.max_stores)} toko</span>}
+                    {(plan.kind === 'base' || plan.max_products > 0) && <span>{capacity(plan, plan.max_products)} produk</span>}
+                    {(plan.kind === 'base' || plan.max_members > 0) && <span>{capacity(plan, plan.max_members)} staf</span>}
+                    {(plan.kind === 'base' || plan.max_scans > 0) && <span>{capacity(plan, plan.max_scans)} scan / bulan</span>}
                 </div>
             </div>
             {canManage && (
@@ -475,6 +430,8 @@ function PlanRow({ plan, canManage }: { plan: Plan; canManage: boolean }) {
                         close={() => changeOpen(false)}
                         submitLabel="Simpan paket"
                         trial={plan.is_trial}
+                        kindLocked={plan.is_default || plan.subscriptions_count > 0}
+                        defaultPlan={plan.is_default}
                     />
                 </Dialog>
             )}
@@ -489,6 +446,8 @@ function PlanModal({
     close,
     submitLabel,
     trial,
+    kindLocked,
+    defaultPlan,
 }: {
     title: string;
     form: InertiaFormProps<PlanData>;
@@ -496,13 +455,14 @@ function PlanModal({
     close: () => void;
     submitLabel: string;
     trial: boolean;
+    kindLocked: boolean;
+    defaultPlan: boolean;
 }) {
+    const addon = form.data.kind === 'addon';
+
     return (
         <DialogContent className={dialogClass}>
-            <ModalHeader
-                title={title}
-                description="Form pengaturan paket subscription."
-            />
+            <ModalHeader title={title} description="Form pengaturan paket subscription." />
             <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
                 <div className="grid min-h-0 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-5">
                     <Field label="Nama paket">
@@ -512,104 +472,197 @@ function PlanModal({
                             maxLength={120}
                             autoFocus
                             value={form.data.name}
-                            onChange={(event) =>
-                                form.setData('name', event.target.value)
-                            }
+                            onChange={(event) => form.setData('name', event.target.value)}
                         />
                     </Field>
-                    <Field label="Harga bulanan">
+                    <Field label="Jenis penawaran">
+                        <select
+                            className={inputClass}
+                            required
+                            disabled={kindLocked}
+                            value={form.data.kind}
+                            onChange={(event) => {
+                                const kind = event.target.value as PlanData['kind'];
+                                form.setData({
+                                    ...form.data,
+                                    kind,
+                                    offer_category: kind === 'addon' ? form.data.offer_category || 'general' : '',
+                                });
+                            }}
+                        >
+                            <option value="base">Paket utama</option>
+                            <option value="addon">Add-on kapasitas</option>
+                        </select>
+                    </Field>
+                    {addon && (
+                        <Field label="Kategori add-on">
+                            <select
+                                className={inputClass}
+                                required
+                                value={form.data.offer_category}
+                                onChange={(event) => {
+                                    const category = event.target.value as OfferCategory;
+                                    const primaryFields: Partial<
+                                        Record<
+                                            OfferCategory,
+                                            keyof Pick<PlanData, 'max_stores' | 'max_products' | 'max_members' | 'max_scans'>
+                                        >
+                                    > = {
+                                        store_capacity: 'max_stores',
+                                        product_capacity: 'max_products',
+                                        staff_capacity: 'max_members',
+                                        scan_capacity: 'max_scans',
+                                    };
+                                    const primaryField = primaryFields[category];
+                                    form.setData({
+                                        ...form.data,
+                                        offer_category: category,
+                                        ...(primaryField
+                                            ? {
+                                                  max_stores:
+                                                      primaryField === 'max_stores' && Number(form.data.max_stores) > 0
+                                                          ? form.data.max_stores
+                                                          : primaryField === 'max_stores'
+                                                            ? '1'
+                                                            : '0',
+                                                  max_products:
+                                                      primaryField === 'max_products' && Number(form.data.max_products) > 0
+                                                          ? form.data.max_products
+                                                          : primaryField === 'max_products'
+                                                            ? '1'
+                                                            : '0',
+                                                  max_members:
+                                                      primaryField === 'max_members' && Number(form.data.max_members) > 0
+                                                          ? form.data.max_members
+                                                          : primaryField === 'max_members'
+                                                            ? '1'
+                                                            : '0',
+                                                  max_scans:
+                                                      primaryField === 'max_scans' && Number(form.data.max_scans) > 0
+                                                          ? form.data.max_scans
+                                                          : primaryField === 'max_scans'
+                                                            ? '1'
+                                                            : '0',
+                                              }
+                                            : {}),
+                                    });
+                                }}
+                            >
+                                <option value="" disabled>
+                                    Pilih kategori
+                                </option>
+                                {Object.entries(offerCategoryLabels).map(([value, label]) => (
+                                    <option key={value} value={value}>
+                                        {label}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                    )}
+                    <Field label={form.data.billing_cycle === 'lifetime' ? 'Harga sekali' : 'Harga bulanan'}>
                         <input
                             className={inputClass}
                             type="number"
                             min="0"
                             step="0.0001"
                             required
-                            disabled={trial}
+                            disabled={trial || defaultPlan}
                             value={form.data.monthly_price}
-                            onChange={(event) =>
-                                form.setData(
-                                    'monthly_price',
-                                    event.target.value,
-                                )
-                            }
+                            onChange={(event) => form.setData('monthly_price', event.target.value)}
                         />
                     </Field>
-                    <Field label={trial ? 'Durasi trial' : 'Periode paket'}>
+                    <Field label="Masa berlaku">
                         <select
                             className={inputClass}
                             required
-                            disabled={trial}
-                            value={form.data.duration_months}
-                            onChange={(event) =>
-                                form.setData(
-                                    'duration_months',
-                                    event.target.value,
-                                )
-                            }
+                            disabled={trial || defaultPlan}
+                            value={form.data.billing_cycle}
+                            onChange={(event) => form.setData('billing_cycle', event.target.value as PlanData['billing_cycle'])}
                         >
-                            {trial ? (
-                                <option value="1">30 hari</option>
-                            ) : (
-                                Array.from({ length: 12 }, (_, index) => {
-                                    const months = index + 1;
-
-                                    return (
-                                        <option key={months} value={months}>
-                                            {months} bulan
-                                        </option>
-                                    );
-                                })
-                            )}
+                            <option value="fixed">Berperiode</option>
+                            <option value="lifetime">Selamanya</option>
                         </select>
                     </Field>
-                    <Field label="Maksimum toko per akun">
-                        <input
-                            className={inputClass}
-                            type="number"
-                            min="0"
-                            max="4294967295"
-                            required
-                            value={form.data.max_stores}
-                            onChange={(event) =>
-                                form.setData('max_stores', event.target.value)
-                            }
-                        />
-                    </Field>
-                    <Field label="Maksimum produk per akun">
-                        <input
-                            className={inputClass}
-                            type="number"
-                            min="0"
-                            max="4294967295"
-                            required
-                            value={form.data.max_products}
-                            onChange={(event) =>
-                                form.setData('max_products', event.target.value)
-                            }
-                        />
-                    </Field>
-                    <Field label="Maksimum staf per akun">
-                        <input
-                            className={inputClass}
-                            type="number"
-                            min="0"
-                            max="4294967295"
-                            required
-                            value={form.data.max_members}
-                            onChange={(event) =>
-                                form.setData('max_members', event.target.value)
-                            }
-                        />
-                    </Field>
+                    {form.data.billing_cycle === 'fixed' && (
+                        <Field label={trial ? 'Durasi trial' : 'Periode paket'}>
+                            <select
+                                className={inputClass}
+                                required
+                                disabled={trial}
+                                value={form.data.duration_months}
+                                onChange={(event) => form.setData('duration_months', event.target.value)}
+                            >
+                                {trial ? (
+                                    <option value="1">30 hari</option>
+                                ) : (
+                                    Array.from({ length: 12 }, (_, index) => {
+                                        const months = index + 1;
+
+                                        return (
+                                            <option key={months} value={months}>
+                                                {months} bulan
+                                            </option>
+                                        );
+                                    })
+                                )}
+                            </select>
+                        </Field>
+                    )}
+                    {(!addon || ['general', 'store_capacity'].includes(form.data.offer_category)) && (
+                        <Field label={addon ? 'Tambahan toko' : 'Maksimum toko per akun'}>
+                            <input
+                                className={inputClass}
+                                type="number"
+                                min="0"
+                                max="4294967295"
+                                required
+                                value={form.data.max_stores}
+                                onChange={(event) => form.setData('max_stores', event.target.value)}
+                            />
+                        </Field>
+                    )}
+                    {(!addon || ['general', 'product_capacity'].includes(form.data.offer_category)) && (
+                        <Field label={addon ? 'Tambahan produk' : 'Maksimum produk per akun'}>
+                            <input
+                                className={inputClass}
+                                type="number"
+                                min="0"
+                                max="4294967295"
+                                required
+                                value={form.data.max_products}
+                                onChange={(event) => form.setData('max_products', event.target.value)}
+                            />
+                        </Field>
+                    )}
+                    {(!addon || ['general', 'staff_capacity'].includes(form.data.offer_category)) && (
+                        <Field label={addon ? 'Tambahan staf' : 'Maksimum staf per akun'}>
+                            <input
+                                className={inputClass}
+                                type="number"
+                                min="0"
+                                max="4294967295"
+                                required
+                                value={form.data.max_members}
+                                onChange={(event) => form.setData('max_members', event.target.value)}
+                            />
+                        </Field>
+                    )}
+                    {(!addon || ['general', 'scan_capacity'].includes(form.data.offer_category)) && (
+                        <Field label={addon ? 'Tambahan scan per bulan' : 'Maksimum scan per bulan'}>
+                            <input
+                                className={inputClass}
+                                type="number"
+                                min="0"
+                                max="4294967295"
+                                required
+                                value={form.data.max_scans}
+                                onChange={(event) => form.setData('max_scans', event.target.value)}
+                            />
+                        </Field>
+                    )}
                     {!trial && (
                         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 sm:self-end sm:pb-2">
-                            <Check
-                                label="Paket aktif"
-                                checked={form.data.is_active}
-                                change={(value) =>
-                                    form.setData('is_active', value)
-                                }
-                            />
+                            <Check label="Paket aktif" checked={form.data.is_active} change={(value) => form.setData('is_active', value)} />
                         </div>
                     )}
                     <div className="sm:col-span-2">
@@ -618,22 +671,13 @@ function PlanModal({
                                 className={`${inputClass} min-h-24 resize-y py-2.5`}
                                 maxLength={500}
                                 value={form.data.description}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'description',
-                                        event.target.value,
-                                    )
-                                }
+                                onChange={(event) => form.setData('description', event.target.value)}
                             />
                         </Field>
                     </div>
                     <Errors errors={form.errors} />
                 </div>
-                <Footer
-                    processing={form.processing}
-                    close={close}
-                    label={submitLabel}
-                />
+                <Footer processing={form.processing} close={close} label={submitLabel} />
             </form>
         </DialogContent>
     );
@@ -655,8 +699,7 @@ function SubscriptionRow({
     const [editOpen, setEditOpen] = useState(false);
     const [paymentOpen, setPaymentOpen] = useState(false);
     const eligiblePlans = plans.filter(
-        (plan) =>
-            plan.is_active || plan.public_id === subscription.plan.public_id,
+        (plan) => plan.kind === 'base' && (plan.is_active || plan.public_id === subscription.plan.public_id),
     );
     const form = useForm({
         plan_id: subscription.plan.public_id,
@@ -697,10 +740,10 @@ function SubscriptionRow({
     };
     const submitPayment = (event: FormEvent) => {
         event.preventDefault();
-        payment.post(
-            `/super-admin/subscriptions/${subscription.public_id}/payments`,
-            { preserveScroll: true, onSuccess: () => changePayment(false) },
-        );
+        payment.post(`/super-admin/subscriptions/${subscription.public_id}/payments`, {
+            preserveScroll: true,
+            onSuccess: () => changePayment(false),
+        });
     };
 
     return (
@@ -730,38 +773,33 @@ function SubscriptionRow({
                 ]}
             />
             <td className="px-5 py-4">
-                <p className="max-w-64 truncate font-black text-[#3b211b]">
-                    {subscription.account.name}
-                </p>
-                <p className="mt-1 max-w-64 truncate text-xs text-slate-500">
-                    {subscription.account.email}
-                </p>
-                <p className="max-w-64 text-xs text-slate-500">
-                    {subscription.account.stores_count} toko
-                </p>
+                <p className="max-w-64 truncate font-black text-[#3b211b]">{subscription.account.name}</p>
+                <p className="mt-1 max-w-64 truncate text-xs text-slate-500">{subscription.account.email}</p>
+                <p className="max-w-64 text-xs text-slate-500">{subscription.account.stores_count} toko</p>
             </td>
             <td className="px-5 py-4">
-                <p className="font-bold text-slate-800">
-                    {subscription.plan.name}
-                </p>
-                {!subscription.plan.is_active && (
-                    <p className="mt-1 text-xs font-bold text-amber-700">
-                        Paket nonaktif
-                    </p>
-                )}
+                <p className="font-bold text-slate-800">{subscription.plan.name}</p>
+                {!subscription.plan.is_active && <p className="mt-1 text-xs font-bold text-amber-700">Paket nonaktif</p>}
                 {subscription.scheduled_periods.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                         {subscription.scheduled_periods.map((period) => (
-                            <div
-                                key={period.public_id}
-                                className="flex min-w-0 items-center gap-2"
-                            >
+                            <div key={period.public_id} className="flex min-w-0 items-center gap-2">
                                 <span className="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
                                     Terjadwal
                                 </span>
-                                <span className="min-w-0 truncate text-sm font-bold text-slate-700">
-                                    {period.plan_name}
+                                <span className="min-w-0 truncate text-sm font-bold text-slate-700">{period.plan_name}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {subscription.active_addons.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+                        {subscription.active_addons.map((addon) => (
+                            <div key={addon.public_id} className="flex min-w-0 items-center gap-2">
+                                <span className="shrink-0 rounded-full bg-violet-100 px-2 py-1 text-xs font-bold text-violet-800">
+                                    Add-on
                                 </span>
+                                <span className="min-w-0 truncate text-sm font-bold text-slate-700">{addon.plan_name}</span>
                             </div>
                         ))}
                     </div>
@@ -770,59 +808,42 @@ function SubscriptionRow({
             <td className="px-5 py-4 text-slate-600">
                 <p className="font-semibold text-slate-800">
                     {periodLabel(
-                        subscription.status === 'trialing'
-                            ? subscription.starts_at
-                            : subscription.current_period_start,
-                        subscription.status === 'trialing'
-                            ? subscription.trial_ends_at
-                            : subscription.current_period_end,
+                        subscription.status === 'trialing' ? subscription.starts_at : subscription.current_period_start,
+                        subscription.status === 'trialing' ? subscription.trial_ends_at : subscription.current_period_end,
                     )}
                 </p>
-                <p className="mt-1 text-xs">
-                    {subscription.status === 'trialing'
-                        ? 'Masa trial'
-                        : 'Periode langganan'}
-                </p>
+                <p className="mt-1 text-xs">{subscription.status === 'trialing' ? 'Masa trial' : 'Periode langganan'}</p>
                 {subscription.scheduled_periods.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                         {subscription.scheduled_periods.map((period) => (
                             <div key={period.public_id}>
-                                <p className="font-semibold text-amber-800">
-                                    {periodLabel(
-                                        period.period_start,
-                                        period.period_end,
-                                    )}
-                                </p>
+                                <p className="font-semibold text-amber-800">{periodLabel(period.period_start, period.period_end)}</p>
                                 <p className="mt-0.5 text-xs text-amber-700">
-                                    {period.plan_name} ·{' '}
-                                    {period.is_trial
-                                        ? '30 hari trial'
-                                        : `${period.duration_months} bulan`}
+                                    {period.plan_name} · {period.is_trial ? '30 hari trial' : `${period.duration_months} bulan`}
                                 </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {subscription.active_addons.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
+                        {subscription.active_addons.map((addon) => (
+                            <div key={addon.public_id}>
+                                <p className="font-semibold text-violet-800">{periodLabel(addon.starts_on, addon.ends_on)}</p>
+                                <p className="mt-0.5 text-xs text-violet-700">{addonCapacity(addon)}</p>
                             </div>
                         ))}
                     </div>
                 )}
             </td>
             <td className="px-5 py-4">
-                <Badge
-                    className={
-                        statusClasses[subscription.status] ??
-                        statusClasses.cancelled
-                    }
-                >
+                <Badge className={statusClasses[subscription.status] ?? statusClasses.cancelled}>
                     {statusLabels[subscription.status] ?? subscription.status}
                 </Badge>
                 <Dialog open={editOpen} onOpenChange={changeEdit}>
                     <DialogContent className={dialogClass}>
-                        <ModalHeader
-                            title={`Edit subscription ${subscription.account.name}`}
-                            description="Pengaturan subscription akun."
-                        />
-                        <form
-                            onSubmit={submitEdit}
-                            className="flex min-h-0 flex-1 flex-col"
-                        >
+                        <ModalHeader title={`Edit subscription ${subscription.account.name}`} description="Pengaturan subscription akun." />
+                        <form onSubmit={submitEdit} className="flex min-h-0 flex-1 flex-col">
                             <div className="grid min-h-0 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-5">
                                 <Field label="Paket">
                                     <select
@@ -830,22 +851,12 @@ function SubscriptionRow({
                                         required
                                         autoFocus
                                         value={form.data.plan_id}
-                                        onChange={(event) =>
-                                            form.setData(
-                                                'plan_id',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => form.setData('plan_id', event.target.value)}
                                     >
                                         {eligiblePlans.map((plan) => (
-                                            <option
-                                                key={plan.public_id}
-                                                value={plan.public_id}
-                                            >
+                                            <option key={plan.public_id} value={plan.public_id}>
                                                 {plan.name}
-                                                {!plan.is_active
-                                                    ? ' (nonaktif)'
-                                                    : ''}
+                                                {!plan.is_active ? ' (nonaktif)' : ''}
                                             </option>
                                         ))}
                                     </select>
@@ -855,76 +866,40 @@ function SubscriptionRow({
                                         className={inputClass}
                                         required
                                         value={form.data.status}
-                                        onChange={(event) =>
-                                            form.setData(
-                                                'status',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => form.setData('status', event.target.value)}
                                     >
-                                        {Object.entries(statusLabels).map(
-                                            ([value, label]) => (
-                                                <option
-                                                    key={value}
-                                                    value={value}
-                                                >
-                                                    {label}
-                                                </option>
-                                            ),
-                                        )}
+                                        {Object.entries(statusLabels).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
                                     </select>
                                 </Field>
                                 <DateField
-                                    label={
-                                        form.data.status === 'trialing'
-                                            ? 'Trial mulai'
-                                            : 'Tanggal mulai subscription'
-                                    }
+                                    label={form.data.status === 'trialing' ? 'Trial mulai' : 'Tanggal mulai subscription'}
                                     required
                                     value={form.data.starts_at}
-                                    change={(value) =>
-                                        form.setData('starts_at', value)
-                                    }
+                                    change={(value) => form.setData('starts_at', value)}
                                 />
                                 {form.data.status === 'trialing' ? (
                                     <DateField
                                         label="Trial selesai"
                                         required
                                         value={form.data.trial_ends_at}
-                                        change={(value) =>
-                                            form.setData('trial_ends_at', value)
-                                        }
+                                        change={(value) => form.setData('trial_ends_at', value)}
                                     />
                                 ) : (
                                     <>
                                         <DateField
-                                            label={
-                                                form.data.status === 'active'
-                                                    ? 'Periode mulai'
-                                                    : 'Periode mulai (opsional)'
-                                            }
-                                            required={
-                                                form.data.status === 'active'
-                                            }
-                                            value={
-                                                form.data.current_period_start
-                                            }
-                                            change={(value) =>
-                                                form.setData(
-                                                    'current_period_start',
-                                                    value,
-                                                )
-                                            }
+                                            label={form.data.status === 'active' ? 'Periode mulai' : 'Periode mulai (opsional)'}
+                                            required={form.data.status === 'active'}
+                                            value={form.data.current_period_start}
+                                            change={(value) => form.setData('current_period_start', value)}
                                         />
                                         <DateField
                                             label="Periode selesai (opsional)"
                                             value={form.data.current_period_end}
-                                            change={(value) =>
-                                                form.setData(
-                                                    'current_period_end',
-                                                    value,
-                                                )
-                                            }
+                                            change={(value) => form.setData('current_period_end', value)}
                                         />
                                     </>
                                 )}
@@ -934,35 +909,20 @@ function SubscriptionRow({
                                             className={`${inputClass} min-h-24 resize-y py-2.5`}
                                             maxLength={500}
                                             value={form.data.notes}
-                                            onChange={(event) =>
-                                                form.setData(
-                                                    'notes',
-                                                    event.target.value,
-                                                )
-                                            }
+                                            onChange={(event) => form.setData('notes', event.target.value)}
                                         />
                                     </Field>
                                 </div>
                                 <Errors errors={form.errors} />
                             </div>
-                            <Footer
-                                processing={form.processing}
-                                close={() => changeEdit(false)}
-                                label="Simpan subscription"
-                            />
+                            <Footer processing={form.processing} close={() => changeEdit(false)} label="Simpan subscription" />
                         </form>
                     </DialogContent>
                 </Dialog>
                 <Dialog open={paymentOpen} onOpenChange={changePayment}>
                     <DialogContent className={dialogClass}>
-                        <ModalHeader
-                            title={`Catat pembayaran ${subscription.account.name}`}
-                            description="Pembayaran subscription akun."
-                        />
-                        <form
-                            onSubmit={submitPayment}
-                            className="flex min-h-0 flex-1 flex-col"
-                        >
+                        <ModalHeader title={`Catat pembayaran ${subscription.account.name}`} description="Pembayaran subscription akun." />
+                        <form onSubmit={submitPayment} className="flex min-h-0 flex-1 flex-col">
                             <div className="grid min-h-0 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-5">
                                 <Field label="Nominal">
                                     <input
@@ -973,12 +933,7 @@ function SubscriptionRow({
                                         required
                                         autoFocus
                                         value={payment.data.amount}
-                                        onChange={(event) =>
-                                            payment.setData(
-                                                'amount',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => payment.setData('amount', event.target.value)}
                                     />
                                 </Field>
                                 <Field label="Metode pembayaran">
@@ -986,16 +941,9 @@ function SubscriptionRow({
                                         className={inputClass}
                                         required
                                         value={payment.data.payment_method}
-                                        onChange={(event) =>
-                                            payment.setData(
-                                                'payment_method',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => payment.setData('payment_method', event.target.value)}
                                     >
-                                        <option value="bank_transfer">
-                                            Transfer bank
-                                        </option>
+                                        <option value="bank_transfer">Transfer bank</option>
                                         <option value="qris">QRIS</option>
                                         <option value="cash">Tunai</option>
                                         <option value="other">Lainnya</option>
@@ -1005,17 +953,13 @@ function SubscriptionRow({
                                     label="Periode mulai"
                                     required
                                     value={payment.data.period_start}
-                                    change={(value) =>
-                                        payment.setData('period_start', value)
-                                    }
+                                    change={(value) => payment.setData('period_start', value)}
                                 />
                                 <DateField
                                     label="Periode selesai"
                                     required
                                     value={payment.data.period_end}
-                                    change={(value) =>
-                                        payment.setData('period_end', value)
-                                    }
+                                    change={(value) => payment.setData('period_end', value)}
                                 />
                                 <Field label="Waktu pembayaran">
                                     <input
@@ -1023,12 +967,7 @@ function SubscriptionRow({
                                         type="datetime-local"
                                         required
                                         value={payment.data.paid_at}
-                                        onChange={(event) =>
-                                            payment.setData(
-                                                'paid_at',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => payment.setData('paid_at', event.target.value)}
                                     />
                                 </Field>
                                 <Field label="Referensi eksternal (opsional)">
@@ -1036,12 +975,7 @@ function SubscriptionRow({
                                         className={inputClass}
                                         maxLength={120}
                                         value={payment.data.external_reference}
-                                        onChange={(event) =>
-                                            payment.setData(
-                                                'external_reference',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => payment.setData('external_reference', event.target.value)}
                                     />
                                 </Field>
                                 <div className="sm:col-span-2">
@@ -1050,12 +984,7 @@ function SubscriptionRow({
                                             className={`${inputClass} min-h-24 resize-y py-2.5`}
                                             maxLength={500}
                                             value={payment.data.notes}
-                                            onChange={(event) =>
-                                                payment.setData(
-                                                    'notes',
-                                                    event.target.value,
-                                                )
-                                            }
+                                            onChange={(event) => payment.setData('notes', event.target.value)}
                                         />
                                     </Field>
                                 </div>
@@ -1075,21 +1004,11 @@ function SubscriptionRow({
     );
 }
 
-function ModalHeader({
-    title,
-    description,
-}: {
-    title: string;
-    description: string;
-}) {
+function ModalHeader({ title, description }: { title: string; description: string }) {
     return (
         <DialogHeader className="border-b border-slate-200 px-4 py-4 pr-12 text-left sm:px-5">
-            <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#3b211b]">
-                {title}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-                {description}
-            </DialogDescription>
+            <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[#3b211b]">{title}</DialogTitle>
+            <DialogDescription className="sr-only">{description}</DialogDescription>
         </DialogHeader>
     );
 }
@@ -1106,12 +1025,7 @@ function Footer({
 }) {
     return (
         <DialogFooter className="border-t border-slate-200 bg-white px-4 py-3 sm:px-5">
-            <button
-                type="button"
-                className={secondaryButton}
-                disabled={processing}
-                onClick={close}
-            >
+            <button type="button" className={secondaryButton} disabled={processing} onClick={close}>
                 Batal
             </button>
             <button className={primaryButton} disabled={processing}>
@@ -1141,25 +1055,11 @@ function DateField({
 }) {
     return (
         <Field label={label}>
-            <input
-                className={inputClass}
-                type="date"
-                required={required}
-                value={value}
-                onChange={(event) => change(event.target.value)}
-            />
+            <input className={inputClass} type="date" required={required} value={value} onChange={(event) => change(event.target.value)} />
         </Field>
     );
 }
-function Check({
-    label,
-    checked,
-    change,
-}: {
-    label: string;
-    checked: boolean;
-    change: (value: boolean) => void;
-}) {
+function Check({ label, checked, change }: { label: string; checked: boolean; change: (value: boolean) => void }) {
     return (
         <label className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-slate-700">
             <input
@@ -1172,45 +1072,21 @@ function Check({
         </label>
     );
 }
-function Badge({
-    className,
-    children,
-}: {
-    className: string;
-    children: ReactNode;
-}) {
-    return (
-        <span
-            className={`rounded-full px-2.5 py-1 text-[11px] font-black ${className}`}
-        >
-            {children}
-        </span>
-    );
+function Badge({ className, children }: { className: string; children: ReactNode }) {
+    return <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${className}`}>{children}</span>;
 }
 function Errors({ errors }: { errors: Partial<Record<string, string>> }) {
-    const messages = [
-        ...new Set(
-            Object.values(errors).filter((value): value is string =>
-                Boolean(value),
-            ),
-        ),
-    ];
+    const messages = [...new Set(Object.values(errors).filter((value): value is string => Boolean(value)))];
 
     return messages.length ? (
-        <div
-            role="alert"
-            className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 sm:col-span-2"
-        >
+        <div role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 sm:col-span-2">
             {messages.map((message) => (
                 <p key={message}>{message}</p>
             ))}
         </div>
     ) : null;
 }
-function modalChange<T extends Record<string, unknown>>(
-    setOpen: (open: boolean) => void,
-    form: InertiaFormProps<T>,
-) {
+function modalChange<T extends Record<string, unknown>>(setOpen: (open: boolean) => void, form: InertiaFormProps<T>) {
     return (next: boolean) => {
         if (!next && !form.processing) {
             form.reset();
@@ -1245,10 +1121,7 @@ function localDateTime() {
 }
 function billingPeriod() {
     const part = dateParts(new Date());
-    const last = new Date(Date.UTC(Number(part.year), Number(part.month), 0))
-        .getUTCDate()
-        .toString()
-        .padStart(2, '0');
+    const last = new Date(Date.UTC(Number(part.year), Number(part.month), 0)).getUTCDate().toString().padStart(2, '0');
 
     return {
         start: `${part.year}-${part.month}-01`,
@@ -1274,12 +1147,31 @@ function periodLabel(start: string | null, end: string | null) {
     return `${formatDate(start)} – ${end ? formatDate(end) : translate('tanpa batas akhir')}`;
 }
 function limit(value: number) {
-    return value === 0
-        ? translate('Tak terbatas')
-        : value.toLocaleString(localeTag());
+    return value === 0 ? translate('Tak terbatas') : value.toLocaleString(localeTag());
 }
-function planTerm(plan: Pick<Plan, 'is_trial' | 'duration_months'>) {
-    return plan.is_trial
-        ? translate('30 hari')
-        : translate(`${plan.duration_months} bulan`);
+function planTerm(plan: Pick<Plan, 'is_trial' | 'duration_months' | 'billing_cycle'>) {
+    return plan.billing_cycle === 'lifetime'
+        ? translate('Selamanya')
+        : plan.is_trial
+          ? translate('30 hari')
+          : translate(`${plan.duration_months} bulan`);
+}
+
+function capacity(plan: Pick<Plan, 'kind'>, value: number) {
+    if (plan.kind === 'addon') {
+        return `+${value.toLocaleString(localeTag())}`;
+    }
+
+    return limit(value);
+}
+
+function addonCapacity(addon: Subscription['active_addons'][number]) {
+    return [
+        addon.stores > 0 ? `+${addon.stores} toko` : null,
+        addon.products > 0 ? `+${addon.products} produk` : null,
+        addon.members > 0 ? `+${addon.members} staf` : null,
+        addon.scans > 0 ? `+${addon.scans} scan/bulan` : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
 }

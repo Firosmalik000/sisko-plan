@@ -1,24 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    AlertTriangle,
-    ArrowLeft,
-    Camera,
-    Check,
-    ClipboardCheck,
-    PackageCheck,
-    RotateCcw,
-    Save,
-    Search,
-    Send,
-    X,
-} from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Camera, Check, ClipboardCheck, PackageCheck, RotateCcw, Save, Search, Send, X } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import {
-    ledgerDateTime,
-    money,
-    OperationsShell,
-    quantity,
-} from '@/components/operations-shell';
+import { ledgerDateTime, money, OperationsShell, quantity } from '@/components/operations-shell';
 import type { ScannerSelection } from '@/components/product-scanner/types';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
 import { decimalInput } from '@/lib/decimal-input';
@@ -58,9 +41,7 @@ const statusLabels = {
     posted: 'Diposting',
     cancelled: 'Dibatalkan',
 };
-const ProductScanner = lazy(
-    () => import('@/components/product-scanner/ProductScanner'),
-);
+const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
 
 export default function StockOpnameShow({
     stockCount,
@@ -74,18 +55,11 @@ export default function StockOpnameShow({
     timezone: string;
 }) {
     const [values, setValues] = useState<Record<string, string>>(() =>
-        Object.fromEntries(
-            stockCount.items.map((item) => [
-                item.product_id,
-                decimalInput(item.counted_quantity),
-            ]),
-        ),
+        Object.fromEntries(stockCount.items.map((item) => [item.product_id, decimalInput(item.counted_quantity)])),
     );
     const [dirty, setDirty] = useState<Set<string>>(new Set());
     const [search, setSearch] = useState('');
-    const [filter, setFilter] = useState<'all' | 'pending' | 'difference'>(
-        'all',
-    );
+    const [filter, setFilter] = useState<'all' | 'pending' | 'difference'>('all');
     const [processing, setProcessing] = useState(false);
     const [scannerOpen, setScannerOpen] = useState(
         () =>
@@ -113,8 +87,7 @@ export default function StockOpnameShow({
                 const difference = Number(value) - Number(item.system_quantity);
 
                 if (difference < 0) {
-                    estimatedLoss +=
-                        Math.abs(difference) * Number(item.snapshot_unit_cost);
+                    estimatedLoss += Math.abs(difference) * Number(item.snapshot_unit_cost);
                 }
             }
         });
@@ -131,22 +104,14 @@ export default function StockOpnameShow({
         const query = search.trim().toLocaleLowerCase(localeTag());
         const matchesSearch =
             query === '' ||
-            [
-                item.parent_name,
-                item.name,
-                item.variant_name,
-                item.sku,
-                item.barcode,
-            ].some((value) =>
+            [item.parent_name, item.name, item.variant_name, item.sku, item.barcode].some((value) =>
                 value?.toLocaleLowerCase(localeTag()).includes(query),
             );
         const value = values[item.product_id];
         const matchesFilter =
             filter === 'all' ||
             (filter === 'pending' && value === '') ||
-            (filter === 'difference' &&
-                value !== '' &&
-                Number(value) !== Number(item.system_quantity));
+            (filter === 'difference' && value !== '' && Number(value) !== Number(item.system_quantity));
 
         return matchesSearch && matchesFilter;
     });
@@ -171,9 +136,7 @@ export default function StockOpnameShow({
         const nextValues = { ...values };
         const nextDirty = new Set(dirty);
         selections.forEach((selection) => {
-            const item = stockCount.items.find(
-                (candidate) => candidate.product_id === selection.productId,
-            );
+            const item = stockCount.items.find((candidate) => candidate.product_id === selection.productId);
 
             if (!item) {
                 missing++;
@@ -181,9 +144,7 @@ export default function StockOpnameShow({
                 return;
             }
 
-            nextValues[item.product_id] = String(
-                Number(nextValues[item.product_id] || 0) + selection.quantity,
-            );
+            nextValues[item.product_id] = String(Number(nextValues[item.product_id] || 0) + selection.quantity);
             nextDirty.add(item.product_id);
             changed++;
         });
@@ -209,10 +170,7 @@ export default function StockOpnameShow({
                     .filter((item) => dirty.has(item.product_id))
                     .map((item) => ({
                         product_id: item.product_id,
-                        counted_quantity:
-                            values[item.product_id] === ''
-                                ? null
-                                : values[item.product_id],
+                        counted_quantity: values[item.product_id] === '' ? null : values[item.product_id],
                     })),
             },
             {
@@ -223,10 +181,7 @@ export default function StockOpnameShow({
         );
     };
 
-    const workflow = (
-        action: 'complete' | 'reopen' | 'post' | 'cancel',
-        confirmation?: string,
-    ) => {
+    const workflow = (action: 'complete' | 'reopen' | 'post' | 'cancel', confirmation?: string) => {
         if (confirmation && !window.confirm(confirmation)) {
             return;
         }
@@ -245,12 +200,7 @@ export default function StockOpnameShow({
     return (
         <>
             <Head title={stockCount.document_number} />
-            <OperationsShell
-                active="/operations/stock-opnames"
-                eyebrow="Stock opname"
-                title={stockCount.document_number}
-                description=""
-            >
+            <OperationsShell active="/operations/stock-opnames" eyebrow="Stock opname" title={stockCount.document_number} description="">
                 <section className="overflow-hidden rounded-[1.2rem] border border-[var(--app-ink)]/10 bg-white shadow-sm">
                     <div className="flex items-center gap-2 border-b border-[var(--app-ink)]/8 px-3 py-2.5 sm:px-4">
                         <Link
@@ -260,12 +210,7 @@ export default function StockOpnameShow({
                             <ArrowLeft className="size-3.5" /> Kembali
                         </Link>
                         <div className="min-w-0 flex-1 text-xs text-stone-500">
-                            <p className="truncate font-bold text-stone-700">
-                                {ledgerDateTime(
-                                    stockCount.snapshot_at,
-                                    timezone,
-                                )}
-                            </p>
+                            <p className="truncate font-bold text-stone-700">{ledgerDateTime(stockCount.snapshot_at, timezone)}</p>
                             <p className="truncate">
                                 {stockCount.created_by}
                                 {stockCount.notes && ` · ${stockCount.notes}`}
@@ -277,25 +222,10 @@ export default function StockOpnameShow({
                     </div>
 
                     <div className="grid grid-cols-4 divide-x divide-[var(--app-ink)]/8 py-2.5">
-                        <Summary
-                            label="Dihitung"
-                            value={`${stats.counted}/${stockCount.items.length}`}
-                        />
-                        <Summary
-                            label="Belum"
-                            value={stats.remaining}
-                            danger={stats.remaining > 0}
-                        />
-                        <Summary
-                            label="Selisih"
-                            value={stats.differences}
-                            danger={stats.differences > 0}
-                        />
-                        <Summary
-                            label="Estimasi rugi"
-                            value={compactMoney(stats.estimatedLoss)}
-                            danger={stats.estimatedLoss > 0}
-                        />
+                        <Summary label="Dihitung" value={`${stats.counted}/${stockCount.items.length}`} />
+                        <Summary label="Belum" value={stats.remaining} danger={stats.remaining > 0} />
+                        <Summary label="Selisih" value={stats.differences} danger={stats.differences > 0} />
+                        <Summary label="Estimasi rugi" value={compactMoney(stats.estimatedLoss)} danger={stats.estimatedLoss > 0} />
                     </div>
 
                     <div className="h-1.5 bg-stone-100">
@@ -315,18 +245,14 @@ export default function StockOpnameShow({
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
                             <input
                                 value={search}
-                                onChange={(event) =>
-                                    setSearch(event.target.value)
-                                }
+                                onChange={(event) => setSearch(event.target.value)}
                                 className="h-10 w-full rounded-xl border border-stone-300 bg-white pr-3 pl-9 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
                                 placeholder="Cari produk, SKU, atau barcode"
                             />
                         </label>
                         <select
                             value={filter}
-                            onChange={(event) =>
-                                setFilter(event.target.value as typeof filter)
-                            }
+                            onChange={(event) => setFilter(event.target.value as typeof filter)}
                             aria-label="Filter produk opname"
                             className="h-10 w-32 shrink-0 rounded-xl border border-stone-300 bg-white px-2 text-xs font-bold text-stone-700 outline-none sm:w-44 sm:px-3 sm:text-sm"
                         >
@@ -356,19 +282,10 @@ export default function StockOpnameShow({
                     <div className="mt-2 space-y-1.5">
                         {visibleItems.map((item) => {
                             const value = values[item.product_id];
-                            const difference =
-                                value === ''
-                                    ? null
-                                    : Number(value) -
-                                      Number(item.system_quantity);
-                            const moved =
-                                Number(item.current_quantity) !==
-                                Number(item.system_quantity);
+                            const difference = value === '' ? null : Number(value) - Number(item.system_quantity);
+                            const moved = Number(item.current_quantity) !== Number(item.system_quantity);
                             const estimatedLoss =
-                                difference !== null && difference < 0
-                                    ? Math.abs(difference) *
-                                      Number(item.snapshot_unit_cost)
-                                    : 0;
+                                difference !== null && difference < 0 ? Math.abs(difference) * Number(item.snapshot_unit_cost) : 0;
 
                             return (
                                 <article
@@ -377,19 +294,12 @@ export default function StockOpnameShow({
                                 >
                                     <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_9rem_7rem] sm:items-center">
                                         <div className="min-w-0">
-                                            <p className="truncate text-sm font-black text-stone-900">
-                                                {item.variant_name ?? item.name}
-                                            </p>
+                                            <p className="truncate text-sm font-black text-stone-900">{item.variant_name ?? item.name}</p>
                                             {item.parent_name && (
-                                                <p className="truncate text-xs font-bold text-[var(--app-primary)]">
-                                                    {item.parent_name}
-                                                </p>
+                                                <p className="truncate text-xs font-bold text-[var(--app-primary)]">{item.parent_name}</p>
                                             )}
                                             <p className="text-[10px] text-stone-500">
-                                                {item.sku ||
-                                                    item.barcode ||
-                                                    'Tanpa SKU'}{' '}
-                                                · {item.unit}
+                                                {item.sku || item.barcode || 'Tanpa SKU'} · {item.unit}
                                             </p>
                                         </div>
                                         <div className="grid grid-cols-3 gap-1.5 sm:contents">
@@ -398,9 +308,7 @@ export default function StockOpnameShow({
                                                     Sistem
                                                 </span>
                                                 <p className="text-sm font-black text-stone-700 tabular-nums">
-                                                    {quantity(
-                                                        item.system_quantity,
-                                                    )}
+                                                    {quantity(item.system_quantity)}
                                                 </p>
                                             </div>
                                             <label>
@@ -415,21 +323,11 @@ export default function StockOpnameShow({
                                                     min="0"
                                                     step="any"
                                                     onChange={(event) => {
-                                                        setValues(
-                                                            (current) => ({
-                                                                ...current,
-                                                                [item.product_id]:
-                                                                    event.target
-                                                                        .value,
-                                                            }),
-                                                        );
-                                                        setDirty((current) =>
-                                                            new Set(
-                                                                current,
-                                                            ).add(
-                                                                item.product_id,
-                                                            ),
-                                                        );
+                                                        setValues((current) => ({
+                                                            ...current,
+                                                            [item.product_id]: event.target.value,
+                                                        }));
+                                                        setDirty((current) => new Set(current).add(item.product_id));
                                                     }}
                                                     className="mt-0.5 h-9 w-full rounded-lg border border-stone-300 bg-white px-2 text-right text-sm font-black tabular-nums outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 disabled:bg-stone-50"
                                                     placeholder="—"
@@ -442,9 +340,7 @@ export default function StockOpnameShow({
                                                 <p
                                                     className={`text-sm font-black tabular-nums ${difference === null || difference === 0 ? 'text-stone-500' : difference > 0 ? 'text-emerald-700' : 'text-red-700'}`}
                                                 >
-                                                    {difference === null
-                                                        ? '—'
-                                                        : `${difference > 0 ? '+' : ''}${quantity(difference)}`}
+                                                    {difference === null ? '—' : `${difference > 0 ? '+' : ''}${quantity(difference)}`}
                                                 </p>
                                             </div>
                                         </div>
@@ -453,20 +349,14 @@ export default function StockOpnameShow({
                                         <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1 border-t border-current/5 pt-1.5 text-[10px] font-bold">
                                             {moved ? (
                                                 <span className="flex items-center gap-1 text-sky-700">
-                                                    <AlertTriangle className="size-3" />{' '}
-                                                    Stok kini{' '}
-                                                    {quantity(
-                                                        item.current_quantity,
-                                                    )}{' '}
+                                                    <AlertTriangle className="size-3" /> Stok kini {quantity(item.current_quantity)}{' '}
                                                     {item.unit}
                                                 </span>
                                             ) : (
                                                 <span />
                                             )}
                                             {estimatedLoss > 0 && (
-                                                <span className="font-black text-red-700">
-                                                    Rugi {money(estimatedLoss)}
-                                                </span>
+                                                <span className="font-black text-red-700">Rugi {money(estimatedLoss)}</span>
                                             )}
                                         </div>
                                     )}
@@ -474,9 +364,7 @@ export default function StockOpnameShow({
                             );
                         })}
                         {visibleItems.length === 0 && (
-                            <div className="py-8 text-center text-sm font-bold text-stone-500">
-                                Produk tidak ditemukan
-                            </div>
+                            <div className="py-8 text-center text-sm font-bold text-stone-500">Produk tidak ditemukan</div>
                         )}
                     </div>
                 </section>
@@ -485,26 +373,17 @@ export default function StockOpnameShow({
                     {stockCount.status === 'draft' && editable && (
                         <div>
                             <p className="mb-1.5 text-[10px] font-semibold text-stone-500 sm:text-right sm:text-xs">
-                                Simpan untuk lanjut nanti · Selesai menghitung
-                                mengunci hasil
+                                Simpan untuk lanjut nanti · Selesai menghitung mengunci hasil
                             </p>
-                            <div
-                                className={`grid gap-1.5 ${canManage ? 'grid-cols-3' : 'grid-cols-2'} sm:flex sm:justify-end`}
-                            >
+                            <div className={`grid gap-1.5 ${canManage ? 'grid-cols-3' : 'grid-cols-2'} sm:flex sm:justify-end`}>
                                 {canManage && (
                                     <button
                                         type="button"
                                         disabled={processing}
-                                        onClick={() =>
-                                            workflow(
-                                                'cancel',
-                                                'Batalkan sesi stock opname ini?',
-                                            )
-                                        }
+                                        onClick={() => workflow('cancel', 'Batalkan sesi stock opname ini?')}
                                         className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-black text-red-700 ring-1 ring-red-200 sm:px-4 sm:text-sm"
                                     >
-                                        <X className="hidden size-4 sm:block" />{' '}
-                                        Batal
+                                        <X className="hidden size-4 sm:block" /> Batal
                                     </button>
                                 )}
                                 <button
@@ -513,27 +392,16 @@ export default function StockOpnameShow({
                                     onClick={save}
                                     className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[var(--app-soft)] px-2 text-xs font-black text-[var(--app-primary)] disabled:opacity-50 sm:px-4 sm:text-sm"
                                 >
-                                    <Save className="hidden size-4 sm:block" />{' '}
-                                    Simpan
+                                    <Save className="hidden size-4 sm:block" /> Simpan
                                     {dirty.size > 0 && ` (${dirty.size})`}
                                 </button>
                                 <button
                                     type="button"
-                                    disabled={
-                                        processing ||
-                                        dirty.size > 0 ||
-                                        stats.remaining > 0
-                                    }
-                                    onClick={() =>
-                                        workflow(
-                                            'complete',
-                                            'Selesaikan penghitungan dan kunci hasil untuk diperiksa?',
-                                        )
-                                    }
+                                    disabled={processing || dirty.size > 0 || stats.remaining > 0}
+                                    onClick={() => workflow('complete', 'Selesaikan penghitungan dan kunci hasil untuk diperiksa?')}
                                     className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-teal-700 px-2 text-xs font-black text-white disabled:opacity-50 sm:px-4 sm:text-sm"
                                 >
-                                    <ClipboardCheck className="hidden size-4 sm:block" />{' '}
-                                    Selesai hitung
+                                    <ClipboardCheck className="hidden size-4 sm:block" /> Selesai hitung
                                 </button>
                             </div>
                         </div>
@@ -551,12 +419,7 @@ export default function StockOpnameShow({
                             <button
                                 type="button"
                                 disabled={processing}
-                                onClick={() =>
-                                    workflow(
-                                        'post',
-                                        `Posting ${stats.differences} selisih ke persediaan?`,
-                                    )
-                                }
+                                onClick={() => workflow('post', `Posting ${stats.differences} selisih ke persediaan?`)}
                                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 text-sm font-black text-white disabled:opacity-50"
                             >
                                 <Send className="size-4" /> Posting hasil
@@ -565,14 +428,12 @@ export default function StockOpnameShow({
                     )}
                     {stockCount.status === 'counted' && !canManage && (
                         <p className="flex items-center justify-center gap-2 py-2 text-sm font-black text-sky-700">
-                            <Check className="size-4" /> Menunggu owner/admin
-                            memposting hasil
+                            <Check className="size-4" /> Menunggu owner/admin memposting hasil
                         </p>
                     )}
                     {stockCount.status === 'posted' && (
                         <p className="flex items-center justify-center gap-2 py-2 text-sm font-black text-emerald-700">
-                            <PackageCheck className="size-4" /> Hasil sudah
-                            masuk ke persediaan
+                            <PackageCheck className="size-4" /> Hasil sudah masuk ke persediaan
                         </p>
                     )}
                     {stockCount.status === 'cancelled' && (
@@ -595,20 +456,10 @@ export default function StockOpnameShow({
     );
 }
 
-function Summary({
-    label,
-    value,
-    danger = false,
-}: {
-    label: string;
-    value: string | number;
-    danger?: boolean;
-}) {
+function Summary({ label, value, danger = false }: { label: string; value: string | number; danger?: boolean }) {
     return (
         <div className="min-w-0 px-1.5 text-center sm:px-3">
-            <p className="truncate text-[8px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">
-                {label}
-            </p>
+            <p className="truncate text-[8px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">{label}</p>
             <p
                 className={`mt-0.5 truncate text-sm font-black tabular-nums sm:text-base ${danger ? 'text-red-700' : 'text-[var(--app-ink)]'}`}
             >

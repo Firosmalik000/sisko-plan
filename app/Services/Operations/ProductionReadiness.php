@@ -61,12 +61,20 @@ class ProductionReadiness
                 'Platform Admin aktif terlindungi 2FA',
                 $activeAdmins > 0 && $adminsWithoutTwoFactor === 0,
                 true,
-                $activeAdmins === 0 ? 'Buat minimal satu Platform Admin aktif.' : "{$adminsWithoutTwoFactor} Platform Admin aktif belum mengonfirmasi 2FA.",
+                $activeAdmins === 0
+                    ? 'Buat minimal satu Platform Admin aktif.'
+                    : __(':count Platform Admin aktif belum mengonfirmasi 2FA.', ['count' => $adminsWithoutTwoFactor]),
             );
             $migrator = app(Migrator::class);
             $files = array_keys($migrator->getMigrationFiles([database_path('migrations')]));
             $pending = array_diff($files, $migrator->getRepository()->getRan());
-            $migrations = $this->check('migrations', 'Migration terkini', $pending === [], true, count($pending).' migration belum dijalankan.');
+            $migrations = $this->check(
+                'migrations',
+                'Migration terkini',
+                $pending === [],
+                true,
+                __(':count migration belum dijalankan.', ['count' => count($pending)]),
+            );
             $catalogSchema = $this->check(
                 'catalog_schema',
                 'Schema katalog konsisten',
@@ -86,7 +94,13 @@ class ProductionReadiness
     /** @return array{key:string,label:string,passed:bool,critical:bool,message:string} */
     private function check(string $key, string $label, bool $passed, bool $critical, string $message): array
     {
-        return compact('key', 'label', 'passed', 'critical', 'message');
+        return [
+            'key' => $key,
+            'label' => __($label),
+            'passed' => $passed,
+            'critical' => $critical,
+            'message' => __($message),
+        ];
     }
 
     private function validApplicationKey(): bool

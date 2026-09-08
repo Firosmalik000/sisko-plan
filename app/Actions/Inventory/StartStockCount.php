@@ -28,7 +28,9 @@ class StartStockCount
                 ->first();
             if ($active !== null) {
                 throw ValidationException::withMessages([
-                    'stock_count' => "Selesaikan {$active->document_number} sebelum memulai opname baru.",
+                    'stock_count' => __('Selesaikan :document sebelum memulai opname baru.', [
+                        'document' => $active->document_number,
+                    ]),
                 ]);
             }
 

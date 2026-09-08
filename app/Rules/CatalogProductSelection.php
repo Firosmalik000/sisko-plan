@@ -14,7 +14,7 @@ class CatalogProductSelection implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! is_string($value)) {
-            $fail('Produk tidak valid.');
+            $fail(__('Produk tidak valid.'));
 
             return;
         }
@@ -26,7 +26,7 @@ class CatalogProductSelection implements ValidationRule
             ->whereHas('productUnits', fn ($query) => $query->where('is_active', true))->exists();
 
         if (! $productExists && ! $variantExists) {
-            $fail('Produk tidak ditemukan pada toko aktif.');
+            $fail(__('Produk tidak ditemukan pada toko aktif.'));
         }
     }
 }

@@ -39,15 +39,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from '@/components/ui/sheet';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { formatQuantity } from '@/lib/currency';
@@ -56,13 +48,7 @@ import { storeThemeVariables } from '@/lib/store-theme';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
-import type {
-    AppLayoutProps,
-    BreadcrumbItem,
-    StoreCreationState,
-    StoreSummary,
-    User,
-} from '@/types';
+import type { AppLayoutProps, BreadcrumbItem, StoreCreationState, StoreSummary, User } from '@/types';
 
 type CustomerPageProps = {
     name: string;
@@ -257,10 +243,7 @@ const moreMenuSections = [
     },
 ];
 
-export default function AppMobileLayout({
-    children,
-    breadcrumbs = [],
-}: AppLayoutProps) {
+export default function AppMobileLayout({ children, breadcrumbs = [] }: AppLayoutProps) {
     const { activeStore } = usePage<CustomerPageProps>().props;
 
     return (
@@ -271,9 +254,7 @@ export default function AppMobileLayout({
             <ImpersonationBanner />
             <CustomerHeader breadcrumbs={breadcrumbs} />
             <SubscriptionBanner />
-            <main className="min-h-[calc(100svh-4rem)] overflow-x-hidden pb-24 md:pb-28">
-                {children}
-            </main>
+            <main className="min-h-[calc(100svh-4rem)] overflow-x-hidden pb-24 md:pb-28">{children}</main>
             <BottomNavigation />
         </div>
     );
@@ -281,32 +262,14 @@ export default function AppMobileLayout({
 
 function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
     const { t } = useTranslation();
-    const {
-        name,
-        branding,
-        auth,
-        stores,
-        activeStore,
-        storeCreation,
-        stockAlerts,
-    } = usePage<CustomerPageProps>().props;
+    const { name, branding, auth, stores, activeStore, storeCreation, stockAlerts } = usePage<CustomerPageProps>().props;
     const getInitials = useInitials();
     const landingHref = activeStore ? '/dashboard' : '/stores';
     const [stockNoticeOpen, setStockNoticeOpen] = useState(false);
     const pageUrl = usePage().url;
-    const parsedUrl = new URL(
-        pageUrl,
-        typeof window !== 'undefined'
-            ? window.location.origin
-            : 'http://localhost',
-    );
-    const backTarget = customerBackTarget(
-        parsedUrl.pathname,
-        parsedUrl.searchParams,
-    );
-    const [acknowledgedUnreadKey, setAcknowledgedUnreadKey] = useState<
-        string | null
-    >(null);
+    const parsedUrl = new URL(pageUrl, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    const backTarget = customerBackTarget(parsedUrl.pathname, parsedUrl.searchParams);
+    const [acknowledgedUnreadKey, setAcknowledgedUnreadKey] = useState<string | null>(null);
     const stockAlertCount = stockAlerts?.count ?? 0;
     const serverUnreadCount = stockAlerts?.unread_count ?? 0;
     const unreadKey =
@@ -314,8 +277,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
             .filter((item) => item.unread)
             .map((item) => item.id)
             .join(':') ?? '';
-    const unreadCount =
-        acknowledgedUnreadKey === unreadKey ? 0 : serverUnreadCount;
+    const unreadCount = acknowledgedUnreadKey === unreadKey ? 0 : serverUnreadCount;
 
     const handleStockNoticeOpen = (open: boolean) => {
         setStockNoticeOpen(open);
@@ -356,37 +318,22 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                         className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[var(--app-shadow)] shadow-lg"
                     >
                         {branding.logo_url ? (
-                            <img
-                                src={branding.logo_url}
-                                alt=""
-                                className="size-full rounded-xl object-contain"
-                            />
+                            <img src={branding.logo_url} alt="" className="size-full rounded-xl object-contain" />
                         ) : (
                             <AppLogoIcon className="size-5 fill-current" />
                         )}
                     </Link>
                 )}
 
-                <StoreMenu
-                    stores={stores}
-                    activeStore={activeStore}
-                    storeCreation={storeCreation}
-                />
+                <StoreMenu stores={stores} activeStore={activeStore} storeCreation={storeCreation} />
 
                 <LanguageSwitcher />
 
-                <DropdownMenu
-                    open={stockNoticeOpen}
-                    onOpenChange={handleStockNoticeOpen}
-                >
+                <DropdownMenu open={stockNoticeOpen} onOpenChange={handleStockNoticeOpen}>
                     <DropdownMenuTrigger asChild>
                         <button
                             type="button"
-                            aria-label={
-                                unreadCount > 0
-                                    ? `${unreadCount} notifikasi belum dibaca`
-                                    : 'Buka notifikasi'
-                            }
+                            aria-label={unreadCount > 0 ? `${unreadCount} notifikasi belum dibaca` : 'Buka notifikasi'}
                             className={cn(
                                 'relative ml-auto grid size-9 place-items-center rounded-full transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/30 focus-visible:outline-none',
                                 unreadCount > 0
@@ -409,13 +356,9 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                     >
                         <div className="flex items-center justify-between border-b border-[var(--app-ink)]/8 px-4 py-3.5">
                             <div>
-                                <p className="text-sm font-black text-[var(--app-ink)]">
-                                    Notifikasi
-                                </p>
+                                <p className="text-sm font-black text-[var(--app-ink)]">Notifikasi</p>
                                 <p className="mt-0.5 text-[11px] font-semibold text-[var(--muted-foreground)]">
-                                    {stockAlertCount > 0
-                                        ? `${stockAlertCount} stok perlu perhatian`
-                                        : 'Semua stok dalam kondisi aman'}
+                                    {stockAlertCount > 0 ? `${stockAlertCount} stok perlu perhatian` : 'Semua stok dalam kondisi aman'}
                                 </p>
                             </div>
                             {unreadCount === 0 && stockAlertCount > 0 && (
@@ -431,34 +374,26 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                 <span className="grid size-11 place-items-center rounded-2xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                                     <CheckCheck className="size-5" />
                                 </span>
-                                <p className="mt-3 text-sm font-black text-[var(--app-ink)]">
-                                    Tidak ada notifikasi
-                                </p>
+                                <p className="mt-3 text-sm font-black text-[var(--app-ink)]">Tidak ada notifikasi</p>
                             </div>
                         ) : (
                             <div className="max-h-[min(25rem,calc(100svh-11rem))] overflow-y-auto p-2">
                                 {stockAlerts?.items.map((item) => {
                                     const empty = Number(item.quantity) <= 0;
-                                    const itemUnread =
-                                        item.unread &&
-                                        acknowledgedUnreadKey !== unreadKey;
+                                    const itemUnread = item.unread && acknowledgedUnreadKey !== unreadKey;
 
                                     return (
                                         <div
                                             key={item.id}
                                             className={cn(
                                                 'relative flex gap-3 rounded-2xl px-3 py-3',
-                                                itemUnread
-                                                    ? 'bg-red-50/90'
-                                                    : 'bg-transparent',
+                                                itemUnread ? 'bg-red-50/90' : 'bg-transparent',
                                             )}
                                         >
                                             <span
                                                 className={cn(
                                                     'grid size-9 shrink-0 place-items-center rounded-xl',
-                                                    empty
-                                                        ? 'bg-red-100 text-red-700'
-                                                        : 'bg-amber-100 text-amber-700',
+                                                    empty ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700',
                                                 )}
                                             >
                                                 <AlertTriangle className="size-4" />
@@ -466,14 +401,10 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-start gap-2">
                                                     <div className="min-w-0 flex-1">
-                                                        <p className="truncate text-xs font-black text-[var(--app-ink)]">
-                                                            {item.name}
-                                                        </p>
+                                                        <p className="truncate text-xs font-black text-[var(--app-ink)]">{item.name}</p>
                                                         {item.variant_name && (
                                                             <p className="truncate text-[10px] font-semibold text-[var(--muted-foreground)]">
-                                                                {
-                                                                    item.variant_name
-                                                                }
+                                                                {item.variant_name}
                                                             </p>
                                                         )}
                                                     </div>
@@ -487,21 +418,13 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                                 <p
                                                     className={cn(
                                                         'mt-1.5 text-[11px] font-bold',
-                                                        empty
-                                                            ? 'text-red-700'
-                                                            : 'text-amber-700',
+                                                        empty ? 'text-red-700' : 'text-amber-700',
                                                     )}
                                                 >
-                                                    {empty
-                                                        ? 'Stok habis'
-                                                        : `Sisa ${formatQuantity(item.quantity)} ${item.unit}`}
+                                                    {empty ? 'Stok habis' : `Sisa ${formatQuantity(item.quantity)} ${item.unit}`}
                                                     <span className="font-medium text-[var(--muted-foreground)]">
                                                         {' '}
-                                                        · Batas{' '}
-                                                        {formatQuantity(
-                                                            item.minimum_quantity,
-                                                        )}{' '}
-                                                        {item.unit}
+                                                        · Batas {formatQuantity(item.minimum_quantity)} {item.unit}
                                                     </span>
                                                 </p>
                                             </div>
@@ -512,10 +435,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                         )}
 
                         {stockAlertCount > 0 && (
-                            <DropdownMenuItem
-                                asChild
-                                className="m-2 mt-0 rounded-xl p-0 focus:bg-[var(--app-soft)]"
-                            >
+                            <DropdownMenuItem asChild className="m-2 mt-0 rounded-xl p-0 focus:bg-[var(--app-soft)]">
                                 <Link
                                     href="/operations/inventory"
                                     className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-black text-[var(--app-primary)]"
@@ -537,10 +457,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                 className="rounded-full ring-[var(--app-primary)]/30 transition outline-none focus-visible:ring-4"
                             >
                                 <Avatar className="size-9 border-2 border-white shadow-sm">
-                                    <AvatarImage
-                                        src={auth.user.avatar}
-                                        alt={auth.user.name}
-                                    />
+                                    <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
                                     <AvatarFallback className="bg-[var(--app-soft-strong)] text-xs font-bold text-[var(--app-primary)]">
                                         {getInitials(auth.user.name)}
                                     </AvatarFallback>
@@ -553,12 +470,8 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                             className="max-h-[min(38rem,calc(100svh-6rem))] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-[1.5rem] border-[var(--app-ink)]/10 bg-[#fffdfc] p-2 shadow-xl"
                         >
                             <DropdownMenuLabel className="rounded-2xl bg-[var(--app-soft)] px-3.5 py-3 font-normal">
-                                <p className="truncate text-sm font-black text-[var(--app-ink)]">
-                                    {auth.user.name}
-                                </p>
-                                <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">
-                                    {auth.user.email}
-                                </p>
+                                <p className="truncate text-sm font-black text-[var(--app-ink)]">{auth.user.name}</p>
+                                <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">{auth.user.email}</p>
                             </DropdownMenuLabel>
                             <div className="px-1 py-3">
                                 <p className="px-2 pb-2 text-[10px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
@@ -566,11 +479,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                 </p>
                                 <div className="space-y-1">
                                     {quickMenuItems.map((item) => (
-                                        <DropdownMenuItem
-                                            asChild
-                                            key={item.href}
-                                            className="rounded-2xl p-0 focus:bg-[var(--app-soft)]"
-                                        >
+                                        <DropdownMenuItem asChild key={item.href} className="rounded-2xl p-0 focus:bg-[var(--app-soft)]">
                                             <Link
                                                 href={item.href}
                                                 className="group flex min-w-0 items-center gap-3 rounded-2xl px-2.5 py-2"
@@ -590,25 +499,14 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                 </div>
                             </div>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                asChild
-                                className="rounded-xl p-3"
-                            >
+                            <DropdownMenuItem asChild className="rounded-xl p-3">
                                 <Link href={edit()}>
                                     <Settings className="size-4" />
                                     Pengaturan akun
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                                asChild
-                                className="rounded-xl p-3 text-rose-700"
-                            >
-                                <Link
-                                    href={logout()}
-                                    as="button"
-                                    className="w-full"
-                                    onClick={() => router.flushAll()}
-                                >
+                            <DropdownMenuItem asChild className="rounded-xl p-3 text-rose-700">
+                                <Link href={logout()} as="button" className="w-full" onClick={() => router.flushAll()}>
                                     <LogOut className="size-4" />
                                     Keluar
                                 </Link>
@@ -670,9 +568,7 @@ function customerBackTarget(pathname: string, searchParams: URLSearchParams) {
         };
     }
 
-    const stockOpnameMatch = pathname.match(
-        /^\/operations\/stock-opnames\/[^/]+$/,
-    );
+    const stockOpnameMatch = pathname.match(/^\/operations\/stock-opnames\/[^/]+$/);
 
     if (stockOpnameMatch) {
         return {
@@ -725,12 +621,8 @@ function StoreMenu({
                     <Plus className="size-4" />
                 </span>
                 <span className="min-w-0">
-                    <span className="block truncate text-xs font-bold">
-                        Buat toko
-                    </span>
-                    <span className="block truncate text-[10px] text-[var(--muted-foreground)]">
-                        Mulai operasional
-                    </span>
+                    <span className="block truncate text-xs font-bold">Buat toko</span>
+                    <span className="block truncate text-[10px] text-[var(--muted-foreground)]">Mulai operasional</span>
                 </span>
             </Link>
         ) : (
@@ -743,12 +635,8 @@ function StoreMenu({
                     <LockKeyhole className="size-4" />
                 </span>
                 <span className="min-w-0">
-                    <span className="block truncate text-xs font-bold">
-                        Toko terkunci
-                    </span>
-                    <span className="block truncate text-xs text-[var(--muted-foreground)]">
-                        Batas paket tercapai
-                    </span>
+                    <span className="block truncate text-xs font-bold">Toko terkunci</span>
+                    <span className="block truncate text-xs text-[var(--muted-foreground)]">Batas paket tercapai</span>
                 </span>
             </button>
         );
@@ -765,42 +653,36 @@ function StoreMenu({
                         <Store className="size-4" />
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-bold text-[var(--app-ink)]">
-                            {activeStore.name}
-                        </span>
+                        <span className="block truncate text-xs font-bold text-[var(--app-ink)]">{activeStore.name}</span>
                     </span>
                     <ChevronDown className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
                 </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-                align="start"
-                className="w-72 rounded-2xl border-[var(--app-ink)]/10 p-2 shadow-xl"
-            >
-                <DropdownMenuLabel className="px-3 py-2 text-xs text-muted-foreground">
-                    Pilih ruang kerja
-                </DropdownMenuLabel>
+            <DropdownMenuContent align="start" className="w-72 rounded-2xl border-[var(--app-ink)]/10 p-2 shadow-xl">
+                <DropdownMenuLabel className="px-3 py-2 text-xs text-muted-foreground">Pilih ruang kerja</DropdownMenuLabel>
                 {stores.map((store) => (
                     <DropdownMenuItem
                         key={store.public_id}
                         className="gap-3 rounded-xl p-3"
                         onSelect={() =>
-                            router.post(`/stores/${store.public_id}/switch`)
+                            router.post(
+                                `/stores/${store.public_id}/switch`,
+                                {},
+                                {
+                                    preserveState: false,
+                                    preserveScroll: false,
+                                },
+                            )
                         }
                     >
                         <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                             <Store className="size-4" />
                         </span>
                         <span className="min-w-0 flex-1">
-                            <span className="block truncate font-semibold">
-                                {store.name}
-                            </span>
-                            <span className="block text-[11px] text-muted-foreground capitalize">
-                                {store.role}
-                            </span>
+                            <span className="block truncate font-semibold">{store.name}</span>
+                            <span className="block text-[11px] text-muted-foreground capitalize">{store.role}</span>
                         </span>
-                        {store.public_id === activeStore.public_id && (
-                            <Check className="size-4 text-emerald-700" />
-                        )}
+                        {store.public_id === activeStore.public_id && <Check className="size-4 text-emerald-700" />}
                     </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
@@ -827,14 +709,8 @@ function BottomNavigation() {
     const { currentUrl } = useCurrentUrl();
     const { activeStore } = usePage<CustomerPageProps>().props;
 
-    const isActive = (href: string) =>
-        currentUrl === href || currentUrl.startsWith(`${href}/`);
-    const cashierActive = [
-        '/pos',
-        '/purchasing',
-        '/operations/inventory',
-        '/master-data/products',
-    ].some((href) => isActive(href));
+    const isActive = (href: string) => currentUrl === href || currentUrl.startsWith(`${href}/`);
+    const cashierActive = ['/pos', '/purchasing', '/operations/inventory', '/master-data/products'].some((href) => isActive(href));
     const moreActive = [
         '/reports',
         '/stores',
@@ -847,42 +723,19 @@ function BottomNavigation() {
     ].some((href) => isActive(href));
 
     return (
-        <nav
-            aria-label="Navigasi utama"
-            className="fixed inset-x-0 bottom-0 z-40 md:bottom-4 md:px-4"
-        >
+        <nav aria-label="Navigasi utama" className="fixed inset-x-0 bottom-0 z-40 md:bottom-4 md:px-4">
             <div className="mx-auto grid max-w-2xl grid-cols-5 items-end border-t border-[var(--app-ink)]/10 bg-white/95 px-1 pt-2 pb-[calc(env(safe-area-inset-bottom)+.5rem)] shadow-xl backdrop-blur-xl md:rounded-[1.65rem] md:border md:px-3 md:pb-2">
-                <BottomNavLink
-                    item={primaryItems[0]}
-                    active={isActive(primaryItems[0].href)}
-                    disabled={!activeStore}
-                />
-                <BottomNavLink
-                    item={primaryItems[1]}
-                    active={isActive(primaryItems[1].href)}
-                    disabled={!activeStore}
-                />
+                <BottomNavLink item={primaryItems[0]} active={isActive(primaryItems[0].href)} disabled={!activeStore} />
+                <BottomNavLink item={primaryItems[1]} active={isActive(primaryItems[1].href)} disabled={!activeStore} />
                 <CashierMenu active={cashierActive} disabled={!activeStore} />
-                <BottomNavLink
-                    item={primaryItems[2]}
-                    active={isActive(primaryItems[2].href)}
-                    disabled={!activeStore}
-                />
+                <BottomNavLink item={primaryItems[2]} active={isActive(primaryItems[2].href)} disabled={!activeStore} />
                 <MoreMenu active={moreActive} disabled={!activeStore} />
             </div>
         </nav>
     );
 }
 
-function BottomNavLink({
-    item,
-    active,
-    disabled,
-}: {
-    item: (typeof primaryItems)[number];
-    active: boolean;
-    disabled: boolean;
-}) {
+function BottomNavLink({ item, active, disabled }: { item: (typeof primaryItems)[number]; active: boolean; disabled: boolean }) {
     const { t } = useTranslation();
     const Icon = item.icon;
 
@@ -892,9 +745,7 @@ function BottomNavLink({
             aria-current={active ? 'page' : undefined}
             className={cn(
                 'group flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-[10px] font-semibold transition sm:text-xs',
-                active
-                    ? 'text-[var(--app-primary)]'
-                    : 'text-[var(--muted-foreground)]',
+                active ? 'text-[var(--app-primary)]' : 'text-[var(--muted-foreground)]',
             )}
         >
             <span
@@ -905,26 +756,15 @@ function BottomNavLink({
                         : 'group-hover:bg-[var(--app-soft)] group-hover:text-[var(--app-primary)]',
                 )}
             >
-                <Icon
-                    className="size-[1.15rem]"
-                    strokeWidth={active ? 2.5 : 2}
-                />
-                {active && (
-                    <span className="absolute -top-1 size-1 rounded-full bg-[#e2793c]" />
-                )}
+                <Icon className="size-[1.15rem]" strokeWidth={active ? 2.5 : 2} />
+                {active && <span className="absolute -top-1 size-1 rounded-full bg-[#e2793c]" />}
             </span>
             <span className="truncate">{t(item.title)}</span>
         </Link>
     );
 }
 
-function CashierMenu({
-    active,
-    disabled,
-}: {
-    active: boolean;
-    disabled: boolean;
-}) {
+function CashierMenu({ active, disabled }: { active: boolean; disabled: boolean }) {
     const { t } = useTranslation();
     const [cashierMode, setCashierMode] = useState<'scan' | 'manual'>('scan');
 
@@ -935,9 +775,7 @@ function CashierMenu({
                     type="button"
                     className={cn(
                         'group relative flex min-w-0 flex-col items-center gap-1 rounded-3xl px-1 py-0 text-[10px] font-semibold transition sm:text-xs',
-                        active
-                            ? 'text-[var(--app-primary)]'
-                            : 'text-[var(--muted-foreground)]',
+                        active ? 'text-[var(--app-primary)]' : 'text-[var(--muted-foreground)]',
                         disabled && 'opacity-60',
                     )}
                     disabled={disabled}
@@ -949,13 +787,9 @@ function CashierMenu({
                         )}
                     >
                         <ShoppingCart className="size-6" />
-                        {active && (
-                            <span className="absolute -top-0.5 right-1.5 size-2 rounded-full bg-[#f7c46b]" />
-                        )}
+                        {active && <span className="absolute -top-0.5 right-1.5 size-2 rounded-full bg-[#f7c46b]" />}
                     </span>
-                    <span className="-mt-4 text-[10px] font-black tracking-wide text-[var(--app-ink)] uppercase">
-                        Kasir
-                    </span>
+                    <span className="-mt-4 text-[10px] font-black tracking-wide text-[var(--app-ink)] uppercase">Kasir</span>
                 </button>
             </SheetTrigger>
 
@@ -968,9 +802,7 @@ function CashierMenu({
                     <SheetTitle className="pr-12 text-lg font-black tracking-[-0.03em] text-[var(--app-ink)] sm:text-xl">
                         Kasir cepat
                     </SheetTitle>
-                    <SheetDescription className="sr-only">
-                        Pilih mode dan aksi kasir
-                    </SheetDescription>
+                    <SheetDescription className="sr-only">Pilih mode dan aksi kasir</SheetDescription>
                 </SheetHeader>
 
                 <div className="mx-auto w-full max-w-lg px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:px-6 sm:pb-6">
@@ -1013,17 +845,11 @@ function CashierMenu({
                         role="tabpanel"
                         className="divide-y divide-[var(--app-ink)]/8 overflow-hidden rounded-2xl bg-white shadow-[0_16px_36px_-28px_var(--app-shadow)] ring-1 ring-[var(--app-ink)]/8"
                     >
-                        {(cashierMode === 'scan'
-                            ? cashierActions
-                            : manualCashierActions
-                        ).map((item) => (
+                        {(cashierMode === 'scan' ? cashierActions : manualCashierActions).map((item) => (
                             <SheetClose asChild key={item.title}>
                                 <Link
                                     href={
-                                        cashierMode === 'scan' &&
-                                        item.href !== '/operations/inventory'
-                                            ? `${item.href}?scan=1`
-                                            : item.href
+                                        cashierMode === 'scan' && item.href !== '/operations/inventory' ? `${item.href}?scan=1` : item.href
                                     }
                                     className="group flex min-h-14 items-center gap-3 px-3 py-2.5 transition hover:bg-[#fff7f3] focus-visible:bg-[#fff7f3] focus-visible:outline-none sm:min-h-16 sm:px-4"
                                 >
@@ -1033,15 +859,10 @@ function CashierMenu({
                                             item.iconClassName,
                                         )}
                                     >
-                                        <item.icon
-                                            className="size-[1.1rem]"
-                                            strokeWidth={2.25}
-                                        />
+                                        <item.icon className="size-[1.1rem]" strokeWidth={2.25} />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="block truncate text-sm font-black text-[var(--app-ink)]">
-                                            {t(item.title)}
-                                        </span>
+                                        <span className="block truncate text-sm font-black text-[var(--app-ink)]">{t(item.title)}</span>
                                     </span>
                                     <span className="grid size-8 shrink-0 place-items-center rounded-lg text-[#9a817a] transition group-hover:bg-white group-hover:text-[var(--app-primary)]">
                                         <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" />
@@ -1056,13 +877,7 @@ function CashierMenu({
     );
 }
 
-function MoreMenu({
-    active,
-    disabled,
-}: {
-    active: boolean;
-    disabled: boolean;
-}) {
+function MoreMenu({ active, disabled }: { active: boolean; disabled: boolean }) {
     const { t } = useTranslation();
 
     return (
@@ -1073,9 +888,7 @@ function MoreMenu({
                     disabled={disabled}
                     className={cn(
                         'group flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-[10px] font-semibold transition sm:text-xs',
-                        active
-                            ? 'text-[var(--app-primary)]'
-                            : 'text-[var(--muted-foreground)]',
+                        active ? 'text-[var(--app-primary)]' : 'text-[var(--muted-foreground)]',
                         disabled && 'opacity-60',
                     )}
                 >
@@ -1088,9 +901,7 @@ function MoreMenu({
                         )}
                     >
                         <BarChart3 className="size-5" />
-                        {active && (
-                            <span className="absolute -top-1 size-1 rounded-full bg-[#e2793c]" />
-                        )}
+                        {active && <span className="absolute -top-1 size-1 rounded-full bg-[#e2793c]" />}
                     </span>
                     <span>Lainnya</span>
                 </button>
@@ -1102,12 +913,8 @@ function MoreMenu({
             >
                 <SheetHeader className="mx-auto w-full max-w-xl px-4 pt-6 pb-2 text-left sm:px-6">
                     <div className="mb-2 h-1.5 w-12 self-center rounded-full bg-[var(--app-primary)]/15" />
-                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
-                        Menu lainnya
-                    </SheetTitle>
-                    <SheetDescription className="sr-only">
-                        Kelola operasional dan akun.
-                    </SheetDescription>
+                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Menu lainnya</SheetTitle>
+                    <SheetDescription className="sr-only">Kelola operasional dan akun.</SheetDescription>
                 </SheetHeader>
 
                 <div className="mx-auto w-full max-w-xl space-y-5 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] sm:px-6">
@@ -1129,9 +936,7 @@ function MoreMenu({
                                                 <item.icon className="size-[1.1rem]" />
                                             </span>
                                             <span className="min-w-0 flex-1">
-                                                <span className="block text-sm font-black text-[var(--app-ink)]">
-                                                    {t(item.title)}
-                                                </span>
+                                                <span className="block text-sm font-black text-[var(--app-ink)]">{t(item.title)}</span>
                                             </span>
                                             <ChevronRight className="size-4 shrink-0 text-[var(--muted-foreground)] transition group-hover:translate-x-0.5" />
                                         </Link>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Subscriptions\StartDefaultSubscription;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -17,10 +18,12 @@ use Throwable;
 
 class GoogleAuthenticationController extends Controller
 {
+    public function __construct(private StartDefaultSubscription $subscriptions) {}
+
     public function redirect(): RedirectResponse
     {
         if (! $this->googleIsConfigured()) {
-            return to_route('login')->with('oauth_error', 'Login Google belum dikonfigurasi.');
+            return to_route('login')->with('oauth_error', __('Login Google belum dikonfigurasi.'));
         }
 
         return Socialite::driver('google')->redirect();
@@ -29,13 +32,13 @@ class GoogleAuthenticationController extends Controller
     public function callback(Request $request): RedirectResponse
     {
         if (! $this->googleIsConfigured()) {
-            return to_route('login')->with('oauth_error', 'Login Google belum dikonfigurasi.');
+            return to_route('login')->with('oauth_error', __('Login Google belum dikonfigurasi.'));
         }
 
         try {
             $googleUser = Socialite::driver('google')->user();
             if (! $googleUser instanceof SocialiteUser) {
-                throw new GoogleAuthenticationException('Respons akun Google tidak valid.');
+                throw new GoogleAuthenticationException(__('Respons akun Google tidak valid.'));
             }
             $user = $this->resolveUser($googleUser);
         } catch (GoogleAuthenticationException $exception) {
@@ -43,15 +46,15 @@ class GoogleAuthenticationController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return to_route('login')->with('oauth_error', 'Login Google tidak dapat diselesaikan. Silakan coba lagi.');
+            return to_route('login')->with('oauth_error', __('Login Google tidak dapat diselesaikan. Silakan coba lagi.'));
         }
 
         if ($user->status !== UserStatus::Active) {
-            return to_route('login')->with('oauth_error', 'Akun Anda sedang dinonaktifkan.');
+            return to_route('login')->with('oauth_error', __('Akun Anda sedang dinonaktifkan.'));
         }
 
         if ($user->isPlatformAdmin()) {
-            return to_route('login')->with('oauth_error', 'Admin platform harus masuk menggunakan metode utama.');
+            return to_route('login')->with('oauth_error', __('Admin platform harus masuk menggunakan metode utama.'));
         }
 
         if ($user->hasEnabledTwoFactorAuthentication()) {
@@ -78,7 +81,7 @@ class GoogleAuthenticationController extends Controller
         $verified = filter_var($raw['email_verified'] ?? $raw['verified_email'] ?? false, FILTER_VALIDATE_BOOL);
 
         if ($googleId === '' || $email === '' || ! $verified) {
-            throw new GoogleAuthenticationException('Google tidak memberikan email terverifikasi.');
+            throw new GoogleAuthenticationException(__('Google tidak memberikan email terverifikasi.'));
         }
 
         return DB::transaction(function () use ($googleUser, $googleId, $email): User {
@@ -99,21 +102,22 @@ class GoogleAuthenticationController extends Controller
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             if ($user->status !== UserStatus::Active) {
-                throw new GoogleAuthenticationException('Akun Anda sedang dinonaktifkan.');
+                throw new GoogleAuthenticationException(__('Akun Anda sedang dinonaktifkan.'));
             }
 
             if ($user->isPlatformAdmin()) {
-                throw new GoogleAuthenticationException('Admin platform harus masuk menggunakan metode utama.');
+                throw new GoogleAuthenticationException(__('Admin platform harus masuk menggunakan metode utama.'));
             }
 
             if ($user->google_id !== null && $user->google_id !== $googleId) {
-                throw new GoogleAuthenticationException('Email ini sudah terhubung ke akun Google lain.');
+                throw new GoogleAuthenticationException(__('Email ini sudah terhubung ke akun Google lain.'));
             }
 
             $user->forceFill([
                 'google_id' => $googleId,
                 'email_verified_at' => $user->email_verified_at ?? now(),
             ])->save();
+            $this->subscriptions->handle($user);
 
             return $user;
         });

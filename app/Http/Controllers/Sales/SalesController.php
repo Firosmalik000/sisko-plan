@@ -17,9 +17,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use LogicException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SalesController extends Controller
 {
@@ -98,6 +100,28 @@ class SalesController extends Controller
         ]);
     }
 
+    public function paymentProof(Sale $sale, CurrentStore $currentStore): StreamedResponse
+    {
+        $store = $currentStore->get();
+        Gate::authorize('viewSales', $store);
+        abort_unless($sale->store_id === $store->id, 404);
+
+        $path = DB::table('sale_payments')
+            ->where('store_id', $store->id)
+            ->where('sale_id', $sale->id)
+            ->value('payment_proof_path');
+
+        abort_unless(is_string($path) && Storage::disk('local')->exists($path), 404);
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+
+        return Storage::disk('local')->response(
+            $path,
+            "bukti-qris-{$sale->document_number}.{$extension}",
+            ['Cache-Control' => 'private, no-store'],
+        );
+    }
+
     public function storeReturn(StoreSaleReturnRequest $request, Sale $sale, CurrentStore $currentStore, PostSaleReturn $action): RedirectResponse
     {
         $data = $request->validated();
@@ -144,7 +168,7 @@ class SalesController extends Controller
             ]);
         $payment = DB::table('sale_payments')->where(['sale_payments.store_id' => $store->id, 'sale_payments.sale_id' => $sale->id])
             ->join('financial_accounts', 'financial_accounts.id', '=', 'sale_payments.financial_account_id')
-            ->first(['sale_payments.amount', 'sale_payments.tendered_amount', 'sale_payments.change_amount', 'financial_accounts.name as account_name']);
+            ->first(['sale_payments.amount', 'sale_payments.tendered_amount', 'sale_payments.change_amount', 'sale_payments.payment_method', 'sale_payments.payment_proof_path', 'financial_accounts.name as account_name']);
         $returns = SaleReturn::query()->where(['sale_returns.store_id' => $store->id, 'sale_returns.sale_id' => $sale->id])
             ->join('financial_accounts', 'financial_accounts.id', '=', 'sale_returns.financial_account_id')
             ->latest('sale_returns.id')->get(['sale_returns.public_id', 'sale_returns.document_number', 'sale_returns.refund_amount', 'sale_returns.cogs_reversed', 'sale_returns.gross_profit_reversed', 'sale_returns.occurred_at', 'sale_returns.notes', 'financial_accounts.name as account_name']);
@@ -164,7 +188,16 @@ class SalesController extends Controller
 
                 return $item;
             }),
-            'payment' => $payment,
+            'payment' => [
+                'amount' => $payment->amount,
+                'tendered_amount' => $payment->tendered_amount,
+                'change_amount' => $payment->change_amount,
+                'payment_method' => $payment->payment_method,
+                'account_name' => $payment->account_name,
+                'proof_url' => $payment->payment_proof_path
+                    ? route('sales.payment-proof', $sale)
+                    : null,
+            ],
             'returns' => $returns,
             'accounts' => $accounts,
             'canReturn' => Gate::allows('manageSaleReturns', $store),
@@ -173,8 +206,8 @@ class SalesController extends Controller
             'receipt' => [
                 'store_name' => $store->name,
                 'address' => $storeSettings?->address,
-                'header' => $storeSettings->receipt_header ?? 'Bukti penjualan',
-                'footer' => $storeSettings->receipt_footer ?? 'Terima kasih. Simpan struk ini untuk referensi retur.',
+                'header' => $storeSettings->receipt_header ?? __('Bukti penjualan'),
+                'footer' => $storeSettings->receipt_footer ?? __('Terima kasih. Simpan struk ini untuk referensi retur.'),
                 'paper_size' => $storeSettings->receipt_paper_size ?? '58mm',
                 'show_address' => $storeSettings->receipt_show_address ?? true,
                 'show_cashier' => $storeSettings->receipt_show_cashier ?? true,

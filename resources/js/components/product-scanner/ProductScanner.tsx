@@ -6,12 +6,7 @@ import { CameraViewport } from './CameraViewport';
 import { decodeBarcodeImage } from './decode-barcode-image';
 import { playScannerSuccessTone } from './scanner-feedback';
 import { ScanReview } from './ScanReview';
-import type {
-    ScannerConfig,
-    ScannerProductCandidate,
-    ScannerPurpose,
-    ScannerSelection,
-} from './types';
+import type { ScannerConfig, ScannerProductCandidate, ScannerPurpose, ScannerSelection } from './types';
 import { useCamera } from './use-camera';
 import { useProductScanner } from './use-product-scanner';
 
@@ -47,14 +42,13 @@ export default function ProductScanner({
     const { scanner: config } = usePage<{ scanner: ScannerConfig }>().props;
     const scanner = useProductScanner(open, purpose, config);
     const lookupBarcode = scanner.lookupBarcode;
+    const consumeBarcode = scanner.consumeBarcode;
     const [autoPaused, setAutoPaused] = useState(!config.auto_capture_enabled);
     const [retakeCaptureId, setRetakeCaptureId] = useState<string | null>(null);
     const [cameraCaptureStart, setCameraCaptureStart] = useState(0);
     const [scanMode, setScanMode] = useState<ScanMode>('photo');
     const [barcodeError, setBarcodeError] = useState('');
-    const [barcodeStatus, setBarcodeStatus] = useState<
-        'idle' | 'reading' | 'success' | 'not_found'
-    >('idle');
+    const [barcodeStatus, setBarcodeStatus] = useState<'idle' | 'reading' | 'success' | 'not_found'>('idle');
     const barcodeBusyRef = useRef(false);
     const captureBusyRef = useRef(false);
     const stableRef = useRef({
@@ -74,13 +68,22 @@ export default function ProductScanner({
             setBarcodeStatus('reading');
 
             if (purpose === 'product' && onBarcodeDetected) {
-                playScannerSuccessTone();
-                onBarcodeDetected(value);
-                setBarcodeStatus('success');
-                scanner.reset();
-                setCameraCaptureStart(0);
-                barcodeBusyRef.current = false;
-                onOpenChange(false);
+                void consumeBarcode()
+                    .then(() => {
+                        playScannerSuccessTone();
+                        onBarcodeDetected(value);
+                        setBarcodeStatus('success');
+                        scanner.reset();
+                        setCameraCaptureStart(0);
+                        onOpenChange(false);
+                    })
+                    .catch((error: unknown) => {
+                        setBarcodeStatus('not_found');
+                        setBarcodeError(error instanceof Error ? error.message : 'Pencatatan scan gagal. Coba lagi.');
+                    })
+                    .finally(() => {
+                        barcodeBusyRef.current = false;
+                    });
 
                 return;
             }
@@ -94,9 +97,9 @@ export default function ProductScanner({
                         scanner.setReviewing(true);
                     }
                 })
-                .catch(() => {
+                .catch((error: unknown) => {
                     setBarcodeStatus('not_found');
-                    setBarcodeError('Pencarian barcode gagal. Coba lagi.');
+                    setBarcodeError(error instanceof Error ? error.message : 'Pencarian barcode gagal. Coba lagi.');
                 })
                 .finally(() => {
                     window.setTimeout(() => {
@@ -104,13 +107,9 @@ export default function ProductScanner({
                     }, 1200);
                 });
         },
-        [lookupBarcode, onBarcodeDetected, onOpenChange, purpose, scanner],
+        [consumeBarcode, lookupBarcode, onBarcodeDetected, onOpenChange, purpose, scanner],
     );
-    const camera = useCamera(
-        open && !scanner.reviewing,
-        handleBarcode,
-        scanMode === 'barcode',
-    );
+    const camera = useCamera(open && !scanner.reviewing, handleBarcode, scanMode === 'barcode');
 
     const takePhoto = useCallback(
         async (fromAuto = false) => {
@@ -121,10 +120,7 @@ export default function ProductScanner({
             captureBusyRef.current = true;
 
             try {
-                const blob = await camera.capture(
-                    scanMode === 'barcode' ? 1280 : 768,
-                    scanMode === 'barcode' ? 0.82 : 0.66,
-                );
+                const blob = await camera.capture(scanMode === 'barcode' ? 1280 : 768, scanMode === 'barcode' ? 0.82 : 0.66);
 
                 if (!blob) {
                     return;
@@ -143,9 +139,7 @@ export default function ProductScanner({
 
                     if (!barcode) {
                         setBarcodeStatus('not_found');
-                        setBarcodeError(
-                            'Barcode belum terbaca. Dekatkan dan ratakan kode.',
-                        );
+                        setBarcodeError('Barcode belum terbaca. Dekatkan dan ratakan kode.');
 
                         return;
                     }
@@ -180,9 +174,7 @@ export default function ProductScanner({
                     return;
                 }
 
-                const existingCapture = singleCapture
-                    ? scanner.captures[0]
-                    : null;
+                const existingCapture = singleCapture ? scanner.captures[0] : null;
 
                 if (existingCapture) {
                     await scanner.replaceBlob(existingCapture.id, blob, false);
@@ -198,27 +190,11 @@ export default function ProductScanner({
                 captureBusyRef.current = false;
             }
         },
-        [
-            camera,
-            handleBarcode,
-            onOpenChange,
-            onProductCaptures,
-            purpose,
-            retakeCaptureId,
-            scanMode,
-            scanner,
-            singleCapture,
-        ],
+        [camera, handleBarcode, onOpenChange, onProductCaptures, purpose, retakeCaptureId, scanMode, scanner, singleCapture],
     );
 
     useEffect(() => {
-        if (
-            !open ||
-            scanMode === 'barcode' ||
-            autoPaused ||
-            scanner.reviewing ||
-            !camera.ready
-        ) {
+        if (!open || scanMode === 'barcode' || autoPaused || scanner.reviewing || !camera.ready) {
             return;
         }
 
@@ -246,14 +222,11 @@ export default function ProductScanner({
             let delta = 0;
 
             for (let index = 0; index < pixels.length; index += 16) {
-                const luminance =
-                    (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3;
+                const luminance = (pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3;
                 brightness += luminance;
 
                 if (stableRef.current.pixels.length === pixels.length) {
-                    delta += Math.abs(
-                        luminance - stableRef.current.pixels[index],
-                    );
+                    delta += Math.abs(luminance - stableRef.current.pixels[index]);
                 }
             }
 
@@ -294,15 +267,7 @@ export default function ProductScanner({
         }, 250);
 
         return () => window.clearInterval(timer);
-    }, [
-        autoPaused,
-        camera.ready,
-        camera.videoRef,
-        open,
-        scanner.reviewing,
-        scanMode,
-        takePhoto,
-    ]);
+    }, [autoPaused, camera.ready, camera.videoRef, open, scanner.reviewing, scanMode, takePhoto]);
 
     useEffect(() => {
         if (!open || scanner.reviewing || !camera.ready) {
@@ -321,21 +286,12 @@ export default function ProductScanner({
         }
 
         const latestCapture = scanner.captures.slice(cameraCaptureStart).at(-1);
-        const completed =
-            latestCapture?.status === 'recognized' ||
-            latestCapture?.status === 'failed';
+        const completed = latestCapture?.status === 'recognized' || latestCapture?.status === 'failed';
 
         if (completed) {
             scanner.setReviewing(true);
         }
-    }, [
-        cameraCaptureStart,
-        open,
-        purpose,
-        scanner,
-        scanner.captures,
-        scanner.reviewing,
-    ]);
+    }, [cameraCaptureStart, open, purpose, scanner, scanner.captures, scanner.reviewing]);
 
     const dismiss = () => {
         setRetakeCaptureId(null);
@@ -378,10 +334,7 @@ export default function ProductScanner({
     };
 
     const gallery = (event: ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(event.target.files ?? []).filter(
-            (file) =>
-                file.type.startsWith('image/') && file.size <= 8 * 1024 * 1024,
-        );
+        const files = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith('image/') && file.size <= 8 * 1024 * 1024);
         event.target.value = '';
 
         if (files.length === 0) {
@@ -398,9 +351,7 @@ export default function ProductScanner({
                     if (barcode) {
                         handleBarcode(barcode);
                     } else {
-                        setBarcodeError(
-                            'Barcode belum terbaca. Pilih foto yang menampilkan seluruh kode.',
-                        );
+                        setBarcodeError('Barcode belum terbaca. Pilih foto yang menampilkan seluruh kode.');
                     }
                 }
             })();
@@ -409,9 +360,7 @@ export default function ProductScanner({
         }
 
         if (retakeCaptureId) {
-            void scanner
-                .replaceBlob(retakeCaptureId, files[0])
-                .then(() => setRetakeCaptureId(null));
+            void scanner.replaceBlob(retakeCaptureId, files[0]).then(() => setRetakeCaptureId(null));
 
             return;
         }
@@ -439,15 +388,11 @@ export default function ProductScanner({
     const cameraCaptures = scanner.captures.slice(cameraCaptureStart);
     const latestCameraCapture = cameraCaptures.at(-1);
     const photoStatus =
-        latestCameraCapture?.status === 'queued' ||
-        latestCameraCapture?.status === 'recognizing'
+        latestCameraCapture?.status === 'queued' || latestCameraCapture?.status === 'recognizing'
             ? 'reading'
             : latestCameraCapture?.status === 'failed'
               ? 'failed'
-              : latestCameraCapture?.status === 'recognized' &&
-                  latestCameraCapture.results.some(
-                      (result) => result.match !== null,
-                  )
+              : latestCameraCapture?.status === 'recognized' && latestCameraCapture.results.some((result) => result.match !== null)
                 ? 'success'
                 : latestCameraCapture?.status === 'recognized'
                   ? 'not_found'
@@ -516,17 +461,10 @@ export default function ProductScanner({
                             setRetakeCaptureId(null);
 
                             if (purpose === 'product' && onProductCaptures) {
-                                const captures = scanner.captures
-                                    .filter((capture) => capture.blob.size > 0)
-                                    .slice(singleCapture ? -1 : 0);
+                                const captures = scanner.captures.filter((capture) => capture.blob.size > 0).slice(singleCapture ? -1 : 0);
                                 onProductCaptures(
                                     captures.map(
-                                        (capture, index) =>
-                                            new File(
-                                                [capture.blob],
-                                                `produk-${index + 1}.jpg`,
-                                                { type: 'image/jpeg' },
-                                            ),
+                                        (capture, index) => new File([capture.blob], `produk-${index + 1}.jpg`, { type: 'image/jpeg' }),
                                     ),
                                 );
                                 complete();
@@ -551,29 +489,16 @@ export default function ProductScanner({
                             stableRef.current.armed = true;
                             stableRef.current.motionFrames = 0;
                             setScanMode((mode) => {
-                                const nextMode =
-                                    mode === 'photo' ? 'barcode' : 'photo';
-                                setAutoPaused(
-                                    nextMode === 'barcode' ||
-                                        !config.auto_capture_enabled,
-                                );
+                                const nextMode = mode === 'photo' ? 'barcode' : 'photo';
+                                setAutoPaused(nextMode === 'barcode' || !config.auto_capture_enabled);
 
                                 return nextMode;
                             });
                         }}
                         onToggleTorch={() => void camera.toggleTorch()}
                         onRetry={camera.retry}
-                        onManualSearch={
-                            scanner.captures.length === 0
-                                ? onManualSearch
-                                : undefined
-                        }
-                        manualActionLabel={
-                            manualActionLabel ??
-                            (purpose === 'product'
-                                ? 'Isi tanpa foto'
-                                : 'Cari manual')
-                        }
+                        onManualSearch={scanner.captures.length === 0 ? onManualSearch : undefined}
+                        manualActionLabel={manualActionLabel ?? (purpose === 'product' ? 'Isi tanpa foto' : 'Cari manual')}
                     />
                 )}
             </DialogContent>

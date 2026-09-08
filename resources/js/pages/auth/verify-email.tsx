@@ -16,9 +16,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
 
             {status === 'verification-link-sent' && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {t(
-                        'Tautan verifikasi baru telah dikirim ke alamat email yang Anda gunakan saat mendaftar.',
-                    )}
+                    {t('Tautan verifikasi baru telah dikirim ke alamat email yang Anda gunakan saat mendaftar.')}
                 </div>
             )}
 
@@ -30,10 +28,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                             {t('Kirim ulang email verifikasi')}
                         </Button>
 
-                        <TextLink
-                            href={logout()}
-                            className="mx-auto block text-sm"
-                        >
+                        <TextLink href={logout()} className="mx-auto block text-sm">
                             {t('Keluar')}
                         </TextLink>
                     </>
@@ -45,6 +40,5 @@ export default function VerifyEmail({ status }: { status?: string }) {
 
 VerifyEmail.layout = {
     title: 'Email verification',
-    description:
-        'Please verify your email address by clicking on the link we just emailed to you.',
+    description: 'Please verify your email address by clicking on the link we just emailed to you.',
 };

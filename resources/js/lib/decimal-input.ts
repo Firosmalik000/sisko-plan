@@ -1,6 +1,4 @@
-export function decimalInput(
-    value: string | number | null | undefined,
-): string {
+export function decimalInput(value: string | number | null | undefined): string {
     if (value === null || value === undefined) {
         return '';
     }

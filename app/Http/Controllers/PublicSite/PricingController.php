@@ -15,6 +15,9 @@ class PricingController extends Controller
 {
     public function __invoke(Request $request, SubscriptionAccess $access, SubscriptionPeriods $periods): Response
     {
+        $focusCategory = in_array($request->string('category')->toString(), Plan::offerCategories(), true)
+            ? $request->string('category')->toString()
+            : null;
         $user = $request->user();
         $accountOwner = $user instanceof User && ! $user->isPlatformAdmin() && $user->ownedStores()->exists();
         $subscription = $accountOwner ? $periods->syncForOwner($user->id) : null;
@@ -26,25 +29,31 @@ class PricingController extends Controller
             ->where('is_active', true)
             ->orderBy('monthly_price')
             ->orderBy('id')
-            ->get(['id', 'public_id', 'name', 'description', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'is_default', 'is_trial'])
+            ->get(['id', 'public_id', 'name', 'description', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial'])
             ->map(function (Plan $plan) use ($user, $accountOwner, $subscription, $operational, $trialUsed, $nextPeriodStart): array {
                 $current = $subscription?->plan_id === $plan->id;
                 $disabledReason = null;
 
                 if ($user instanceof User && $user->isPlatformAdmin()) {
-                    $disabledReason = 'Akun admin platform tidak menggunakan paket toko.';
+                    $disabledReason = __('Akun admin platform tidak menggunakan paket toko.');
                 } elseif ($user !== null && ! $accountOwner) {
-                    $disabledReason = 'Buat toko terlebih dahulu.';
+                    $disabledReason = __('Buat toko terlebih dahulu.');
                 } elseif ($user !== null && $subscription === null) {
-                    $disabledReason = 'Subscription akun belum tersedia.';
+                    $disabledReason = __('Subscription akun belum tersedia.');
+                } elseif ($plan->kind === Plan::KIND_ADDON && ! $operational) {
+                    $disabledReason = __('Add-on memerlukan subscription aktif.');
                 } elseif ($plan->is_trial && $trialUsed && ! ($current && $operational)) {
-                    $disabledReason = 'Trial sudah digunakan.';
-                } elseif (! $plan->is_trial && $nextPeriodStart === null) {
-                    $disabledReason = 'Paket aktif tidak memiliki batas periode.';
+                    $disabledReason = __('Trial sudah digunakan.');
+                } elseif ($current && $plan->billing_cycle === Plan::BILLING_LIFETIME) {
+                    $disabledReason = __('Paket ini sedang digunakan.');
+                } elseif ($plan->kind === Plan::KIND_BASE && ! $plan->is_trial && $nextPeriodStart === null
+                    && ! ($subscription?->plan->billing_cycle === Plan::BILLING_LIFETIME
+                        && (float) $subscription->plan->monthly_price === 0.0)) {
+                    $disabledReason = __('Paket aktif tidak memiliki batas periode.');
                 }
 
                 return [
-                    ...$plan->only(['public_id', 'name', 'description', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'is_default', 'is_trial']),
+                    ...$plan->only(['public_id', 'name', 'description', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial']),
                     'is_current' => $current,
                     'can_select' => $user !== null
                         && $accountOwner
@@ -56,6 +65,7 @@ class PricingController extends Controller
 
         return Inertia::render('public/pricing', [
             'plans' => $plans,
+            'focus_category' => $focusCategory,
             'account' => [
                 'has_store' => $accountOwner,
                 'has_subscription' => $subscription !== null,

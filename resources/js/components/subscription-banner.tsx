@@ -23,14 +23,10 @@ export function SubscriptionBanner() {
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                 <p>
                     <strong>Mode hanya-baca.</strong>{' '}
-                    {subscriptionState.reason ??
-                        'Subscription tidak dapat digunakan untuk perubahan baru.'}
+                    {subscriptionState.reason ?? 'Subscription tidak dapat digunakan untuk perubahan baru.'}
                 </p>
             </div>
-            <Link
-                href="/pricing"
-                className="inline-flex shrink-0 items-center gap-1 font-bold underline underline-offset-4"
-            >
+            <Link href="/pricing" className="inline-flex shrink-0 items-center gap-1 font-bold underline underline-offset-4">
                 Lihat penawaran <ArrowRight className="size-4" />
             </Link>
         </div>

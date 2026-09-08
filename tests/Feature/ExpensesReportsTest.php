@@ -11,6 +11,7 @@ use App\Actions\Sales\PostSaleReturn;
 use App\Enums\FinancialAccountType;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Models\Country;
 use App\Models\ExpenseCategory;
 use App\Models\FinancialAccount;
 use App\Models\FinancialAccountBalance;
@@ -153,15 +154,9 @@ class ExpensesReportsTest extends TestCase
                 ->where('position.supplier_payable', '700.0000')
                 ->where('position.low_stock_count', 1)
                 ->where('transactions', 1)
-                ->where('storeCount', 1)
                 ->where('period.key', 'month')
                 ->where('comparison.previous_net_revenue', '0.0000')
                 ->has('salesTrend', 8)
-                ->has('storePerformance', 1)
-                ->where('storePerformance.0.public_id', $store->public_id)
-                ->where('storePerformance.0.net_revenue', '3000.0000')
-                ->where('storePerformance.0.estimated_profit', '1200.0000')
-                ->where('storePerformance.0.transactions', 1)
                 ->has('topProducts', 1)
                 ->where('topProducts.0.product_name', $soldProductName)
                 ->where('topProducts.0.net_revenue', '3000.0000')
@@ -190,6 +185,55 @@ class ExpensesReportsTest extends TestCase
                 ->where('products.0.quantity_returned', '1.000000')
                 ->where('products.0.net_revenue', '3000.0000')
                 ->where('products.0.net_cogs', '1500.0000'));
+    }
+
+    public function test_dashboard_uses_only_the_active_store_for_the_same_owner(): void
+    {
+        CarbonImmutable::setTestNow('2026-08-08T12:00:00+07:00');
+        [$owner, $indonesiaStore, , $indonesiaCash, , $indonesiaCategory] = $this->fixtures();
+        $malaysiaStore = Store::factory()->for($owner, 'owner')->create([
+            'name' => 'Kedai Malaysia',
+            'country_id' => Country::query()->where('code', 'MY')->value('id'),
+        ]);
+        $malaysiaCash = FinancialAccount::factory()->for($malaysiaStore)->create([
+            'name' => 'Tunai',
+            'type' => FinancialAccountType::Cash,
+        ]);
+        $malaysiaCategory = ExpenseCategory::create([
+            'store_id' => $malaysiaStore->id,
+            'name' => 'Operasi',
+            'is_active' => true,
+        ]);
+
+        $this->openCash($indonesiaStore, $owner, $indonesiaCash, '1000');
+        $this->openCash($malaysiaStore, $owner, $malaysiaCash, '2000');
+        app(PostExpense::class)->handle($indonesiaStore, $owner, $indonesiaCategory->id, $indonesiaCash->id, '100', '2026-08-08T10:00:00Z', null, 'id-store-expense');
+        app(PostExpense::class)->handle($malaysiaStore, $owner, $malaysiaCategory->id, $malaysiaCash->id, '900', '2026-08-08T10:00:00Z', null, 'my-store-expense');
+
+        $this->actingAs($owner)
+            ->withSession(['active_store_id' => $indonesiaStore->id])
+            ->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('activeStore.public_id', $indonesiaStore->public_id)
+                ->where('activeStore.currency_code', 'IDR')
+                ->where('performance.expenses', '100.0000')
+                ->where('position.cash_balance', '900.0000')
+                ->missing('storePerformance'));
+
+        $this->actingAs($owner)
+            ->post(route('stores.switch', $malaysiaStore))
+            ->assertRedirect(route('dashboard'));
+        $this->assertSame($malaysiaStore->id, session('active_store_id'));
+
+        $this->actingAs($owner)
+            ->get(route('dashboard'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('activeStore.public_id', $malaysiaStore->public_id)
+                ->where('activeStore.currency_code', 'MYR')
+                ->where('activeStore.currency_symbol', 'RM')
+                ->where('performance.expenses', '900.0000')
+                ->where('position.cash_balance', '1100.0000')
+                ->missing('storePerformance'));
     }
 
     public function test_reports_exclude_other_stores_and_transactions_outside_the_period(): void

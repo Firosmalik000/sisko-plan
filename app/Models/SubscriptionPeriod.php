@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['subscription_id', 'user_id', 'plan_id', 'plan_name', 'monthly_price', 'duration_months', 'period_start', 'period_end', 'source', 'activated_at', 'created_by_user_id'])]
+#[Fillable(['subscription_id', 'user_id', 'plan_id', 'plan_name', 'monthly_price', 'duration_months', 'was_trial', 'period_start', 'period_end', 'source', 'activated_at', 'created_by_user_id'])]
 class SubscriptionPeriod extends Model
 {
     use HasPublicId;
@@ -43,6 +43,7 @@ class SubscriptionPeriod extends Model
         return [
             'monthly_price' => 'decimal:4',
             'duration_months' => 'integer',
+            'was_trial' => 'boolean',
             'period_start' => 'date:Y-m-d',
             'period_end' => 'date:Y-m-d',
             'activated_at' => 'datetime',

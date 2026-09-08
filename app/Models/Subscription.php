@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int|null $user_id
- * @property int $store_id
+ * @property int|null $store_id
  * @property int $plan_id
  * @property SubscriptionStatus $status
  * @property Carbon $starts_at
@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $current_period_start
  * @property Carbon|null $current_period_end
  * @property Carbon|null $cancelled_at
- * @property-read Store $store
+ * @property-read Store|null $store
  * @property-read User|null $user
  * @property-read Plan $plan
  */
@@ -59,6 +59,12 @@ class Subscription extends Model
     public function periods(): HasMany
     {
         return $this->hasMany(SubscriptionPeriod::class);
+    }
+
+    /** @return HasMany<SubscriptionAddon, $this> */
+    public function addons(): HasMany
+    {
+        return $this->hasMany(SubscriptionAddon::class);
     }
 
     protected function casts(): array

@@ -46,6 +46,9 @@ Examples:
 - plans
 - subscriptions
 - subscription_periods
+- subscription_addons
+- subscription_scan_usages
+- subscription_scan_events
 - subscription_payments
 - platform_settings
 - admin_audit_logs
@@ -54,7 +57,11 @@ Examples:
 
 `plans.duration_months` stores the paid activation term as an integer from 1 through 12. Trial duration remains governed by the fixed trial policy and is not inferred from this column.
 
+`plans.kind` separates base packages from add-on offers. `plans.billing_cycle` separates fixed terms from lifetime validity. Store, product, member, and scan values are base limits for base packages and additive capacities for add-ons.
+
 `subscription_periods` is the account subscription timeline. Confirmed period terms are appended with plan snapshots; only activation metadata may change when a scheduled period becomes effective. Queries and indexes remain scoped through `user_id` and `subscription_id`.
+
+`subscription_addons` stores immutable capacity snapshots and their validity windows. `subscription_scan_usages` is the monthly account counter; `subscription_scan_events` is its request-level audit trail.
 
 ### Identity and stores
 

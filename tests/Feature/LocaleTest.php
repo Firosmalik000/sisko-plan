@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\App;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -19,6 +20,48 @@ class LocaleTest extends TestCase
 
         $this->assertSame([], array_values(array_diff(array_keys($indonesian), array_keys($malay))));
         $this->assertSame([], array_values(array_diff(array_keys($malay), array_keys($indonesian), array_keys($english))));
+        $this->assertSame([], array_values(array_diff(array_keys($english), array_keys($malay))));
+
+        foreach ([$indonesian, $malay, $english] as $translations) {
+            $this->assertNotContains('', array_values($translations));
+        }
+    }
+
+    public function test_dynamic_server_messages_are_localized_with_their_parameters(): void
+    {
+        App::setLocale('id');
+        $this->assertSame(
+            'Batas 3 toko pada paket Usaha sudah tercapai.',
+            __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Usaha']),
+        );
+
+        App::setLocale('ms');
+        $this->assertSame(
+            'Had 3 kedai bagi pelan Usaha telah dicapai.',
+            __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Usaha']),
+        );
+        $this->assertSame(
+            'Selesaikan SO-001 sebelum memulakan kiraan stok baharu.',
+            __('Selesaikan :document sebelum memulai opname baru.', ['document' => 'SO-001']),
+        );
+
+        App::setLocale('en');
+        $this->assertSame(
+            'The limit of 3 stores for the Business plan has been reached.',
+            __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Business']),
+        );
+    }
+
+    public function test_public_pricing_reasons_follow_the_selected_market_language(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+
+        $this->actingAs($admin)
+            ->withSession(['market' => 'ms', 'locale' => 'ms'])
+            ->get(route('pricing'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('public/pricing')
+                ->where('plans.0.disabled_reason', 'Akaun pentadbir platform tidak menggunakan pelan kedai.'));
     }
 
     public function test_guest_can_select_the_malaysia_market(): void

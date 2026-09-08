@@ -42,7 +42,7 @@ class StoreMemberController extends Controller
 
                 if ($member === null) {
                     throw ValidationException::withMessages([
-                        'email' => 'Akun aktif dengan email tersebut tidak ditemukan.',
+                        'email' => __('Akun aktif dengan email tersebut tidak ditemukan.'),
                     ]);
                 }
             }
@@ -54,7 +54,7 @@ class StoreMemberController extends Controller
 
             if ($membershipExists) {
                 throw ValidationException::withMessages([
-                    'email' => 'Pengguna tersebut sudah menjadi anggota toko.',
+                    'email' => __('Pengguna tersebut sudah menjadi anggota toko.'),
                 ]);
             }
 

@@ -1,13 +1,5 @@
 import { Form, Head, usePage } from '@inertiajs/react';
-import {
-    CheckCircle2,
-    KeyRound,
-    LockKeyhole,
-    RefreshCw,
-    ShieldAlert,
-    ShieldCheck,
-    UserRound,
-} from 'lucide-react';
+import { CheckCircle2, KeyRound, LockKeyhole, RefreshCw, ShieldAlert, ShieldCheck, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -26,16 +18,9 @@ type Props = {
 
 type SettingsSection = 'profile' | 'password' | 'security';
 
-export default function PlatformSecurity({
-    twoFactorEnabled,
-    twoFactorRequired,
-    setupPending,
-    qrCodeSvg,
-    recoveryCodes,
-}: Props) {
+export default function PlatformSecurity({ twoFactorEnabled, twoFactorRequired, setupPending, qrCodeSvg, recoveryCodes }: Props) {
     const { platformAdmin } = usePage<{ platformAdmin: PlatformAdmin }>().props;
-    const role =
-        platformAdmin.role === 'super_admin' ? 'Super Admin' : 'Admin Platform';
+    const role = platformAdmin.role === 'super_admin' ? 'Super Admin' : 'Admin Platform';
     const [section, setSection] = useState<SettingsSection>('profile');
 
     return (
@@ -43,9 +28,7 @@ export default function PlatformSecurity({
             <Head title="Pengaturan Akun" />
             <div className="platform-enter mx-auto max-w-6xl">
                 <header className="mb-5">
-                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">
-                        Pengaturan akun
-                    </h1>
+                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">Pengaturan akun</h1>
                 </header>
 
                 <div className="grid items-start gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
@@ -53,24 +36,15 @@ export default function PlatformSecurity({
                         <div className="border-b border-slate-900/8 p-4">
                             <div className="flex items-center gap-3">
                                 <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#ee4d2d] text-sm font-black text-[#ffd5ca]">
-                                    {platformAdmin.name
-                                        .slice(0, 2)
-                                        .toUpperCase()}
+                                    {platformAdmin.name.slice(0, 2).toUpperCase()}
                                 </span>
                                 <div className="min-w-0">
-                                    <p className="truncate text-sm font-black text-[#3b211b]">
-                                        {platformAdmin.name}
-                                    </p>
-                                    <p className="truncate text-xs text-slate-500">
-                                        {platformAdmin.email}
-                                    </p>
+                                    <p className="truncate text-sm font-black text-[#3b211b]">{platformAdmin.name}</p>
+                                    <p className="truncate text-xs text-slate-500">{platformAdmin.email}</p>
                                 </div>
                             </div>
                         </div>
-                        <nav
-                            aria-label="Pengaturan akun"
-                            className="flex gap-1 overflow-x-auto p-2 lg:block lg:space-y-1"
-                        >
+                        <nav aria-label="Pengaturan akun" className="flex gap-1 overflow-x-auto p-2 lg:block lg:space-y-1">
                             <SettingsNavItem
                                 active={section === 'profile'}
                                 icon={UserRound}
@@ -93,12 +67,7 @@ export default function PlatformSecurity({
                     </aside>
 
                     <div className="min-w-0 space-y-5">
-                        {section === 'profile' && (
-                            <ProfileSettings
-                                admin={platformAdmin}
-                                role={role}
-                            />
-                        )}
+                        {section === 'profile' && <ProfileSettings admin={platformAdmin} role={role} />}
                         {section === 'password' && <PasswordSettings />}
                         {section === 'security' && (
                             <SecuritySettings
@@ -141,62 +110,24 @@ function SettingsNavItem({
     );
 }
 
-function ProfileSettings({
-    admin,
-    role,
-}: {
-    admin: PlatformAdmin;
-    role: string;
-}) {
+function ProfileSettings({ admin, role }: { admin: PlatformAdmin; role: string }) {
     return (
         <SettingsPanel icon={UserRound} title="Profil akun" status={role}>
-            <Form
-                action="/super-admin/security/profile"
-                method="patch"
-                className="grid gap-4 p-4 sm:max-w-xl sm:p-5"
-            >
+            <Form action="/super-admin/security/profile" method="patch" className="grid gap-4 p-4 sm:max-w-xl sm:p-5">
                 {({ processing, errors, recentlySuccessful }) => (
                     <>
-                        <FormField
-                            htmlFor="profile_name"
-                            label="Nama lengkap"
-                            error={errors.name}
-                        >
-                            <Input
-                                id="profile_name"
-                                name="name"
-                                defaultValue={admin.name}
-                                autoComplete="name"
-                                required
-                            />
+                        <FormField htmlFor="profile_name" label="Nama lengkap" error={errors.name}>
+                            <Input id="profile_name" name="name" defaultValue={admin.name} autoComplete="name" required />
                         </FormField>
-                        <FormField
-                            htmlFor="profile_email"
-                            label="Email"
-                            error={errors.email}
-                        >
-                            <Input
-                                id="profile_email"
-                                name="email"
-                                type="email"
-                                defaultValue={admin.email}
-                                autoComplete="email"
-                                required
-                            />
+                        <FormField htmlFor="profile_email" label="Email" error={errors.email}>
+                            <Input id="profile_email" name="email" type="email" defaultValue={admin.email} autoComplete="email" required />
                         </FormField>
                         <div className="flex flex-wrap items-center gap-3 pt-1">
-                            <Button
-                                disabled={processing}
-                                className="bg-[#d83f22] text-white hover:bg-[#b83219]"
-                            >
+                            <Button disabled={processing} className="bg-[#d83f22] text-white hover:bg-[#b83219]">
                                 {processing ? <Spinner /> : null}
                                 Simpan profil
                             </Button>
-                            {recentlySuccessful && (
-                                <span className="text-sm font-bold text-emerald-700">
-                                    Tersimpan
-                                </span>
-                            )}
+                            {recentlySuccessful && <span className="text-sm font-bold text-emerald-700">Tersimpan</span>}
                         </div>
                     </>
                 )}
@@ -208,19 +139,10 @@ function ProfileSettings({
 function PasswordSettings() {
     return (
         <SettingsPanel icon={KeyRound} title="Kata sandi">
-            <Form
-                action="/super-admin/security/password"
-                method="put"
-                resetOnSuccess
-                className="grid gap-4 p-4 sm:max-w-xl sm:p-5"
-            >
+            <Form action="/super-admin/security/password" method="put" resetOnSuccess className="grid gap-4 p-4 sm:max-w-xl sm:p-5">
                 {({ processing, errors, recentlySuccessful }) => (
                     <>
-                        <FormField
-                            htmlFor="account_current_password"
-                            label="Kata sandi saat ini"
-                            error={errors.current_password}
-                        >
+                        <FormField htmlFor="account_current_password" label="Kata sandi saat ini" error={errors.current_password}>
                             <Input
                                 id="account_current_password"
                                 name="current_password"
@@ -229,23 +151,10 @@ function PasswordSettings() {
                                 required
                             />
                         </FormField>
-                        <FormField
-                            htmlFor="account_new_password"
-                            label="Kata sandi baru"
-                            error={errors.password}
-                        >
-                            <Input
-                                id="account_new_password"
-                                name="password"
-                                type="password"
-                                autoComplete="new-password"
-                                required
-                            />
+                        <FormField htmlFor="account_new_password" label="Kata sandi baru" error={errors.password}>
+                            <Input id="account_new_password" name="password" type="password" autoComplete="new-password" required />
                         </FormField>
-                        <FormField
-                            htmlFor="account_password_confirmation"
-                            label="Konfirmasi kata sandi baru"
-                        >
+                        <FormField htmlFor="account_password_confirmation" label="Konfirmasi kata sandi baru">
                             <Input
                                 id="account_password_confirmation"
                                 name="password_confirmation"
@@ -255,18 +164,11 @@ function PasswordSettings() {
                             />
                         </FormField>
                         <div className="flex flex-wrap items-center gap-3 pt-1">
-                            <Button
-                                disabled={processing}
-                                className="bg-[#d83f22] text-white hover:bg-[#b83219]"
-                            >
+                            <Button disabled={processing} className="bg-[#d83f22] text-white hover:bg-[#b83219]">
                                 {processing ? <Spinner /> : null}
                                 Perbarui kata sandi
                             </Button>
-                            {recentlySuccessful && (
-                                <span className="text-sm font-bold text-emerald-700">
-                                    Diperbarui
-                                </span>
-                            )}
+                            {recentlySuccessful && <span className="text-sm font-bold text-emerald-700">Diperbarui</span>}
                         </div>
                     </>
                 )}
@@ -292,33 +194,20 @@ function SecuritySettings({
 }) {
     return (
         <>
-            <SettingsPanel
-                icon={ShieldCheck}
-                title="Keamanan akun"
-                status={role}
-                badge={<StatusBadge active={twoFactorEnabled} />}
-            >
+            <SettingsPanel icon={ShieldCheck} title="Keamanan akun" status={role} badge={<StatusBadge active={twoFactorEnabled} />}>
                 <div className="grid gap-5 p-4 sm:p-5 md:grid-cols-[minmax(170px,220px)_minmax(0,1fr)] md:gap-8">
                     <div className="flex items-start gap-3">
                         <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#3b211b]">
                             <KeyRound className="size-4" />
                         </span>
                         <div>
-                            <h3 className="text-sm font-black text-[#3b211b]">
-                                Autentikasi dua langkah
-                            </h3>
+                            <h3 className="text-sm font-black text-[#3b211b]">Autentikasi dua langkah</h3>
                             <p className="mt-1 text-xs font-semibold text-slate-500">
-                                {twoFactorRequired
-                                    ? 'Wajib untuk akun ini'
-                                    : 'Proteksi login tambahan'}
+                                {twoFactorRequired ? 'Wajib untuk akun ini' : 'Proteksi login tambahan'}
                             </p>
                         </div>
                     </div>
-                    <TwoFactorControl
-                        enabled={twoFactorEnabled}
-                        setupPending={setupPending}
-                        qrCodeSvg={qrCodeSvg}
-                    />
+                    <TwoFactorControl enabled={twoFactorEnabled} setupPending={setupPending} qrCodeSvg={qrCodeSvg} />
                 </div>
             </SettingsPanel>
             {recoveryCodes.length > 0 && (
@@ -352,11 +241,7 @@ function SettingsPanel({
                     </span>
                     <div>
                         <h2 className="font-black text-[#3b211b]">{title}</h2>
-                        {status && (
-                            <p className="text-xs font-semibold text-slate-500">
-                                {status}
-                            </p>
-                        )}
+                        {status && <p className="text-xs font-semibold text-slate-500">{status}</p>}
                     </div>
                 </div>
                 {badge}
@@ -366,17 +251,7 @@ function SettingsPanel({
     );
 }
 
-function FormField({
-    htmlFor,
-    label,
-    error,
-    children,
-}: {
-    htmlFor: string;
-    label: string;
-    error?: string;
-    children: React.ReactNode;
-}) {
+function FormField({ htmlFor, label, error, children }: { htmlFor: string; label: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="grid gap-1.5">
             <Label htmlFor={htmlFor}>{label}</Label>
@@ -386,36 +261,18 @@ function FormField({
     );
 }
 
-function TwoFactorControl({
-    enabled,
-    setupPending,
-    qrCodeSvg,
-}: {
-    enabled: boolean;
-    setupPending: boolean;
-    qrCodeSvg: string | null;
-}) {
+function TwoFactorControl({ enabled, setupPending, qrCodeSvg }: { enabled: boolean; setupPending: boolean; qrCodeSvg: string | null }) {
     if (!enabled && !setupPending) {
         return (
-            <Form
-                action="/super-admin/security/two-factor"
-                method="post"
-                className="grid max-w-md gap-4"
-            >
+            <Form action="/super-admin/security/two-factor" method="post" className="grid max-w-md gap-4">
                 {({ processing, errors }) => (
                     <>
                         <div className="flex gap-3 rounded-xl bg-amber-50 p-3 text-sm leading-5 text-amber-950">
                             <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-                            <p>
-                                Setelah aktivasi, pindai QR lalu masukkan kode
-                                dari aplikasi authenticator.
-                            </p>
+                            <p>Setelah aktivasi, pindai QR lalu masukkan kode dari aplikasi authenticator.</p>
                         </div>
                         <PasswordField error={errors.current_password} />
-                        <Button
-                            disabled={processing}
-                            className="w-full bg-[#d83f22] text-white hover:bg-[#b83219] sm:w-fit"
-                        >
+                        <Button disabled={processing} className="w-full bg-[#d83f22] text-white hover:bg-[#b83219] sm:w-fit">
                             {processing ? <Spinner /> : <KeyRound />}
                             Aktifkan 2FA
                         </Button>
@@ -433,12 +290,8 @@ function TwoFactorControl({
                     dangerouslySetInnerHTML={{ __html: qrCodeSvg }}
                 />
                 <div>
-                    <h4 className="text-sm font-black text-[#3b211b]">
-                        Pindai dan konfirmasi
-                    </h4>
-                    <p className="mt-1 text-sm leading-5 text-slate-600">
-                        Masukkan kode enam digit yang muncul di authenticator.
-                    </p>
+                    <h4 className="text-sm font-black text-[#3b211b]">Pindai dan konfirmasi</h4>
+                    <p className="mt-1 text-sm leading-5 text-slate-600">Masukkan kode enam digit yang muncul di authenticator.</p>
                     <Form
                         action="/super-admin/security/two-factor/confirm"
                         method="post"
@@ -459,15 +312,8 @@ function TwoFactorControl({
                                     />
                                     <InputError message={errors.code} />
                                 </div>
-                                <Button
-                                    disabled={processing}
-                                    className="bg-[#d83f22] text-white hover:bg-[#b83219]"
-                                >
-                                    {processing ? (
-                                        <Spinner />
-                                    ) : (
-                                        <CheckCircle2 />
-                                    )}
+                                <Button disabled={processing} className="bg-[#d83f22] text-white hover:bg-[#b83219]">
+                                    {processing ? <Spinner /> : <CheckCircle2 />}
                                     Konfirmasi
                                 </Button>
                             </>
@@ -484,33 +330,18 @@ function TwoFactorControl({
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
                 <div>
                     <p className="text-sm font-black">2FA aktif</p>
-                    <p className="mt-0.5 text-sm leading-5">
-                        Login memerlukan authenticator atau satu recovery code.
-                    </p>
+                    <p className="mt-0.5 text-sm leading-5">Login memerlukan authenticator atau satu recovery code.</p>
                 </div>
             </div>
-            <Form
-                action="/super-admin/security/recovery-codes"
-                method="post"
-                className="grid max-w-md gap-4"
-            >
+            <Form action="/super-admin/security/recovery-codes" method="post" className="grid max-w-md gap-4">
                 {({ processing, errors }) => (
                     <>
                         <div>
-                            <h4 className="text-sm font-black text-[#3b211b]">
-                                Recovery code
-                            </h4>
-                            <p className="mt-1 text-sm text-slate-600">
-                                Membuat kode baru akan membatalkan seluruh kode
-                                lama.
-                            </p>
+                            <h4 className="text-sm font-black text-[#3b211b]">Recovery code</h4>
+                            <p className="mt-1 text-sm text-slate-600">Membuat kode baru akan membatalkan seluruh kode lama.</p>
                         </div>
                         <PasswordField error={errors.current_password} />
-                        <Button
-                            variant="outline"
-                            disabled={processing}
-                            className="w-full sm:w-fit"
-                        >
+                        <Button variant="outline" disabled={processing} className="w-full sm:w-fit">
                             {processing ? <Spinner /> : <RefreshCw />}
                             Buat kode baru
                         </Button>
@@ -529,18 +360,13 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
                     <ShieldAlert className="size-5 text-[#ffd5ca]" />
                     <div>
                         <h2 className="font-black">Simpan recovery code</h2>
-                        <p className="mt-0.5 text-xs text-slate-300">
-                            Kode hanya ditampilkan satu kali.
-                        </p>
+                        <p className="mt-0.5 text-xs text-slate-300">Kode hanya ditampilkan satu kali.</p>
                     </div>
                 </div>
             </div>
             <div className="grid gap-2 p-4 sm:grid-cols-2 sm:p-5">
                 {codes.map((code) => (
-                    <code
-                        key={code}
-                        className="rounded-lg bg-white/10 px-3 py-2 text-sm text-white"
-                    >
+                    <code key={code} className="rounded-lg bg-white/10 px-3 py-2 text-sm text-white">
                         {code}
                     </code>
                 ))}
@@ -563,13 +389,7 @@ function PasswordField({ error }: { error?: string }) {
     return (
         <div className="grid gap-1.5">
             <Label htmlFor="current_password">Kata sandi saat ini</Label>
-            <Input
-                id="current_password"
-                name="current_password"
-                type="password"
-                autoComplete="current-password"
-                required
-            />
+            <Input id="current_password" name="current_password" type="password" autoComplete="current-password" required />
             <InputError message={error} />
         </div>
     );

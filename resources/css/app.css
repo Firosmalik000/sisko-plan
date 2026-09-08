@@ -9,8 +9,7 @@
 
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
     --radius-lg: var(--radius);
@@ -318,17 +317,8 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 
 .landing-hero {
     background:
-        radial-gradient(
-            ellipse at 8% 14%,
-            rgb(245 185 66 / 16%),
-            transparent 34rem
-        ),
-        radial-gradient(
-            ellipse at 92% 42%,
-            rgb(88 164 142 / 14%),
-            transparent 38rem
-        ),
-        linear-gradient(180deg, #fbfcf8 0%, #f7faf5 100%);
+        radial-gradient(ellipse at 8% 14%, rgb(245 185 66 / 16%), transparent 34rem),
+        radial-gradient(ellipse at 92% 42%, rgb(88 164 142 / 14%), transparent 38rem), linear-gradient(180deg, #fbfcf8 0%, #f7faf5 100%);
 }
 
 .landing-hero::after {
@@ -360,17 +350,8 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     --platform-accent: #ee4d2d;
     --platform-paper: #fff3ef;
     background:
-        radial-gradient(
-            circle at 92% 2%,
-            rgb(238 77 45 / 16%),
-            transparent 24rem
-        ),
-        linear-gradient(
-            145deg,
-            #fffaf8 0%,
-            var(--platform-paper) 48%,
-            #fff8f5 100%
-        );
+        radial-gradient(circle at 92% 2%, rgb(238 77 45 / 16%), transparent 24rem),
+        linear-gradient(145deg, #fffaf8 0%, var(--platform-paper) 48%, #fff8f5 100%);
 }
 
 .platform-shell main::before {
@@ -604,11 +585,7 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     min-height: 610px;
     overflow: hidden;
     background:
-        radial-gradient(
-            circle at 80% 32%,
-            rgb(255 255 255 / 20%) 0,
-            transparent 34%
-        ),
+        radial-gradient(circle at 80% 32%, rgb(255 255 255 / 20%) 0, transparent 34%),
         linear-gradient(135deg, #ff704f 0%, #ee4d2d 55%, #f35d3d 100%);
 }
 
@@ -937,16 +914,8 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     overflow: hidden;
     border-bottom: 0;
     background:
-        radial-gradient(
-            circle at 82% 24%,
-            rgb(255 255 255 / 18%) 0,
-            transparent 32%
-        ),
-        radial-gradient(
-            circle at 18% 88%,
-            rgb(255 255 255 / 10%) 0,
-            transparent 28%
-        ),
+        radial-gradient(circle at 82% 24%, rgb(255 255 255 / 18%) 0, transparent 32%),
+        radial-gradient(circle at 18% 88%, rgb(255 255 255 / 10%) 0, transparent 28%),
         linear-gradient(135deg, #ff704f 0%, #ee4d2d 48%, #f35d3d 100%);
 }
 
@@ -964,10 +933,10 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 .scan-hero-grid {
     display: grid;
     min-height: min(810px, calc(100vh - 76px));
-    grid-template-columns: minmax(0, 0.84fr) minmax(520px, 1.16fr);
+    grid-template-columns: minmax(300px, 0.68fr) minmax(560px, 1.32fr);
     align-items: center;
-    gap: clamp(3rem, 7vw, 8rem);
-    padding-block: clamp(4.5rem, 8vw, 8rem);
+    gap: clamp(2rem, 4vw, 4rem);
+    padding-block: clamp(6.5rem, 9vw, 9rem) clamp(4.5rem, 8vw, 8rem);
 }
 
 .scan-hero-copy {
@@ -1000,12 +969,12 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 }
 
 .scan-hero h1 {
-    max-width: 720px;
-    margin-top: 1.25rem;
-    font-size: clamp(3.8rem, 6.6vw, 7.4rem);
+    max-width: 620px;
+    margin-top: 1.1rem;
+    font-size: clamp(3.2rem, 5vw, 5.8rem);
     font-weight: 800;
     letter-spacing: -0.06em;
-    line-height: 0.86;
+    line-height: 0.9;
     text-wrap: balance;
 }
 
@@ -1016,8 +985,8 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 }
 
 .scan-hero-copy > p {
-    max-width: 560px;
-    margin-top: 2rem;
+    max-width: 500px;
+    margin-top: 1.5rem;
     color: #2d2928;
     font-size: clamp(1rem, 1.2vw, 1.15rem);
     line-height: 1.75;
@@ -1104,6 +1073,40 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     justify-self: end;
 }
 
+.xsisten-hero-visual {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 820px);
+    margin: 0;
+    justify-self: end;
+}
+
+.xsisten-hero-art {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 24px 30px rgb(119 38 20 / 24%));
+    animation: xsisten-hero-float 6.5s ease-in-out infinite;
+    user-select: none;
+}
+
+@keyframes xsisten-hero-float {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+    50% {
+        transform: translate3d(0, -8px, 0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .xsisten-hero-art {
+        animation: none;
+    }
+}
+
 .scan-demo-label {
     position: absolute;
     z-index: 5;
@@ -1168,13 +1171,7 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     place-items: center;
     overflow: hidden;
     border-right: 1px solid var(--ledger-rule);
-    background:
-        radial-gradient(
-            circle at 50% 50%,
-            rgb(255 255 255 / 12%),
-            transparent 45%
-        ),
-        #f05a3a;
+    background: radial-gradient(circle at 50% 50%, rgb(255 255 255 / 12%), transparent 45%), #f05a3a;
 }
 
 .scan-demo-stage::before,
@@ -1842,11 +1839,7 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     gap: 0.35rem;
     margin-top: 2rem;
     border-bottom: 1px solid var(--ledger-rule);
-    background: repeating-linear-gradient(
-        to bottom,
-        transparent 0 34px,
-        rgb(45 41 40 / 6%) 34px 35px
-    );
+    background: repeating-linear-gradient(to bottom, transparent 0 34px, rgb(45 41 40 / 6%) 34px 35px);
 }
 .scan-mini-chart i {
     flex: 1;
@@ -1995,11 +1988,11 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 
 @media (max-width: 1279px) {
     .scan-hero-grid {
-        grid-template-columns: minmax(0, 0.8fr) minmax(480px, 1.2fr);
+        grid-template-columns: minmax(280px, 0.72fr) minmax(500px, 1.28fr);
         gap: 3rem;
     }
     .scan-hero h1 {
-        font-size: clamp(3.7rem, 6.6vw, 5.8rem);
+        font-size: clamp(3.2rem, 5.6vw, 5.2rem);
     }
     .note-stock {
         left: -1.2rem;
@@ -2011,17 +2004,25 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 
 @media (max-width: 1023px) {
     .scan-hero-grid {
-        display: block;
+        display: flex;
+        flex-direction: column;
     }
     .scan-hero-copy {
+        order: 2;
         max-width: 760px;
     }
     .scan-hero h1 {
-        font-size: clamp(4.4rem, 10vw, 7rem);
+        font-size: clamp(3.6rem, 8vw, 5.8rem);
     }
     .scan-demo-wrap {
         width: min(92%, 680px);
         margin: 5rem auto 0;
+        justify-self: auto;
+    }
+    .xsisten-hero-visual {
+        order: 1;
+        width: min(94%, 720px);
+        margin: 4rem auto 0;
         justify-self: auto;
     }
     .scan-promise-grid,
@@ -2046,10 +2047,10 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
 
 @media (max-width: 767px) {
     .scan-hero-grid {
-        padding-block: 3.8rem 5.5rem;
+        padding-block: 6rem 5.5rem;
     }
     .scan-hero h1 {
-        font-size: clamp(3.2rem, 14vw, 5.4rem);
+        font-size: clamp(2.8rem, 12vw, 4.5rem);
     }
     .scan-hero-copy > p {
         margin-top: 1.5rem;
@@ -2070,6 +2071,10 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     .scan-demo-wrap {
         width: 100%;
         margin-top: 4rem;
+    }
+    .xsisten-hero-visual {
+        width: 100%;
+        margin-top: 0;
     }
     .scan-demo-shell {
         display: block;
@@ -2254,13 +2259,7 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     overflow: hidden;
     padding: clamp(4.5rem, 8vw, 7rem) 0 clamp(3.75rem, 6vw, 5.5rem);
     border-bottom: 1px solid #d8cebb;
-    background:
-        radial-gradient(
-            circle at 88% 18%,
-            rgb(232 241 211 / 85%),
-            transparent 24rem
-        ),
-        #fbf8ef;
+    background: radial-gradient(circle at 88% 18%, rgb(232 241 211 / 85%), transparent 24rem), #fbf8ef;
 }
 .pricing-hero .ledger-container {
     display: grid;
@@ -2332,6 +2331,26 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
     gap: 1rem;
+}
+.pricing-offer-groups {
+    display: grid;
+    gap: clamp(2.5rem, 5vw, 4rem);
+}
+.pricing-offer-group {
+    min-width: 0;
+    scroll-margin-top: 6rem;
+}
+.pricing-offer-group > h3 {
+    margin-bottom: 1rem;
+    color: #2d2928;
+    font-size: clamp(1.15rem, 2vw, 1.5rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+}
+.pricing-offer-group.is-focused {
+    border-radius: 1rem;
+    outline: 3px solid rgb(238 77 45 / 24%);
+    outline-offset: 0.75rem;
 }
 .pricing-card-grid article {
     display: grid;
@@ -2525,7 +2544,7 @@ html:has(.landing-page)::-webkit-scrollbar-thumb {
     min-height: 100svh;
     display: flex;
     flex-direction: column;
-    overflow: clip;
+    overflow: visible;
     background: var(--ledger-paper);
     color: var(--ledger-ink-deep);
     font-family: Bahnschrift, 'Trebuchet MS', sans-serif;
@@ -2549,10 +2568,25 @@ html:has(.ledger-landing) {
 }
 
 .ledger-header {
-    position: relative;
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
     z-index: 50;
-    border-bottom: 1px solid rgb(45 41 40 / 18%);
+    border-bottom: 1px solid transparent;
+    background: rgb(255 250 247 / 8%);
+    backdrop-filter: blur(4px);
+    transition:
+        background 220ms ease,
+        border-color 220ms ease,
+        box-shadow 220ms ease,
+        backdrop-filter 220ms ease;
+}
+
+.ledger-header.is-scrolled {
+    border-bottom-color: var(--ledger-rule);
     background: rgb(255 250 247 / 94%);
+    box-shadow: 0 12px 28px -24px rgb(45 41 40 / 42%);
     backdrop-filter: blur(18px);
 }
 
@@ -2758,18 +2792,8 @@ html:has(.ledger-landing) {
     overflow: hidden;
     border-bottom: 1px solid var(--ledger-rule);
     background:
-        linear-gradient(
-            90deg,
-            transparent 49.94%,
-            rgb(45 41 40 / 6%) 50%,
-            transparent 50.06%
-        ),
-        radial-gradient(
-            circle at 8% 4%,
-            rgb(232 241 211 / 85%),
-            transparent 27rem
-        ),
-        var(--ledger-paper);
+        linear-gradient(90deg, transparent 49.94%, rgb(45 41 40 / 6%) 50%, transparent 50.06%),
+        radial-gradient(circle at 8% 4%, rgb(232 241 211 / 85%), transparent 27rem), var(--ledger-paper);
 }
 
 .ledger-hero-grid {
@@ -3160,11 +3184,7 @@ html:has(.ledger-landing) {
     margin-top: 1rem;
     padding: 0.6rem 0.4rem 0;
     border-bottom: 1px solid #bcb19f;
-    background: repeating-linear-gradient(
-        to bottom,
-        transparent 0 28px,
-        rgb(45 41 40 / 6%) 28px 29px
-    );
+    background: repeating-linear-gradient(to bottom, transparent 0 28px, rgb(45 41 40 / 6%) 28px 29px);
 }
 
 .ledger-bars span {
@@ -3198,11 +3218,7 @@ html:has(.ledger-landing) {
     margin-top: 1.2rem;
     padding: 0.7rem 0;
     border-block: 1px solid #d8cfbd;
-    background: repeating-linear-gradient(
-        to bottom,
-        transparent 0 24px,
-        rgb(45 41 40 / 6%) 24px 25px
-    );
+    background: repeating-linear-gradient(to bottom, transparent 0 24px, rgb(45 41 40 / 6%) 24px 25px);
 }
 
 .ledger-line-chart svg {
@@ -3233,12 +3249,7 @@ html:has(.ledger-landing) {
     height: 3.8rem;
     flex: none;
     border-radius: 50%;
-    background: conic-gradient(
-        var(--ledger-ink) 0 45%,
-        var(--ledger-orange) 45% 70%,
-        #e8a71b 70% 85%,
-        #f1b8a9 85% 100%
-    );
+    background: conic-gradient(var(--ledger-ink) 0 45%, var(--ledger-orange) 45% 70%, #e8a71b 70% 85%, #f1b8a9 85% 100%);
     box-shadow: inset 0 0 0 0.9rem var(--ledger-paper);
 }
 

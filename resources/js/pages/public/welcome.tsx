@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { m, useInView, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
 import {
     ArrowRight,
     BarChart3,
@@ -10,28 +10,17 @@ import {
     ChevronRight,
     ClipboardList,
     CircleDollarSign,
-    PackageCheck,
     PackageSearch,
     ReceiptText,
     ScanLine,
     ShieldCheck,
     ShoppingBasket,
-    Store,
     Users,
     WalletCards,
     Warehouse,
     Zap,
 } from 'lucide-react';
-import { useRef } from 'react';
-import {
-    publicEase,
-    publicViewport,
-    revealClip,
-    revealLeft,
-    revealRight,
-    staggerGroup,
-    staggerItem,
-} from '@/components/public/motion';
+import { publicEase, publicViewport, revealClip, revealLeft, revealRight, staggerGroup, staggerItem } from '@/components/public/motion';
 import { translate } from '@/lib/i18n';
 import { dashboard, register } from '@/routes';
 
@@ -42,24 +31,9 @@ const features = [
         'Scan barcode, masukkan jumlah, lalu selesaikan pembayaran tanpa berpindah layar.',
         ScanLine,
     ],
-    [
-        '02',
-        'Stok ikut bergerak otomatis',
-        'Setiap penjualan dan kulakan memperbarui persediaan hingga tingkat varian.',
-        Boxes,
-    ],
-    [
-        '03',
-        'Uang toko tetap terbaca',
-        'Kas, modal, biaya, dan utang supplier tercatat dalam alur yang bisa ditelusuri.',
-        WalletCards,
-    ],
-    [
-        '04',
-        'Keputusan tidak lagi pakai tebakan',
-        'Lihat penjualan bersih, laba kotor, produk terlaris, dan stok kritis.',
-        BarChart3,
-    ],
+    ['02', 'Stok ikut bergerak otomatis', 'Setiap penjualan dan kulakan memperbarui persediaan hingga tingkat varian.', Boxes],
+    ['03', 'Uang toko tetap terbaca', 'Kas, modal, biaya, dan utang supplier tercatat dalam alur yang bisa ditelusuri.', WalletCards],
+    ['04', 'Keputusan tidak lagi pakai tebakan', 'Lihat penjualan bersih, laba kotor, produk terlaris, dan stok kritis.', BarChart3],
 ] as const;
 
 const faqs = [
@@ -82,165 +56,38 @@ const faqs = [
 ] as const;
 
 const dailyProblems = [
-    [
-        BookOpen,
-        'Catatan mudah tercecer',
-        'Transaksi tersimpan di banyak tempat dan sulit diperiksa kembali.',
-    ],
-    [
-        Warehouse,
-        'Stok baru dihitung saat terlambat',
-        'Barang laris habis tanpa tanda, barang lambat justru terus menumpuk.',
-    ],
-    [
-        ClipboardList,
-        'Rekap menghabiskan waktu',
-        'Angka penjualan, pengeluaran, dan laba harus disatukan ulang secara manual.',
-    ],
+    [BookOpen, 'Catatan mudah tercecer', 'Transaksi tersimpan di banyak tempat dan sulit diperiksa kembali.'],
+    [Warehouse, 'Stok baru dihitung saat terlambat', 'Barang laris habis tanpa tanda, barang lambat justru terus menumpuk.'],
+    [ClipboardList, 'Rekap menghabiskan waktu', 'Angka penjualan, pengeluaran, dan laba harus disatukan ulang secara manual.'],
 ] as const;
 
 const comparison = [
-    [
-        'Catat penjualan',
-        'Scan atau cari, lalu simpan',
-        'Tulis dan hitung satu per satu',
-    ],
+    ['Catat penjualan', 'Scan atau cari, lalu simpan', 'Tulis dan hitung satu per satu'],
     ['Perbarui stok', 'Mengikuti transaksi', 'Hitung ulang secara manual'],
-    [
-        'Pantau kas',
-        'Terhubung dengan operasional',
-        'Terpisah dari catatan penjualan',
-    ],
-    [
-        'Baca laporan',
-        'Ringkasan siap dilihat',
-        'Rekap kembali di akhir periode',
-    ],
+    ['Pantau kas', 'Terhubung dengan operasional', 'Terpisah dari catatan penjualan'],
+    ['Baca laporan', 'Ringkasan siap dilihat', 'Rekap kembali di akhir periode'],
 ] as const;
 
-function ProductPacket({ small = false }: { small?: boolean }) {
+function XsistenHeroVisual() {
     return (
-        <span className={`scan-product-packet ${small ? 'is-small' : ''}`}>
-            <span className="scan-product-brand">KOPI</span>
-            <span className="scan-product-name">Pagi</span>
-            <span className="scan-product-weight">165 g</span>
-        </span>
-    );
-}
-
-function ScannerDemo() {
-    const scannerRef = useRef<HTMLDivElement>(null);
-    const isVisible = useInView(scannerRef, { amount: 0.28 });
-    const reduceMotion = useReducedMotion();
-
-    return (
-        <m.div
-            ref={scannerRef}
-            className="scan-demo-wrap"
-            aria-label="Data contoh pemindaian produk"
+        <m.figure
+            className="xsisten-hero-visual"
+            aria-label="Ilustrasi Xsisten untuk scan produk, transaksi, stok, kas, dan laporan"
             initial="hidden"
-            animate={isVisible ? 'visible' : 'hidden'}
+            animate="visible"
             variants={revealRight}
         >
             <span className="scan-demo-label">Data contoh</span>
-            <m.div
-                className="scan-demo-shell"
-                initial={{ opacity: 0.7, scale: 0.985 }}
-                animate={
-                    isVisible
-                        ? { opacity: 1, scale: 1 }
-                        : { opacity: 0.7, scale: 0.985 }
-                }
-                transition={{ duration: 0.65, ease: publicEase }}
-            >
-                <div className="scan-demo-topbar">
-                    <span className="scan-demo-store">
-                        <Store /> Toko Maju Jaya
-                    </span>
-                    <span className="scan-demo-live">
-                        <i /> Kasir aktif
-                    </span>
-                </div>
-                <div className="scan-demo-stage">
-                    <div className="scan-camera-frame">
-                        <span className="scan-corner top-left" />
-                        <span className="scan-corner top-right" />
-                        <span className="scan-corner bottom-left" />
-                        <span className="scan-corner bottom-right" />
-                        <ProductPacket />
-                        <m.span
-                            className="scan-beam"
-                            style={{
-                                animationPlayState:
-                                    isVisible && !reduceMotion
-                                        ? 'running'
-                                        : 'paused',
-                            }}
-                        />
-                    </div>
-                    <m.div
-                        className="scan-found-badge"
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={
-                            isVisible
-                                ? { opacity: 1, y: 0 }
-                                : { opacity: 0, y: 12 }
-                        }
-                        transition={{
-                            delay: reduceMotion ? 0 : 0.42,
-                            duration: 0.38,
-                            ease: publicEase,
-                        }}
-                    >
-                        <PackageCheck />
-                        <span>
-                            Produk ditemukan<strong>Kopi Pagi 165 g</strong>
-                        </span>
-                    </m.div>
-                </div>
-                <div className="scan-demo-cart">
-                    <div className="scan-cart-head">
-                        <span>Keranjang</span>
-                        <strong>3 item</strong>
-                    </div>
-                    <div className="scan-cart-item">
-                        <ProductPacket small />
-                        <span>
-                            <strong>Kopi Pagi 165 g</strong>
-                            <small>2 × Rp7.500</small>
-                        </span>
-                        <b>Rp15.000</b>
-                    </div>
-                    <div className="scan-cart-total">
-                        <span>Total bayar</span>
-                        <strong>Rp33.000</strong>
-                    </div>
-                    <div className="scan-cart-action">
-                        Selesaikan transaksi <ArrowRight />
-                    </div>
-                </div>
-            </m.div>
-            <m.div
-                className="scan-demo-note note-stock"
-                initial={{ opacity: 0, x: 18 }}
-                animate={isVisible ? { opacity: 1, x: 0 } : { opacity: 0 }}
-                transition={{ delay: 0.55, duration: 0.4, ease: publicEase }}
-            >
-                <Boxes />
-                <span>Stok diperbarui</span>
-                <strong>−2</strong>
-            </m.div>
-            <m.div
-                className="scan-demo-note note-report"
-                initial={{ opacity: 0, x: -18 }}
-                animate={isVisible ? { opacity: 1, x: 0 } : { opacity: 0 }}
-                transition={{ delay: 0.68, duration: 0.4, ease: publicEase }}
-            >
-                <BarChart3 />
-                <span>Penjualan hari ini</span>
-                <strong>Rp682.500</strong>
-            </m.div>
-        </m.div>
+            <m.img
+                className="xsisten-hero-art"
+                src="/assets/xsisten-hero.png"
+                alt="Pemilik toko menggunakan Xsisten untuk scan produk dan mencatat transaksi"
+                draggable={false}
+                initial={{ opacity: 0, y: 18, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.8, ease: publicEase, delay: 0.14 }}
+            />
+        </m.figure>
     );
 }
 
@@ -254,10 +101,7 @@ function ProductGallery() {
             viewport={publicViewport}
             variants={staggerGroup}
         >
-            <m.article
-                className="scan-gallery-panel scan-gallery-pos"
-                variants={revealLeft}
-            >
+            <m.article className="scan-gallery-panel scan-gallery-pos" variants={revealLeft}>
                 <div className="scan-panel-head">
                     <span>Kasir</span>
                     <small>Data contoh</small>
@@ -278,10 +122,7 @@ function ProductGallery() {
                     </div>
                 ))}
             </m.article>
-            <m.article
-                className="scan-gallery-panel scan-gallery-stock"
-                variants={staggerItem}
-            >
+            <m.article className="scan-gallery-panel scan-gallery-stock" variants={staggerItem}>
                 <div className="scan-panel-head">
                     <span>Stok kritis</span>
                     <small>8 produk</small>
@@ -300,19 +141,14 @@ function ProductGallery() {
                     </span>
                 </div>
             </m.article>
-            <m.article
-                className="scan-gallery-panel scan-gallery-report"
-                variants={revealRight}
-            >
+            <m.article className="scan-gallery-panel scan-gallery-report" variants={revealRight}>
                 <div className="scan-panel-head">
                     <span>Ringkasan hari ini</span>
                     <small>10:00</small>
                 </div>
                 <span className="scan-report-label">Penjualan bersih</span>
                 <strong className="scan-report-value">Rp682.500</strong>
-                <span className="scan-report-growth">
-                    Naik 12% dari kemarin
-                </span>
+                <span className="scan-report-growth">Naik 12% dari kemarin</span>
                 <div className="scan-mini-chart" aria-hidden="true">
                     {[36, 48, 43, 65, 57, 81, 72].map((height, index) => (
                         <i key={index} style={{ height: `${height}%` }} />
@@ -326,9 +162,7 @@ function ProductGallery() {
 export default function Welcome() {
     const { auth, branding } = usePage().props;
     const primaryHref = auth.user ? dashboard() : register();
-    const primaryLabel = translate(
-        auth.user ? 'Buka dashboard' : 'Mulai kelola toko',
-    );
+    const primaryLabel = translate(auth.user ? 'Buka dashboard' : 'Mulai kelola toko');
 
     return (
         <>
@@ -336,12 +170,7 @@ export default function Welcome() {
 
             <section className="scan-hero">
                 <div className="ledger-container scan-hero-grid">
-                    <m.div
-                        className="scan-hero-copy"
-                        initial="hidden"
-                        animate="visible"
-                        variants={staggerGroup}
-                    >
+                    <m.div className="scan-hero-copy" initial="hidden" animate="visible" variants={staggerGroup}>
                         <m.span className="scan-eyebrow" variants={staggerItem}>
                             <Zap /> Kasir cepat, operasional rapi
                         </m.span>
@@ -350,28 +179,18 @@ export default function Welcome() {
                             <span>Sisanya langsung tercatat.</span>
                         </m.h1>
                         <m.p variants={staggerItem}>
-                            Dari transaksi ke stok, kas, dan laporan.{' '}
-                            {branding.brand_name} menyatukan semuanya agar toko
-                            bergerak lebih cepat tanpa catatan yang tercecer.
+                            Dari transaksi ke stok, kas, dan laporan. {branding.brand_name} menyatukan semuanya agar toko bergerak lebih
+                            cepat tanpa catatan yang tercecer.
                         </m.p>
-                        <m.div
-                            className="scan-hero-actions"
-                            variants={staggerItem}
-                        >
-                            <Link
-                                className="ledger-button ledger-button-orange"
-                                href={primaryHref}
-                            >
+                        <m.div className="scan-hero-actions" variants={staggerItem}>
+                            <Link className="ledger-button ledger-button-orange" href={primaryHref}>
                                 {primaryLabel} <ArrowRight />
                             </Link>
                             <a className="scan-demo-link" href="#cara-kerja">
                                 Lihat cara kerjanya <ChevronRight />
                             </a>
                         </m.div>
-                        <m.div
-                            className="scan-trust-row"
-                            variants={staggerItem}
-                        >
+                        <m.div className="scan-trust-row" variants={staggerItem}>
                             <span>
                                 <Check /> Bisa tanpa scanner khusus
                             </span>
@@ -380,14 +199,11 @@ export default function Welcome() {
                             </span>
                         </m.div>
                     </m.div>
-                    <ScannerDemo />
+                    <XsistenHeroVisual />
                 </div>
             </section>
 
-            <section
-                className="scan-flow"
-                aria-label={`Alur utama ${branding.brand_name}`}
-            >
+            <section className="scan-flow" aria-label={`Alur utama ${branding.brand_name}`}>
                 <m.div
                     className="ledger-container"
                     initial="hidden"
@@ -402,11 +218,7 @@ export default function Welcome() {
                         [CircleDollarSign, 'Kas'],
                         [BarChart3, 'Laporan'],
                     ].map(([Icon, label], index) => (
-                        <m.div
-                            className="scan-flow-item"
-                            key={String(label)}
-                            variants={staggerItem}
-                        >
+                        <m.div className="scan-flow-item" key={String(label)} variants={staggerItem}>
                             <span>
                                 <Icon /> {String(label)}
                             </span>
@@ -418,19 +230,9 @@ export default function Welcome() {
 
             <section className="scan-promise" id="tentang">
                 <div className="ledger-container scan-promise-grid">
-                    <m.div
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={publicViewport}
-                        variants={revealLeft}
-                    >
-                        <span className="scan-kicker">
-                            Lebih ringan setiap hari
-                        </span>
-                        <h2>
-                            Toko sibuk tidak butuh aplikasi yang ikut
-                            merepotkan.
-                        </h2>
+                    <m.div initial="hidden" whileInView="visible" viewport={publicViewport} variants={revealLeft}>
+                        <span className="scan-kicker">Lebih ringan setiap hari</span>
+                        <h2>Toko sibuk tidak butuh aplikasi yang ikut merepotkan.</h2>
                     </m.div>
                     <m.div
                         className="scan-promise-copy"
@@ -440,8 +242,7 @@ export default function Welcome() {
                         variants={revealRight}
                     >
                         <p>
-                            {branding.brand_name} dibuat untuk pemilik toko yang
-                            ingin bekerja cepat sekaligus tetap memahami kondisi
+                            {branding.brand_name} dibuat untuk pemilik toko yang ingin bekerja cepat sekaligus tetap memahami kondisi
                             usahanya.
                         </p>
                         <div>
@@ -469,13 +270,8 @@ export default function Welcome() {
                         variants={revealClip}
                     >
                         <span className="scan-kicker">Yang sering terjadi</span>
-                        <h2 id="problems-title">
-                            Jualannya jalan. Catatannya tertinggal.
-                        </h2>
-                        <p>
-                            Masalah kecil yang berulang bisa membuat kondisi
-                            toko sulit dibaca.
-                        </p>
+                        <h2 id="problems-title">Jualannya jalan. Catatannya tertinggal.</h2>
+                        <p>Masalah kecil yang berulang bisa membuat kondisi toko sulit dibaca.</p>
                     </m.div>
                     <m.div
                         className="scan-problem-list"
@@ -507,10 +303,7 @@ export default function Welcome() {
                     >
                         <span className="scan-kicker">Cara kerja</span>
                         <h2>Tiga gerakan. Satu catatan yang utuh.</h2>
-                        <p>
-                            Barang masuk, transaksi selesai, kondisi toko
-                            langsung terbaca.
-                        </p>
+                        <p>Barang masuk, transaksi selesai, kondisi toko langsung terbaca.</p>
                     </m.div>
                     <m.ol
                         className="scan-how-steps"
@@ -557,9 +350,7 @@ export default function Welcome() {
                         variants={revealClip}
                     >
                         <span className="scan-kicker">Satu sistem toko</span>
-                        <h2>
-                            Bukan cuma kasir. Semua pekerjaan penting ikut rapi.
-                        </h2>
+                        <h2>Bukan cuma kasir. Semua pekerjaan penting ikut rapi.</h2>
                     </m.div>
                     <m.div
                         className="scan-feature-list"
@@ -570,9 +361,7 @@ export default function Welcome() {
                     >
                         {features.map(([number, title, copy, Icon]) => (
                             <m.article key={number} variants={staggerItem}>
-                                <span className="scan-feature-number">
-                                    {number}
-                                </span>
+                                <span className="scan-feature-number">{number}</span>
                                 <Icon />
                                 <h3>{translate(title)}</h3>
                                 <p>{translate(copy)}</p>
@@ -596,10 +385,7 @@ export default function Welcome() {
                             <span className="scan-kicker">Satu pandangan</span>
                             <h2>Dari meja kasir sampai keputusan pemilik.</h2>
                         </div>
-                        <p>
-                            Informasi penting muncul saat dibutuhkan, tanpa
-                            layar yang penuh dan membingungkan.
-                        </p>
+                        <p>Informasi penting muncul saat dibutuhkan, tanpa layar yang penuh dan membingungkan.</p>
                     </m.div>
                     <ProductGallery />
                 </div>
@@ -614,13 +400,8 @@ export default function Welcome() {
                         viewport={publicViewport}
                         variants={revealLeft}
                     >
-                        <span className="scan-kicker">
-                            Operasional menyeluruh
-                        </span>
+                        <span className="scan-kicker">Operasional menyeluruh</span>
                         <h2>Satu toko, banyak pekerjaan. Tetap satu alur.</h2>
-                        <Link className="scan-inline-link" href="/pricing">
-                            Lihat paket yang tersedia <ArrowRight />
-                        </Link>
                     </m.div>
                     <m.div
                         className="scan-coverage-list"
@@ -645,10 +426,7 @@ export default function Welcome() {
                 </div>
             </section>
 
-            <section
-                className="scan-comparison"
-                aria-labelledby="comparison-title"
-            >
+            <section className="scan-comparison" aria-labelledby="comparison-title">
                 <div className="ledger-container">
                     <m.div
                         className="scan-comparison-heading"
@@ -657,13 +435,8 @@ export default function Welcome() {
                         viewport={publicViewport}
                         variants={revealClip}
                     >
-                        <span className="scan-kicker">
-                            Cara kerja yang berbeda
-                        </span>
-                        <h2 id="comparison-title">
-                            Lebih sedikit mencatat ulang. Lebih banyak waktu
-                            untuk melayani.
-                        </h2>
+                        <span className="scan-kicker">Cara kerja yang berbeda</span>
+                        <h2 id="comparison-title">Lebih sedikit mencatat ulang. Lebih banyak waktu untuk melayani.</h2>
                     </m.div>
                     <m.div
                         className="scan-comparison-table"
@@ -674,11 +447,7 @@ export default function Welcome() {
                         viewport={publicViewport}
                         variants={staggerGroup}
                     >
-                        <m.div
-                            className="scan-comparison-row scan-comparison-head"
-                            role="row"
-                            variants={staggerItem}
-                        >
+                        <m.div className="scan-comparison-row scan-comparison-head" role="row" variants={staggerItem}>
                             <span role="columnheader">Pekerjaan</span>
                             <strong role="columnheader">
                                 <ScanLine /> {branding.brand_name}
@@ -688,12 +457,7 @@ export default function Welcome() {
                             </strong>
                         </m.div>
                         {comparison.map(([task, sisko, manual]) => (
-                            <m.div
-                                className="scan-comparison-row"
-                                role="row"
-                                key={task}
-                                variants={staggerItem}
-                            >
+                            <m.div className="scan-comparison-row" role="row" key={task} variants={staggerItem}>
                                 <span role="cell">{translate(task)}</span>
                                 <strong role="cell">
                                     <Check /> {translate(sisko)}
@@ -707,12 +471,7 @@ export default function Welcome() {
 
             <section className="scan-faq" id="faq">
                 <div className="ledger-container scan-faq-layout">
-                    <m.div
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={publicViewport}
-                        variants={revealLeft}
-                    >
+                    <m.div initial="hidden" whileInView="visible" viewport={publicViewport} variants={revealLeft}>
                         <span className="scan-kicker">Pertanyaan umum</span>
                         <h2>Sebelum mulai, pastikan semuanya jelas.</h2>
                     </m.div>
@@ -749,10 +508,7 @@ export default function Welcome() {
                         <h2>Scan penjualannya. Pegang kendali tokonya.</h2>
                     </div>
                     <div>
-                        <Link
-                            className="ledger-button ledger-button-orange"
-                            href={primaryHref}
-                        >
+                        <Link className="ledger-button ledger-button-orange" href={primaryHref}>
                             {primaryLabel} <ArrowRight />
                         </Link>
                         <span>

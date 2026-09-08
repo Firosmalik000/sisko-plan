@@ -57,8 +57,7 @@ export default function CashPage({
     timezone: string;
     canManage: boolean;
 }) {
-    const initialAccount =
-        accounts.find((account) => account.is_active)?.public_id ?? '';
+    const initialAccount = accounts.find((account) => account.is_active)?.public_id ?? '';
     const opening = useForm({
         account_id: initialAccount,
         amount: '',
@@ -68,8 +67,7 @@ export default function CashPage({
     });
     const transfer = useForm({
         from_account_id: initialAccount,
-        to_account_id:
-            accounts.filter((account) => account.is_active)[1]?.public_id ?? '',
+        to_account_id: accounts.filter((account) => account.is_active)[1]?.public_id ?? '',
         amount: '',
         occurred_at: currentDateTime(timezone),
         notes: '',
@@ -108,31 +106,17 @@ export default function CashPage({
             >
                 <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
                     {canManage && (
-                        <LedgerCard
-                            title="Saldo awal akun"
-                            description="Hanya untuk akun yang belum pernah memiliki transaksi."
-                        >
-                            <form
-                                onSubmit={submitOpening}
-                                className="grid gap-4 md:grid-cols-2"
-                            >
+                        <LedgerCard title="Saldo awal akun" description="Hanya untuk akun yang belum pernah memiliki transaksi.">
+                            <form onSubmit={submitOpening} className="grid gap-4 md:grid-cols-2">
                                 <label className="space-y-1 text-sm font-semibold text-stone-700">
                                     Akun
                                     <select
                                         className={fieldClass}
                                         value={opening.data.account_id}
-                                        onChange={(event) =>
-                                            opening.setData(
-                                                'account_id',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => opening.setData('account_id', event.target.value)}
                                     >
                                         {activeAccounts.map((account) => (
-                                            <option
-                                                key={account.public_id}
-                                                value={account.public_id}
-                                            >
+                                            <option key={account.public_id} value={account.public_id}>
                                                 {account.name}
                                             </option>
                                         ))}
@@ -146,12 +130,7 @@ export default function CashPage({
                                         min="0.0001"
                                         step="0.0001"
                                         value={opening.data.amount}
-                                        onChange={(event) =>
-                                            opening.setData(
-                                                'amount',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => opening.setData('amount', event.target.value)}
                                         required
                                     />
                                 </label>
@@ -161,57 +140,33 @@ export default function CashPage({
                                         className={fieldClass}
                                         type="datetime-local"
                                         value={opening.data.occurred_at}
-                                        onChange={(event) =>
-                                            opening.setData(
-                                                'occurred_at',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => opening.setData('occurred_at', event.target.value)}
                                         required
                                     />
                                 </label>
                                 <div className="flex items-end">
-                                    <button
-                                        className={`${buttonClass} w-full`}
-                                        disabled={opening.processing}
-                                    >
+                                    <button className={`${buttonClass} w-full`} disabled={opening.processing}>
                                         Posting saldo awal
                                     </button>
                                 </div>
                                 {Object.keys(opening.errors).length > 0 && (
-                                    <p className="text-sm text-red-700 md:col-span-full">
-                                        {Object.values(opening.errors)[0]}
-                                    </p>
+                                    <p className="text-sm text-red-700 md:col-span-full">{Object.values(opening.errors)[0]}</p>
                                 )}
                             </form>
                         </LedgerCard>
                     )}
                     {canManage && (
-                        <LedgerCard
-                            title="Transfer antar-akun"
-                            description="Debit dan kredit kas diposting atomik."
-                        >
-                            <form
-                                onSubmit={submitTransfer}
-                                className="grid gap-4 md:grid-cols-2"
-                            >
+                        <LedgerCard title="Transfer antar-akun" description="Debit dan kredit kas diposting atomik.">
+                            <form onSubmit={submitTransfer} className="grid gap-4 md:grid-cols-2">
                                 <label className="space-y-1 text-sm font-semibold text-stone-700">
                                     Dari akun
                                     <select
                                         className={fieldClass}
                                         value={transfer.data.from_account_id}
-                                        onChange={(event) =>
-                                            transfer.setData(
-                                                'from_account_id',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => transfer.setData('from_account_id', event.target.value)}
                                     >
                                         {activeAccounts.map((account) => (
-                                            <option
-                                                key={account.public_id}
-                                                value={account.public_id}
-                                            >
+                                            <option key={account.public_id} value={account.public_id}>
                                                 {account.name}
                                             </option>
                                         ))}
@@ -222,18 +177,10 @@ export default function CashPage({
                                     <select
                                         className={fieldClass}
                                         value={transfer.data.to_account_id}
-                                        onChange={(event) =>
-                                            transfer.setData(
-                                                'to_account_id',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => transfer.setData('to_account_id', event.target.value)}
                                     >
                                         {activeAccounts.map((account) => (
-                                            <option
-                                                key={account.public_id}
-                                                value={account.public_id}
-                                            >
+                                            <option key={account.public_id} value={account.public_id}>
                                                 {account.name}
                                             </option>
                                         ))}
@@ -247,12 +194,7 @@ export default function CashPage({
                                         min="0.0001"
                                         step="0.0001"
                                         value={transfer.data.amount}
-                                        onChange={(event) =>
-                                            transfer.setData(
-                                                'amount',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => transfer.setData('amount', event.target.value)}
                                         required
                                     />
                                 </label>
@@ -262,52 +204,32 @@ export default function CashPage({
                                         className={fieldClass}
                                         type="datetime-local"
                                         value={transfer.data.occurred_at}
-                                        onChange={(event) =>
-                                            transfer.setData(
-                                                'occurred_at',
-                                                event.target.value,
-                                            )
-                                        }
+                                        onChange={(event) => transfer.setData('occurred_at', event.target.value)}
                                         required
                                     />
                                 </label>
                                 <button
                                     className={`${buttonClass} md:col-span-2`}
-                                    disabled={
-                                        transfer.processing ||
-                                        activeAccounts.length < 2
-                                    }
+                                    disabled={transfer.processing || activeAccounts.length < 2}
                                 >
                                     Posting transfer
                                 </button>
                                 {Object.keys(transfer.errors).length > 0 && (
-                                    <p className="text-sm text-red-700 md:col-span-full">
-                                        {Object.values(transfer.errors)[0]}
-                                    </p>
+                                    <p className="text-sm text-red-700 md:col-span-full">{Object.values(transfer.errors)[0]}</p>
                                 )}
                             </form>
                         </LedgerCard>
                     )}
                 </div>
-                <LedgerCard
-                    title="Posisi kas"
-                    description={`Total likuiditas ${money(totalBalance)}`}
-                >
+                <LedgerCard title="Posisi kas" description={`Total likuiditas ${money(totalBalance)}`}>
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                         {accounts.map((account) => (
-                            <article
-                                key={account.public_id}
-                                className="rounded-2xl border border-stone-200 bg-stone-50 p-4"
-                            >
+                            <article key={account.public_id} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
                                 <p className="text-xs font-bold tracking-wider text-stone-500 uppercase">
                                     {account.type.replace('_', ' ')}
                                 </p>
-                                <h3 className="mt-1 font-bold text-stone-900">
-                                    {account.name}
-                                </h3>
-                                <p className="mt-5 font-serif text-2xl text-teal-800">
-                                    {money(account.balance)}
-                                </p>
+                                <h3 className="mt-1 font-bold text-stone-900">{account.name}</h3>
+                                <p className="mt-5 font-serif text-2xl text-teal-800">{money(account.balance)}</p>
                             </article>
                         ))}
                     </div>
@@ -327,44 +249,21 @@ export default function CashPage({
                             </thead>
                             <tbody>
                                 {transactions.data.map((item) => (
-                                    <tr
-                                        key={item.public_id}
-                                        className="border-b border-stone-100"
-                                    >
-                                        <td className="py-3 font-semibold">
-                                            {item.account_name}
-                                        </td>
-                                        <td>
-                                            {reasonLabels[item.reason] ??
-                                                item.reason}
-                                        </td>
-                                        <td
-                                            className={
-                                                item.direction === 'in'
-                                                    ? 'font-bold text-teal-700'
-                                                    : 'font-bold text-red-700'
-                                            }
-                                        >
-                                            {item.direction === 'in'
-                                                ? 'Masuk'
-                                                : 'Keluar'}
+                                    <tr key={item.public_id} className="border-b border-stone-100">
+                                        <td className="py-3 font-semibold">{item.account_name}</td>
+                                        <td>{reasonLabels[item.reason] ?? item.reason}</td>
+                                        <td className={item.direction === 'in' ? 'font-bold text-teal-700' : 'font-bold text-red-700'}>
+                                            {item.direction === 'in' ? 'Masuk' : 'Keluar'}
                                         </td>
                                         <td>{money(item.amount)}</td>
                                         <td>{money(item.balance_after)}</td>
-                                        <td>
-                                            {ledgerDateTime(
-                                                item.occurred_at,
-                                                timezone,
-                                            )}
-                                        </td>
+                                        <td>{ledgerDateTime(item.occurred_at, timezone)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                         {transactions.data.length === 0 && (
-                            <p className="py-8 text-center text-sm text-stone-500">
-                                Belum ada transaksi kas.
-                            </p>
+                            <p className="py-8 text-center text-sm text-stone-500">Belum ada transaksi kas.</p>
                         )}
                         <div className="mt-5">
                             <Pagination links={transactions.links} />

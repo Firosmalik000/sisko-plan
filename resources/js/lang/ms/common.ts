@@ -23,10 +23,8 @@ export const malayCore: Record<string, string> = {
     'Kode pemulihan': 'Kod pemulihan',
     'Konfirmasi akses akun dengan memasukkan salah satu kode pemulihan darurat.':
         'Sahkan akses akaun dengan memasukkan salah satu kod pemulihan kecemasan.',
-    'Masukkan kode autentikasi dari aplikasi autentikator Anda.':
-        'Masukkan kod pengesahan daripada aplikasi pengesah anda.',
-    'masuk menggunakan kode autentikasi':
-        'log masuk menggunakan kod pengesahan',
+    'Masukkan kode autentikasi dari aplikasi autentikator Anda.': 'Masukkan kod pengesahan daripada aplikasi pengesah anda.',
+    'masuk menggunakan kode autentikasi': 'log masuk menggunakan kod pengesahan',
     'Kode autentikasi': 'Kod pengesahan',
     'masuk menggunakan kode pemulihan': 'log masuk menggunakan kod pemulihan',
     'Masukkan kode pemulihan': 'Masukkan kod pemulihan',
@@ -36,8 +34,7 @@ export const malayCore: Record<string, string> = {
     'Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan':
         'Dengan meneruskan, anda bersetuju dengan dasar penggunaan perkhidmatan',
     'Navigasi utama': 'Navigasi utama',
-    'Scan barangnya. Sisanya langsung tercatat.':
-        'Imbas barangnya. Selebihnya direkodkan terus.',
+    'Scan barangnya. Sisanya langsung tercatat.': 'Imbas barangnya. Selebihnya direkodkan terus.',
     'Masuk dengan Google': 'Log masuk menggunakan Google',
     'Alamat email': 'Alamat e-mel',
     'Kata sandi': 'Kata laluan',
@@ -57,18 +54,13 @@ export const malayCore: Record<string, string> = {
     'Sembunyikan kata sandi': 'Sembunyikan kata laluan',
     'Tampilkan kata sandi': 'Tunjukkan kata laluan',
     Passkey: 'Passkey',
-    'Kelola passkey untuk masuk tanpa kata sandi':
-        'Urus passkey untuk log masuk tanpa kata laluan',
-    'Semua pekerjaan toko, terasa lebih terarah.':
-        'Semua kerja kedai, lebih tersusun.',
+    'Kelola passkey untuk masuk tanpa kata sandi': 'Urus passkey untuk log masuk tanpa kata laluan',
+    'Semua pekerjaan toko, terasa lebih terarah.': 'Semua kerja kedai, lebih tersusun.',
     'Masuk untuk melanjutkan transaksi, memantau stok, dan melihat perkembangan usaha dari satu tempat.':
         'Log masuk untuk meneruskan transaksi, memantau stok dan melihat perkembangan perniagaan dari satu tempat.',
-    'Akses aman dan terkontrol untuk setiap peran.':
-        'Akses selamat dan terkawal untuk setiap peranan.',
-    'Kategori biaya berhasil ditambahkan.':
-        'Kategori perbelanjaan berjaya ditambah.',
-    'Kategori biaya berhasil diperbarui.':
-        'Kategori perbelanjaan berjaya dikemas kini.',
+    'Akses aman dan terkontrol untuk setiap peran.': 'Akses selamat dan terkawal untuk setiap peranan.',
+    'Kategori biaya berhasil ditambahkan.': 'Kategori perbelanjaan berjaya ditambah.',
+    'Kategori biaya berhasil diperbarui.': 'Kategori perbelanjaan berjaya dikemas kini.',
     'Biaya toko berhasil diposting.': 'Perbelanjaan kedai berjaya direkodkan.',
     'Produk berhasil ditambahkan.': 'Produk berjaya ditambah.',
     'Produk berhasil diperbarui.': 'Produk berjaya dikemas kini.',
@@ -76,6 +68,5 @@ export const malayCore: Record<string, string> = {
     'Supplier berhasil ditambahkan.': 'Pembekal berjaya ditambah.',
     'Supplier berhasil diperbarui.': 'Pembekal berjaya dikemas kini.',
     'Penjualan berhasil diposting.': 'Jualan berjaya direkodkan.',
-    'Retur dan refund berhasil diposting.':
-        'Pemulangan dan bayaran balik berjaya direkodkan.',
+    'Retur dan refund berhasil diposting.': 'Pemulangan dan bayaran balik berjaya direkodkan.',
 };

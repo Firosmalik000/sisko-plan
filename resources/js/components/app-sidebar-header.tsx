@@ -6,11 +6,7 @@ import LanguageSwitcher from '@/components/language-switcher';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
-export function AppSidebarHeader({
-    breadcrumbs = [],
-}: {
-    breadcrumbs?: BreadcrumbItemType[];
-}) {
+export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemType[] }) {
     const { stockAlerts } = usePage<{
         stockAlerts?: {
             count: number;
@@ -38,9 +34,7 @@ export function AppSidebarHeader({
                     type="button"
                     onClick={() => setOpen((value) => !value)}
                     aria-expanded={open}
-                    aria-label={
-                        count > 0 ? `${count} stok kritis` : 'Notifikasi'
-                    }
+                    aria-label={count > 0 ? `${count} stok kritis` : 'Notifikasi'}
                     className="relative grid size-10 place-items-center rounded-xl text-sidebar-foreground transition hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none"
                 >
                     <Bell className="size-5" />
@@ -54,22 +48,14 @@ export function AppSidebarHeader({
                     <div className="absolute top-12 right-0 z-50 w-72 rounded-2xl border border-sidebar-border bg-popover p-3 text-popover-foreground shadow-xl">
                         <p className="text-sm font-black">Notifikasi stok</p>
                         {count === 0 ? (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                                Tidak ada stok kritis.
-                            </p>
+                            <p className="mt-2 text-xs text-muted-foreground">Tidak ada stok kritis.</p>
                         ) : (
                             <div className="mt-2 space-y-2">
                                 {stockAlerts?.items.map((item) => (
-                                    <div
-                                        key={item.name}
-                                        className="rounded-xl bg-red-50 px-3 py-2 text-xs dark:bg-red-950/30"
-                                    >
-                                        <p className="font-bold text-red-800 dark:text-red-200">
-                                            {item.name}
-                                        </p>
+                                    <div key={item.name} className="rounded-xl bg-red-50 px-3 py-2 text-xs dark:bg-red-950/30">
+                                        <p className="font-bold text-red-800 dark:text-red-200">{item.name}</p>
                                         <p className="mt-0.5 text-red-700 dark:text-red-300">
-                                            Sisa {item.quantity} · minimum{' '}
-                                            {item.minimum_quantity}
+                                            Sisa {item.quantity} · minimum {item.minimum_quantity}
                                         </p>
                                     </div>
                                 ))}

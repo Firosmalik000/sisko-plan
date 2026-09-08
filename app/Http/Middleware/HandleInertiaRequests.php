@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\MembershipStatus;
 use App\Enums\StoreStatus;
+use App\Models\Currency;
 use App\Models\PlatformSetting;
 use App\Models\Store;
 use App\Services\Notifications\StockAlertNotifications;
@@ -59,20 +60,44 @@ class HandleInertiaRequests extends Middleware
                 ->where('stores.status', StoreStatus::Active->value)
                 ->wherePivot('status', MembershipStatus::Active->value)
                 ->orderBy('stores.name')
-                ->get(['stores.id', 'stores.public_id', 'stores.owner_user_id', 'stores.name']);
+                ->with(['country.currency', 'settings'])
+                ->get(['stores.id', 'stores.public_id', 'stores.owner_user_id', 'stores.country_id', 'stores.name']);
 
             $activeStoreModel = $storeModels->firstWhere('id', $request->session()->get('active_store_id'))
                 ?? $storeModels->first();
-            $stores = $storeModels->map(fn (Store $store) => [
-                'public_id' => $store->public_id,
-                'name' => $store->name,
-                'role' => $store->pivot->role,
-            ]);
+            $currencyCodes = $storeModels
+                ->map(fn (Store $store): ?string => $store->settings?->currency ?? $store->country?->currency_code)
+                ->filter()
+                ->unique();
+            $currencies = Currency::query()->whereIn('code', $currencyCodes)->get()->keyBy('code');
+            $stores = $storeModels->map(function (Store $store) use ($currencies): array {
+                $currencyCode = $store->settings?->currency ?? $store->country?->currency_code ?? 'IDR';
+                $currency = $currencies->get($currencyCode);
+
+                return [
+                    'public_id' => $store->public_id,
+                    'name' => $store->name,
+                    'role' => $store->pivot->role,
+                    'country_code' => $store->country?->code ?? 'ID',
+                    'currency_code' => $currencyCode,
+                    'currency_symbol' => $currency?->symbol ?? 'Rp',
+                    'currency_decimal_places' => $currency?->decimal_places ?? 0,
+                    'currency_symbol_position' => $currency?->symbol_position ?? 'before',
+                ];
+            });
+            $activeCurrency = $activeStoreModel === null
+                ? null
+                : $currencies->get($activeStoreModel->settings?->currency ?? $activeStoreModel->country?->currency_code);
             $activeStore = $activeStoreModel === null ? null : [
                 'public_id' => $activeStoreModel->public_id,
                 'name' => $activeStoreModel->name,
                 'role' => $activeStoreModel->pivot->role,
                 'theme_color' => $activeStoreModel->settings()->value('theme_color') ?? '#ee4d2d',
+                'country_code' => $activeStoreModel->country?->code ?? 'ID',
+                'currency_code' => $activeStoreModel->settings?->currency ?? $activeStoreModel->country?->currency_code ?? 'IDR',
+                'currency_symbol' => $activeCurrency?->symbol ?? 'Rp',
+                'currency_decimal_places' => $activeCurrency?->decimal_places ?? 0,
+                'currency_symbol_position' => $activeCurrency?->symbol_position ?? 'before',
             ];
             if ($activeStoreModel !== null) {
                 $subscription = app(SubscriptionAccess::class)->summary($activeStoreModel);

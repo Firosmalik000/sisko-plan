@@ -6,10 +6,12 @@ use App\Actions\Audit\RecordAudit;
 use App\Actions\Subscriptions\StartDefaultSubscription;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Models\Country;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Subscriptions\SubscriptionAccess;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CreateStore
 {
@@ -20,13 +22,25 @@ class CreateStore
         private SeedStoreStarterData $starterData,
     ) {}
 
-    public function handle(User $owner, string $name, ?string $ipAddress = null): Store
+    public function handle(User $owner, string $name, ?string $ipAddress = null, ?string $countryCode = null): Store
     {
-        return DB::transaction(function () use ($owner, $name, $ipAddress): Store {
+        return DB::transaction(function () use ($owner, $name, $ipAddress, $countryCode): Store {
             $this->subscriptionAccess->assertStoreCapacity($owner);
+            $country = Country::query()
+                ->with('currency')
+                ->where('code', $countryCode ?? 'ID')
+                ->where('is_active', true)
+                ->sharedLock()
+                ->first();
+            if ($country === null) {
+                throw ValidationException::withMessages([
+                    'country' => __('Selected country is unavailable.'),
+                ]);
+            }
 
             $store = Store::create([
                 'owner_user_id' => $owner->id,
+                'country_id' => $country->id,
                 'name' => $name,
             ]);
 
@@ -34,10 +48,13 @@ class CreateStore
                 'role' => MembershipRole::Owner->value,
                 'status' => MembershipStatus::Active->value,
             ]);
-            $store->settings()->create();
+            $store->settings()->create(['currency' => $country->currency_code]);
             $this->starterData->handle($store);
             $this->subscriptions->handle($store);
-            $this->recordAudit->handle($owner, 'store.created', $store, $store, $ipAddress);
+            $this->recordAudit->handle($owner, 'store.created', $store, $store, $ipAddress, [
+                'country' => $country->code,
+                'currency' => $country->currency_code,
+            ]);
 
             return $store;
         });

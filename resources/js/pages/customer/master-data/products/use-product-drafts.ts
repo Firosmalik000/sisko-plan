@@ -73,9 +73,7 @@ export function useProductDrafts() {
     useEffect(
         () => () => {
             controllers.current.forEach((controller) => controller.abort());
-            draftsRef.current.forEach((draft) =>
-                URL.revokeObjectURL(draft.previewUrl),
-            );
+            draftsRef.current.forEach((draft) => URL.revokeObjectURL(draft.previewUrl));
         },
         [],
     );
@@ -83,13 +81,7 @@ export function useProductDrafts() {
     const analyze = useCallback(async (draft: ProductDraft) => {
         const controller = new AbortController();
         controllers.current.set(draft.id, controller);
-        setDrafts((current) =>
-            current.map((item) =>
-                item.id === draft.id
-                    ? { ...item, status: 'analyzing', error: null }
-                    : item,
-            ),
-        );
+        setDrafts((current) => current.map((item) => (item.id === draft.id ? { ...item, status: 'analyzing', error: null } : item)));
 
         const form = new FormData();
         form.append('purpose', 'product');
@@ -136,10 +128,7 @@ export function useProductDrafts() {
                             ? {
                                   ...item,
                                   status: 'failed',
-                                  error:
-                                      error instanceof Error
-                                          ? error.message
-                                          : 'Discovery gagal. Isi manual atau coba lagi.',
+                                  error: error instanceof Error ? error.message : 'Discovery gagal. Isi manual atau coba lagi.',
                               }
                             : item,
                     ),
@@ -204,11 +193,7 @@ export function useProductDrafts() {
     }, []);
 
     const markApplied = useCallback((id: string) => {
-        setDrafts((current) =>
-            current.map((draft) =>
-                draft.id === id ? { ...draft, applied: true } : draft,
-            ),
-        );
+        setDrafts((current) => current.map((draft) => (draft.id === id ? { ...draft, applied: true } : draft)));
     }, []);
 
     const clear = useCallback(() => {

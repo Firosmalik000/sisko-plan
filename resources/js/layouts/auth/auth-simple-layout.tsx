@@ -1,13 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    BadgeCheck,
-    BarChart3,
-    Boxes,
-    ReceiptText,
-    ShieldCheck,
-    Sparkles,
-} from 'lucide-react';
+import { ArrowLeft, BadgeCheck, BarChart3, Boxes, ReceiptText, ShieldCheck, Sparkles } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import LanguageSwitcher from '@/components/language-switcher';
 import { useTranslation } from '@/lib/i18n';
@@ -20,11 +12,7 @@ const highlights = [
     { icon: BarChart3, label: 'Laporan ringkas' },
 ];
 
-export default function AuthSimpleLayout({
-    children,
-    title,
-    description,
-}: AuthLayoutProps) {
+export default function AuthSimpleLayout({ children, title, description }: AuthLayoutProps) {
     const { name } = usePage().props;
     const { t } = useTranslation();
 
@@ -41,16 +29,11 @@ export default function AuthSimpleLayout({
 
                     <div className="relative z-10 flex h-full flex-col">
                         <div className="flex items-center justify-between gap-4">
-                            <Link
-                                href={home()}
-                                className="inline-flex w-fit items-center gap-3"
-                            >
+                            <Link href={home()} className="inline-flex w-fit items-center gap-3">
                                 <span className="flex size-11 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/10">
                                     <AppLogoIcon className="size-6 fill-current" />
                                 </span>
-                                <span className="text-lg font-bold tracking-[-0.03em]">
-                                    {name}
-                                </span>
+                                <span className="text-lg font-bold tracking-[-0.03em]">{name}</span>
                             </Link>
                             <LanguageSwitcher />
                         </div>
@@ -61,26 +44,17 @@ export default function AuthSimpleLayout({
                                 {t('Ruang kerja toko Anda')}
                             </div>
                             <h1 className="mt-7 text-4xl leading-[1.08] font-bold tracking-[-0.055em] xl:text-[3.5rem]">
-                                {t(
-                                    'Semua pekerjaan toko, terasa lebih terarah.',
-                                )}
+                                {t('Semua pekerjaan toko, terasa lebih terarah.')}
                             </h1>
                             <p className="mt-6 max-w-lg text-base leading-8 text-white">
-                                {t(
-                                    'Masuk untuk melanjutkan transaksi, memantau stok, dan melihat perkembangan usaha dari satu tempat.',
-                                )}
+                                {t('Masuk untuk melanjutkan transaksi, memantau stok, dan melihat perkembangan usaha dari satu tempat.')}
                             </p>
 
                             <div className="mt-10 grid grid-cols-3 gap-3">
                                 {highlights.map((item) => (
-                                    <div
-                                        key={item.label}
-                                        className="rounded-2xl border border-white/10 bg-white/[0.06] p-4"
-                                    >
+                                    <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
                                         <item.icon className="size-5 text-[#ffd6cb]" />
-                                        <div className="mt-5 text-xs font-bold text-white">
-                                            {t(item.label)}
-                                        </div>
+                                        <div className="mt-5 text-xs font-bold text-white">{t(item.label)}</div>
                                     </div>
                                 ))}
                             </div>
@@ -99,16 +73,11 @@ export default function AuthSimpleLayout({
 
                     <div className="relative z-10 w-full max-w-md">
                         <div className="mb-8 flex items-center justify-between lg:hidden">
-                            <Link
-                                href={home()}
-                                className="inline-flex items-center gap-3"
-                            >
+                            <Link href={home()} className="inline-flex items-center gap-3">
                                 <span className="flex size-11 items-center justify-center rounded-2xl bg-white text-[#ee4d2d] shadow-lg shadow-[#a8321b]/20">
                                     <AppLogoIcon className="size-6 fill-current" />
                                 </span>
-                                <span className="font-bold tracking-[-0.03em] text-white">
-                                    {name}
-                                </span>
+                                <span className="font-bold tracking-[-0.03em] text-white">{name}</span>
                             </Link>
                             <div className="flex items-center gap-2">
                                 <LanguageSwitcher />
@@ -128,12 +97,8 @@ export default function AuthSimpleLayout({
                                     <BadgeCheck className="size-3.5" />
                                     {t('Akses aman')}
                                 </div>
-                                <h1 className="mt-5 text-3xl font-bold tracking-[-0.04em] text-[#3b211b]">
-                                    {title}
-                                </h1>
-                                <p className="mt-3 text-sm leading-6 text-[#765f59] sm:text-base">
-                                    {description}
-                                </p>
+                                <h1 className="mt-5 text-3xl font-bold tracking-[-0.04em] text-[#3b211b]">{title}</h1>
+                                <p className="mt-3 text-sm leading-6 text-[#765f59] sm:text-base">{description}</p>
                             </div>
 
                             <div className="[--color-accent-foreground:#b83219] [--color-accent:#fff0eb] [--color-background:#ffffff] [--color-border:#efd9d2] [--color-foreground:#3b211b] [--color-input:#e8c8be] [--color-muted-foreground:#765f59] [--color-primary-foreground:#ffffff] [--color-primary:#ee4d2d] [--color-ring:#ee4d2d]">
@@ -152,10 +117,7 @@ export default function AuthSimpleLayout({
                         </div>
 
                         <p className="mt-6 text-center text-[11px] leading-5 text-white/80">
-                            {t(
-                                'Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan',
-                            )}{' '}
-                            {name}.
+                            {t('Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan')} {name}.
                         </p>
                     </div>
                 </main>

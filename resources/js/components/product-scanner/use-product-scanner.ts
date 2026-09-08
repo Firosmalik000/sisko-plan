@@ -22,11 +22,7 @@ const csrfToken = () => {
     return value ? decodeURIComponent(value) : '';
 };
 
-export function useProductScanner(
-    open: boolean,
-    purpose: ScannerPurpose,
-    config: ScannerConfig,
-) {
+export function useProductScanner(open: boolean, purpose: ScannerPurpose, config: ScannerConfig) {
     const [captures, setCaptures] = useState<ScannerCapture[]>([]);
     const [reviewing, setReviewing] = useState(false);
     const controllersRef = useRef(new Map<string, AbortController>());
@@ -54,18 +50,12 @@ export function useProductScanner(
                 return;
             }
 
-            const quantity =
-                (existing.results[0]?.quantity ?? 0) +
-                (capture.results[0]?.quantity ?? 1);
-            const existingIndex = merged.findIndex(
-                (item) => item.id === existing.id,
-            );
+            const quantity = (existing.results[0]?.quantity ?? 0) + (capture.results[0]?.quantity ?? 1);
+            const existingIndex = merged.findIndex((item) => item.id === existing.id);
 
             merged[existingIndex] = {
                 ...existing,
-                results: existing.results.map((result, index) =>
-                    index === 0 ? { ...result, quantity } : result,
-                ),
+                results: existing.results.map((result, index) => (index === 0 ? { ...result, quantity } : result)),
             };
             changed = true;
 
@@ -105,15 +95,9 @@ export function useProductScanner(
                     id: crypto.randomUUID(),
                     blob,
                     previewUrl: URL.createObjectURL(blob),
-                    status: config.visual_recognition_enabled
-                        ? ('queued' as const)
-                        : ('failed' as const),
-                    error: config.visual_recognition_enabled
-                        ? null
-                        : 'Layanan scanner belum terhubung. Hubungi administrator.',
-                    errorCode: config.visual_recognition_enabled
-                        ? null
-                        : ('SCANNER_DISABLED' as const),
+                    status: config.visual_recognition_enabled ? ('queued' as const) : ('failed' as const),
+                    error: config.visual_recognition_enabled ? null : 'Layanan scanner belum terhubung. Hubungi administrator.',
+                    errorCode: config.visual_recognition_enabled ? null : ('SCANNER_DISABLED' as const),
                     retryable: config.visual_recognition_enabled,
                     results: [],
                 })),
@@ -146,19 +130,16 @@ export function useProductScanner(
             form.append('capture_ids[]', capture.id);
 
             try {
-                const response = await fetch(
-                    '/scanner/catalog-item-recognitions',
-                    {
-                        method: 'POST',
-                        body: form,
-                        signal: controller.signal,
-                        headers: {
-                            Accept: 'application/json',
-                            'X-XSRF-TOKEN': csrfToken(),
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
+                const response = await fetch('/scanner/catalog-item-recognitions', {
+                    method: 'POST',
+                    body: form,
+                    signal: controller.signal,
+                    headers: {
+                        Accept: 'application/json',
+                        'X-XSRF-TOKEN': csrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest',
                     },
-                );
+                });
 
                 const payload = (await response.json()) as {
                     data?: ScannerCatalogItem[];
@@ -184,33 +165,21 @@ export function useProductScanner(
                     // item so the review drawer stays one-card-per-photo.
                     const bestResult =
                         results.find((result) => result.status === 'found') ??
-                        results.find(
-                            (result) => result.status === 'uncertain',
-                        ) ??
+                        results.find((result) => result.status === 'uncertain') ??
                         results[0];
-                    const nextResults = bestResult
-                        ? [bestResult]
-                        : [unknownResult(capture.id)];
-                    const currentCapture = current.find(
-                        (item) => item.id === capture.id,
-                    );
+                    const nextResults = bestResult ? [bestResult] : [unknownResult(capture.id)];
+                    const currentCapture = current.find((item) => item.id === capture.id);
                     const identity = resultIdentity(nextResults[0]);
                     const duplicate = identity
                         ? current.find(
                               (item) =>
                                   item.id !== capture.id &&
-                                  item.results.some(
-                                      (result) =>
-                                          result.selectedOption !== null &&
-                                          resultIdentity(result) === identity,
-                                  ),
+                                  item.results.some((result) => result.selectedOption !== null && resultIdentity(result) === identity),
                           )
                         : undefined;
 
                     if (duplicate && currentCapture) {
-                        const quantity =
-                            (duplicate.results[0]?.quantity ?? 0) +
-                            (nextResults[0]?.quantity ?? 1);
+                        const quantity = (duplicate.results[0]?.quantity ?? 0) + (nextResults[0]?.quantity ?? 1);
 
                         if (currentCapture.previewUrl.startsWith('blob:')) {
                             URL.revokeObjectURL(currentCapture.previewUrl);
@@ -220,12 +189,7 @@ export function useProductScanner(
                             if (item.id === duplicate.id) {
                                 return {
                                     ...item,
-                                    results: item.results.map(
-                                        (result, index) =>
-                                            index === 0
-                                                ? { ...result, quantity }
-                                                : result,
-                                    ),
+                                    results: item.results.map((result, index) => (index === 0 ? { ...result, quantity } : result)),
                                 };
                             }
 
@@ -262,17 +226,9 @@ export function useProductScanner(
                 });
             } catch (error) {
                 if (!controller.signal.aborted) {
-                    const failure = scannerFailure(
-                        error instanceof ScannerRequestError
-                            ? error.code
-                            : null,
-                    );
+                    const failure = scannerFailure(error instanceof ScannerRequestError ? error.code : null);
                     setCaptures((current) =>
-                        current.map((item) =>
-                            item.id === capture.id
-                                ? { ...item, status: 'failed', ...failure }
-                                : item,
-                        ),
+                        current.map((item) => (item.id === capture.id ? { ...item, status: 'failed', ...failure } : item)),
                     );
                 }
             } finally {
@@ -284,11 +240,7 @@ export function useProductScanner(
     );
 
     useEffect(() => {
-        if (
-            !open ||
-            purpose === 'product' ||
-            !config.visual_recognition_enabled
-        ) {
+        if (!open || purpose === 'product' || !config.visual_recognition_enabled) {
             return;
         }
 
@@ -297,13 +249,7 @@ export function useProductScanner(
             .filter((capture) => capture.status === 'queued')
             .slice(0, available)
             .forEach((capture) => void recognizeCapture(capture));
-    }, [
-        captures,
-        config.visual_recognition_enabled,
-        open,
-        purpose,
-        recognizeCapture,
-    ]);
+    }, [captures, config.visual_recognition_enabled, open, purpose, recognizeCapture]);
 
     const lookupBarcode = useCallback(
         async (identifier: string, captureId?: string): Promise<boolean> => {
@@ -323,14 +269,16 @@ export function useProductScanner(
                 }),
             });
 
+            const payload = (await response.json()) as {
+                data?: ScannerCatalogItem[];
+                code?: string;
+            };
+
             if (!response.ok) {
-                return false;
+                throw new ScannerRequestError(payload.code);
             }
 
-            const payload = (await response.json()) as {
-                data: ScannerCatalogItem[];
-            };
-            const result = payload.data[0];
+            const result = payload.data?.[0];
 
             if (!result || result.status !== 'found') {
                 return false;
@@ -339,28 +287,18 @@ export function useProductScanner(
             setCaptures((current) => {
                 const targetId = captureId ?? result.captureId;
                 const nextResult = { ...result, skipped: false, quantity: 1 };
-                const currentCapture = current.find(
-                    (captureItem) => captureItem.id === targetId,
-                );
+                const currentCapture = current.find((captureItem) => captureItem.id === targetId);
                 const identity = resultIdentity(nextResult);
-                const sameCapture =
-                    currentCapture &&
-                    identity &&
-                    resultIdentity(currentCapture.results[0]) === identity;
+                const sameCapture = currentCapture && identity && resultIdentity(currentCapture.results[0]) === identity;
 
                 if (sameCapture && currentCapture) {
-                    const quantity =
-                        (currentCapture.results[0]?.quantity ?? 0) + 1;
+                    const quantity = (currentCapture.results[0]?.quantity ?? 0) + 1;
 
                     return current.map((item) =>
                         item.id === targetId
                             ? {
                                   ...item,
-                                  results: item.results.map((entry, index) =>
-                                      index === 0
-                                          ? { ...entry, quantity }
-                                          : entry,
-                                  ),
+                                  results: item.results.map((entry, index) => (index === 0 ? { ...entry, quantity } : entry)),
                               }
                             : item,
                     );
@@ -385,28 +323,18 @@ export function useProductScanner(
                     ? current.find(
                           (captureItem) =>
                               captureItem.id !== targetId &&
-                              captureItem.results.some(
-                                  (item) =>
-                                      item.selectedOption !== null &&
-                                      resultIdentity(item) === identity,
-                              ),
+                              captureItem.results.some((item) => item.selectedOption !== null && resultIdentity(item) === identity),
                       )
                     : undefined;
 
                 if (duplicate) {
-                    const quantity =
-                        (duplicate.results[0]?.quantity ?? 0) +
-                        (nextResult.quantity ?? 1);
+                    const quantity = (duplicate.results[0]?.quantity ?? 0) + (nextResult.quantity ?? 1);
 
                     return current.map((item) => {
                         if (item.id === duplicate.id) {
                             return {
                                 ...item,
-                                results: item.results.map((entry, index) =>
-                                    index === 0
-                                        ? { ...entry, quantity }
-                                        : entry,
-                                ),
+                                results: item.results.map((entry, index) => (index === 0 ? { ...entry, quantity } : entry)),
                             };
                         }
 
@@ -446,6 +374,24 @@ export function useProductScanner(
         [purpose],
     );
 
+    const consumeBarcode = useCallback(async (): Promise<void> => {
+        const response = await fetch('/scanner/usages', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': csrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ purpose }),
+        });
+        const payload = (await response.json()) as { code?: string };
+
+        if (!response.ok) {
+            throw new ScannerRequestError(payload.code);
+        }
+    }, [purpose]);
+
     const removeCapture = useCallback((id: string) => {
         controllersRef.current.get(id)?.abort();
         controllersRef.current.delete(id);
@@ -468,14 +414,10 @@ export function useProductScanner(
                 return current;
             }
 
-            const results = capture.results.filter(
-                (result) => result.itemIndex !== itemIndex,
-            );
+            const results = capture.results.filter((result) => result.itemIndex !== itemIndex);
 
             if (results.length > 0) {
-                return current.map((item) =>
-                    item.id === captureId ? { ...item, results } : item,
-                );
+                return current.map((item) => (item.id === captureId ? { ...item, results } : item));
             }
 
             if (capture.previewUrl.startsWith('blob:')) {
@@ -532,15 +474,9 @@ export function useProductScanner(
                         ...capture,
                         blob: normalized,
                         previewUrl,
-                        status: config.visual_recognition_enabled
-                            ? 'queued'
-                            : 'failed',
-                        error: config.visual_recognition_enabled
-                            ? null
-                            : 'Layanan scanner belum terhubung. Hubungi administrator.',
-                        errorCode: config.visual_recognition_enabled
-                            ? null
-                            : 'SCANNER_DISABLED',
+                        status: config.visual_recognition_enabled ? 'queued' : 'failed',
+                        error: config.visual_recognition_enabled ? null : 'Layanan scanner belum terhubung. Hubungi administrator.',
+                        errorCode: config.visual_recognition_enabled ? null : 'SCANNER_DISABLED',
                         retryable: config.visual_recognition_enabled,
                         results: [],
                     };
@@ -550,138 +486,104 @@ export function useProductScanner(
         [config.visual_recognition_enabled],
     );
 
-    const selectProductCandidate = useCallback(
-        (
-            captureId: string,
-            itemIndex: number,
-            candidate: ScannerProductCandidate,
-        ) => {
-            setCaptures((current) =>
-                current.map((capture) =>
-                    capture.id !== captureId
-                        ? capture
-                        : {
-                              ...capture,
-                              results: capture.results.map((result) =>
-                                  result.itemIndex !== itemIndex
-                                      ? result
-                                      : {
-                                            ...result,
-                                            status: 'uncertain',
-                                            match: candidate,
-                                            skipped: false,
-                                            selectedOption:
-                                                candidate.options.length === 1
-                                                    ? candidate.options[0]
-                                                    : null,
-                                        },
-                              ),
-                          },
-                ),
-            );
-        },
-        [],
-    );
+    const selectProductCandidate = useCallback((captureId: string, itemIndex: number, candidate: ScannerProductCandidate) => {
+        setCaptures((current) =>
+            current.map((capture) =>
+                capture.id !== captureId
+                    ? capture
+                    : {
+                          ...capture,
+                          results: capture.results.map((result) =>
+                              result.itemIndex !== itemIndex
+                                  ? result
+                                  : {
+                                        ...result,
+                                        status: 'uncertain',
+                                        match: candidate,
+                                        skipped: false,
+                                        selectedOption: candidate.options.length === 1 ? candidate.options[0] : null,
+                                    },
+                          ),
+                      },
+            ),
+        );
+    }, []);
 
-    const selectSaleOption = useCallback(
-        (captureId: string, itemIndex: number, option: ScannerSaleOption) => {
-            setCaptures((current) =>
-                current.map((capture) =>
-                    capture.id !== captureId
-                        ? capture
-                        : {
-                              ...capture,
-                              results: capture.results.map((result) =>
-                                  result.itemIndex !== itemIndex
-                                      ? result
-                                      : {
-                                            ...result,
-                                            skipped: false,
-                                            selectedOption: option,
-                                        },
-                              ),
-                          },
-                ),
-            );
-        },
-        [],
-    );
+    const selectSaleOption = useCallback((captureId: string, itemIndex: number, option: ScannerSaleOption) => {
+        setCaptures((current) =>
+            current.map((capture) =>
+                capture.id !== captureId
+                    ? capture
+                    : {
+                          ...capture,
+                          results: capture.results.map((result) =>
+                              result.itemIndex !== itemIndex
+                                  ? result
+                                  : {
+                                        ...result,
+                                        skipped: false,
+                                        selectedOption: option,
+                                    },
+                          ),
+                      },
+            ),
+        );
+    }, []);
 
-    const clearProductSelection = useCallback(
-        (captureId: string, itemIndex: number) => {
-            setCaptures((current) =>
-                current.map((capture) =>
-                    capture.id !== captureId
-                        ? capture
-                        : {
-                              ...capture,
-                              results: capture.results.map((result) =>
-                                  result.itemIndex !== itemIndex
-                                      ? result
-                                      : {
-                                            ...result,
-                                            status: 'uncertain',
-                                            match: null,
-                                            selectedOption: null,
-                                            skipped: false,
-                                        },
-                              ),
-                          },
-                ),
-            );
-        },
-        [],
-    );
+    const clearProductSelection = useCallback((captureId: string, itemIndex: number) => {
+        setCaptures((current) =>
+            current.map((capture) =>
+                capture.id !== captureId
+                    ? capture
+                    : {
+                          ...capture,
+                          results: capture.results.map((result) =>
+                              result.itemIndex !== itemIndex
+                                  ? result
+                                  : {
+                                        ...result,
+                                        status: 'uncertain',
+                                        match: null,
+                                        selectedOption: null,
+                                        skipped: false,
+                                    },
+                          ),
+                      },
+            ),
+        );
+    }, []);
 
-    const setResultSkipped = useCallback(
-        (captureId: string, itemIndex: number, skipped: boolean) => {
-            setCaptures((current) =>
-                current.map((capture) =>
-                    capture.id !== captureId
-                        ? capture
-                        : {
-                              ...capture,
-                              results: capture.results.map((result) =>
-                                  result.itemIndex !== itemIndex
-                                      ? result
-                                      : { ...result, skipped },
-                              ),
-                          },
-                ),
-            );
-        },
-        [],
-    );
+    const setResultSkipped = useCallback((captureId: string, itemIndex: number, skipped: boolean) => {
+        setCaptures((current) =>
+            current.map((capture) =>
+                capture.id !== captureId
+                    ? capture
+                    : {
+                          ...capture,
+                          results: capture.results.map((result) => (result.itemIndex !== itemIndex ? result : { ...result, skipped })),
+                      },
+            ),
+        );
+    }, []);
 
-    const setResultQuantity = useCallback(
-        (captureId: string, itemIndex: number, quantity: number) => {
-            setCaptures((current) =>
-                current.map((capture) =>
-                    capture.id !== captureId
-                        ? capture
-                        : {
-                              ...capture,
-                              results: capture.results.map((result) =>
-                                  result.itemIndex !== itemIndex
-                                      ? result
-                                      : { ...result, quantity },
-                              ),
-                          },
-                ),
-            );
-        },
-        [],
-    );
+    const setResultQuantity = useCallback((captureId: string, itemIndex: number, quantity: number) => {
+        setCaptures((current) =>
+            current.map((capture) =>
+                capture.id !== captureId
+                    ? capture
+                    : {
+                          ...capture,
+                          results: capture.results.map((result) => (result.itemIndex !== itemIndex ? result : { ...result, quantity })),
+                      },
+            ),
+        );
+    }, []);
 
     const selections = useMemo<ScannerSelection[]>(
         () =>
             captures.flatMap((capture) =>
                 capture.results.flatMap((result) => {
-                    if (
-                        result.skipped === true ||
-                        result.match === null ||
-                        result.selectedOption === null
-                    ) {
+                    if (result.skipped === true || result.match === null || result.selectedOption === null) {
                         return [];
                     }
 
@@ -722,6 +624,7 @@ export function useProductScanner(
         setReviewing,
         addBlobs,
         lookupBarcode,
+        consumeBarcode,
         removeCapture,
         removeResult,
         retry,
@@ -737,7 +640,7 @@ export function useProductScanner(
 
 class ScannerRequestError extends Error {
     public constructor(public readonly code: string | undefined) {
-        super('Scanner request failed.');
+        super(scannerFailure(code).error);
     }
 }
 
@@ -748,11 +651,7 @@ function resultIdentity(result: ScannerCatalogItem | undefined): string {
 
     const option = result.selectedOption;
 
-    return [
-        option.productPublicId || result.match.productPublicId,
-        option.variantPublicId ?? 'base',
-        option.unitId,
-    ].join(':');
+    return [option.productPublicId || result.match.productPublicId, option.variantPublicId ?? 'base', option.unitId].join(':');
 }
 
 function scannerFailure(code: string | null | undefined): {
@@ -784,6 +683,12 @@ function scannerFailure(code: string | null | undefined): {
                 error: 'Pengenalan sedang terganggu. Coba lagi atau cari manual.',
                 errorCode: code,
                 retryable: true,
+            };
+        case 'SCAN_LIMIT_REACHED':
+            return {
+                error: 'Kuota scan bulan ini sudah habis. Tambahkan kapasitas untuk melanjutkan.',
+                errorCode: code,
+                retryable: false,
             };
         default:
             return {

@@ -39,10 +39,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                                 className="mt-1 block w-full"
                                 readOnly
                             />
-                            <InputError
-                                message={errors.email}
-                                className="mt-2"
-                            />
+                            <InputError message={errors.email} className="mt-2" />
                         </div>
 
                         <div className="grid gap-2">
@@ -60,9 +57,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">
-                                {t('Konfirmasi kata sandi')}
-                            </Label>
+                            <Label htmlFor="password_confirmation">{t('Konfirmasi kata sandi')}</Label>
                             <PasswordInput
                                 id="password_confirmation"
                                 name="password_confirmation"
@@ -71,18 +66,10 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                                 placeholder={t('Konfirmasi kata sandi')}
                                 passwordrules={passwordRules}
                             />
-                            <InputError
-                                message={errors.password_confirmation}
-                                className="mt-2"
-                            />
+                            <InputError message={errors.password_confirmation} className="mt-2" />
                         </div>
 
-                        <Button
-                            type="submit"
-                            className="mt-4 w-full"
-                            disabled={processing}
-                            data-test="reset-password-button"
-                        >
+                        <Button type="submit" className="mt-4 w-full" disabled={processing} data-test="reset-password-button">
                             {processing && <Spinner />}
                             {t('Atur ulang kata sandi')}
                         </Button>

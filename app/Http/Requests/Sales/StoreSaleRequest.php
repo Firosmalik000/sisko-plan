@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Sales;
 
+use App\Enums\FinancialAccountType;
+use App\Models\FinancialAccount;
 use App\Rules\CatalogProductSelection;
 use App\Support\CurrentStore;
 use Illuminate\Validation\Rule;
@@ -13,12 +15,23 @@ class StoreSaleRequest extends SaleRequest
     {
         $storeId = app(CurrentStore::class)->id();
         $money = ['decimal:0,4', 'gte:0', 'lte:999999999999999.9999'];
+        $accountType = FinancialAccount::query()
+            ->where('store_id', $storeId)
+            ->where('public_id', $this->input('account_id'))
+            ->value('type');
 
         return [
             ...$this->postingRules(),
             'account_id' => ['required', Rule::exists('financial_accounts', 'public_id')->where(fn ($query) => $query->where('store_id', $storeId)->where('is_active', true))],
             'transaction_discount_amount' => ['required', ...$money],
             'paid_amount' => ['required', ...$money],
+            'payment_proof' => [
+                Rule::prohibitedIf($accountType === FinancialAccountType::Cash->value),
+                'nullable',
+                'file',
+                'mimes:jpg,jpeg,png,webp,pdf',
+                'max:5120',
+            ],
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', new CatalogProductSelection($storeId)],
             'items.*.unit_id' => ['required', Rule::exists('units', 'public_id')->where(fn ($query) => $query->where('store_id', $storeId)->where('is_active', true))],

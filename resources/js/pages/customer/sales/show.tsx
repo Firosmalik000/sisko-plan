@@ -1,14 +1,8 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Printer, RotateCcw } from 'lucide-react';
+import { ArrowLeft, FileCheck2, Printer, RotateCcw } from 'lucide-react';
 import { useEffect } from 'react';
 import type { FormEvent } from 'react';
-import {
-    currentDateTime,
-    ledgerDateTime,
-    money,
-    postingToken,
-    quantity,
-} from '@/components/operations-shell';
+import { currentDateTime, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
 
 type Sale = {
     public_id: string;
@@ -43,7 +37,9 @@ type Payment = {
     amount: string;
     tendered_amount: string;
     change_amount: string;
+    payment_method: 'cash' | 'qris';
     account_name: string;
+    proof_url: string | null;
 };
 type SaleReturn = {
     public_id: string;
@@ -99,9 +95,7 @@ export default function SaleShow({
     receipt: ReceiptSettings;
     showReturnForm?: boolean;
 }) {
-    const returnableItems = items.filter(
-        (item) => Number(item.returnable_quantity) > 0,
-    );
+    const returnableItems = items.filter((item) => Number(item.returnable_quantity) > 0);
     const returnForm = useForm<ReturnForm>({
         account_id: accounts[0]?.public_id ?? '',
         occurred_at: currentDateTime(timezone),
@@ -113,17 +107,9 @@ export default function SaleShow({
         })),
     });
     const estimatedRefund = returnForm.data.items.reduce((sum, input) => {
-        const item = items.find(
-            (candidate) => candidate.public_id === input.sale_item_id,
-        );
+        const item = items.find((candidate) => candidate.public_id === input.sale_item_id);
 
-        return (
-            sum +
-            (item
-                ? (Number(item.net_total) * Number(input.quantity || 0)) /
-                  Number(item.quantity)
-                : 0)
-        );
+        return sum + (item ? (Number(item.net_total) * Number(input.quantity || 0)) / Number(item.quantity) : 0);
     }, 0);
     const submitReturn = (event: FormEvent) => {
         event.preventDefault();
@@ -136,14 +122,8 @@ export default function SaleShow({
             preserveState: false,
         });
     };
-    const cogs = items.reduce(
-        (sum, item) => sum + Number(item.cogs_amount ?? 0),
-        0,
-    );
-    const profit = items.reduce(
-        (sum, item) => sum + Number(item.gross_profit ?? 0),
-        0,
-    );
+    const cogs = items.reduce((sum, item) => sum + Number(item.cogs_amount ?? 0), 0);
+    const profit = items.reduce((sum, item) => sum + Number(item.gross_profit ?? 0), 0);
 
     useEffect(() => {
         if (receipt.auto_print) {
@@ -155,22 +135,13 @@ export default function SaleShow({
 
     return (
         <>
-            <Head
-                title={
-                    showReturnForm
-                        ? `Retur ${sale.document_number}`
-                        : `Struk ${sale.document_number}`
-                }
-            />
+            <Head title={showReturnForm ? `Retur ${sale.document_number}` : `Struk ${sale.document_number}`} />
             <style>{`@page { size: ${paperWidth} auto; margin: 3mm; } @media print { body * { visibility: hidden !important; } .print-receipt, .print-receipt * { visibility: visible !important; } .print-receipt { position: absolute; inset: 0; width: ${paperWidth}; max-width: ${paperWidth}; padding: 2mm !important; box-shadow: none !important; border: 0 !important; font-size: 10px !important; } }`}</style>
             <div className="min-h-full bg-[linear-gradient(145deg,var(--app-soft),#fff8ef)] p-4 md:p-8">
                 <div className="mx-auto grid max-w-6xl gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
                     <div className="space-y-5">
                         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-                            <Link
-                                href="/sales"
-                                className="inline-flex items-center gap-2 text-sm font-bold text-slate-700"
-                            >
+                            <Link href="/sales" className="inline-flex items-center gap-2 text-sm font-bold text-slate-700">
                                 <ArrowLeft className="size-4" />
                                 Daftar transaksi
                             </Link>
@@ -185,50 +156,28 @@ export default function SaleShow({
                         </div>
                         <section className="print-receipt rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/8 md:p-9">
                             <header className="border-b-2 border-dashed border-slate-200 pb-6 text-center">
-                                <p className="font-black tracking-wide text-slate-900 uppercase">
-                                    {receipt.store_name}
-                                </p>
+                                <p className="font-black tracking-wide text-slate-900 uppercase">{receipt.store_name}</p>
                                 {receipt.show_address && receipt.address && (
-                                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">
-                                        {receipt.address}
-                                    </p>
+                                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">{receipt.address}</p>
                                 )}
-                                <p className="text-xs font-bold tracking-[0.24em] text-orange-600 uppercase">
-                                    {receipt.header}
-                                </p>
-                                <h1 className="mt-2 font-serif text-3xl text-slate-900">
-                                    {sale.document_number}
-                                </h1>
+                                <p className="text-xs font-bold tracking-[0.24em] text-orange-600 uppercase">{receipt.header}</p>
+                                <h1 className="mt-2 font-serif text-3xl text-slate-900">{sale.document_number}</h1>
                                 <p className="mt-2 text-sm text-slate-500">
                                     {ledgerDateTime(sale.occurred_at, timezone)}
-                                    {receipt.show_cashier &&
-                                        ` · Kasir ${sale.cashier_name}`}
+                                    {receipt.show_cashier && ` · Kasir ${sale.cashier_name}`}
                                 </p>
                             </header>
                             <div className="divide-y divide-slate-100">
                                 {items.map((item) => (
-                                    <div
-                                        key={item.public_id}
-                                        className="grid grid-cols-[1fr_auto] gap-3 py-4"
-                                    >
+                                    <div key={item.public_id} className="grid grid-cols-[1fr_auto] gap-3 py-4">
                                         <div>
-                                            <p className="font-bold text-slate-900">
-                                                {item.product_name}
-                                            </p>
+                                            <p className="font-bold text-slate-900">{item.product_name}</p>
                                             <p className="text-xs text-slate-500">
-                                                {quantity(item.quantity)}{' '}
-                                                {item.unit_symbol} ×{' '}
-                                                {money(item.unit_price)}
-                                                {Number(
-                                                    item.returned_quantity,
-                                                ) > 0
-                                                    ? ` · diretur ${quantity(item.returned_quantity)}`
-                                                    : ''}
+                                                {quantity(item.quantity)} {item.unit_symbol} × {money(item.unit_price)}
+                                                {Number(item.returned_quantity) > 0 ? ` · diretur ${quantity(item.returned_quantity)}` : ''}
                                             </p>
                                         </div>
-                                        <p className="font-semibold">
-                                            {money(item.net_total)}
-                                        </p>
+                                        <p className="font-semibold">{money(item.net_total)}</p>
                                     </div>
                                 ))}
                             </div>
@@ -239,91 +188,64 @@ export default function SaleShow({
                                 </div>
                                 <div className="flex justify-between text-slate-500">
                                     <span>Diskon item</span>
-                                    <span>
-                                        -{money(sale.item_discount_amount)}
-                                    </span>
+                                    <span>-{money(sale.item_discount_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-slate-500">
                                     <span>Diskon transaksi</span>
-                                    <span>
-                                        -
-                                        {money(
-                                            sale.transaction_discount_amount,
-                                        )}
-                                    </span>
+                                    <span>-{money(sale.transaction_discount_amount)}</span>
                                 </div>
                                 <div className="flex justify-between pt-2 text-xl font-black text-[var(--app-ink)]">
                                     <span>Total</span>
                                     <span>{money(sale.total_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-slate-500">
-                                    <span>
-                                        Dibayar via {payment.account_name}
-                                    </span>
-                                    <span>
-                                        {money(payment.tendered_amount)}
-                                    </span>
+                                    <span>Dibayar via {payment.account_name}</span>
+                                    <span>{money(payment.tendered_amount)}</span>
                                 </div>
                                 <div className="flex justify-between font-bold text-orange-700">
                                     <span>Kembalian</span>
                                     <span>{money(payment.change_amount)}</span>
                                 </div>
                             </div>
-                            {sale.notes && (
-                                <p className="mt-5 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-                                    Catatan: {sale.notes}
-                                </p>
+                            {sale.notes && <p className="mt-5 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Catatan: {sale.notes}</p>}
+                            {payment.proof_url && (
+                                <a
+                                    href={payment.proof_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-4 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#b8d8cd] bg-[#f1f8f5] px-4 text-sm font-bold text-[#245c4f] transition hover:bg-[#e3f3ed] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none print:hidden"
+                                >
+                                    <FileCheck2 className="size-4" />
+                                    Lihat bukti QRIS
+                                </a>
                             )}
-                            <p className="mt-7 text-center text-xs text-slate-400">
-                                {receipt.footer}
-                            </p>
+                            <p className="mt-7 text-center text-xs text-slate-400">{receipt.footer}</p>
                         </section>
                         {canViewProfit && (
                             <section className="grid gap-3 sm:grid-cols-2 print:hidden">
                                 <div className="rounded-2xl bg-[var(--app-primary)] p-5 text-[var(--app-primary-foreground)]">
-                                    <p className="text-xs text-teal-50/60">
-                                        HPP penjualan
-                                    </p>
-                                    <p className="mt-1 text-2xl font-black">
-                                        {money(cogs)}
-                                    </p>
+                                    <p className="text-xs text-teal-50/60">HPP penjualan</p>
+                                    <p className="mt-1 text-2xl font-black">{money(cogs)}</p>
                                 </div>
                                 <div className="rounded-2xl bg-orange-100 p-5 text-orange-950">
-                                    <p className="text-xs text-orange-800/60">
-                                        Laba kotor
-                                    </p>
-                                    <p className="mt-1 text-2xl font-black">
-                                        {money(profit)}
-                                    </p>
+                                    <p className="text-xs text-orange-800/60">Laba kotor</p>
+                                    <p className="mt-1 text-2xl font-black">{money(profit)}</p>
                                 </div>
                             </section>
                         )}
                         {returns.length > 0 && (
                             <section className="rounded-[2rem] border border-slate-200 bg-white p-6 print:hidden">
-                                <h2 className="font-serif text-2xl">
-                                    Riwayat retur
-                                </h2>
+                                <h2 className="font-serif text-2xl">Riwayat retur</h2>
                                 <div className="mt-4 divide-y divide-slate-100">
                                     {returns.map((entry) => (
-                                        <div
-                                            key={entry.public_id}
-                                            className="flex justify-between gap-4 py-3"
-                                        >
+                                        <div key={entry.public_id} className="flex justify-between gap-4 py-3">
                                             <div>
-                                                <p className="font-bold">
-                                                    {entry.document_number}
-                                                </p>
+                                                <p className="font-bold">{entry.document_number}</p>
                                                 <p className="text-xs text-slate-500">
-                                                    {ledgerDateTime(
-                                                        entry.occurred_at,
-                                                        timezone,
-                                                    )}{' '}
-                                                    · {entry.account_name}
+                                                    {ledgerDateTime(entry.occurred_at, timezone)} · {entry.account_name}
                                                 </p>
                                             </div>
-                                            <p className="font-bold text-red-600">
-                                                -{money(entry.refund_amount)}
-                                            </p>
+                                            <p className="font-bold text-red-600">-{money(entry.refund_amount)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -340,66 +262,38 @@ export default function SaleShow({
                                     <RotateCcw className="size-5" />
                                 </span>
                                 <div>
-                                    <h2 className="font-serif text-2xl">
-                                        Retur penjualan
-                                    </h2>
-                                    <p className="text-xs leading-5 text-slate-500">
-                                        Refund dan pemulihan stok diposting
-                                        bersamaan.
-                                    </p>
+                                    <h2 className="font-serif text-2xl">Retur penjualan</h2>
+                                    <p className="text-xs leading-5 text-slate-500">Refund dan pemulihan stok diposting bersamaan.</p>
                                 </div>
                             </div>
                             {returnableItems.length > 0 ? (
                                 <>
                                     <div className="mt-5 space-y-3">
                                         {returnableItems.map((item, index) => (
-                                            <label
-                                                key={item.public_id}
-                                                className="block rounded-2xl bg-slate-50 p-3 text-sm font-semibold"
-                                            >
+                                            <label key={item.public_id} className="block rounded-2xl bg-slate-50 p-3 text-sm font-semibold">
                                                 <span className="flex justify-between gap-3">
-                                                    <span>
-                                                        {item.product_name}
-                                                    </span>
+                                                    <span>{item.product_name}</span>
                                                     <span className="text-xs text-slate-500">
-                                                        Maks.{' '}
-                                                        {quantity(
-                                                            item.returnable_quantity,
-                                                        )}{' '}
-                                                        {item.unit_symbol}
+                                                        Maks. {quantity(item.returnable_quantity)} {item.unit_symbol}
                                                     </span>
                                                 </span>
                                                 <input
                                                     className={`${fieldClass} mt-2`}
                                                     type="number"
                                                     min="0"
-                                                    max={
-                                                        item.returnable_quantity
-                                                    }
+                                                    max={item.returnable_quantity}
                                                     step="0.000001"
-                                                    value={
-                                                        returnForm.data.items[
-                                                            index
-                                                        ]?.quantity ?? '0'
-                                                    }
+                                                    value={returnForm.data.items[index]?.quantity ?? '0'}
                                                     onChange={(event) =>
                                                         returnForm.setData(
                                                             'items',
-                                                            returnForm.data.items.map(
-                                                                (
-                                                                    input,
-                                                                    itemIndex,
-                                                                ) =>
-                                                                    itemIndex ===
-                                                                    index
-                                                                        ? {
-                                                                              ...input,
-                                                                              quantity:
-                                                                                  event
-                                                                                      .target
-                                                                                      .value,
-                                                                          }
-                                                                        : input,
+                                                            returnForm.data.items.map((input, itemIndex) =>
+                                                                itemIndex === index
+                                                                    ? {
+                                                                          ...input,
+                                                                          quantity: event.target.value,
+                                                                      }
+                                                                    : input,
                                                             ),
                                                         )
                                                     }
@@ -414,10 +308,8 @@ export default function SaleShow({
                                             returnForm.setData(
                                                 'items',
                                                 returnableItems.map((item) => ({
-                                                    sale_item_id:
-                                                        item.public_id,
-                                                    quantity:
-                                                        item.returnable_quantity,
+                                                    sale_item_id: item.public_id,
+                                                    quantity: item.returnable_quantity,
                                                 })),
                                             )
                                         }
@@ -429,23 +321,11 @@ export default function SaleShow({
                                             Akun refund
                                             <select
                                                 className={`${fieldClass} mt-1`}
-                                                value={
-                                                    returnForm.data.account_id
-                                                }
-                                                onChange={(event) =>
-                                                    returnForm.setData(
-                                                        'account_id',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                value={returnForm.data.account_id}
+                                                onChange={(event) => returnForm.setData('account_id', event.target.value)}
                                             >
                                                 {accounts.map((account) => (
-                                                    <option
-                                                        key={account.public_id}
-                                                        value={
-                                                            account.public_id
-                                                        }
-                                                    >
+                                                    <option key={account.public_id} value={account.public_id}>
                                                         {account.name}
                                                     </option>
                                                 ))}
@@ -456,27 +336,15 @@ export default function SaleShow({
                                             <input
                                                 className={`${fieldClass} mt-1`}
                                                 type="datetime-local"
-                                                value={
-                                                    returnForm.data.occurred_at
-                                                }
-                                                onChange={(event) =>
-                                                    returnForm.setData(
-                                                        'occurred_at',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                value={returnForm.data.occurred_at}
+                                                onChange={(event) => returnForm.setData('occurred_at', event.target.value)}
                                             />
                                         </label>
                                         <input
                                             className={fieldClass}
                                             placeholder="Alasan / catatan retur"
                                             value={returnForm.data.notes}
-                                            onChange={(event) =>
-                                                returnForm.setData(
-                                                    'notes',
-                                                    event.target.value,
-                                                )
-                                            }
+                                            onChange={(event) => returnForm.setData('notes', event.target.value)}
                                             maxLength={500}
                                         />
                                     </div>
@@ -484,21 +352,16 @@ export default function SaleShow({
                                         <span>Estimasi refund</span>
                                         <span>{money(estimatedRefund)}</span>
                                     </div>
-                                    {Object.keys(returnForm.errors).length >
-                                        0 && (
+                                    {Object.keys(returnForm.errors).length > 0 && (
                                         <p className="mt-3 text-sm text-red-700">
-                                            Retur gagal. Periksa quantity, akun
-                                            refund, saldo, dan waktu transaksi.
+                                            Retur gagal. Periksa quantity, akun refund, saldo, dan waktu transaksi.
                                         </p>
                                     )}
                                     <button
                                         disabled={
                                             returnForm.processing ||
                                             estimatedRefund < 0 ||
-                                            !returnForm.data.items.some(
-                                                (item) =>
-                                                    Number(item.quantity) > 0,
-                                            )
+                                            !returnForm.data.items.some((item) => Number(item.quantity) > 0)
                                         }
                                         className="mt-4 h-12 w-full rounded-xl bg-red-700 font-black text-white disabled:opacity-50"
                                     >

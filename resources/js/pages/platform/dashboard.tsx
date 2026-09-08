@@ -1,14 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import {
-    ArrowUpRight,
-    Building2,
-    CheckCircle2,
-    CreditCard,
-    ReceiptText,
-    ShieldCheck,
-    Store,
-    Users,
-} from 'lucide-react';
+import { ArrowUpRight, Building2, CheckCircle2, CreditCard, ReceiptText, ShieldCheck, Store, Users } from 'lucide-react';
 import { formatMoney, localeTag } from '@/lib/currency';
 
 type Metrics = {
@@ -86,21 +77,10 @@ export default function SuperAdminDashboard({
     recent_payments: RecentPayment[];
     security: Security;
 }) {
-    const maxTrend = Math.max(
-        ...payment_trend.map((item) => Number(item.amount)),
-        1,
-    );
-    const totalSubscriptions = Object.values(subscription_breakdown).reduce(
-        (total, value) => total + value,
-        0,
-    );
+    const maxTrend = Math.max(...payment_trend.map((item) => Number(item.amount)), 1);
+    const totalSubscriptions = Object.values(subscription_breakdown).reduce((total, value) => total + value, 0);
     const securityCoverage =
-        security.platform_admins === 0
-            ? 0
-            : Math.round(
-                  (security.two_factor_enabled / security.platform_admins) *
-                      100,
-              );
+        security.platform_admins === 0 ? 0 : Math.round((security.two_factor_enabled / security.platform_admins) * 100);
 
     const cards = [
         {
@@ -141,26 +121,17 @@ export default function SuperAdminDashboard({
                 <div className="absolute -right-8 -bottom-24 size-52 rounded-full bg-white/10" />
                 <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                     <div>
-                        <p className="text-[11px] font-black tracking-[0.2em] text-[#ffd5ca] uppercase">
-                            Platform command center
-                        </p>
+                        <p className="text-[11px] font-black tracking-[0.2em] text-[#ffd5ca] uppercase">Platform command center</p>
                         <h1 className="mt-3 max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
                             Kondisi bisnis dalam satu pandangan.
                         </h1>
                         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
-                            Pantau pertumbuhan tenant, kesiapan subscription,
-                            penerimaan, dan keamanan operasional platform.
+                            Pantau pertumbuhan tenant, kesiapan subscription, penerimaan, dan keamanan operasional platform.
                         </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:flex">
-                        <HeroMetric
-                            label="Penerimaan bulan ini"
-                            value={formatMoney(metrics.payments_this_month)}
-                        />
-                        <HeroMetric
-                            label="2FA admin"
-                            value={`${securityCoverage}%`}
-                        />
+                        <HeroMetric label="Penerimaan bulan ini" value={formatMoney(metrics.payments_this_month)} />
+                        <HeroMetric label="2FA admin" value={`${securityCoverage}%`} />
                     </div>
                 </div>
             </section>
@@ -178,38 +149,22 @@ export default function SuperAdminDashboard({
                             </span>
                             <ArrowUpRight className="size-4 text-slate-300 transition group-hover:text-[#c43b21]" />
                         </div>
-                        <p className="mt-5 truncate text-2xl font-black tracking-tight text-[#3b211b]">
-                            {card.value}
-                        </p>
-                        <p className="mt-1 text-xs font-bold text-slate-600">
-                            {card.label}
-                        </p>
-                        <p className="mt-2 text-[11px] text-slate-400">
-                            {card.meta}
-                        </p>
+                        <p className="mt-5 truncate text-2xl font-black tracking-tight text-[#3b211b]">{card.value}</p>
+                        <p className="mt-1 text-xs font-bold text-slate-600">{card.label}</p>
+                        <p className="mt-2 text-[11px] text-slate-400">{card.meta}</p>
                     </Link>
                 ))}
             </section>
 
             <section className="mt-5 grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
                 <article className="platform-panel p-5 sm:p-6">
-                    <PanelHeader
-                        kicker="Revenue pulse"
-                        title="Tren penerimaan 6 bulan"
-                        href="/super-admin/payments"
-                    />
+                    <PanelHeader kicker="Revenue pulse" title="Tren penerimaan 6 bulan" href="/super-admin/payments" />
                     <div className="mt-6 flex h-52 items-end gap-3 border-b border-[#3b211b]/10 px-1">
                         {payment_trend.map((item) => {
-                            const height = Math.max(
-                                (Number(item.amount) / maxTrend) * 100,
-                                Number(item.amount) > 0 ? 8 : 2,
-                            );
+                            const height = Math.max((Number(item.amount) / maxTrend) * 100, Number(item.amount) > 0 ? 8 : 2);
 
                             return (
-                                <div
-                                    key={item.label}
-                                    className="group flex h-full flex-1 flex-col items-center justify-end gap-2"
-                                >
+                                <div key={item.label} className="group flex h-full flex-1 flex-col items-center justify-end gap-2">
                                     <span className="hidden text-[10px] font-bold text-[#3b211b] group-hover:block">
                                         {formatMoney(item.amount)}
                                     </span>
@@ -217,9 +172,7 @@ export default function SuperAdminDashboard({
                                         className="w-full max-w-14 rounded-t-lg bg-[#3b211b] transition group-hover:bg-[#ee4d2d]"
                                         style={{ height: `${height}%` }}
                                     />
-                                    <span className="pb-3 text-[11px] font-bold text-slate-500">
-                                        {item.label}
-                                    </span>
+                                    <span className="pb-3 text-[11px] font-bold text-slate-500">{item.label}</span>
                                 </div>
                             );
                         })}
@@ -227,39 +180,26 @@ export default function SuperAdminDashboard({
                 </article>
 
                 <article className="platform-panel p-5 sm:p-6">
-                    <PanelHeader
-                        kicker="Billing state"
-                        title="Status subscription"
-                        href="/super-admin/subscriptions"
-                    />
+                    <PanelHeader kicker="Billing state" title="Status subscription" href="/super-admin/subscriptions" />
                     <div className="mt-5 space-y-4">
-                        {Object.entries(subscription_breakdown).map(
-                            ([status, count]) => {
-                                const width =
-                                    totalSubscriptions === 0
-                                        ? 0
-                                        : (count / totalSubscriptions) * 100;
+                        {Object.entries(subscription_breakdown).map(([status, count]) => {
+                            const width = totalSubscriptions === 0 ? 0 : (count / totalSubscriptions) * 100;
 
-                                return (
-                                    <div key={status}>
-                                        <div className="mb-1.5 flex items-center justify-between text-xs">
-                                            <span className="font-semibold text-slate-600">
-                                                {statusLabels[status] ?? status}
-                                            </span>
-                                            <span className="font-black text-[#3b211b]">
-                                                {count}
-                                            </span>
-                                        </div>
-                                        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                                            <div
-                                                className={`h-full rounded-full ${statusColors[status] ?? 'bg-slate-400'}`}
-                                                style={{ width: `${width}%` }}
-                                            />
-                                        </div>
+                            return (
+                                <div key={status}>
+                                    <div className="mb-1.5 flex items-center justify-between text-xs">
+                                        <span className="font-semibold text-slate-600">{statusLabels[status] ?? status}</span>
+                                        <span className="font-black text-[#3b211b]">{count}</span>
                                     </div>
-                                );
-                            },
-                        )}
+                                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                        <div
+                                            className={`h-full rounded-full ${statusColors[status] ?? 'bg-slate-400'}`}
+                                            style={{ width: `${width}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </article>
             </section>
@@ -267,35 +207,22 @@ export default function SuperAdminDashboard({
             <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr_.72fr]">
                 <article className="platform-panel overflow-hidden">
                     <div className="p-5 pb-3">
-                        <PanelHeader
-                            kicker="Cash in"
-                            title="Pembayaran terbaru"
-                            href="/super-admin/payments"
-                        />
+                        <PanelHeader kicker="Cash in" title="Pembayaran terbaru" href="/super-admin/payments" />
                     </div>
                     {recent_payments.length === 0 ? (
                         <EmptyState text="Belum ada pembayaran." />
                     ) : (
                         <div className="divide-y divide-[#3b211b]/8">
                             {recent_payments.map((payment) => (
-                                <div
-                                    key={payment.public_id}
-                                    className="flex items-center gap-3 px-5 py-3.5"
-                                >
+                                <div key={payment.public_id} className="flex items-center gap-3 px-5 py-3.5">
                                     <span className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
                                         <ReceiptText className="size-4" />
                                     </span>
                                     <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-bold">
-                                            {payment.account}
-                                        </p>
-                                        <p className="truncate font-mono text-[10px] text-slate-400">
-                                            {payment.receipt_number}
-                                        </p>
+                                        <p className="truncate text-sm font-bold">{payment.account}</p>
+                                        <p className="truncate font-mono text-[10px] text-slate-400">{payment.receipt_number}</p>
                                     </div>
-                                    <p className="text-sm font-black text-[#3b211b]">
-                                        {formatMoney(payment.amount)}
-                                    </p>
+                                    <p className="text-sm font-black text-[#3b211b]">{formatMoney(payment.amount)}</p>
                                 </div>
                             ))}
                         </div>
@@ -304,29 +231,19 @@ export default function SuperAdminDashboard({
 
                 <article className="platform-panel overflow-hidden">
                     <div className="p-5 pb-3">
-                        <PanelHeader
-                            kicker="Audit stream"
-                            title="Aktivitas admin"
-                        />
+                        <PanelHeader kicker="Audit stream" title="Aktivitas admin" />
                     </div>
                     {recent_activity.length === 0 ? (
                         <EmptyState text="Belum ada aktivitas." />
                     ) : (
                         <div className="divide-y divide-[#3b211b]/8">
                             {recent_activity.slice(0, 5).map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="flex items-center gap-3 px-5 py-3.5"
-                                >
+                                <div key={item.id} className="flex items-center gap-3 px-5 py-3.5">
                                     <span className="size-2 rounded-full bg-[#ee4d2d]" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-bold">
-                                            {actionLabels[item.action] ??
-                                                item.action}
-                                        </p>
+                                        <p className="truncate text-sm font-bold">{actionLabels[item.action] ?? item.action}</p>
                                         <p className="text-[11px] text-slate-400">
-                                            {item.admin} ·{' '}
-                                            {relativeDate(item.created_at)}
+                                            {item.admin} · {relativeDate(item.created_at)}
                                         </p>
                                     </div>
                                 </div>
@@ -336,39 +253,26 @@ export default function SuperAdminDashboard({
                 </article>
 
                 <article className="overflow-hidden rounded-2xl bg-[#d83f22] p-5 text-white shadow-lg shadow-[#3b211b]/10">
-                    <p className="text-[10px] font-black tracking-[.18em] text-[#ee4d2d] uppercase">
-                        Security posture
-                    </p>
+                    <p className="text-[10px] font-black tracking-[.18em] text-[#ee4d2d] uppercase">Security posture</p>
                     <div className="mt-5 flex items-center justify-between">
                         <ShieldCheck className="size-9 text-[#ee4d2d]" />
-                        <span className="text-3xl font-black">
-                            {securityCoverage}%
-                        </span>
+                        <span className="text-3xl font-black">{securityCoverage}%</span>
                     </div>
                     <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
-                        <div
-                            className="h-full rounded-full bg-white/80"
-                            style={{ width: `${securityCoverage}%` }}
-                        />
+                        <div className="h-full rounded-full bg-white/80" style={{ width: `${securityCoverage}%` }} />
                     </div>
                     <div className="mt-5 space-y-2 text-xs text-slate-300">
                         <p className="flex justify-between">
                             <span>Admin platform</span>
-                            <strong className="text-white">
-                                {security.platform_admins}
-                            </strong>
+                            <strong className="text-white">{security.platform_admins}</strong>
                         </p>
                         <p className="flex justify-between">
                             <span>Super Admin</span>
-                            <strong className="text-white">
-                                {security.super_admins}
-                            </strong>
+                            <strong className="text-white">{security.super_admins}</strong>
                         </p>
                         <p className="flex justify-between">
                             <span>2FA aktif</span>
-                            <strong className="text-white">
-                                {security.two_factor_enabled}
-                            </strong>
+                            <strong className="text-white">{security.two_factor_enabled}</strong>
                         </p>
                     </div>
                     <Link
@@ -387,35 +291,20 @@ export default function SuperAdminDashboard({
 function HeroMetric({ label, value }: { label: string; value: string }) {
     return (
         <div className="min-w-36 rounded-xl border border-white/10 bg-white/8 p-4">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">
-                {label}
-            </p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">{label}</p>
             <p className="mt-2 text-xl font-black text-white">{value}</p>
         </div>
     );
 }
-function PanelHeader({
-    kicker,
-    title,
-    href,
-}: {
-    kicker: string;
-    title: string;
-    href?: string;
-}) {
+function PanelHeader({ kicker, title, href }: { kicker: string; title: string; href?: string }) {
     return (
         <div className="flex items-end justify-between gap-3">
             <div>
                 <p className="platform-kicker">{kicker}</p>
-                <h2 className="mt-1 text-lg font-black tracking-tight text-[#3b211b]">
-                    {title}
-                </h2>
+                <h2 className="mt-1 text-lg font-black tracking-tight text-[#3b211b]">{title}</h2>
             </div>
             {href && (
-                <Link
-                    href={href}
-                    className="text-xs font-bold text-[#b83219] hover:underline"
-                >
+                <Link href={href} className="text-xs font-bold text-[#b83219] hover:underline">
                     Lihat semua
                 </Link>
             )}
@@ -423,9 +312,7 @@ function PanelHeader({
     );
 }
 function EmptyState({ text }: { text: string }) {
-    return (
-        <p className="px-5 py-12 text-center text-sm text-slate-400">{text}</p>
-    );
+    return <p className="px-5 py-12 text-center text-sm text-slate-400">{text}</p>;
 }
 function relativeDate(value: string) {
     return new Intl.DateTimeFormat(localeTag(), {

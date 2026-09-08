@@ -2,13 +2,9 @@ import { router, usePage } from '@inertiajs/react';
 import { Globe2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { AppLocale, MarketCode } from '@/lib/currency';
+import { setActiveLocale } from '@/lib/i18n';
 
 type LocaleOption = { code: AppLocale; label: string };
 
@@ -33,21 +29,11 @@ const isLocaleOption = (value: unknown): value is LocaleOption =>
 
 export default function LanguageSwitcher() {
     const pageProps = usePage().props;
-    const locale: AppLocale =
-        pageProps.locale === 'en' || pageProps.locale === 'ms'
-            ? pageProps.locale
-            : 'id';
+    const locale: AppLocale = pageProps.locale === 'en' || pageProps.locale === 'ms' ? pageProps.locale : 'id';
     const market: MarketCode = pageProps.market === 'ms' ? 'ms' : 'id';
-    const configuredLocales = Array.isArray(pageProps.locales)
-        ? pageProps.locales.filter(isLocaleOption)
-        : [];
-    const locales =
-        configuredLocales.length > 0
-            ? configuredLocales
-            : fallbackLocales(market);
-    const context = locales.some((language) => language.code === 'en')
-        ? 'customer'
-        : 'market';
+    const configuredLocales = Array.isArray(pageProps.locales) ? pageProps.locales.filter(isLocaleOption) : [];
+    const locales = configuredLocales.length > 0 ? configuredLocales : fallbackLocales(market);
+    const context = locales.some((language) => language.code === 'en') ? 'customer' : 'market';
     const [isChanging, setIsChanging] = useState(false);
 
     const changeLocale = (nextLocale: string) => {
@@ -55,12 +41,17 @@ export default function LanguageSwitcher() {
             return;
         }
 
+        const previousLocale = locale;
+        setActiveLocale(nextLocale as AppLocale);
         setIsChanging(true);
         router.post(
             '/locale',
             { locale: nextLocale, context },
             {
+                preserveState: false,
                 preserveScroll: true,
+                onError: () => setActiveLocale(previousLocale),
+                onCancel: () => setActiveLocale(previousLocale),
                 onFinish: () => setIsChanging(false),
             },
         );
@@ -84,10 +75,7 @@ export default function LanguageSwitcher() {
                     <span>{locale.toUpperCase()}</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-                align="end"
-                className="border-[#ee4d2d]/15 bg-white text-[#3b211b]"
-            >
+            <DropdownMenuContent align="end" className="border-[#ee4d2d]/15 bg-white text-[#3b211b]">
                 {locales.map((language) => (
                     <DropdownMenuItem
                         key={language.code}

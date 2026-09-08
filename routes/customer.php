@@ -33,6 +33,9 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
     Route::post('stores', [StoreController::class, 'store'])->name('stores.store');
     Route::get('stores/{store}', [StoreController::class, 'show'])->name('stores.show');
     Route::patch('stores/{store}', [StoreController::class, 'update'])->name('stores.update');
+    Route::delete('stores/{store}', [StoreController::class, 'destroy'])->name('stores.destroy');
+    Route::patch('stores/{store}/restore', [StoreController::class, 'restore'])->name('stores.restore');
+    Route::delete('stores/{store}/permanent', [StoreController::class, 'forceDestroy'])->name('stores.force-destroy');
     Route::post('stores/{store}/switch', [StoreController::class, 'switch'])->name('stores.switch');
     Route::post('stores/{store}/members', [StoreMemberController::class, 'store'])->name('stores.members.store');
     Route::patch('stores/{store}/members/{member}', [StoreMemberController::class, 'update'])->name('stores.members.update');
@@ -43,6 +46,7 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 
         Route::post('scanner/catalog-item-lookups', [ProductScannerController::class, 'lookup'])->name('scanner.catalog-items.lookup');
+        Route::post('scanner/usages', [ProductScannerController::class, 'consume'])->name('scanner.usages.store');
         Route::post('scanner/catalog-item-recognitions', [ProductScannerController::class, 'recognize'])->name('scanner.catalog-items.recognize');
         Route::post('scanner/catalog-item-discoveries', [ProductScannerController::class, 'discover'])->name('scanner.catalog-items.discover');
 
@@ -94,6 +98,7 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::get('pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('pos/sales', [PosController::class, 'store'])->name('pos.sales.store');
         Route::get('sales', [SalesController::class, 'index'])->name('sales.index');
+        Route::get('sales/{sale}/payment-proof', [SalesController::class, 'paymentProof'])->name('sales.payment-proof');
         Route::get('sales/{sale}', [SalesController::class, 'show'])->name('sales.show');
         Route::get('sales/{sale}/returns/create', [SalesController::class, 'createReturn'])->name('sales.returns.create');
         Route::post('sales/{sale}/returns', [SalesController::class, 'storeReturn'])->name('sales.returns.store');

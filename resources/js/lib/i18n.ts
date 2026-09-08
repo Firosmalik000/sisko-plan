@@ -1,13 +1,23 @@
-import { usePage } from '@inertiajs/react';
+import { useSyncExternalStore } from 'react';
 import { englishCatalog } from '@/lang/en';
 import { englishLexicon } from '@/lang/en/lexicon';
 import { indonesianCatalog } from '@/lang/id';
 import { malayCatalog } from '@/lang/ms';
 import { malayLexicon } from '@/lang/ms/lexicon';
-import { currentMarket } from '@/lib/currency';
 import type { AppLocale } from '@/lib/currency';
 
 let activeLocale: AppLocale = 'id';
+const localeListeners = new Set<() => void>();
+
+function subscribeLocale(listener: () => void): () => void {
+    localeListeners.add(listener);
+
+    return () => localeListeners.delete(listener);
+}
+
+function getLocaleSnapshot(): AppLocale {
+    return activeLocale;
+}
 
 function preserveCase(source: string, translated: string): string {
     if (source === source.toUpperCase()) {
@@ -22,46 +32,37 @@ function preserveCase(source: string, translated: string): string {
 }
 
 function translateMalayLiteral(text: string): string {
-    let result = text.replace(/\bRp(?=\s?\d)/gu, 'RM');
+    let result = text;
 
     for (const [source, translated] of malayLexicon) {
-        const pattern = new RegExp(
-            `(?<![\\p{L}])${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`,
-            'giu',
-        );
-        result = result.replace(pattern, (match) =>
-            preserveCase(match, translated),
-        );
+        const pattern = new RegExp(`(?<![\\p{L}])${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`, 'giu');
+        result = result.replace(pattern, (match) => preserveCase(match, translated));
     }
 
     return result;
 }
 
 function translateEnglishLiteral(text: string): string {
-    let result =
-        currentMarket() === 'ms' ? text.replace(/\bRp(?=\s?\d)/gu, 'RM') : text;
+    let result = text;
 
     for (const [source, translated] of englishLexicon) {
-        const pattern = new RegExp(
-            `(?<![\\p{L}])${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`,
-            'giu',
-        );
-        result = result.replace(pattern, (match) =>
-            preserveCase(match, translated),
-        );
+        const pattern = new RegExp(`(?<![\\p{L}])${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`, 'giu');
+        result = result.replace(pattern, (match) => preserveCase(match, translated));
     }
 
     return result;
 }
 
 export function setActiveLocale(locale: AppLocale): void {
+    if (activeLocale === locale) {
+        return;
+    }
+
     activeLocale = locale;
+    localeListeners.forEach((listener) => listener());
 }
 
-export function translate(
-    text: string,
-    locale: AppLocale = activeLocale,
-): string {
+export function translate(text: string, locale: AppLocale = activeLocale): string {
     const source = text.trim();
     const lookup = source.replace(/\s+/gu, ' ');
 
@@ -80,12 +81,7 @@ export function translate(
         return text.replace(source, message);
     }
 
-    const translated =
-        locale === 'ms'
-            ? malayCatalog[lookup]
-            : locale === 'en'
-              ? englishCatalog[lookup]
-              : indonesianCatalog[lookup];
+    const translated = locale === 'ms' ? malayCatalog[lookup] : locale === 'en' ? englishCatalog[lookup] : indonesianCatalog[lookup];
 
     if (translated !== undefined) {
         return text.replace(source, translated);
@@ -94,19 +90,13 @@ export function translate(
     if (locale === 'ms') {
         const dynamicPatterns: Array<[RegExp, string]> = [
             [/^Alur utama (.+)$/u, 'Aliran utama $1'],
-            [
-                /^Perbandingan (.+) dan pencatatan manual$/u,
-                'Perbandingan $1 dan rekod manual',
-            ],
+            [/^Perbandingan (.+) dan pencatatan manual$/u, 'Perbandingan $1 dan rekod manual'],
             [/^(.+), beranda$/u, '$1, laman utama'],
             [/^(\d+) foto diambil$/u, '$1 gambar diambil'],
             [/^Buka tindakan untuk (.+)$/u, 'Buka tindakan untuk $1'],
             [/^Catat pembayaran (.+)$/u, 'Rekod pembayaran $1'],
             [/^Edit subscription (.+)$/u, 'Edit langganan $1'],
-            [
-                /^Hapus Produk (.+) dari antrean$/u,
-                'Padam Produk $1 daripada baris gilir',
-            ],
+            [/^Hapus Produk (.+) dari antrean$/u, 'Padam Produk $1 daripada baris gilir'],
             [/^Kapasitas (.+)$/u, 'Kapasiti $1'],
             [/^Hapus (.+)$/u, 'Padam $1'],
             [/^Kurangi (.+)$/u, 'Kurangkan $1'],
@@ -114,14 +104,12 @@ export function translate(
             [/^Tambah (.+)$/u, 'Tambah $1'],
             [/^Edit (.+)$/u, 'Edit $1'],
             [/^Kode error (.+)$/u, 'Kod ralat $1'],
+            [/^Hasil stock opname (.+)$/u, 'Hasil kiraan stok $1'],
         ];
 
         for (const [pattern, replacement] of dynamicPatterns) {
             if (pattern.test(lookup)) {
-                return text.replace(
-                    source,
-                    lookup.replace(pattern, replacement),
-                );
+                return text.replace(source, lookup.replace(pattern, replacement));
             }
         }
 
@@ -131,19 +119,13 @@ export function translate(
     if (locale === 'en') {
         const dynamicPatterns: Array<[RegExp, string]> = [
             [/^Alur utama (.+)$/u, 'Main flow $1'],
-            [
-                /^Perbandingan (.+) dan pencatatan manual$/u,
-                '$1 and manual recording comparison',
-            ],
+            [/^Perbandingan (.+) dan pencatatan manual$/u, '$1 and manual recording comparison'],
             [/^(.+), beranda$/u, '$1, home'],
             [/^(\d+) foto diambil$/u, '$1 photos captured'],
             [/^Buka tindakan untuk (.+)$/u, 'Open actions for $1'],
             [/^Catat pembayaran (.+)$/u, 'Record $1 payment'],
             [/^Edit subscription (.+)$/u, 'Edit $1 subscription'],
-            [
-                /^Hapus Produk (.+) dari antrean$/u,
-                'Remove Product $1 from the queue',
-            ],
+            [/^Hapus Produk (.+) dari antrean$/u, 'Remove Product $1 from the queue'],
             [/^Kapasitas (.+)$/u, '$1 capacity'],
             [/^Hapus (.+)$/u, 'Delete $1'],
             [/^Kurangi (.+)$/u, 'Decrease $1'],
@@ -151,14 +133,12 @@ export function translate(
             [/^Tambah (.+)$/u, 'Add $1'],
             [/^Edit (.+)$/u, 'Edit $1'],
             [/^Kode error (.+)$/u, 'Error code $1'],
+            [/^Hasil stock opname (.+)$/u, 'Stock count result $1'],
         ];
 
         for (const [pattern, replacement] of dynamicPatterns) {
             if (pattern.test(lookup)) {
-                return text.replace(
-                    source,
-                    lookup.replace(pattern, replacement),
-                );
+                return text.replace(source, lookup.replace(pattern, replacement));
             }
         }
 
@@ -169,13 +149,10 @@ export function translate(
 }
 
 export function useTranslation() {
-    const { locale = 'id' } = usePage().props;
-    const activeLocale = locale as AppLocale;
-
-    setActiveLocale(activeLocale);
+    const currentLocale = useSyncExternalStore(subscribeLocale, getLocaleSnapshot, getLocaleSnapshot);
 
     return {
-        locale: activeLocale,
-        t: (text: string) => translate(text, activeLocale),
+        locale: currentLocale,
+        t: (text: string) => translate(text, currentLocale),
     };
 }

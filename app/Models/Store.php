@@ -31,7 +31,7 @@ use Illuminate\Support\Str;
  * @property-read Subscription|null $subscription
  * @property-read StoreMembership $pivot
  */
-#[Fillable(['owner_user_id', 'name', 'status'])]
+#[Fillable(['owner_user_id', 'country_id', 'name', 'status'])]
 class Store extends Model
 {
     /** @use HasFactory<StoreFactory> */
@@ -58,6 +58,11 @@ class Store extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
     }
 
     /** @return BelongsToMany<User, $this, StoreMembership, 'pivot'> */

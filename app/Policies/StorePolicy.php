@@ -28,6 +28,30 @@ class StorePolicy
             && $this->hasActiveOwnerMembership($user, $store);
     }
 
+    public function viewManagement(User $user, Store $store): bool
+    {
+        return in_array($store->status, [StoreStatus::Active, StoreStatus::Archived], true)
+            && $this->hasActiveOwnerMembership($user, $store);
+    }
+
+    public function archive(User $user, Store $store): bool
+    {
+        return $store->status === StoreStatus::Active
+            && $this->hasActiveOwnerMembership($user, $store);
+    }
+
+    public function restore(User $user, Store $store): bool
+    {
+        return $store->status === StoreStatus::Archived
+            && $this->hasActiveOwnerMembership($user, $store);
+    }
+
+    public function deletePermanently(User $user, Store $store): bool
+    {
+        return $store->status === StoreStatus::Archived
+            && $this->hasActiveOwnerMembership($user, $store);
+    }
+
     public function switch(User $user, Store $store): bool
     {
         return $store->status === StoreStatus::Active

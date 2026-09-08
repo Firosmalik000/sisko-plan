@@ -16,8 +16,7 @@ const translatedProps = new Set([
     'title',
 ]);
 
-const technicalValues =
-    /^(?:[a-z0-9]*[_.:/-][a-z0-9_.:/-]*|#[0-9a-f]{3,8}|\d+(?:\.\d+)?|[A-Z0-9_]+)$/;
+const technicalValues = /^(?:[a-z0-9]*[_.:/-][a-z0-9_.:/-]*|#[0-9a-f]{3,8}|\d+(?:\.\d+)?|[A-Z0-9_]+)$/;
 
 module.exports = function translateUiLiterals({ types: t }) {
     let programPath;
@@ -27,19 +26,37 @@ module.exports = function translateUiLiterals({ types: t }) {
     const translationCall = (value) => {
         needsImport = true;
 
-        return t.callExpression(t.identifier('__translateUi'), [
-            t.stringLiteral(value),
-        ]);
+        return t.callExpression(t.identifier('__translateUi'), [t.stringLiteral(value)]);
     };
 
     const isHumanText = (value) => {
         const normalized = value.trim();
 
-        return (
-            normalized.length > 1 &&
-            /[A-Za-zÀ-ÿ]/u.test(normalized) &&
-            !technicalValues.test(normalized)
-        );
+        return normalized.length > 1 && /[A-Za-zÀ-ÿ]/u.test(normalized) && !technicalValues.test(normalized);
+    };
+
+    const isRenderedExpressionValue = (path, container) => {
+        let current = path;
+
+        while (current.parentPath && current.parentPath !== container) {
+            const parent = current.parentPath;
+
+            if (parent.isConditionalExpression()) {
+                if (current.key === 'test') {
+                    return false;
+                }
+            } else if (parent.isLogicalExpression()) {
+                if (current.key === 'left') {
+                    return false;
+                }
+            } else if (!parent.isParenthesizedExpression() && !parent.isTSAsExpression() && !parent.isTSNonNullExpression()) {
+                return false;
+            }
+
+            current = parent;
+        }
+
+        return current.parentPath === container;
     };
 
     return {
@@ -49,9 +66,7 @@ module.exports = function translateUiLiterals({ types: t }) {
                 enter(path, state) {
                     programPath = path;
                     needsImport = false;
-                    skipCurrentFile = /[\\/]lib[\\/]i18n\.ts$/u.test(
-                        state.filename ?? '',
-                    );
+                    skipCurrentFile = /[\\/]lib[\\/]i18n\.ts$/u.test(state.filename ?? '');
 
                     if (skipCurrentFile) {
                         path.skip();
@@ -66,23 +81,14 @@ module.exports = function translateUiLiterals({ types: t }) {
                         (node) =>
                             t.isImportDeclaration(node) &&
                             node.source.value === '@/lib/i18n' &&
-                            node.specifiers.some(
-                                (specifier) =>
-                                    t.isImportSpecifier(specifier) &&
-                                    specifier.local.name === '__translateUi',
-                            ),
+                            node.specifiers.some((specifier) => t.isImportSpecifier(specifier) && specifier.local.name === '__translateUi'),
                     );
 
                     if (!alreadyImported) {
                         programPath.unshiftContainer(
                             'body',
                             t.importDeclaration(
-                                [
-                                    t.importSpecifier(
-                                        t.identifier('__translateUi'),
-                                        t.identifier('translate'),
-                                    ),
-                                ],
+                                [t.importSpecifier(t.identifier('__translateUi'), t.identifier('translate'))],
                                 t.stringLiteral('@/lib/i18n'),
                             ),
                         );
@@ -91,17 +97,11 @@ module.exports = function translateUiLiterals({ types: t }) {
             },
             JSXText(path) {
                 if (isHumanText(path.node.value)) {
-                    path.replaceWith(
-                        t.jsxExpressionContainer(
-                            translationCall(path.node.value),
-                        ),
-                    );
+                    path.replaceWith(t.jsxExpressionContainer(translationCall(path.node.value)));
                 }
             },
             JSXAttribute(path) {
-                const name = t.isJSXIdentifier(path.node.name)
-                    ? path.node.name.name
-                    : null;
+                const name = t.isJSXIdentifier(path.node.name) ? path.node.name.name : null;
 
                 if (
                     name !== null &&
@@ -109,9 +109,7 @@ module.exports = function translateUiLiterals({ types: t }) {
                     t.isStringLiteral(path.node.value) &&
                     isHumanText(path.node.value.value)
                 ) {
-                    path.node.value = t.jsxExpressionContainer(
-                        translationCall(path.node.value.value),
-                    );
+                    path.node.value = t.jsxExpressionContainer(translationCall(path.node.value.value));
                 }
             },
             ObjectProperty(path) {
@@ -127,9 +125,7 @@ module.exports = function translateUiLiterals({ types: t }) {
                     t.isStringLiteral(path.node.value) &&
                     isHumanText(path.node.value.value)
                 ) {
-                    const translatedValue = translationCall(
-                        path.node.value.value,
-                    );
+                    const translatedValue = translationCall(path.node.value.value);
 
                     // Navigation and form metadata commonly live at module
                     // scope. Resolve their copy when React reads the property
@@ -139,9 +135,7 @@ module.exports = function translateUiLiterals({ types: t }) {
                             'get',
                             path.node.key,
                             [],
-                            t.blockStatement([
-                                t.returnStatement(translatedValue),
-                            ]),
+                            t.blockStatement([t.returnStatement(translatedValue)]),
                             path.node.computed,
                         ),
                     );
@@ -162,30 +156,23 @@ module.exports = function translateUiLiterals({ types: t }) {
                     return;
                 }
 
-                const attribute = path.findParent((candidate) =>
-                    candidate.isJSXAttribute(),
-                );
+                const attribute = path.findParent((candidate) => candidate.isJSXAttribute());
                 if (attribute) {
                     if (path.parentPath.isJSXAttribute()) {
                         return;
                     }
 
                     const attributeName = attribute.get('name');
-                    if (
-                        attributeName.isJSXIdentifier() &&
-                        translatedProps.has(attributeName.node.name)
-                    ) {
+                    if (attributeName.isJSXIdentifier() && translatedProps.has(attributeName.node.name)) {
                         path.replaceWith(translationCall(path.node.value));
                     }
 
                     return;
                 }
 
-                const container = path.findParent((candidate) =>
-                    candidate.isJSXExpressionContainer(),
-                );
+                const container = path.findParent((candidate) => candidate.isJSXExpressionContainer());
                 const isRenderedExpression = Boolean(
-                    container && !container.parentPath.isJSXAttribute(),
+                    container && !container.parentPath.isJSXAttribute() && isRenderedExpressionValue(path, container),
                 );
 
                 if (isRenderedExpression) {
@@ -196,16 +183,12 @@ module.exports = function translateUiLiterals({ types: t }) {
                 if (
                     path.parentPath.isCallExpression() &&
                     path.parentPath.get('callee').isIdentifier() &&
-                    ['t', 'translate', '__translateUi'].includes(
-                        path.parentPath.node.callee.name,
-                    )
+                    ['t', 'translate', '__translateUi'].includes(path.parentPath.node.callee.name)
                 ) {
                     return;
                 }
 
-                const container = path.findParent((candidate) =>
-                    candidate.isJSXExpressionContainer(),
-                );
+                const container = path.findParent((candidate) => candidate.isJSXExpressionContainer());
                 const jsxElement = container?.parentPath;
                 const isStyleElement = Boolean(
                     jsxElement?.isJSXElement() &&
@@ -214,30 +197,17 @@ module.exports = function translateUiLiterals({ types: t }) {
                     }),
                 );
                 const isRenderedExpression = Boolean(
-                    container &&
-                    !container.parentPath.isJSXAttribute() &&
-                    !isStyleElement,
+                    container && !container.parentPath.isJSXAttribute() && isRenderedExpressionValue(path, container) && !isStyleElement,
                 );
-                const visibleText = path.node.quasis
-                    .map((quasi) => quasi.value.cooked ?? '')
-                    .join(' ');
+                const visibleText = path.node.quasis.map((quasi) => quasi.value.cooked ?? '').join(' ');
 
-                const attribute = path.findParent((candidate) =>
-                    candidate.isJSXAttribute(),
-                );
+                const attribute = path.findParent((candidate) => candidate.isJSXAttribute());
                 const attributeName = attribute?.get('name');
-                const isTranslatedAttribute = Boolean(
-                    attributeName?.isJSXIdentifier() &&
-                    translatedProps.has(attributeName.node.name),
-                );
+                const isTranslatedAttribute = Boolean(attributeName?.isJSXIdentifier() && translatedProps.has(attributeName.node.name));
 
                 if (isTranslatedAttribute && isHumanText(visibleText)) {
                     needsImport = true;
-                    path.replaceWith(
-                        t.callExpression(t.identifier('__translateUi'), [
-                            path.node,
-                        ]),
-                    );
+                    path.replaceWith(t.callExpression(t.identifier('__translateUi'), [path.node]));
                     path.skip();
 
                     return;
@@ -245,11 +215,7 @@ module.exports = function translateUiLiterals({ types: t }) {
 
                 if (isRenderedExpression && isHumanText(visibleText)) {
                     needsImport = true;
-                    path.replaceWith(
-                        t.callExpression(t.identifier('__translateUi'), [
-                            path.node,
-                        ]),
-                    );
+                    path.replaceWith(t.callExpression(t.identifier('__translateUi'), [path.node]));
                     path.skip();
                 }
             },

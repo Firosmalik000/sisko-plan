@@ -170,6 +170,45 @@ class ProductScannerEndpointTest extends TestCase
             ])->assertForbidden();
     }
 
+    public function test_scanner_quota_is_account_scoped_and_resets_each_month(): void
+    {
+        $this->travelTo('2026-09-07 10:00:00');
+        [$user, $store] = $this->ownerAndStore();
+        $store->subscription()->sole()->plan()->update(['max_scans' => 2]);
+        $payload = [
+            'purpose' => 'sale',
+            'type' => 'barcode',
+            'identifier' => 'not-found',
+        ];
+
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
+            ->postJson(route('scanner.catalog-items.lookup'), $payload)->assertOk();
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
+            ->postJson(route('scanner.catalog-items.lookup'), $payload)->assertOk();
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
+            ->postJson(route('scanner.catalog-items.lookup'), $payload)
+            ->assertTooManyRequests()
+            ->assertJsonPath('code', 'SCAN_LIMIT_REACHED')
+            ->assertJsonPath('used', 2)
+            ->assertJsonPath('limit', 2);
+        $this->assertDatabaseHas('subscription_scan_usages', [
+            'user_id' => $user->id,
+            'period_start' => '2026-09-01',
+            'used' => 2,
+        ]);
+        $this->assertDatabaseCount('subscription_scan_events', 2);
+
+        // 17:01 UTC is already the next calendar month in Asia/Jakarta.
+        $this->travelTo('2026-09-30 17:01:00');
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
+            ->postJson(route('scanner.usages.store'), ['purpose' => 'product'])->assertOk();
+        $this->assertDatabaseHas('subscription_scan_usages', [
+            'user_id' => $user->id,
+            'period_start' => '2026-10-01',
+            'used' => 1,
+        ]);
+    }
+
     public function test_product_discovery_forwards_up_to_three_images_without_writing_products(): void
     {
         [$user, $store] = $this->ownerAndStore();

@@ -1,13 +1,4 @@
-import {
-    Camera,
-    ImageUp,
-    LoaderCircle,
-    RefreshCw,
-    ScanBarcode,
-    X,
-    Zap,
-    ZapOff,
-} from 'lucide-react';
+import { Camera, ImageUp, LoaderCircle, RefreshCw, ScanBarcode, X, Zap, ZapOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { decodeBarcodeImage } from './decode-barcode-image';
@@ -20,12 +11,7 @@ type BarcodeScannerDialogProps = {
     onDetected: (value: string) => void;
 };
 
-export default function BarcodeScannerDialog({
-    open,
-    title,
-    onOpenChange,
-    onDetected,
-}: BarcodeScannerDialogProps) {
+export default function BarcodeScannerDialog({ open, title, onOpenChange, onDetected }: BarcodeScannerDialogProps) {
     const handledRef = useRef(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [processingPhoto, setProcessingPhoto] = useState(false);
@@ -45,18 +31,8 @@ export default function BarcodeScannerDialog({
         },
         [onDetected, onOpenChange],
     );
-    const {
-        videoRef,
-        ready,
-        error: cameraError,
-        capture,
-        torchAvailable,
-        torchOn,
-        toggleTorch,
-        retry,
-    } = useCamera(open, handleDetected);
-    const detectorAvailable =
-        typeof window !== 'undefined' && Boolean(window.BarcodeDetector);
+    const { videoRef, ready, error: cameraError, capture, torchAvailable, torchOn, toggleTorch, retry } = useCamera(open, handleDetected);
+    const detectorAvailable = typeof window !== 'undefined' && Boolean(window.BarcodeDetector);
 
     useEffect(() => {
         if (open) {
@@ -85,18 +61,12 @@ export default function BarcodeScannerDialog({
             const barcode = await decodeBarcodeImage(image);
 
             if (!barcode) {
-                throw new Error(
-                    'Kode belum terbaca. Pastikan seluruh kode terlihat dan tidak buram.',
-                );
+                throw new Error('Kode belum terbaca. Pastikan seluruh kode terlihat dan tidak buram.');
             }
 
             handleDetected(barcode);
         } catch (error) {
-            setScanError(
-                error instanceof Error
-                    ? error.message
-                    : 'Kode belum terbaca. Coba lagi.',
-            );
+            setScanError(error instanceof Error ? error.message : 'Kode belum terbaca. Coba lagi.');
         } finally {
             setProcessingPhoto(false);
         }
@@ -130,24 +100,16 @@ export default function BarcodeScannerDialog({
                     </button>
                     <div className="min-w-0 rounded-xl bg-[var(--app-ink)]/80 px-4 py-2 text-center backdrop-blur-sm">
                         <p className="truncate text-sm font-black">{title}</p>
-                        <p className="text-[11px] text-[var(--app-soft-strong)]">
-                            Barcode atau QR akan terbaca otomatis
-                        </p>
+                        <p className="text-[11px] text-[var(--app-soft-strong)]">Barcode atau QR akan terbaca otomatis</p>
                     </div>
                     <button
                         type="button"
                         onClick={() => void toggleTorch()}
                         disabled={!torchAvailable}
                         className="grid size-11 place-items-center rounded-full bg-[var(--app-ink)]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
-                        aria-label={
-                            torchOn ? 'Matikan lampu' : 'Nyalakan lampu'
-                        }
+                        aria-label={torchOn ? 'Matikan lampu' : 'Nyalakan lampu'}
                     >
-                        {torchOn ? (
-                            <Zap className="size-5" />
-                        ) : (
-                            <ZapOff className="size-5" />
-                        )}
+                        {torchOn ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
                     </button>
                 </header>
 
@@ -155,12 +117,8 @@ export default function BarcodeScannerDialog({
                     {cameraError ? (
                         <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center text-[var(--app-ink)] shadow-[0_20px_60px_-24px_rgba(0,0,0,.8)]">
                             <Camera className="mx-auto size-8 text-[#c75d32]" />
-                            <p className="mt-3 font-black">
-                                Scanner belum tersedia
-                            </p>
-                            <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">
-                                {cameraError}
-                            </p>
+                            <p className="mt-3 font-black">Scanner belum tersedia</p>
+                            <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{cameraError}</p>
                             <button
                                 type="button"
                                 onClick={retry}
@@ -169,10 +127,7 @@ export default function BarcodeScannerDialog({
                                 <RefreshCw className="size-4" /> Coba lagi
                             </button>
                             {scanError && (
-                                <p
-                                    role="alert"
-                                    className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700"
-                                >
+                                <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
                                     {scanError}
                                 </p>
                             )}
@@ -184,9 +139,7 @@ export default function BarcodeScannerDialog({
                             </div>
                             <div className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-[var(--app-soft-strong)]">
                                 <ScanBarcode className="size-5 text-[#f3a15e]" />
-                                {detectorAvailable
-                                    ? 'Arahkan kode ke dalam bingkai'
-                                    : 'Arahkan kode, lalu baca dari foto'}
+                                {detectorAvailable ? 'Arahkan kode ke dalam bingkai' : 'Arahkan kode, lalu baca dari foto'}
                             </div>
                             {scanError && (
                                 <p
@@ -227,11 +180,7 @@ export default function BarcodeScannerDialog({
                             disabled={!ready || processingPhoto}
                             className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-black text-[var(--app-ink)] shadow-[0_16px_40px_-18px_rgba(0,0,0,.8)] disabled:opacity-45"
                         >
-                            {processingPhoto ? (
-                                <LoaderCircle className="size-4 animate-spin" />
-                            ) : (
-                                <Camera className="size-4" />
-                            )}
+                            {processingPhoto ? <LoaderCircle className="size-4 animate-spin" /> : <Camera className="size-4" />}
                             {processingPhoto ? 'Membaca kode...' : 'Ambil foto'}
                         </button>
                     </div>

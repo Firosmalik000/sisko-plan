@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Actions\Subscriptions\PurchaseSubscriptionAddon;
 use App\Actions\Subscriptions\SelectSubscriptionPlan;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
@@ -13,7 +14,7 @@ use Inertia\Inertia;
 
 class SelectSubscriptionPlanController extends Controller
 {
-    public function __invoke(Request $request, SelectSubscriptionPlan $action): RedirectResponse
+    public function __invoke(Request $request, SelectSubscriptionPlan $action, PurchaseSubscriptionAddon $addons): RedirectResponse
     {
         $user = $request->user();
 
@@ -33,6 +34,13 @@ class SelectSubscriptionPlanController extends Controller
 
         if ($plan === null) {
             throw ValidationException::withMessages(['plan_id' => __('Plan is unavailable.')]);
+        }
+
+        if ($plan->kind === Plan::KIND_ADDON) {
+            $addons->handle($user, $plan, $request->ip());
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('Add-on :name berhasil ditambahkan.', ['name' => $plan->name])]);
+
+            return to_route('subscription.index');
         }
 
         $result = $action->handle($user, $plan, $request->ip());

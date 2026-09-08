@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\SubscriptionStatus;
+use App\Models\Subscription;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
@@ -35,5 +37,10 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+        $subscription = Subscription::query()->with('plan')->sole();
+        $this->assertSame(SubscriptionStatus::Active, $subscription->status);
+        $this->assertSame('Gratis Selamanya', $subscription->plan->name);
+        $this->assertNull($subscription->store_id);
+        $this->assertNull($subscription->current_period_end);
     }
 }

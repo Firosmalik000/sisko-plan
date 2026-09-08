@@ -3,21 +3,10 @@ import { Power, Search, Trash2, UserRoundCog, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
-import {
-    paginatedRowNumber,
-    PlatformTableLeadCell,
-    PlatformTableLeadHeader,
-} from '@/components/platform-table-lead-cell';
+import { paginatedRowNumber, PlatformTableLeadCell, PlatformTableLeadHeader } from '@/components/platform-table-lead-cell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
 type UserItem = {
@@ -41,37 +30,18 @@ type Paginated<T> = {
     links: PaginationLink[];
 };
 
-export default function AdminUsers({
-    users,
-    filters,
-}: {
-    users: Paginated<UserItem>;
-    filters: { search: string };
-}) {
+export default function AdminUsers({ users, filters }: { users: Paginated<UserItem>; filters: { search: string } }) {
     return (
         <>
             <Head title="Kelola Pengguna" />
             <div className="platform-enter flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
                     <p className="platform-kicker">Identity management</p>
-                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">
-                        Pengguna platform
-                    </h1>
-                    <p className="mt-1 text-xs font-medium text-slate-500">
-                        {users.total} akun
-                    </p>
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">Pengguna platform</h1>
+                    <p className="mt-1 text-xs font-medium text-slate-500">{users.total} akun</p>
                 </div>
-                <Form
-                    action="/super-admin/users"
-                    method="get"
-                    className="flex w-full max-w-sm gap-2"
-                >
-                    <Input
-                        name="search"
-                        defaultValue={filters.search}
-                        placeholder="Cari nama atau email"
-                        className="bg-white/70"
-                    />
+                <Form action="/super-admin/users" method="get" className="flex w-full max-w-sm gap-2">
+                    <Input name="search" defaultValue={filters.search} placeholder="Cari nama atau email" className="bg-white/70" />
                     <Button variant="outline">
                         <Search /> Cari
                     </Button>
@@ -93,26 +63,14 @@ export default function AdminUsers({
                         <tbody className="divide-y divide-slate-900/8">
                             {users.data.map((user, index) => (
                                 <tr key={user.id}>
-                                    <UserLeadCell
-                                        user={user}
-                                        index={paginatedRowNumber(
-                                            users.current_page,
-                                            users.per_page,
-                                            index,
-                                        )}
-                                    />
+                                    <UserLeadCell user={user} index={paginatedRowNumber(users.current_page, users.per_page, index)} />
                                     <td className="px-5 py-4">
-                                        <p className="font-medium">
-                                            {user.name}
-                                        </p>
-                                        <p className="text-xs text-slate-500">
-                                            {user.email}
-                                        </p>
+                                        <p className="font-medium">{user.name}</p>
+                                        <p className="text-xs text-slate-500">{user.email}</p>
                                     </td>
                                     <td className="px-5 py-4">
                                         <Badge variant="outline">
-                                            {user.platform_role ===
-                                            'super_admin'
+                                            {user.platform_role === 'super_admin'
                                                 ? 'Super Admin'
                                                 : user.platform_role === 'admin'
                                                   ? 'Admin Platform'
@@ -125,20 +83,10 @@ export default function AdminUsers({
                                             {user.stores_count}
                                         </span>
                                     </td>
-                                    <td className="px-5 py-4 text-slate-600">
-                                        {user.created_at}
-                                    </td>
+                                    <td className="px-5 py-4 text-slate-600">{user.created_at}</td>
                                     <td className="px-5 py-4">
-                                        <Badge
-                                            variant={
-                                                user.status === 'active'
-                                                    ? 'secondary'
-                                                    : 'destructive'
-                                            }
-                                        >
-                                            {user.status === 'active'
-                                                ? 'Aktif'
-                                                : 'Ditangguhkan'}
+                                        <Badge variant={user.status === 'active' ? 'secondary' : 'destructive'}>
+                                            {user.status === 'active' ? 'Aktif' : 'Ditangguhkan'}
                                         </Badge>
                                     </td>
                                 </tr>
@@ -146,11 +94,7 @@ export default function AdminUsers({
                         </tbody>
                     </table>
                 </div>
-                {users.data.length === 0 && (
-                    <div className="py-14 text-center text-sm text-slate-500">
-                        Pengguna tidak ditemukan.
-                    </div>
-                )}
+                {users.data.length === 0 && <div className="py-14 text-center text-sm text-slate-500">Pengguna tidak ditemukan.</div>}
                 <div className="flex flex-col gap-3 border-t border-slate-900/8 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
                     <span>
                         Halaman {users.current_page} dari {users.last_page}
@@ -177,8 +121,7 @@ function UserLeadCell({ user, index }: { user: UserItem; index: number }) {
 
     if (user.can_update_status) {
         actions.push({
-            label:
-                user.status === 'active' ? 'Tangguhkan akun' : 'Aktifkan akun',
+            label: user.status === 'active' ? 'Tangguhkan akun' : 'Aktifkan akun',
             icon: Power,
             href: `/super-admin/users/${user.id}/status`,
             method: 'patch' as const,
@@ -208,16 +151,9 @@ function UserLeadCell({ user, index }: { user: UserItem; index: number }) {
                     <DialogContent className="gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
                         <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 text-left">
                             <DialogTitle>Hapus akun {user.name}?</DialogTitle>
-                            <DialogDescription className="mt-2">
-                                Akun tanpa histori transaksi akan dihapus
-                                permanen.
-                            </DialogDescription>
+                            <DialogDescription className="mt-2">Akun tanpa histori transaksi akan dihapus permanen.</DialogDescription>
                         </DialogHeader>
-                        <Form
-                            action={`/super-admin/users/${user.id}`}
-                            method="delete"
-                            onSuccess={() => setOpen(false)}
-                        >
+                        <Form action={`/super-admin/users/${user.id}`} method="delete" onSuccess={() => setOpen(false)}>
                             {({ processing, errors }) => (
                                 <>
                                     {errors.user && (
@@ -229,22 +165,11 @@ function UserLeadCell({ user, index }: { user: UserItem; index: number }) {
                                         </p>
                                     )}
                                     <DialogFooter className="px-5 py-4">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            disabled={processing}
-                                            onClick={() => setOpen(false)}
-                                        >
+                                        <Button type="button" variant="outline" disabled={processing} onClick={() => setOpen(false)}>
                                             Batal
                                         </Button>
-                                        <Button
-                                            type="submit"
-                                            variant="destructive"
-                                            disabled={processing}
-                                        >
-                                            {processing
-                                                ? 'Menghapus...'
-                                                : 'Hapus akun'}
+                                        <Button type="submit" variant="destructive" disabled={processing}>
+                                            {processing ? 'Menghapus...' : 'Hapus akun'}
                                         </Button>
                                     </DialogFooter>
                                 </>

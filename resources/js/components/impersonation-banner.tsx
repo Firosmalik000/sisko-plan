@@ -20,15 +20,10 @@ export function ImpersonationBanner() {
                 <div className="flex min-w-0 items-start gap-3">
                     <BadgeAlert className="mt-0.5 size-4 shrink-0" />
                     <div className="min-w-0">
-                        <p className="text-sm font-semibold">
-                            Impersonasi aktif
-                        </p>
-                        <p className="truncate text-sm text-amber-900/80">
-                            Sedang masuk sebagai {auth.user?.name ?? 'akun ini'}
-                        </p>
+                        <p className="text-sm font-semibold">Impersonasi aktif</p>
+                        <p className="truncate text-sm text-amber-900/80">Sedang masuk sebagai {auth.user?.name ?? 'akun ini'}</p>
                         <p className="truncate text-xs text-amber-900/70">
-                            Dari {impersonation.admin_name} ·{' '}
-                            {impersonation.admin_email}
+                            Dari {impersonation.admin_name} · {impersonation.admin_email}
                         </p>
                     </div>
                 </div>

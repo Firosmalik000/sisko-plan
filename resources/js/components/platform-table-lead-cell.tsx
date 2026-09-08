@@ -3,12 +3,7 @@ import { Link } from '@inertiajs/react';
 import { MoreHorizontal } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export type PlatformRowAction = {
     label: string;
@@ -20,11 +15,7 @@ export type PlatformRowAction = {
     onSelect?: () => void;
 };
 
-export function PlatformTableLeadHeader({
-    withActions = true,
-}: {
-    withActions?: boolean;
-}) {
+export function PlatformTableLeadHeader({ withActions = true }: { withActions?: boolean }) {
     return (
         <th className="w-24 px-4 py-3.5">
             <span>No.</span>
@@ -47,9 +38,7 @@ export function PlatformTableLeadCell({
     return (
         <td className="w-24 px-4 py-3.5">
             <div className="flex items-center gap-2">
-                <span className="min-w-6 text-center text-xs font-bold text-slate-500 tabular-nums">
-                    {index}
-                </span>
+                <span className="min-w-6 text-center text-xs font-bold text-slate-500 tabular-nums">{index}</span>
                 {actions.length > 0 && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -61,11 +50,7 @@ export function PlatformTableLeadCell({
                                 <MoreHorizontal className="size-4" />
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            align="start"
-                            sideOffset={6}
-                            className="w-52 border-slate-200 bg-white p-1.5 shadow-xl"
-                        >
+                        <DropdownMenuContent align="start" sideOffset={6} className="w-52 border-slate-200 bg-white p-1.5 shadow-xl">
                             {actions.map((action) => {
                                 const Icon = action.icon;
                                 const className = action.destructive
@@ -73,11 +58,7 @@ export function PlatformTableLeadCell({
                                     : 'text-slate-700 focus:bg-slate-100 focus:text-[#0b292f]';
 
                                 return action.href ? (
-                                    <DropdownMenuItem
-                                        key={action.label}
-                                        asChild
-                                        className={className}
-                                    >
+                                    <DropdownMenuItem key={action.label} asChild className={className}>
                                         <Link
                                             href={action.href}
                                             method={action.method ?? 'get'}
@@ -110,10 +91,6 @@ export function PlatformTableLeadCell({
     );
 }
 
-export function paginatedRowNumber(
-    currentPage: number,
-    perPage: number,
-    index: number,
-) {
+export function paginatedRowNumber(currentPage: number, perPage: number, index: number) {
     return (currentPage - 1) * perPage + index + 1;
 }

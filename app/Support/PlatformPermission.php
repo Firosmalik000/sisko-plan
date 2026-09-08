@@ -40,6 +40,10 @@ final class PlatformPermission
 
     public const BRANDING_MANAGE = 'platform.branding.manage';
 
+    public const GEOGRAPHY_VIEW = 'platform.geography.view';
+
+    public const GEOGRAPHY_MANAGE = 'platform.geography.manage';
+
     /** @return list<string> */
     public static function all(): array
     {
@@ -65,6 +69,8 @@ final class PlatformPermission
             self::PAYMENTS_VIEW,
             self::BRANDING_VIEW,
             self::BRANDING_MANAGE,
+            self::GEOGRAPHY_VIEW,
+            self::GEOGRAPHY_MANAGE,
         ];
     }
 
@@ -103,6 +109,10 @@ final class PlatformPermission
                 ['name' => self::BRANDING_VIEW, 'label' => 'Lihat pengaturan brand & SEO'],
                 ['name' => self::BRANDING_MANAGE, 'label' => 'Kelola brand & SEO'],
             ]],
+            ['label' => 'Negara & Mata Uang', 'permissions' => [
+                ['name' => self::GEOGRAPHY_VIEW, 'label' => 'Lihat negara dan mata uang'],
+                ['name' => self::GEOGRAPHY_MANAGE, 'label' => 'Kelola negara dan mata uang'],
+            ]],
         ];
     }
 
@@ -116,6 +126,7 @@ final class PlatformPermission
             self::PAYMENTS_VIEW => 'super-admin.payments.index',
             self::ADMINS_VIEW => 'super-admin.platform-admins.index',
             self::BRANDING_VIEW => 'super-admin.brand-seo.index',
+            self::GEOGRAPHY_VIEW => 'super-admin.geography.index',
         ] as $permission => $route) {
             if ($user->can($permission)) {
                 return $route;

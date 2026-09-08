@@ -107,7 +107,7 @@ class ProductRequest extends MasterDataRequest
 
             $duplicateKey = $field['column'].'|'.mb_strtolower($value);
             if (isset($seen[$duplicateKey])) {
-                $validator->errors()->add($field['key'], 'Kode ini digunakan lebih dari sekali pada produk yang sama.');
+                $validator->errors()->add($field['key'], __('Kode ini digunakan lebih dari sekali pada produk yang sama.'));
 
                 continue;
             }
@@ -119,7 +119,7 @@ class ProductRequest extends MasterDataRequest
                 ->when($productId !== null, fn ($query) => $query->where('product_id', '!=', $productId))
                 ->exists();
             if ($conflict) {
-                $validator->errors()->add($field['key'], 'Kode ini sudah digunakan produk lain di toko ini.');
+                $validator->errors()->add($field['key'], __('Kode ini sudah digunakan produk lain di toko ini.'));
             }
         }
     }

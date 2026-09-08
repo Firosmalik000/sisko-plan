@@ -36,6 +36,10 @@ class SelectSubscriptionPlan
                 ->first();
             $selectedPlan = Plan::query()->whereKey($plan->id)->where('is_active', true)->lockForUpdate()->firstOrFail();
 
+            if ($selectedPlan->kind !== Plan::KIND_BASE) {
+                throw ValidationException::withMessages(['plan_id' => __('Penawaran ini bukan paket utama.')]);
+            }
+
             if ($subscription === null) {
                 throw ValidationException::withMessages([
                     'plan_id' => 'Subscription akun belum tersedia. Hubungi pengelola platform.',
@@ -56,7 +60,11 @@ class SelectSubscriptionPlan
             $this->access->assertPlanCapacity($owner, $selectedPlan);
 
             $now = CarbonImmutable::now();
-            $periodStart = $selectedPlan->is_trial
+            $freeLifetimeUpgrade = $operational
+                && $subscription->plan->billing_cycle === Plan::BILLING_LIFETIME
+                && (float) $subscription->plan->monthly_price === 0.0
+                && $subscription->plan_id !== $selectedPlan->id;
+            $periodStart = $selectedPlan->is_trial || $freeLifetimeUpgrade
                 ? $now->startOfDay()
                 : $this->periods->nextAvailableStart($subscription);
             if ($periodStart === null) {
@@ -66,7 +74,9 @@ class SelectSubscriptionPlan
             }
             $periodEnd = $selectedPlan->is_trial
                 ? $periodStart->addDays(Plan::TRIAL_DAYS)
-                : $periodStart->addMonthsNoOverflow($selectedPlan->duration_months)->subDay();
+                : ($selectedPlan->billing_cycle === Plan::BILLING_LIFETIME
+                    ? null
+                    : $periodStart->addMonthsNoOverflow($selectedPlan->duration_months)->subDay());
             $scheduled = $periodStart->isAfter($now->startOfDay());
             $before = $subscription->only([
                 'plan_id', 'status', 'starts_at', 'trial_ends_at', 'trial_used_at',
@@ -79,6 +89,7 @@ class SelectSubscriptionPlan
                 'plan_name' => $selectedPlan->name,
                 'monthly_price' => $selectedPlan->monthly_price,
                 'duration_months' => $selectedPlan->duration_months,
+                'was_trial' => $selectedPlan->is_trial,
                 'period_start' => $periodStart,
                 'period_end' => $periodEnd,
                 'source' => 'self_service',
@@ -87,6 +98,14 @@ class SelectSubscriptionPlan
             ]);
 
             if (! $scheduled) {
+                if ($freeLifetimeUpgrade) {
+                    $previousStart = $subscription->current_period_start?->toImmutable() ?? $periodStart;
+                    SubscriptionPeriod::query()
+                        ->where('subscription_id', $subscription->id)
+                        ->where('plan_id', $subscription->plan_id)
+                        ->whereNull('period_end')
+                        ->update(['period_end' => $previousStart->gt($periodStart->subDay()) ? $previousStart : $periodStart->subDay()]);
+                }
                 $attributes = [
                     'plan_id' => $selectedPlan->id,
                     'starts_at' => $periodStart,

@@ -85,16 +85,12 @@ export function storeThemeVariables(color = '#ee4d2d'): CSSProperties {
 }
 
 export function previewStoreTheme(color: string) {
-    const workspace = document.querySelector<HTMLElement>(
-        '.customer-workspace',
-    );
+    const workspace = document.querySelector<HTMLElement>('.customer-workspace');
 
     if (!workspace) {
         return;
     }
 
     const variables = storeThemeVariables(color) as Record<string, string>;
-    Object.entries(variables).forEach(([name, value]) =>
-        workspace.style.setProperty(name, value),
-    );
+    Object.entries(variables).forEach(([name, value]) => workspace.style.setProperty(name, value));
 }

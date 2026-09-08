@@ -16,7 +16,15 @@
 - One owner account has one active subscription shared by every store it owns.
 - Plan limits for stores, active products, and distinct active staff are enforced across all stores owned by that account; the account owner does not consume a staff seat.
 - Store portal access requires an operational subscription: trials need an unexpired end date, while active subscriptions need a started billing period that has not expired.
-- A trial plan is identified explicitly by platform metadata, lasts 30 days, and can be used only once per owner account; changing plans must not erase trial history.
+- New customer registrations receive the active default free-forever base plan before their first store is created.
+- Existing customer accounts are backfilled to the free-forever base plan; suspended and cancelled account states remain restricted, while queued periods from retired base offers are cancelled.
+- Retired base offers with history are retained as inactive records. Only unused base offers may be deleted.
+- Trial metadata remains available for future offers, but trial is not part of the default onboarding offer.
+- Plans are either base packages or additive capacity offers. Add-ons increase account-wide store, product, staff, and monthly scan entitlements without replacing the base subscription.
+- Every add-on offer has one placement category: store capacity, staff capacity, scan capacity, product capacity, or a general bundle.
+- Store, staff, product, and scanner limit states link to the matching active add-on category on the pricing page.
+- Add-on activations snapshot their category and capacity so later plan edits do not rewrite customer history.
+- Monthly scanner usage is shared by all stores owned by the account and resets on each Jakarta calendar month.
 - An owner with a non-operational subscription may confirm an eligible active plan from public pricing, while an operational subscription cannot be silently replaced mid-period.
 - Paid plans define a fixed duration from 1 through 12 months. Self-service and bulk activation derive the inclusive billing end date from that duration; changing a plan later does not rewrite an existing subscription period.
 - A paid self-service renewal never shortens an operational subscription. It is appended after the latest scheduled period and becomes effective automatically on its start date.

@@ -66,7 +66,9 @@ class UpdateStockCount
                 ->whereNull('counted_quantity')
                 ->count();
             if ($remaining > 0) {
-                throw ValidationException::withMessages(['items' => "Masih ada {$remaining} produk yang belum dihitung."]);
+                throw ValidationException::withMessages([
+                    'items' => __('Masih ada :count produk yang belum dihitung.', ['count' => $remaining]),
+                ]);
             }
 
             $locked->update([

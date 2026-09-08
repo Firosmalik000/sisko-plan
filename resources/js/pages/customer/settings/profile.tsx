@@ -88,24 +88,13 @@ export default function Profile({
     const { auth } = usePage<PageProps>().props;
     const settings = store?.settings;
     const [avatarPreview, setAvatarPreview] = useState<string>();
-    const [themeColor, setThemeColor] = useState(
-        settings?.theme_color ?? '#ee4d2d',
-    );
-    const [paperSize, setPaperSize] = useState<'58mm' | '80mm'>(
-        settings?.receipt_paper_size ?? '58mm',
-    );
+    const [themeColor, setThemeColor] = useState(settings?.theme_color ?? '#ee4d2d');
+    const [paperSize, setPaperSize] = useState<'58mm' | '80mm'>(settings?.receipt_paper_size ?? '58mm');
     const [storeName, setStoreName] = useState(store?.name ?? '');
     const [storeAddress, setStoreAddress] = useState(settings?.address ?? '');
-    const [receiptHeader, setReceiptHeader] = useState(
-        settings?.receipt_header ?? 'Terima kasih sudah berbelanja',
-    );
-    const [receiptFooter, setReceiptFooter] = useState(
-        settings?.receipt_footer ??
-            'Barang yang sudah dibeli tidak dapat dikembalikan.',
-    );
-    const [printerName, setPrinterName] = useState(
-        settings?.printer_name ?? '',
-    );
+    const [receiptHeader, setReceiptHeader] = useState(settings?.receipt_header ?? 'Terima kasih sudah berbelanja');
+    const [receiptFooter, setReceiptFooter] = useState(settings?.receipt_footer ?? 'Barang yang sudah dibeli tidak dapat dikembalikan.');
+    const [printerName, setPrinterName] = useState(settings?.printer_name ?? '');
     const [bluetoothStatus, setBluetoothStatus] = useState<string>();
     const initials = useMemo(
         () =>
@@ -126,17 +115,13 @@ export default function Profile({
         const bluetooth = (
             navigator as Navigator & {
                 bluetooth?: {
-                    requestDevice(options: {
-                        acceptAllDevices: boolean;
-                    }): Promise<{ name?: string }>;
+                    requestDevice(options: { acceptAllDevices: boolean }): Promise<{ name?: string }>;
                 };
             }
         ).bluetooth;
 
         if (!bluetooth) {
-            setBluetoothStatus(
-                'Bluetooth belum didukung browser ini. Isi nama printer secara manual.',
-            );
+            setBluetoothStatus('Bluetooth belum didukung browser ini. Isi nama printer secara manual.');
 
             return;
         }
@@ -161,29 +146,16 @@ export default function Profile({
                 <div className="absolute -top-14 -right-10 size-48 rounded-full bg-white/6" />
                 <div className="absolute -right-2 -bottom-20 size-40 rounded-full border border-white/10" />
                 <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Form
-                        action="/settings/profile/photo"
-                        method="post"
-                        encType="multipart/form-data"
-                        className="relative w-fit shrink-0"
-                    >
+                    <Form action="/settings/profile/photo" method="post" encType="multipart/form-data" className="relative w-fit shrink-0">
                         {({ processing, errors }) => (
                             <>
                                 <Avatar className="size-24 border-4 border-white/15 bg-white/10 shadow-lg sm:size-28">
-                                    <AvatarImage
-                                        src={avatarPreview ?? auth.user.avatar}
-                                        alt={auth.user.name}
-                                        className="object-cover"
-                                    />
-                                    <AvatarFallback className="bg-white/10 text-2xl font-black text-white">
-                                        {initials}
-                                    </AvatarFallback>
+                                    <AvatarImage src={avatarPreview ?? auth.user.avatar} alt={auth.user.name} className="object-cover" />
+                                    <AvatarFallback className="bg-white/10 text-2xl font-black text-white">{initials}</AvatarFallback>
                                 </Avatar>
                                 <label className="absolute -right-1 -bottom-1 flex size-10 cursor-pointer items-center justify-center rounded-full border-4 border-[var(--app-ink)] bg-white text-[var(--app-primary)] shadow-md transition hover:scale-105">
                                     <Camera className="size-4" />
-                                    <span className="sr-only">
-                                        Pilih foto profil
-                                    </span>
+                                    <span className="sr-only">Pilih foto profil</span>
                                     <input
                                         className="sr-only"
                                         type="file"
@@ -191,24 +163,18 @@ export default function Profile({
                                         accept="image/jpeg,image/png,image/webp"
                                         disabled={processing}
                                         onChange={(event) => {
-                                            const file =
-                                                event.target.files?.[0];
+                                            const file = event.target.files?.[0];
 
                                             if (!file) {
                                                 return;
                                             }
 
-                                            setAvatarPreview(
-                                                URL.createObjectURL(file),
-                                            );
+                                            setAvatarPreview(URL.createObjectURL(file));
                                             event.currentTarget.form?.requestSubmit();
                                         }}
                                     />
                                 </label>
-                                <InputError
-                                    message={errors.photo}
-                                    className="absolute top-full mt-2 w-52 text-xs text-red-200"
-                                />
+                                <InputError message={errors.photo} className="absolute top-full mt-2 w-52 text-xs text-red-200" />
                             </>
                         )}
                     </Form>
@@ -224,9 +190,7 @@ export default function Profile({
                                 </Badge>
                             )}
                         </div>
-                        <h2 className="mt-2 truncate text-xl font-black tracking-[-0.04em] sm:text-2xl">
-                            {store?.name ?? auth.user.name}
-                        </h2>
+                        <h2 className="mt-2 truncate text-xl font-black tracking-[-0.04em] sm:text-2xl">{store?.name ?? auth.user.name}</h2>
                         <p className="mt-1 flex items-center gap-2 truncate text-sm text-white/65">
                             <Mail className="size-3.5 shrink-0" />
                             {auth.user.email}
@@ -245,29 +209,12 @@ export default function Profile({
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,.75fr)]">
                 <div className="space-y-4">
-                    <SettingsCard
-                        icon={CircleUserRound}
-                        eyebrow="Profil"
-                        title="Akun saya"
-                    >
-                        <Form
-                            {...ProfileController.update.form()}
-                            options={{ preserveScroll: true }}
-                            className="grid gap-4 sm:grid-cols-2"
-                        >
+                    <SettingsCard icon={CircleUserRound} eyebrow="Profil" title="Akun saya">
+                        <Form {...ProfileController.update.form()} options={{ preserveScroll: true }} className="grid gap-4 sm:grid-cols-2">
                             {({ processing, errors }) => (
                                 <>
-                                    <Field
-                                        label="Nama lengkap"
-                                        icon={UserRound}
-                                    >
-                                        <Input
-                                            id="name"
-                                            name="name"
-                                            defaultValue={auth.user.name}
-                                            required
-                                            autoComplete="name"
-                                        />
+                                    <Field label="Nama lengkap" icon={UserRound}>
+                                        <Input id="name" name="name" defaultValue={auth.user.name} required autoComplete="name" />
                                         <InputError message={errors.name} />
                                     </Field>
                                     <Field label="Email akun" icon={Mail}>
@@ -281,27 +228,17 @@ export default function Profile({
                                         />
                                         <InputError message={errors.email} />
                                     </Field>
-                                    {mustVerifyEmail &&
-                                        auth.user.email_verified_at ===
-                                            null && (
-                                            <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 sm:col-span-2">
-                                                Email belum diverifikasi.{' '}
-                                                <Link
-                                                    href={send()}
-                                                    as="button"
-                                                    className="font-bold underline underline-offset-4"
-                                                >
-                                                    Kirim ulang verifikasi
-                                                </Link>
-                                                {status ===
-                                                    'verification-link-sent' && (
-                                                    <span className="ml-1 font-medium text-emerald-700">
-                                                        Tautan baru telah
-                                                        dikirim.
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
+                                    {mustVerifyEmail && auth.user.email_verified_at === null && (
+                                        <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 sm:col-span-2">
+                                            Email belum diverifikasi.{' '}
+                                            <Link href={send()} as="button" className="font-bold underline underline-offset-4">
+                                                Kirim ulang verifikasi
+                                            </Link>
+                                            {status === 'verification-link-sent' && (
+                                                <span className="ml-1 font-medium text-emerald-700">Tautan baru telah dikirim.</span>
+                                            )}
+                                        </div>
+                                    )}
                                     <div className="sm:col-span-2">
                                         <Button
                                             disabled={processing}
@@ -318,194 +255,107 @@ export default function Profile({
                     </SettingsCard>
 
                     {store ? (
-                        <Form
-                            action="/settings/store"
-                            method="patch"
-                            options={{ preserveScroll: true }}
-                            className="space-y-5"
-                        >
+                        <Form action="/settings/store" method="patch" options={{ preserveScroll: true }} className="space-y-5">
                             {({ processing, errors }) => (
                                 <>
                                     <SettingsCard
                                         icon={Building2}
                                         eyebrow="Identitas"
                                         title="Data toko"
-                                        badge={
-                                            store.can_manage
-                                                ? undefined
-                                                : 'Hanya lihat'
-                                        }
+                                        badge={store.can_manage ? undefined : 'Hanya lihat'}
                                     >
                                         <div className="grid gap-4 sm:grid-cols-2">
-                                            <Field
-                                                label="Nama toko"
-                                                icon={StoreIcon}
-                                                className="sm:col-span-2"
-                                            >
+                                            <Field label="Nama toko" icon={StoreIcon} className="sm:col-span-2">
                                                 <Input
                                                     name="store_name"
                                                     value={storeName}
-                                                    onChange={(event) =>
-                                                        setStoreName(
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                    onChange={(event) => setStoreName(event.target.value)}
                                                     disabled={!store.can_manage}
                                                 />
-                                                <InputError
-                                                    message={errors.store_name}
-                                                />
+                                                <InputError message={errors.store_name} />
                                             </Field>
                                             <Field label="Nomor telepon">
                                                 <Input
                                                     name="phone"
-                                                    defaultValue={
-                                                        settings?.phone ?? ''
-                                                    }
+                                                    defaultValue={settings?.phone ?? ''}
                                                     inputMode="tel"
                                                     placeholder="08xxxxxxxxxx"
                                                     disabled={!store.can_manage}
                                                 />
-                                                <InputError
-                                                    message={errors.phone}
-                                                />
+                                                <InputError message={errors.phone} />
                                             </Field>
                                             <Field label="Email toko">
                                                 <Input
                                                     name="email"
                                                     type="email"
-                                                    defaultValue={
-                                                        settings?.email ?? ''
-                                                    }
+                                                    defaultValue={settings?.email ?? ''}
                                                     placeholder="toko@email.com"
                                                     disabled={!store.can_manage}
                                                 />
-                                                <InputError
-                                                    message={errors.email}
-                                                />
+                                                <InputError message={errors.email} />
                                             </Field>
-                                            <Field
-                                                label="Alamat toko"
-                                                icon={MapPin}
-                                                className="sm:col-span-2"
-                                            >
+                                            <Field label="Alamat toko" icon={MapPin} className="sm:col-span-2">
                                                 <textarea
                                                     name="address"
                                                     value={storeAddress}
-                                                    onChange={(event) =>
-                                                        setStoreAddress(
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                    onChange={(event) => setStoreAddress(event.target.value)}
                                                     rows={3}
                                                     disabled={!store.can_manage}
                                                     className="w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
                                                 />
-                                                <InputError
-                                                    message={errors.address}
-                                                />
+                                                <InputError message={errors.address} />
                                             </Field>
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard
-                                        icon={ReceiptText}
-                                        eyebrow="Cetak"
-                                        title="Struk penjualan"
-                                    >
+                                    <SettingsCard icon={ReceiptText} eyebrow="Cetak" title="Struk penjualan">
                                         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
                                             <div className="space-y-4">
                                                 <Field label="Judul struk">
                                                     <Input
                                                         name="receipt_header"
                                                         value={receiptHeader}
-                                                        onChange={(event) =>
-                                                            setReceiptHeader(
-                                                                event.target
-                                                                    .value,
-                                                            )
-                                                        }
+                                                        onChange={(event) => setReceiptHeader(event.target.value)}
                                                         maxLength={120}
-                                                        disabled={
-                                                            !store.can_manage
-                                                        }
+                                                        disabled={!store.can_manage}
                                                     />
-                                                    <InputError
-                                                        message={
-                                                            errors.receipt_header
-                                                        }
-                                                    />
+                                                    <InputError message={errors.receipt_header} />
                                                 </Field>
                                                 <Field label="Catatan bawah">
                                                     <textarea
                                                         name="receipt_footer"
                                                         value={receiptFooter}
-                                                        onChange={(event) =>
-                                                            setReceiptFooter(
-                                                                event.target
-                                                                    .value,
-                                                            )
-                                                        }
+                                                        onChange={(event) => setReceiptFooter(event.target.value)}
                                                         rows={2}
                                                         maxLength={240}
-                                                        disabled={
-                                                            !store.can_manage
-                                                        }
+                                                        disabled={!store.can_manage}
                                                         className="w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
                                                     />
-                                                    <InputError
-                                                        message={
-                                                            errors.receipt_footer
-                                                        }
-                                                    />
+                                                    <InputError message={errors.receipt_footer} />
                                                 </Field>
                                                 <div className="grid gap-3 sm:grid-cols-2">
                                                     <Field label="Lebar kertas">
                                                         <select
                                                             name="receipt_paper_size"
                                                             value={paperSize}
-                                                            onChange={(event) =>
-                                                                setPaperSize(
-                                                                    event.target
-                                                                        .value as
-                                                                        | '58mm'
-                                                                        | '80mm',
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                !store.can_manage
-                                                            }
+                                                            onChange={(event) => setPaperSize(event.target.value as '58mm' | '80mm')}
+                                                            disabled={!store.can_manage}
                                                             className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                                         >
-                                                            <option value="58mm">
-                                                                58 mm
-                                                            </option>
-                                                            <option value="80mm">
-                                                                80 mm
-                                                            </option>
+                                                            <option value="58mm">58 mm</option>
+                                                            <option value="80mm">80 mm</option>
                                                         </select>
                                                     </Field>
                                                     <Field label="Jumlah salinan">
                                                         <select
                                                             name="receipt_copies"
-                                                            defaultValue={
-                                                                settings?.receipt_copies ??
-                                                                1
-                                                            }
-                                                            disabled={
-                                                                !store.can_manage
-                                                            }
+                                                            defaultValue={settings?.receipt_copies ?? 1}
+                                                            disabled={!store.can_manage}
                                                             className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                                         >
-                                                            <option value="1">
-                                                                1 lembar
-                                                            </option>
-                                                            <option value="2">
-                                                                2 lembar
-                                                            </option>
-                                                            <option value="3">
-                                                                3 lembar
-                                                            </option>
+                                                            <option value="1">1 lembar</option>
+                                                            <option value="2">2 lembar</option>
+                                                            <option value="3">3 lembar</option>
                                                         </select>
                                                     </Field>
                                                 </div>
@@ -513,24 +363,14 @@ export default function Profile({
                                                     <CheckSetting
                                                         name="receipt_show_address"
                                                         label="Tampilkan alamat"
-                                                        defaultChecked={
-                                                            settings?.receipt_show_address ??
-                                                            true
-                                                        }
-                                                        disabled={
-                                                            !store.can_manage
-                                                        }
+                                                        defaultChecked={settings?.receipt_show_address ?? true}
+                                                        disabled={!store.can_manage}
                                                     />
                                                     <CheckSetting
                                                         name="receipt_show_cashier"
                                                         label="Tampilkan kasir"
-                                                        defaultChecked={
-                                                            settings?.receipt_show_cashier ??
-                                                            true
-                                                        }
-                                                        disabled={
-                                                            !store.can_manage
-                                                        }
+                                                        defaultChecked={settings?.receipt_show_cashier ?? true}
+                                                        disabled={!store.can_manage}
                                                     />
                                                 </div>
                                             </div>
@@ -544,29 +384,17 @@ export default function Profile({
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard
-                                        icon={Bluetooth}
-                                        eyebrow="Perangkat"
-                                        title="Printer Bluetooth"
-                                    >
+                                    <SettingsCard icon={Bluetooth} eyebrow="Perangkat" title="Printer Bluetooth">
                                         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                                             <Field label="Nama printer">
                                                 <Input
                                                     name="printer_name"
                                                     value={printerName}
-                                                    onChange={(event) =>
-                                                        setPrinterName(
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                    onChange={(event) => setPrinterName(event.target.value)}
                                                     placeholder="Contoh: RPP02N"
                                                     disabled={!store.can_manage}
                                                 />
-                                                <InputError
-                                                    message={
-                                                        errors.printer_name
-                                                    }
-                                                />
+                                                <InputError message={errors.printer_name} />
                                             </Field>
                                             <Button
                                                 type="button"
@@ -579,39 +407,24 @@ export default function Profile({
                                                 Cari printer
                                             </Button>
                                         </div>
-                                        {bluetoothStatus && (
-                                            <p className="mt-2 text-sm text-muted-foreground">
-                                                {bluetoothStatus}
-                                            </p>
-                                        )}
+                                        {bluetoothStatus && <p className="mt-2 text-sm text-muted-foreground">{bluetoothStatus}</p>}
                                         <div className="mt-4">
                                             <CheckSetting
                                                 name="auto_print_receipt"
                                                 label="Cetak otomatis setelah transaksi berhasil"
-                                                defaultChecked={
-                                                    settings?.auto_print_receipt ??
-                                                    false
-                                                }
+                                                defaultChecked={settings?.auto_print_receipt ?? false}
                                                 disabled={!store.can_manage}
                                             />
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard
-                                        icon={Palette}
-                                        eyebrow="Personalisasi"
-                                        title="Warna aplikasi"
-                                    >
+                                    <SettingsCard icon={Palette} eyebrow="Personalisasi" title="Warna aplikasi">
                                         <div className="flex flex-wrap gap-3">
                                             {themePresets.map((preset) => (
                                                 <button
                                                     key={preset.color}
                                                     type="button"
-                                                    onClick={() =>
-                                                        changeTheme(
-                                                            preset.color,
-                                                        )
-                                                    }
+                                                    onClick={() => changeTheme(preset.color)}
                                                     disabled={!store.can_manage}
                                                     className="group min-w-20 rounded-2xl border p-2 text-center text-xs font-bold transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50"
                                                     aria-label={`Gunakan tema ${preset.name}`}
@@ -619,42 +432,31 @@ export default function Profile({
                                                     <span
                                                         className="mx-auto flex size-10 items-center justify-center rounded-xl text-white shadow-sm"
                                                         style={{
-                                                            backgroundColor:
-                                                                preset.color,
+                                                            backgroundColor: preset.color,
                                                         }}
                                                     >
-                                                        {themeColor.toLowerCase() ===
-                                                            preset.color.toLowerCase() && (
+                                                        {themeColor.toLowerCase() === preset.color.toLowerCase() && (
                                                             <Check className="size-5" />
                                                         )}
                                                     </span>
-                                                    <span className="mt-1.5 block">
-                                                        {preset.name}
-                                                    </span>
+                                                    <span className="mt-1.5 block">{preset.name}</span>
                                                 </button>
                                             ))}
                                             <label className="min-w-20 cursor-pointer rounded-2xl border p-2 text-center text-xs font-bold transition hover:-translate-y-0.5 hover:shadow-md">
                                                 <span
                                                     className="mx-auto flex size-10 items-center justify-center rounded-xl text-white shadow-sm"
                                                     style={{
-                                                        backgroundColor:
-                                                            themeColor,
+                                                        backgroundColor: themeColor,
                                                     }}
                                                 >
                                                     <Sparkles className="size-4" />
                                                 </span>
-                                                <span className="mt-1.5 block">
-                                                    Kustom
-                                                </span>
+                                                <span className="mt-1.5 block">Kustom</span>
                                                 <input
                                                     type="color"
                                                     className="sr-only"
                                                     value={themeColor}
-                                                    onChange={(event) =>
-                                                        changeTheme(
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                    onChange={(event) => changeTheme(event.target.value)}
                                                     disabled={!store.can_manage}
                                                 />
                                             </label>
@@ -667,34 +469,23 @@ export default function Profile({
                                                 }}
                                             />
                                             <div className="min-w-0 flex-1">
-                                                <Label htmlFor="theme_color">
-                                                    Kode warna utama
-                                                </Label>
+                                                <Label htmlFor="theme_color">Kode warna utama</Label>
                                                 <Input
                                                     id="theme_color"
                                                     name="theme_color"
                                                     value={themeColor}
-                                                    onChange={(event) =>
-                                                        changeTheme(
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                    onChange={(event) => changeTheme(event.target.value)}
                                                     pattern="#[0-9A-Fa-f]{6}"
                                                     className="mt-1 font-mono uppercase"
                                                     disabled={!store.can_manage}
                                                 />
-                                                <InputError
-                                                    message={errors.theme_color}
-                                                />
+                                                <InputError message={errors.theme_color} />
                                             </div>
                                         </div>
                                     </SettingsCard>
                                     {store.can_manage && (
                                         <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 flex justify-end rounded-2xl border border-[var(--app-ink)]/8 bg-white/90 p-3 shadow-xl backdrop-blur-xl md:bottom-5">
-                                            <Button
-                                                disabled={processing}
-                                                className="min-h-11 w-full px-6 sm:w-auto"
-                                            >
+                                            <Button disabled={processing} className="min-h-11 w-full px-6 sm:w-auto">
                                                 <Save className="size-4" />
                                                 Simpan pengaturan toko
                                             </Button>
@@ -706,9 +497,7 @@ export default function Profile({
                     ) : (
                         <div className="rounded-3xl border border-dashed bg-white p-8 text-center">
                             <StoreIcon className="mx-auto size-9 text-muted-foreground" />
-                            <h2 className="mt-3 font-bold">
-                                Belum ada toko aktif
-                            </h2>
+                            <h2 className="mt-3 font-bold">Belum ada toko aktif</h2>
                             <Button asChild className="mt-4">
                                 <Link href="/stores/create">Buat toko</Link>
                             </Button>
@@ -718,11 +507,7 @@ export default function Profile({
 
                 <aside className="space-y-5 xl:sticky xl:top-24 xl:self-start">
                     {subscription && (
-                        <SettingsCard
-                            icon={CreditCard}
-                            eyebrow="Langganan"
-                            title={subscription.plan_name}
-                        >
+                        <SettingsCard icon={CreditCard} eyebrow="Langganan" title={subscription.plan_name}>
                             <div className="flex items-center justify-between gap-3">
                                 <Badge
                                     className={
@@ -731,31 +516,17 @@ export default function Profile({
                                             : 'bg-amber-100 text-amber-800 hover:bg-amber-100'
                                     }
                                 >
-                                    {subscription.can_write
-                                        ? 'Aktif'
-                                        : 'Perlu perhatian'}
+                                    {subscription.can_write ? 'Aktif' : 'Perlu perhatian'}
                                 </Badge>
                                 <span className="text-xs font-bold text-muted-foreground uppercase">
                                     {subscription.status.replaceAll('_', ' ')}
                                 </span>
                             </div>
                             <div className="mt-5 space-y-4">
-                                <UsageRow
-                                    label="Produk"
-                                    used={subscription.products_used}
-                                    limit={subscription.max_products}
-                                />
-                                <UsageRow
-                                    label="Staf aktif"
-                                    used={subscription.members_used}
-                                    limit={subscription.max_members}
-                                />
+                                <UsageRow label="Produk" used={subscription.products_used} limit={subscription.max_products} />
+                                <UsageRow label="Staf aktif" used={subscription.members_used} limit={subscription.max_members} />
                             </div>
-                            <Button
-                                variant="outline"
-                                asChild
-                                className="mt-5 min-h-11 w-full"
-                            >
+                            <Button variant="outline" asChild className="mt-5 min-h-11 w-full">
                                 <Link href="/subscription">
                                     Kelola langganan
                                     <ChevronRight className="size-4" />
@@ -769,23 +540,14 @@ export default function Profile({
                                 <ShieldCheck className="size-5" />
                             </span>
                             <div>
-                                <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                    Akun
-                                </p>
-                                <h2 className="font-bold">
-                                    Privasi & keamanan
-                                </h2>
+                                <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Akun</p>
+                                <h2 className="font-bold">Privasi & keamanan</h2>
                             </div>
                         </div>
                         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                            Ubah password, aktifkan autentikasi dua langkah, dan
-                            kelola passkey.
+                            Ubah password, aktifkan autentikasi dua langkah, dan kelola passkey.
                         </p>
-                        <Button
-                            asChild
-                            variant="outline"
-                            className="mt-4 min-h-11 w-full bg-white"
-                        >
+                        <Button asChild variant="outline" className="mt-4 min-h-11 w-full bg-white">
                             <Link href="/settings/security">
                                 Buka keamanan
                                 <ChevronRight className="size-4" />
@@ -820,9 +582,7 @@ function SettingsCard({
                     <Icon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
-                    <h2 className="truncate text-lg font-black tracking-[-0.025em]">
-                        {title}
-                    </h2>
+                    <h2 className="truncate text-lg font-black tracking-[-0.025em]">{title}</h2>
                 </div>
                 {badge && <Badge variant="secondary">{badge}</Badge>}
             </header>
@@ -914,9 +674,7 @@ function ReceiptPreview({
                     <span>TOTAL</span>
                     <span>51.000</span>
                 </div>
-                {footer && (
-                    <p className="mt-4 text-center text-[8px]">{footer}</p>
-                )}
+                {footer && <p className="mt-4 text-center text-[8px]">{footer}</p>}
             </div>
             <div className="mt-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-500">
                 <Printer className="size-3.5" />
@@ -925,15 +683,7 @@ function ReceiptPreview({
         </div>
     );
 }
-function UsageRow({
-    label,
-    used,
-    limit,
-}: {
-    label: string;
-    used: number;
-    limit: number;
-}) {
+function UsageRow({ label, used, limit }: { label: string; used: number; limit: number }) {
     const percent = limit === 0 ? 0 : Math.min(100, (used / limit) * 100);
 
     return (
@@ -945,10 +695,7 @@ function UsageRow({
                 </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                    className="h-full rounded-full bg-[var(--app-primary)] transition-all"
-                    style={{ width: `${percent}%` }}
-                />
+                <div className="h-full rounded-full bg-[var(--app-primary)] transition-all" style={{ width: `${percent}%` }} />
             </div>
         </div>
     );

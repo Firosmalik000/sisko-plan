@@ -1,5 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Coins, Globe2 } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,7 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 
-export default function CreateStore() {
+type CountryOption = {
+    code: string;
+    name: string;
+    currency: { code: string; name: string; symbol: string };
+};
+
+export default function CreateStore({ countries, defaultCountry }: { countries: CountryOption[]; defaultCountry: string }) {
+    const [countryCode, setCountryCode] = useState(defaultCountry);
+    const currency = countries.find((country) => country.code === countryCode)?.currency;
+
     return (
         <>
             <Head title="Buat Toko" />
@@ -23,21 +33,13 @@ export default function CreateStore() {
                                     <ArrowLeft className="size-4" />
                                     Daftar toko
                                 </Link>
-                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">
-                                    Buat Toko
-                                </h1>
+                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Buat Toko</h1>
                             </div>
-                            <Form
-                                action="/stores"
-                                method="post"
-                                className="space-y-4"
-                            >
+                            <Form action="/stores" method="post" className="space-y-4">
                                 {({ processing, errors }) => (
                                     <>
                                         <div className="space-y-2">
-                                            <Label htmlFor="name">
-                                                Nama toko
-                                            </Label>
+                                            <Label htmlFor="name">Nama toko</Label>
                                             <Input
                                                 id="name"
                                                 name="name"
@@ -45,14 +47,41 @@ export default function CreateStore() {
                                                 autoFocus
                                                 required
                                                 maxLength={120}
-                                                className="h-10"
+                                                className="h-11"
                                             />
                                             <InputError message={errors.name} />
                                         </div>
-                                        <Button
-                                            disabled={processing}
-                                            className="h-10 w-full bg-emerald-700 hover:bg-emerald-800"
-                                        >
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="country">Negara toko</Label>
+                                                <div className="relative">
+                                                    <Globe2 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                                                    <select
+                                                        id="country"
+                                                        name="country"
+                                                        value={countryCode}
+                                                        onChange={(event) => setCountryCode(event.target.value)}
+                                                        required
+                                                        className="h-11 w-full rounded-md border border-input bg-background py-2 pr-3 pl-9 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                                    >
+                                                        {countries.map((country) => (
+                                                            <option key={country.code} value={country.code}>
+                                                                {country.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <InputError message={errors.country} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Mata uang</Label>
+                                                <div className="flex h-11 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm font-semibold">
+                                                    <Coins className="size-4 text-muted-foreground" />
+                                                    {currency ? `${currency.code} (${currency.symbol})` : '-'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <Button disabled={processing} className="h-11 w-full bg-emerald-700 hover:bg-emerald-800">
                                             {processing && <Spinner />}
                                             Buat toko dan lanjutkan
                                         </Button>

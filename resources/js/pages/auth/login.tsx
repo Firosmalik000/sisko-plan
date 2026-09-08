@@ -21,24 +21,14 @@ type Props = {
     oauthError?: string;
 };
 
-export default function Login({
-    status,
-    canResetPassword,
-    googleAuthEnabled,
-    oauthError,
-}: Props) {
+export default function Login({ status, canResetPassword, googleAuthEnabled, oauthError }: Props) {
     const { t } = useTranslation();
 
     return (
         <>
             <Head title={t('Masuk')} />
 
-            {oauthError && (
-                <InputError
-                    message={t(oauthError)}
-                    className="mb-4 text-center"
-                />
-            )}
+            {oauthError && <InputError message={t(oauthError)} className="mb-4 text-center" />}
 
             {googleAuthEnabled && (
                 <>
@@ -47,18 +37,12 @@ export default function Login({
                 </>
             )}
 
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
-            >
+            <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-6">
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">
-                                    {t('Alamat email')}
-                                </Label>
+                                <Label htmlFor="email">{t('Alamat email')}</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -74,15 +58,9 @@ export default function Login({
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">
-                                        {t('Kata sandi')}
-                                    </Label>
+                                    <Label htmlFor="password">{t('Kata sandi')}</Label>
                                     {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-sm"
-                                            tabIndex={5}
-                                        >
+                                        <TextLink href={request()} className="ml-auto text-sm" tabIndex={5}>
                                             {t('Lupa kata sandi?')}
                                         </TextLink>
                                     )}
@@ -99,23 +77,11 @@ export default function Login({
                             </div>
 
                             <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <Label htmlFor="remember">
-                                    {t('Ingat saya')}
-                                </Label>
+                                <Checkbox id="remember" name="remember" tabIndex={3} />
+                                <Label htmlFor="remember">{t('Ingat saya')}</Label>
                             </div>
 
-                            <Button
-                                type="submit"
-                                className="mt-4 w-full"
-                                tabIndex={4}
-                                disabled={processing}
-                                data-test="login-button"
-                            >
+                            <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing} data-test="login-button">
                                 {processing && <Spinner />}
                                 {t('Masuk')}
                             </Button>
@@ -131,11 +97,7 @@ export default function Login({
                 )}
             </Form>
 
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {t(status)}
-                </div>
-            )}
+            {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{t(status)}</div>}
         </>
     );
 }

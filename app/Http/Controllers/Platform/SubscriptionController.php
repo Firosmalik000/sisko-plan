@@ -28,16 +28,25 @@ class SubscriptionController extends Controller
         $status = $request->string('status')->toString();
         $periods->syncDuePeriods();
         $plans = Plan::query()
-            ->withCount(['subscriptions' => fn ($query) => $query->whereNotNull('user_id')])
+            ->withCount([
+                'subscriptions' => fn ($query) => $query->whereNotNull('user_id'),
+                'subscriptionAddons',
+            ])
             ->orderBy('monthly_price')->get()
-            ->map(fn (Plan $plan): array => [...$plan->only(['public_id', 'name', 'description', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'is_default', 'is_trial', 'is_active']), 'subscriptions_count' => $plan->subscriptions_count]);
+            ->map(fn (Plan $plan): array => [
+                ...$plan->only(['public_id', 'name', 'description', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active']),
+                'subscriptions_count' => $plan->kind === Plan::KIND_ADDON ? $plan->subscription_addons_count : $plan->subscriptions_count,
+            ]);
         $subscriptions = Subscription::query()
             ->whereNotNull('user_id')
             ->with([
                 'user' => fn ($query) => $query->select(['id', 'name', 'email'])->withCount('ownedStores'),
                 'plan:id,public_id,name,monthly_price,duration_months,is_active',
+                'addons' => fn ($query) => $query
+                    ->whereDate('starts_on', '<=', now()->toDateString())
+                    ->where(fn ($addons) => $addons->whereNull('ends_on')->orWhereDate('ends_on', '>=', now()->toDateString()))
+                    ->orderByDesc('id'),
                 'periods' => fn ($query) => $query
-                    ->with('plan:id,is_trial')
                     ->whereDate('period_start', '>', now()->toDateString())
                     ->orderBy('period_start')
                     ->orderBy('id'),
@@ -56,9 +65,14 @@ class SubscriptionController extends Controller
                     'stores_count' => $subscription->user->owned_stores_count,
                 ],
                 'plan' => $subscription->plan->only(['public_id', 'name', 'monthly_price', 'duration_months', 'is_active']),
+                'active_addons' => $subscription->addons->map(fn ($addon): array => [
+                    ...$addon->only(['public_id', 'plan_name', 'offer_category', 'stores', 'products', 'members', 'scans']),
+                    'starts_on' => $addon->starts_on->toDateString(),
+                    'ends_on' => $addon->ends_on?->toDateString(),
+                ])->values()->all(),
                 'scheduled_periods' => $subscription->periods->map(fn ($period): array => [
                     ...$period->only(['public_id', 'plan_name', 'monthly_price', 'duration_months']),
-                    'is_trial' => $period->plan->is_trial,
+                    'is_trial' => $period->was_trial,
                     'period_start' => $period->period_start->toDateString(),
                     'period_end' => $period->period_end?->toDateString(),
                 ])->values()->all(),
@@ -101,7 +115,7 @@ class SubscriptionController extends Controller
             'plan_id' => [
                 'required',
                 Rule::exists('plans', 'public_id')->where(
-                    fn ($query) => $query->where('is_active', true)->orWhere('id', $subscription->plan_id),
+                    fn ($query) => $query->where('kind', Plan::KIND_BASE)->where(fn ($plans) => $plans->where('is_active', true)->orWhere('id', $subscription->plan_id)),
                 ),
             ],
             'status' => ['required', Rule::enum(SubscriptionStatus::class)],
@@ -167,24 +181,68 @@ class SubscriptionController extends Controller
         return back();
     }
 
-    /** @return array{name:string,description:?string,monthly_price:string,duration_months:int,max_stores:int,max_products:int,max_members:int,is_active:bool} */
+    /** @return array{name:string,description:?string,kind:string,offer_category:?string,billing_cycle:string,monthly_price:string,duration_months:int,max_stores:int,max_products:int,max_members:int,max_scans:int,is_active:bool} */
     private function planData(Request $request, ?Plan $plan = null): array
     {
+        $request->merge([
+            'kind' => $request->input('kind', Plan::KIND_BASE),
+            'offer_category' => $request->input('offer_category'),
+            'billing_cycle' => $request->input('billing_cycle', Plan::BILLING_FIXED),
+            'max_scans' => $request->input('max_scans', 0),
+        ]);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:500'],
+            'kind' => ['required', Rule::in([Plan::KIND_BASE, Plan::KIND_ADDON])],
+            'offer_category' => [
+                Rule::requiredIf($request->input('kind') === Plan::KIND_ADDON),
+                'nullable',
+                Rule::in(Plan::offerCategories()),
+            ],
+            'billing_cycle' => ['required', Rule::in([Plan::BILLING_FIXED, Plan::BILLING_LIFETIME])],
             'monthly_price' => ['required', 'decimal:0,4', 'gte:0', 'lte:999999999999999.9999'],
             'duration_months' => ['required', 'integer', 'between:1,12'],
             'max_stores' => ['required', 'integer', 'min:0', 'max:4294967295'],
             'max_products' => ['required', 'integer', 'min:0', 'max:4294967295'],
             'max_members' => ['required', 'integer', 'min:0', 'max:4294967295'],
+            'max_scans' => ['required', 'integer', 'min:0', 'max:4294967295'],
             'is_active' => ['required', 'boolean'],
         ]);
+        if ($validated['kind'] === Plan::KIND_ADDON
+            && collect(['max_stores', 'max_products', 'max_members', 'max_scans'])
+                ->every(fn (string $field): bool => (int) $validated[$field] === 0)) {
+            throw ValidationException::withMessages([
+                'max_scans' => __('Add-on harus menambah sedikitnya satu kapasitas.'),
+            ]);
+        }
+        if ($validated['kind'] === Plan::KIND_ADDON) {
+            $fieldByCategory = [
+                Plan::CATEGORY_STORE => 'max_stores',
+                Plan::CATEGORY_PRODUCT => 'max_products',
+                Plan::CATEGORY_STAFF => 'max_members',
+                Plan::CATEGORY_SCAN => 'max_scans',
+            ];
+            $category = $validated['offer_category'];
+            if (isset($fieldByCategory[$category])) {
+                $primaryField = $fieldByCategory[$category];
+                $otherFields = array_values(array_diff(array_values($fieldByCategory), [$primaryField]));
+                if ((int) $validated[$primaryField] === 0
+                    || collect($otherFields)->contains(fn (string $field): bool => (int) $validated[$field] > 0)) {
+                    throw ValidationException::withMessages([
+                        'offer_category' => __('Kategori add-on harus sesuai dengan satu jenis kapasitas yang ditambahkan.'),
+                    ]);
+                }
+            }
+        }
 
         return [
             'name' => $validated['name'], 'description' => $validated['description'] ?? null,
+            'kind' => $validated['kind'],
+            'offer_category' => $validated['kind'] === Plan::KIND_ADDON ? $validated['offer_category'] : null,
+            'billing_cycle' => $validated['billing_cycle'],
             'monthly_price' => $validated['monthly_price'], 'duration_months' => (int) $validated['duration_months'], 'max_stores' => (int) $validated['max_stores'],
             'max_products' => (int) $validated['max_products'], 'max_members' => (int) $validated['max_members'],
+            'max_scans' => (int) $validated['max_scans'],
             'is_active' => (bool) $validated['is_active'],
         ];
     }
