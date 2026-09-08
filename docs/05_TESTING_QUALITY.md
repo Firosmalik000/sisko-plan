@@ -46,3 +46,19 @@
 - Do not mark a phase complete if the core verification commands fail.
 - Document any unverified area explicitly.
 - Record residual risk when a test gap remains.
+
+## Parallel tests
+
+Development dependencies include ParaTest. Run the suite with ten workers:
+
+```sh
+php artisan test --parallel --processes=10
+```
+
+Tests use SQLite in-memory databases. This command runs tests only; use `composer ci:check` for the existing lint and static-analysis gates as well. Laravel Boost MCP configuration is machine-local and ignored by Git. Generate it for your installed agents from the repository root:
+
+```sh
+php artisan boost:install --mcp
+```
+
+For Codex, inspect `.codex/config.toml`; for Claude Code, inspect `.mcp.json`. Ensure the PHP executable, Artisan path, and working directory point to this checkout. Reconnect the agent after setup and verify Boost Application Info targets the intended application.

@@ -29,3 +29,7 @@ yarn-error.log
 /.zed
 
 /.certs/
+
+# Machine-local AI agent MCP configuration
+/.codex/config.toml
+/.mcp.json
