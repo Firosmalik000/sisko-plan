@@ -12,7 +12,7 @@ export const indonesianCore: Record<string, string> = {
     'Tutup navigasi': 'Tutup navigasi',
     'Kembali ke halaman utama': 'Kembali ke halaman utama',
     'Akses aman': 'Akses aman',
-    'Kasir cepat': 'Kasir cepat',
+    'Kasir cepat': 'Aksi cepat',
     'Stok real-time': 'Stok real-time',
     'Laporan ringkas': 'Laporan ringkas',
     'Ruang kerja toko Anda': 'Ruang kerja toko Anda',

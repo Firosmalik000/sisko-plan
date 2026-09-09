@@ -23,7 +23,7 @@ import {
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { currentDateTime, money, postingToken, quantity } from '@/components/operations-shell';
-import type { ScannerProductCandidate, ScannerSelection } from '@/components/product-scanner/types';
+import type { ScannerApplyResult, ScannerProductCandidate, ScannerSelection } from '@/components/product-scanner/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cashTenderSuggestions, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
@@ -99,6 +99,9 @@ export default function PosPage({
         () => typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('scan') === '1',
     );
     const [scannerSummary, setScannerSummary] = useState('');
+    const [scannerSession, setScannerSession] = useState({ count: 0, pending: 0 });
+    const [scannerView, setScannerView] = useState<'camera' | 'review'>('camera');
+    const [scannerResetKey, setScannerResetKey] = useState(0);
     const [customerOpen, setCustomerOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
     const searchRef = useRef<HTMLInputElement>(null);
@@ -253,47 +256,39 @@ export default function PosPage({
         setScanError('');
         restoreEntry();
     };
-    const addScannerSelections = (selections: ScannerSelection[]) => {
-        let added = 0;
-        let skipped = 0;
-        sale.setData((data) => {
-            const items = [...data.items];
-            selections.forEach((selection) => {
-                const option = products.find(
-                    (product) => product.product_id === selection.productId && product.unit_id === selection.unitId,
-                );
+    const addScannerSelections = (selections: ScannerSelection[]): ScannerApplyResult => {
+        const result: ScannerApplyResult = { applied: [], failures: [] };
+        const items = [...sale.data.items];
 
-                if (!option || available(option) <= 0) {
-                    skipped++;
+        for (const selection of selections) {
+            const identity = { captureId: selection.captureId, itemIndex: selection.itemIndex };
+            const option = products.find((product) => product.product_id === selection.productId && product.unit_id === selection.unitId);
+            const index = items.findIndex((item) => item.product_id === selection.productId && item.unit_id === selection.unitId);
+            const quantity = (index >= 0 ? Number(items[index].quantity) : 0) + selection.quantity;
 
-                    return;
-                }
+            if (!option || !Number.isFinite(selection.quantity) || selection.quantity <= 0 || quantity > available(option)) {
+                result.failures.push({
+                    ...identity,
+                    message: 'Produk tidak tersedia atau jumlah melebihi stok. Kurangi jumlah lalu coba lagi.',
+                });
+                continue;
+            }
 
-                const index = items.findIndex((item) => item.product_id === option.product_id && item.unit_id === option.unit_id);
+            if (index >= 0) {
+                items[index] = { ...items[index], quantity: String(quantity) };
+            } else {
+                items.push({ ...option, quantity: String(quantity), discount_amount: '0' });
+            }
 
-                if (index >= 0) {
-                    items[index] = {
-                        ...items[index],
-                        quantity: String(Math.min(Number(items[index].quantity) + selection.quantity, available(option))),
-                    };
-                } else {
-                    items.push({
-                        ...option,
-                        quantity: String(Math.min(selection.quantity, available(option))),
-                        discount_amount: '0',
-                    });
-                }
+            result.applied.push(identity);
+        }
 
-                added++;
-            });
-
-            return { ...data, items };
-        });
+        sale.setData('items', items);
         setScannerSummary(
-            skipped > 0
-                ? `${added} produk ditambahkan, ${skipped} dilewati karena tidak tersedia atau stok habis.`
-                : `${added} produk ditambahkan ke keranjang.`,
+            `${result.applied.length} produk ditambahkan ke keranjang.${result.failures.length ? ' Periksa hasil yang belum ditambahkan.' : ''}`,
         );
+
+        return result;
     };
     const chooseProduct = (product: CatalogProduct) => {
         setSelectedProduct(product);
@@ -369,6 +364,14 @@ export default function PosPage({
     };
     const submit = (event: FormEvent) => {
         event.preventDefault();
+
+        if (scannerSession.count || scannerSession.pending) {
+            setScannerView('review');
+            setScannerOpen(true);
+
+            return;
+        }
+
         sale.transform((data) => ({
             ...data,
             paid_amount: selectedMethod?.method === 'qris' ? String(total) : data.paid_amount,
@@ -390,11 +393,14 @@ export default function PosPage({
                                 <div className="grid grid-cols-3 gap-2 sm:flex">
                                     <button
                                         type="button"
-                                        onClick={() => setScannerOpen(true)}
+                                        onClick={() => {
+                                            setScannerView('camera');
+                                            setScannerOpen(true);
+                                        }}
                                         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-2 text-center text-xs font-black text-[var(--app-primary-foreground)] hover:bg-[var(--workspace-700)] sm:px-3"
                                     >
                                         <Camera className="size-4" />
-                                        Scan kamera
+                                        {scannerSession.count ? 'Lanjut scan' : 'Scan barang'}
                                     </button>
                                     <Link
                                         href="/sales?view=history&from=pos"
@@ -412,6 +418,30 @@ export default function PosPage({
                                     </Link>
                                 </div>
                             </div>
+                            {scannerSession.count > 0 && (
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        className="min-h-11 rounded-lg bg-white px-3 font-bold"
+                                        onClick={() => {
+                                            setScannerView('review');
+                                            setScannerOpen(true);
+                                        }}
+                                    >
+                                        Lihat hasil ({scannerSession.count})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="min-h-11 px-3 text-red-700"
+                                        onClick={() => {
+                                            setScannerResetKey((key) => key + 1);
+                                            setScannerSession({ count: 0, pending: 0 });
+                                        }}
+                                    >
+                                        Buang hasil scan
+                                    </button>
+                                </div>
+                            )}
                             {scannerSummary && (
                                 <p
                                     role="status"
@@ -974,7 +1004,12 @@ export default function PosPage({
                             )}
                             <button
                                 disabled={
-                                    sale.processing || sale.data.items.length === 0 || !selectedMethod || sale.data.paid_amount === ''
+                                    scannerSession.count > 0 ||
+                                    scannerSession.pending > 0 ||
+                                    sale.processing ||
+                                    sale.data.items.length === 0 ||
+                                    !selectedMethod ||
+                                    sale.data.paid_amount === ''
                                 }
                                 className="h-14 w-full rounded-2xl bg-orange-600 text-base font-black text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                             >
@@ -984,13 +1019,22 @@ export default function PosPage({
                     </form>
                 </div>
             </div>
-            <Suspense fallback={null}>
+            <Suspense
+                fallback={
+                    <div role="status" className="fixed inset-0 z-[90] grid place-items-center bg-black/80 text-white">
+                        Membuka kamera…
+                    </div>
+                }
+            >
                 <ProductScanner
                     purpose="sale"
                     title="Scan produk untuk penjualan"
                     open={scannerOpen}
                     onOpenChange={setScannerOpen}
                     onConfirm={addScannerSelections}
+                    onSessionChange={setScannerSession}
+                    initialView={scannerView}
+                    resetKey={scannerResetKey}
                     manualProducts={scannerProducts}
                     onManualSearch={() => {
                         setScannerOpen(false);

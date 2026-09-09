@@ -57,7 +57,7 @@ class CatalogIntelligenceClient
             'discover',
             'POST',
             '/api/v1/catalog-item-discoveries',
-            ['market' => $market],
+            ['market' => $market, 'language' => app()->getLocale(), 'currency' => strtoupper($store->country->currency_code)],
             $images,
             timeout: (int) config('services.catalog_intelligence.discovery_timeout'),
         );

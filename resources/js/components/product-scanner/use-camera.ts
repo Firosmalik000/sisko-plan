@@ -22,7 +22,7 @@ const cameraConstraints: MediaStreamConstraints = {
     },
 };
 
-export async function normalizeImage(source: Blob): Promise<Blob> {
+export async function normalizeImage(source: Blob, maxDimension = 1280, quality = 0.82): Promise<Blob> {
     let image: CanvasImageSource;
     let width: number;
     let height: number;
@@ -45,7 +45,7 @@ export async function normalizeImage(source: Blob): Promise<Blob> {
         release = () => URL.revokeObjectURL(url);
     }
 
-    const scale = Math.min(1, 1280 / Math.max(width, height));
+    const scale = Math.min(1, maxDimension / Math.max(width, height));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(width * scale));
     canvas.height = Math.max(1, Math.round(height * scale));
@@ -53,11 +53,11 @@ export async function normalizeImage(source: Blob): Promise<Blob> {
     release();
 
     return new Promise((resolve, reject) =>
-        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('encode'))), 'image/jpeg', 0.82),
+        canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('encode'))), 'image/jpeg', quality),
     );
 }
 
-export function useCamera(open: boolean, onBarcode: (value: string) => void, barcodeEnabled = true) {
+export function useCamera(open: boolean, onBarcode: (value: string) => boolean | void, barcodeEnabled = true) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,14 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void, bar
     const [torchAvailable, setTorchAvailable] = useState(false);
     const [torchOn, setTorchOn] = useState(false);
     const [retryCount, setRetryCount] = useState(0);
-    const agreementRef = useRef({ value: '', count: 0, lastSent: 0 });
+    const agreementRef = useRef({ value: '', count: 0, sent: '', absent: 0 });
+    const [visible, setVisible] = useState(!document.hidden);
+    useEffect(() => {
+        const update = () => setVisible(!document.hidden);
+        document.addEventListener('visibilitychange', update);
+
+        return () => document.removeEventListener('visibilitychange', update);
+    }, []);
 
     const stop = useCallback(() => {
         streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -81,7 +88,7 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void, bar
     }, []);
 
     useEffect(() => {
-        if (!open) {
+        if (!open || !visible) {
             return;
         }
 
@@ -139,10 +146,10 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void, bar
             cancelled = true;
             stop();
         };
-    }, [open, retryCount, stop]);
+    }, [open, visible, retryCount, stop]);
 
     useEffect(() => {
-        if (!open || !ready || !barcodeEnabled) {
+        if (!open || !visible || !ready || !barcodeEnabled) {
             return;
         }
 
@@ -176,17 +183,27 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void, bar
                     detectionBusy = false;
                 }
 
+                if (cancelled) {
+                    return;
+                }
+
                 if (!value) {
+                    if (++agreementRef.current.absent >= 2) {
+                        agreementRef.current = { value: '', count: 0, sent: '', absent: 0 };
+                    }
+
                     return;
                 }
 
                 const agreement = agreementRef.current;
+                agreement.absent = 0;
                 agreement.count = agreement.value === value ? agreement.count + 1 : 1;
                 agreement.value = value;
 
-                if (agreement.count >= 2 && Date.now() - agreement.lastSent > 1800) {
-                    agreement.lastSent = Date.now();
-                    onBarcode(value);
+                if (agreement.count >= 2 && agreement.sent !== value) {
+                    if (onBarcode(value) !== false) {
+                        agreement.sent = value;
+                    }
                 }
             },
             detector ? 260 : 900,
@@ -196,7 +213,7 @@ export function useCamera(open: boolean, onBarcode: (value: string) => void, bar
             cancelled = true;
             window.clearInterval(timer);
         };
-    }, [barcodeEnabled, open, ready, onBarcode]);
+    }, [barcodeEnabled, open, visible, ready, onBarcode]);
 
     const capture = useCallback(async (maxDimension = 1280, quality = 0.82): Promise<Blob | null> => {
         const video = videoRef.current;

@@ -1,4 +1,7 @@
 {
+    "Analisis untuk pasar toko ini belum tersedia. Isi data produk secara manual.": "Analysis is not available for this store's market. Enter product details manually.",
+    "Pilih satuan dari kelompok ecer.": "Choose a retail unit.",
+    "Pilih satuan dari kelompok besar.": "Choose a bulk unit.",
     "Opname harus selesai dihitung sebelum diposting.": "The stock count must be completed before it can be posted.",
     "Semua produk harus dihitung sebelum opname diposting.": "All products must be counted before the stock count can be posted.",
     "Belum ada produk persediaan aktif untuk dihitung.": "There are no active inventory products to count.",

@@ -29,7 +29,8 @@ class RecognizeCatalogItemsRequest extends FormRequest
     {
         return [
             'purpose' => ['required', Rule::enum(ProductScannerPurpose::class)],
-            'images' => ['required', 'array', 'min:1', 'max:'.config('services.catalog_intelligence.max_images')],
+            'scan_request_id' => ['required', 'uuid'],
+            'images' => ['required', 'array', 'min:1', 'max:'.min(3, max(1, (int) config('services.catalog_intelligence.max_images')))],
             'images.*' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'capture_ids' => ['nullable', 'array'],
             'capture_ids.*' => ['string', 'max:80'],

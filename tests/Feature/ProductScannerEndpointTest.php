@@ -122,6 +122,7 @@ class ProductScannerEndpointTest extends TestCase
         $this->actingAs($user)->withSession(['active_store_id' => $store->id])
             ->postJson(route('scanner.catalog-items.recognize'), [
                 'purpose' => 'sale',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
                 'images' => [UploadedFile::fake()->image('one.jpg')],
                 'capture_ids' => ['capture-1'],
             ])
@@ -140,6 +141,7 @@ class ProductScannerEndpointTest extends TestCase
         $this->actingAs($user)->withSession(['active_store_id' => $store->id])
             ->postJson(route('scanner.catalog-items.recognize'), [
                 'purpose' => 'sale',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
                 'images' => collect(range(1, 4))->map(fn (int $index) => UploadedFile::fake()->image("{$index}.jpg"))->all(),
             ])
             ->assertUnprocessable()
@@ -166,6 +168,7 @@ class ProductScannerEndpointTest extends TestCase
             ->postJson(route('scanner.catalog-items.discover'), [
                 'purpose' => 'product',
                 'market' => 'ID',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
                 'images' => [UploadedFile::fake()->image('one.jpg')],
             ])->assertForbidden();
     }
@@ -236,6 +239,7 @@ class ProductScannerEndpointTest extends TestCase
             ->postJson(route('scanner.catalog-items.discover'), [
                 'purpose' => 'product',
                 'market' => 'ID',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
                 'images' => collect(range(1, 3))->map(fn (int $index) => UploadedFile::fake()->image("{$index}.jpg"))->all(),
             ])
             ->assertOk()
@@ -323,6 +327,164 @@ class ProductScannerEndpointTest extends TestCase
         $this->assertStringContainsString('name="images"', $parentBody);
         $this->assertStringContainsString('name="images"', $withPhotoBody);
         $this->assertStringNotContainsString('name="images"', $withoutPhotoBody);
+    }
+
+    public function test_capacity_rejection_does_not_consume_scan_quota(): void
+    {
+        [$user, $store] = $this->ownerAndStore();
+        config()->set('services.catalog_intelligence.enabled', true);
+        Http::fake(['*/api/v1/catalog-item-recognitions' => Http::response([
+            'status' => 'error', 'data' => ['code' => 'SERVICE_BUSY'],
+        ], 429)]);
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
+            ->postJson(route('scanner.catalog-items.recognize'), [
+                'purpose' => 'sale',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
+                'images' => [UploadedFile::fake()->image('one.jpg')],
+            ])->assertStatus(429)->assertJsonPath('code', 'SCANNER_BUSY')->assertJsonPath('retryable', true);
+        $this->assertDatabaseCount('subscription_scan_events', 0);
+    }
+
+    public function test_discovery_retries_charge_once_and_changed_content_is_rejected_at_limit(): void
+    {
+        [$user, $store] = $this->ownerAndStore();
+        $store->subscription()->sole()->plan()->update(['max_scans' => 1]);
+        config()->set('services.catalog_intelligence.enabled', true);
+        $this->mock(CatalogIntelligenceClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('discover')->twice()->withArgs(
+                fn ($store, $images, $market, $requestId): bool => $requestId === '318067e4-d56e-4538-9363-d16eb5a0d12b',
+            )->andReturn(['status' => 'success', 'data' => []]);
+        });
+        $payload = [
+            'purpose' => 'product', 'market' => 'ID',
+            'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
+            'images' => [UploadedFile::fake()->image('one.jpg')],
+        ];
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id]);
+        $this->postJson(route('scanner.catalog-items.discover'), $payload)->assertOk();
+        $this->postJson(route('scanner.catalog-items.discover'), $payload)->assertOk();
+        $payload['images'] = [UploadedFile::fake()->image('changed.jpg', 30, 30)];
+        $this->postJson(route('scanner.catalog-items.discover'), $payload)
+            ->assertStatus(429)->assertJsonPath('retryable', false)->assertJsonPath('code', 'SCAN_LIMIT_REACHED');
+        $this->assertDatabaseCount('subscription_scan_events', 1);
+    }
+
+    public function test_discovery_provider_quota_is_not_retryable(): void
+    {
+        [$user, $store] = $this->ownerAndStore();
+        config()->set('services.catalog_intelligence.enabled', true);
+        Http::fake(['*' => Http::response([
+            'status' => 'error', 'data' => ['code' => 'DISCOVERY_QUOTA_EXCEEDED'],
+        ], 429)]);
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
+            ->postJson(route('scanner.catalog-items.discover'), [
+                'purpose' => 'product', 'market' => 'ID',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
+                'images' => [UploadedFile::fake()->image('one.jpg')],
+            ])->assertStatus(429)->assertJsonPath('code', 'DISCOVERY_QUOTA_EXCEEDED')->assertJsonPath('retryable', false);
+        $this->assertDatabaseCount('subscription_scan_events', 0);
+    }
+
+    public function test_discovery_context_comes_from_store_and_session_not_payload(): void
+    {
+        [$user, $store] = $this->ownerAndStore();
+        config()->set('services.catalog_intelligence.enabled', true);
+        $body = '';
+        Http::fake(function ($request) use (&$body) {
+            $body = $request->body();
+
+            return Http::response(['status' => 'success', 'data' => []]);
+        });
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id, 'locale' => 'en'])
+            ->postJson(route('scanner.catalog-items.discover'), [
+                'purpose' => 'product', 'market' => 'SG', 'currency' => 'SGD', 'language' => 'vi',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
+                'images' => [UploadedFile::fake()->image('one.jpg')],
+            ])->assertOk();
+        $this->assertStringContainsString('name="market"', $body);
+        $this->assertStringContainsString(strtoupper($store->country->code), $body);
+        $this->assertStringContainsString('name="language"', $body);
+        $this->assertStringContainsString('en', $body);
+        $this->assertStringContainsString(strtoupper($store->country->currency_code), $body);
+        $this->assertStringNotContainsString('SGD', $body);
+    }
+
+    public function test_temporary_discovery_failure_can_retry_without_charging_quota(): void
+    {
+        [$user, $store] = $this->ownerAndStore();
+        config()->set('services.catalog_intelligence.enabled', true);
+        Http::fake(['*' => Http::response([
+            'status' => 'error', 'data' => ['code' => 'DISCOVERY_UNAVAILABLE'],
+        ], 503)]);
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
+            ->postJson(route('scanner.catalog-items.discover'), [
+                'purpose' => 'product', 'market' => 'ID',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
+                'images' => [UploadedFile::fake()->image('one.jpg')],
+            ])->assertStatus(503)->assertJsonPath('retryable', true);
+        $this->assertDatabaseCount('subscription_scan_events', 0);
+    }
+
+    public function test_busy_then_success_and_identical_recognition_retry_charge_once(): void
+    {
+        [$user, $store] = $this->ownerAndStore();
+        config()->set('services.catalog_intelligence.enabled', true);
+        Http::fake(['*' => Http::sequence()
+            ->push(['status' => 'error', 'data' => ['code' => 'SERVICE_BUSY']], 429)
+            ->push(['status' => 'success', 'data' => ['images' => []]])
+            ->push(['status' => 'success', 'data' => ['images' => []]])
+            ->push(['status' => 'success', 'data' => ['images' => []]])]);
+        $payload = [
+            'purpose' => 'sale',
+            'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
+            'images' => [UploadedFile::fake()->image('one.jpg')],
+        ];
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id]);
+        $this->postJson(route('scanner.catalog-items.recognize'), $payload)->assertStatus(429);
+        $this->assertDatabaseCount('subscription_scan_events', 0);
+        $this->postJson(route('scanner.catalog-items.recognize'), $payload)->assertOk();
+        $this->postJson(route('scanner.catalog-items.recognize'), $payload)->assertOk();
+        $this->assertDatabaseCount('subscription_scan_events', 1);
+        $payload['images'] = [UploadedFile::fake()->image('changed.jpg', 30, 30)];
+        $this->postJson(route('scanner.catalog-items.recognize'), $payload)->assertOk();
+        $this->assertDatabaseCount('subscription_scan_events', 2);
+    }
+
+    public function test_foreign_store_session_falls_back_to_authorized_store_for_discovery(): void
+    {
+        [$user, $store] = $this->ownerAndStore();
+        $foreignStore = Store::factory()->create();
+        config()->set('services.catalog_intelligence.enabled', true);
+        $this->mock(CatalogIntelligenceClient::class, function (MockInterface $mock) use ($store): void {
+            $mock->shouldReceive('discover')->once()->withArgs(
+                fn ($sentStore, $images, $market, $requestId): bool => $sentStore->id === $store->id,
+            )->andReturn(['status' => 'success', 'data' => []]);
+        });
+        $this->actingAs($user)->withSession(['active_store_id' => $foreignStore->id])
+            ->postJson(route('scanner.catalog-items.discover'), [
+                'purpose' => 'product', 'market' => 'ID',
+                'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
+                'images' => [UploadedFile::fake()->image('one.jpg')],
+            ])->assertOk();
+        $this->assertDatabaseMissing('subscription_scan_events', ['store_id' => $foreignStore->id]);
+    }
+
+    public function test_photo_endpoints_require_uuid_and_limit_discovery_to_three_images(): void
+    {
+        [$user, $store] = $this->ownerAndStore();
+        $this->actingAs($user)->withSession(['active_store_id' => $store->id]);
+        foreach (['recognize' => 'sale', 'discover' => 'product'] as $operation => $purpose) {
+            $this->postJson(route('scanner.catalog-items.'.$operation), [
+                'purpose' => $purpose, 'market' => 'ID', 'scan_request_id' => 'invalid',
+                'images' => [UploadedFile::fake()->image('one.jpg')],
+            ])->assertUnprocessable()->assertJsonValidationErrors('scan_request_id');
+        }
+        $this->postJson(route('scanner.catalog-items.discover'), [
+            'purpose' => 'product', 'market' => 'ID',
+            'scan_request_id' => '318067e4-d56e-4538-9363-d16eb5a0d12b',
+            'images' => collect(range(1, 4))->map(fn (int $index) => UploadedFile::fake()->image("{$index}.jpg"))->all(),
+        ])->assertUnprocessable()->assertJsonValidationErrors('images');
+        $this->assertDatabaseCount('subscription_scan_events', 0);
     }
 
     /** @return array{User, Store} */

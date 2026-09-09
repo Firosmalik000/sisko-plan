@@ -13,6 +13,10 @@ const decodeWithNativeDetector = async (image: Blob): Promise<string> => {
     try {
         const results = await new window.BarcodeDetector().detect(bitmap);
 
+        if (new Set(results.map((result) => result.rawValue)).size > 1) {
+            return '';
+        }
+
         return results[0]?.rawValue?.trim() ?? '';
     } catch {
         return '';
@@ -81,11 +85,33 @@ const decodeWithZxingWasm = async (images: Blob[]): Promise<string> => {
         tryDownscale: true,
         tryDenoise: true,
         formats: ['Linear-Codes', 'Matrix-Codes'],
-        maxNumberOfSymbols: 1,
+        maxNumberOfSymbols: 2,
     };
-    const results = await Promise.all(images.map((image) => readBarcodes(image, options)));
+    const results = await readBarcodes(images[0], options);
+    const values = new Set(results.map((result) => result.text.trim()).filter(Boolean));
 
-    return results.flat()[0]?.text.trim() ?? '';
+    if (values.size > 1) {
+        throw new Error('Ada beberapa kode. Foto satu barcode saja.');
+    }
+
+    if (values.size === 1) {
+        return [...values][0];
+    }
+
+    for (const image of images.slice(1)) {
+        const cropped = await readBarcodes(image, options);
+        cropped.forEach((result) => {
+            if (result.text.trim()) {
+                values.add(result.text.trim());
+            }
+        });
+
+        if (values.size > 1) {
+            throw new Error('Ada beberapa kode. Foto satu barcode saja.');
+        }
+    }
+
+    return [...values][0] ?? '';
 };
 
 export async function decodeBarcodeImage(image: Blob): Promise<string> {

@@ -787,7 +787,7 @@ function CashierMenu({ active, disabled }: { active: boolean; disabled: boolean 
 
             <SheetContent
                 side="bottom"
-                className="max-h-[90svh] overflow-y-auto rounded-t-[1.5rem] border-0 bg-[#fffaf7] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] sm:rounded-t-[1.75rem] [&>button]:top-4 [&>button]:right-4 [&>button]:size-9 [&>button]:rounded-xl [&>button]:bg-white [&>button]:opacity-100 [&>button]:shadow-sm [&>button]:ring-1 [&>button]:ring-[var(--app-ink)]/8"
+                className="max-h-[90svh] overflow-y-auto rounded-t-[1.5rem] border-0 bg-[#fffaf7] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] sm:!inset-x-auto sm:!left-1/2 sm:w-full sm:max-w-xl sm:-translate-x-1/2 sm:rounded-t-[1.75rem] [&>button]:top-4 [&>button]:right-4 [&>button]:size-11 [&>button]:rounded-xl [&>button]:bg-white [&>button]:opacity-100 [&>button]:shadow-sm [&>button]:ring-1 [&>button]:ring-[var(--app-ink)]/8"
             >
                 <SheetHeader className="mx-auto w-full max-w-lg px-4 pt-5 pb-3 text-left sm:px-6 sm:pt-6">
                     <div className="mb-3 h-1 w-10 self-center rounded-full bg-[var(--app-primary)]/25" />

@@ -16,6 +16,7 @@ use App\Support\CurrentStore;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -77,13 +78,17 @@ class ProductScannerController extends Controller
         try {
             $images = $request->file('images');
             abort_unless(is_array($images), 422);
-            $quota->consume($currentStore->get(), $this->scanRequestKey(), 'recognize', count($images));
+            $requestKey = $this->imageRequestKey($request, $currentStore, 'recognize', $images);
+            $quota->ensureAvailable($currentStore->get(), $requestKey, count($images));
             $data = $recognizer->handle(
                 $currentStore->get(),
                 array_values($images),
                 $request->validated('capture_ids') ?? [],
                 $this->requestId($request),
             );
+
+            // Distinct requests can race for the final credit; do not return uncharged results.
+            $quota->consume($currentStore->get(), $requestKey, 'recognize', count($images));
 
             return response()->json(['status' => 'success', 'data' => $data]);
         } catch (ScanQuotaExceeded $exception) {
@@ -102,14 +107,18 @@ class ProductScannerController extends Controller
         try {
             $images = $request->file('images');
             abort_unless(is_array($images), 422);
-            $quota->consume($currentStore->get(), $this->scanRequestKey(), 'discover', count($images));
+            $requestKey = $this->imageRequestKey($request, $currentStore, 'discover', $images);
+            $quota->ensureAvailable($currentStore->get(), $requestKey, count($images));
 
-            return response()->json($client->discover(
+            $data = $client->discover(
                 $currentStore->get(),
                 array_values($images),
                 $request->validated('market'),
-                $this->requestId($request),
-            ));
+                $request->validated('scan_request_id'),
+            );
+            $quota->consume($currentStore->get(), $requestKey, 'discover', count($images));
+
+            return response()->json($data);
         } catch (ScanQuotaExceeded $exception) {
             return $this->quotaExceeded($request, $exception);
         } catch (Throwable $exception) {
@@ -122,6 +131,7 @@ class ProductScannerController extends Controller
         return response()->json([
             'status' => 'error',
             'code' => 'SCANNER_NOT_CONNECTED',
+            'retryable' => false,
             'message' => __('Scanner service is not connected. Contact the administrator.'),
             'request_id' => $this->requestId($request),
         ], 503);
@@ -130,8 +140,14 @@ class ProductScannerController extends Controller
     private function failure(Request $request, Throwable $exception): JsonResponse
     {
         $upstreamStatus = $exception instanceof RequestException ? $exception->response->status() : null;
-        if ($upstreamStatus === 429) {
+        $upstreamCode = $exception instanceof RequestException ? $exception->response->json('data.code') : null;
+        $retryable = $upstreamStatus === 429 && in_array($upstreamCode, ['SERVICE_BUSY', 'DISCOVERY_BUSY'], true);
+        if ($retryable) {
             [$status, $code, $message] = [429, 'SCANNER_BUSY', __('Scanner is busy. Try again shortly.')];
+        } elseif ($upstreamStatus === 429) {
+            $code = in_array($upstreamCode, ['DISCOVERY_QUOTA_EXCEEDED', 'DISCOVERY_SPEND_LIMIT_EXCEEDED'], true)
+                ? $upstreamCode : 'SCANNER_RATE_LIMITED';
+            [$status, $message] = [429, __('Recognition is unavailable. Try again or search manually.')];
         } elseif (in_array($upstreamStatus, [401, 403], true)) {
             [$status, $code, $message] = [503, 'SCANNER_NOT_CONNECTED', __('Scanner service is not connected. Contact the administrator.')];
         } else {
@@ -141,6 +157,7 @@ class ProductScannerController extends Controller
         return response()->json([
             'status' => 'error',
             'code' => $code,
+            'retryable' => $retryable || ($upstreamStatus === 503 && $upstreamCode === 'DISCOVERY_UNAVAILABLE'),
             'message' => $message,
             'request_id' => $this->requestId($request),
         ], $status);
@@ -151,6 +168,7 @@ class ProductScannerController extends Controller
         return response()->json([
             'status' => 'error',
             'code' => 'SCAN_LIMIT_REACHED',
+            'retryable' => false,
             'message' => __('Kuota :limit scan bulan ini sudah habis. Tambahkan kapasitas scan untuk melanjutkan.', [
                 'limit' => $exception->limit,
             ]),
@@ -158,6 +176,22 @@ class ProductScannerController extends Controller
             'limit' => $exception->limit,
             'request_id' => $this->requestId($request),
         ], 429);
+    }
+
+    /** @param array<UploadedFile> $images */
+    private function imageRequestKey(Request $request, CurrentStore $store, string $operation, array $images): string
+    {
+        return hash('sha256', json_encode([
+            $request->user()?->id,
+            $store->id(),
+            $operation,
+            $request->input('scan_request_id'),
+            $request->input('purpose'),
+            $request->input('market'),
+            $request->input('language'),
+            $request->input('currency'),
+            array_map(fn (UploadedFile $image): string => hash('sha256', $image->getContent()), $images),
+        ], JSON_THROW_ON_ERROR));
     }
 
     private function scanRequestKey(): string

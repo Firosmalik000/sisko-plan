@@ -22,12 +22,14 @@ import InputError from '@/components/input-error';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import BarcodeScannerDialog from '@/components/product-scanner/BarcodeScannerDialog';
+import { normalizeImage } from '@/components/product-scanner/use-camera';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatMoney, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { useProductDrafts } from './use-product-drafts';
 import type { DiscoverySuggestion, ProductDraft } from './use-product-drafts';
@@ -43,7 +45,7 @@ type UnitOption = Option & {
     unit_type: 'large' | 'retail';
 };
 type VariantMode = 'none' | 'separate' | 'shared';
-type ScannerFlow = 'create' | 'form-photo';
+type ScannerFlow = 'create' | 'form-photo' | 'variant-photo';
 type BarcodeTarget = { kind: 'product'; label: string } | { kind: 'variant'; index: number; label: string };
 
 function ProductPhoto({
@@ -61,7 +63,12 @@ function ProductPhoto({
 
     if (!src || failedSrc === src) {
         return (
-            <span className={fallbackClassName} aria-hidden="true">
+            <span
+                className={fallbackClassName}
+                role={src ? 'img' : undefined}
+                aria-label={src ? translate('Foto tidak dapat ditampilkan.') : undefined}
+                aria-hidden={!src}
+            >
                 <PackagePlus className="size-7 text-[var(--app-primary)]" />
             </span>
         );
@@ -254,7 +261,7 @@ const formatFormDecimal = (value: string | number | null | undefined) => {
 const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
 function Field({ label, error, children, className }: { label: string; error?: string; children: React.ReactNode; className?: string }) {
     return (
-        <div className={className}>
+        <div className={cn('min-w-0', className)}>
             <Label className="mb-2 block text-xs font-bold tracking-wide text-slate-700 uppercase">{label}</Label>
             {children}
             <InputError message={error} className="mt-1.5" />
@@ -262,15 +269,37 @@ function Field({ label, error, children, className }: { label: string; error?: s
     );
 }
 
-function BarcodeField({ value, error, onScan, onClear }: { value: string; error?: string; onScan: () => void; onClear: () => void }) {
+function BarcodeField({
+    value,
+    error,
+    onScan,
+    onClear,
+    onChange,
+}: {
+    value: string;
+    error?: string;
+    onScan: () => void;
+    onClear: () => void;
+    onChange: (value: string) => void;
+}) {
     return (
         <Field label="Barcode / QR" error={error}>
             <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)]/15">
                 <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
                     <ScanBarcode className="size-4 shrink-0 text-[var(--app-primary)]" />
-                    <span className={cn('truncate text-sm', value ? 'font-bold text-slate-800' : 'text-slate-400')}>
-                        {value || 'Belum dipindai'}
-                    </span>
+                    <input
+                        aria-label="Barcode / QR"
+                        type="text"
+                        value={value}
+                        placeholder="Ketik atau scan barcode"
+                        className="w-0 min-w-0 flex-1 bg-transparent text-base outline-none"
+                        onChange={(event) => onChange(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                                event.preventDefault();
+                            }
+                        }}
+                    />
                 </div>
                 {value && (
                     <button
@@ -301,19 +330,23 @@ function BarcodeField({ value, error, onScan, onClear }: { value: string; error?
     );
 }
 
-function VariantPhotoInput({
+function ProductPhotoInput({
     photo,
     photoUrl,
     variantName,
+    onCamera,
     onChange,
     onRemove,
 }: {
     photo: File | null;
     photoUrl?: string | null;
     variantName: string;
+    onCamera: () => void;
     onChange: (file: File) => void;
     onRemove: () => void;
 }) {
+    const [busy, setBusy] = useState(false);
+    const [photoError, setPhotoError] = useState('');
     const previewUrl = useMemo(() => (photo ? URL.createObjectURL(photo) : (photoUrl ?? null)), [photo, photoUrl]);
 
     useEffect(
@@ -326,7 +359,7 @@ function VariantPhotoInput({
     );
 
     return (
-        <div className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-white p-2">
+        <div className="flex min-h-16 flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-2">
             <ProductPhoto
                 src={previewUrl}
                 alt={`Foto ${variantName || 'varian'}`}
@@ -334,19 +367,42 @@ function VariantPhotoInput({
                 fallbackClassName="grid size-14 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-400"
             />
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                <Button type="button" variant="outline" onClick={onCamera} disabled={busy} className="min-h-11">
+                    <Camera className="size-4" /> Ambil foto
+                </Button>
                 <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)] hover:bg-[var(--app-soft)]">
-                    <Camera className="size-4" />
-                    {previewUrl ? 'Ganti foto' : 'Pilih foto'}
+                    <ImagePlus className="size-4" />
+                    {busy ? 'Memproses foto…' : 'Pilih foto'}
                     <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         className="sr-only"
-                        onChange={(event) => {
+                        disabled={busy}
+                        onChange={async (event) => {
                             const file = event.target.files?.[0];
                             event.target.value = '';
 
                             if (file) {
-                                onChange(file);
+                                setBusy(true);
+                                setPhotoError('');
+
+                                try {
+                                    if (file.size > 20 * 1024 * 1024) {
+                                        throw new Error('size');
+                                    }
+
+                                    const normalized = await normalizeImage(file);
+
+                                    if (normalized.size > 3 * 1024 * 1024) {
+                                        throw new Error('size');
+                                    }
+
+                                    onChange(new File([normalized], 'product.jpg', { type: 'image/jpeg' }));
+                                } catch {
+                                    setPhotoError('Foto tidak dapat diproses. Pilih JPG, PNG, atau WebP di bawah 20 MB.');
+                                } finally {
+                                    setBusy(false);
+                                }
                             }
                         }}
                     />
@@ -355,12 +411,18 @@ function VariantPhotoInput({
                     <button
                         type="button"
                         onClick={onRemove}
+                        disabled={busy}
                         className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
                     >
-                        <Trash2 className="size-4" /> Hapus
+                        <Trash2 className="size-4" /> Hapus foto
                     </button>
                 )}
             </div>
+            {photoError && (
+                <p role="alert" className="w-full text-sm text-red-700">
+                    {translate(photoError)}
+                </p>
+            )}
         </div>
     );
 }
@@ -377,7 +439,7 @@ function Section({
     children: React.ReactNode;
 }) {
     return (
-        <section className="rounded-2xl border border-[#e7d8d2] bg-white p-3.5 shadow-[0_10px_28px_rgba(80,39,28,0.06)] sm:p-5">
+        <section className="min-w-0 rounded-2xl border border-[#e7d8d2] bg-white p-3.5 shadow-[0_10px_28px_rgba(80,39,28,0.06)] sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--app-primary)] text-xs font-black text-[var(--app-primary-foreground)]">
@@ -567,7 +629,6 @@ export default function ProductsIndex({
     const [manager, setManager] = useState<'category' | 'unit' | null>(null);
     const [search, setSearch] = useState(initialSearch);
     const [status, setStatus] = useState(initialStatus);
-    const [preview, setPreview] = useState<string | null>(null);
     const [scannerOpen, setScannerOpen] = useState(
         () =>
             canManage &&
@@ -576,12 +637,30 @@ export default function ProductsIndex({
             new URL(window.location.href).searchParams.get('scan') === '1',
     );
     const [scannerFlow, setScannerFlow] = useState<ScannerFlow>('create');
+    const [variantPhotoIndex, setVariantPhotoIndex] = useState<number | null>(null);
+    const [existingBarcodeProduct, setExistingBarcodeProduct] = useState<{ name: string; barcode: string } | null>(null);
     const [barcodeTarget, setBarcodeTarget] = useState<BarcodeTarget | null>(null);
     const [discoveryPrefill, setDiscoveryPrefill] = useState(false);
     const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+    const [mobileFormHeight, setMobileFormHeight] = useState<number | undefined>();
+    useEffect(() => {
+        const viewport = window.visualViewport;
+        const resize = () => setMobileFormHeight(window.innerWidth < 640 ? viewport?.height : undefined);
+        resize();
+        viewport?.addEventListener('resize', resize);
+        window.addEventListener('resize', resize);
+
+        return () => {
+            viewport?.removeEventListener('resize', resize);
+            window.removeEventListener('resize', resize);
+        };
+    }, []);
+    const cameraFormScroll = useRef(0);
     const formBodyRef = useRef<HTMLDivElement>(null);
     const pendingVariantIdRef = useRef<string | null>(null);
-    const detectedProductBarcodeRef = useRef('');
+    const draftForms = useRef(new Map<string, ProductForm>());
+    const draftDirty = useRef(new Map<string, Set<keyof ProductForm>>());
+    const previousDraftForm = useRef<ProductForm | null>(null);
     const productDrafts = useProductDrafts();
     const form = useForm<ProductForm>(blankForm());
     const errorFor = (key: string) => (form.errors as Record<string, string | undefined>)[key];
@@ -589,6 +668,33 @@ export default function ProductsIndex({
     const largeUnits = units.filter((unit) => unit.unit_type === 'large');
     const activeDraft = productDrafts.drafts.find((draft) => draft.id === activeDraftId);
     const activeDraftIndex = productDrafts.drafts.findIndex((draft) => draft.id === activeDraftId);
+    useEffect(() => {
+        const hasDraft = productDrafts.drafts.length > 0 || form.isDirty;
+
+        if (!hasDraft) {
+            return;
+        }
+
+        const beforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+        window.addEventListener('beforeunload', beforeUnload);
+        const unsubscribe = router.on('before', (event) => {
+            if (
+                event.detail.visit.method === 'get' &&
+                event.detail.visit.url.pathname !== window.location.pathname &&
+                !window.confirm(translate('Perubahan belum disimpan. Tinggalkan halaman ini?'))
+            ) {
+                event.preventDefault();
+            }
+        });
+
+        return () => {
+            window.removeEventListener('beforeunload', beforeUnload);
+            unsubscribe();
+        };
+    }, [form.isDirty, productDrafts.drafts.length]);
 
     const submitDelete = () => {
         if (!deleting || deleteProcessing) {
@@ -626,15 +732,7 @@ export default function ProductsIndex({
             },
         );
     };
-    const analyzingDrafts = productDrafts.drafts.filter((draft) => ['waiting', 'analyzing'].includes(draft.status)).length;
-
-    useEffect(() => {
-        return () => {
-            if (preview?.startsWith('blob:')) {
-                URL.revokeObjectURL(preview);
-            }
-        };
-    }, [preview]);
+    const analyzingDrafts = productDrafts.drafts.filter((draft) => ['waiting', 'analyzing', 'retry_wait'].includes(draft.status)).length;
 
     useEffect(() => {
         const url = new URL(window.location.href);
@@ -676,44 +774,45 @@ export default function ProductsIndex({
         return () => window.cancelAnimationFrame(frame);
     }, [form.data.variants.length]);
 
-    const closeForm = (clearDrafts = true) => {
-        setFormOpen(false);
-        setEditing(null);
-        setPreview(null);
-        setActiveDraftId(null);
-
-        if (clearDrafts) {
-            productDrafts.clear();
+    const closeForm = () => {
+        if (activeDraftId) {
+            draftForms.current.set(activeDraftId, form.data);
         }
 
+        setFormOpen(false);
         form.clearErrors();
     };
     const openManualCreate = (barcode = '') => {
-        productDrafts.clear();
+        if (activeDraftId) {
+            draftForms.current.set(activeDraftId, form.data);
+        }
+
+        if (!barcode && productDrafts.drafts.length) {
+            openDraft(productDrafts.drafts.find((draft) => draft.id === activeDraftId) ?? productDrafts.drafts[0]);
+
+            return;
+        }
+
         setActiveDraftId(null);
         setDiscoveryPrefill(false);
-        detectedProductBarcodeRef.current = '';
         setEditing(null);
-        setPreview(null);
         form.setData({ ...blankForm(), barcode });
         form.clearErrors();
         setFormOpen(true);
     };
     const openCreate = () => {
-        detectedProductBarcodeRef.current = '';
         setScannerFlow('create');
         setScannerOpen(true);
     };
     const openFormPhotoScanner = () => {
+        cameraFormScroll.current = formBodyRef.current?.scrollTop ?? 0;
         setScannerFlow('form-photo');
         setScannerOpen(true);
     };
     const openEdit = (product: Product) => {
-        productDrafts.clear();
         setActiveDraftId(null);
         setDiscoveryPrefill(false);
         setEditing(product);
-        setPreview(product.photo_url);
         form.setData({
             _method: 'patch',
             idempotency_key: '',
@@ -752,10 +851,17 @@ export default function ProductsIndex({
     const setMode = (mode: VariantMode) => {
         const firstVariant = blankVariant();
         firstVariant.barcode = form.data.barcode;
+        firstVariant.name = activeDraft?.suggestion?.identity.variant?.trim() ?? '';
+        firstVariant.photo = form.data.photo;
+        firstVariant.sku = form.data.sku;
+        firstVariant.purchase_price = form.data.purchase_price;
+        firstVariant.selling_price = form.data.selling_price;
+        firstVariant.current_stock = form.data.current_stock;
+        firstVariant.minimum_stock = form.data.minimum_stock;
         form.setData({
             ...form.data,
             variant_mode: mode,
-            variants: mode === 'none' ? [] : form.data.variants.length ? form.data.variants : [firstVariant],
+            variants: form.data.variants.length ? form.data.variants : [firstVariant],
         });
     };
     const updateVariantFields = (index: number, changes: Partial<ProductVariant>) =>
@@ -793,7 +899,6 @@ export default function ProductsIndex({
             return {
                 name: suggestion.identity.display_name,
                 description: suggestion.identity.description ?? '',
-                barcode: '',
                 category_public_id: category?.public_id ?? '',
                 retail_unit_public_id: retailUnit?.public_id ?? '',
                 large_unit_public_id: largeUnit?.public_id ?? '',
@@ -803,73 +908,155 @@ export default function ProductsIndex({
         },
         [categories, units],
     );
+    useEffect(() => {
+        if (!activeDraftId) {
+            return;
+        }
+
+        const previous = previousDraftForm.current;
+        const dirty = draftDirty.current.get(activeDraftId) ?? new Set<keyof ProductForm>();
+
+        if (previous) {
+            (Object.keys(form.data) as Array<keyof ProductForm>).forEach((key) => {
+                if (previous[key] !== form.data[key]) {
+                    dirty.add(key);
+                }
+            });
+        }
+
+        draftDirty.current.set(activeDraftId, dirty);
+        draftForms.current.set(activeDraftId, form.data);
+        previousDraftForm.current = form.data;
+    }, [activeDraftId, form.data]);
     const openDraft = (draft: ProductDraft) => {
-        const next = blankForm();
+        if (activeDraftId) {
+            draftForms.current.set(activeDraftId, form.data);
+        }
+
+        const cached = draftForms.current.get(draft.id);
         const suggestion = draft.suggestion ? suggestionValues(draft.suggestion) : null;
-        form.setData({
-            ...next,
+        const next = cached ?? {
+            ...blankForm(),
             ...suggestion,
-            retail_unit_public_id: suggestion?.retail_unit_public_id ?? '',
-            large_unit_public_id: suggestion?.large_unit_public_id ?? '',
             current_stock: '0',
             minimum_stock: '0',
-            barcode: suggestion?.barcode || detectedProductBarcodeRef.current || '',
+            barcode: draft.barcode,
             photo: draft.file,
-        });
+        };
+        previousDraftForm.current = next;
+        form.setData(next);
+
+        if (!cached && suggestion) {
+            productDrafts.markApplied(draft.id);
+        }
+
         setEditing(null);
         setActiveDraftId(draft.id);
-        setPreview(URL.createObjectURL(draft.file));
         setDiscoveryPrefill(draft.status === 'ready');
         form.clearErrors();
         setFormOpen(true);
-        detectedProductBarcodeRef.current = '';
     };
-    const beginDrafts = (photos: File[]) => {
-        const append = productDrafts.drafts.length > 0;
-
-        if (!append) {
-            productDrafts.clear();
-        }
-
-        const drafts = productDrafts.start(photos, append);
-
-        if (append) {
-            setFormOpen(true);
-
-            return;
-        }
-
-        const first = drafts[0];
-
-        if (first) {
-            openDraft(first);
-        }
-    };
-    const handleProductCaptures = (photos: File[]) => {
+    const handleProductCapture = (photo: File) => {
         if (scannerFlow === 'create') {
-            beginDrafts(photos);
+            productDrafts.addPhoto(photo);
 
             return;
         }
 
-        const photo = photos.at(-1);
+        if (scannerFlow === 'variant-photo' && variantPhotoIndex !== null) {
+            updateVariantFields(variantPhotoIndex, { photo, remove_photo: false });
 
-        if (photo) {
-            form.setData({
-                ...form.data,
-                photo,
-                remove_photo: false,
-            });
-            setPreview(URL.createObjectURL(photo));
+            return;
         }
 
+        form.setData({ ...form.data, photo, remove_photo: false });
         setFormOpen(true);
+    };
+    const relatedDraft = activeDraft?.suggestion
+        ? productDrafts.drafts.find((draft) => {
+              if (draft.id === activeDraft.id || !draft.suggestion) {
+                  return false;
+              }
+
+              const identity = activeDraft.suggestion!.identity;
+              const other = draft.suggestion.identity;
+              const normalize = (value: string | null) => (value ?? '').trim().toLocaleLowerCase();
+
+              return (
+                  !!normalize(identity.product_name) &&
+                  normalize(identity.product_name) === normalize(other.product_name) &&
+                  normalize(identity.brand) === normalize(other.brand) &&
+                  normalize(identity.model) === normalize(other.model)
+              );
+          })
+        : undefined;
+    const combineDraft = (target: ProductDraft, asVariant: boolean) => {
+        if (!activeDraft || target.id === activeDraft.id) {
+            return;
+        }
+
+        const sourceId = activeDraft.id;
+        const targetForm = draftForms.current.get(target.id) ?? {
+            ...blankForm(),
+            ...(target.suggestion ? suggestionValues(target.suggestion) : {}),
+            photo: target.file,
+            barcode: target.barcode,
+        };
+
+        if (asVariant) {
+            const first = {
+                ...blankVariant(),
+                name: target.suggestion?.identity.variant || targetForm.name,
+                sku: targetForm.sku,
+                barcode: targetForm.barcode,
+                purchase_price: targetForm.purchase_price,
+                selling_price: targetForm.selling_price,
+                current_stock: targetForm.current_stock,
+                minimum_stock: targetForm.minimum_stock,
+                photo: targetForm.photo,
+            };
+            const incoming = {
+                ...blankVariant(),
+                name: activeDraft.suggestion?.identity.variant || form.data.name,
+                sku: form.data.sku,
+                barcode: form.data.barcode,
+                purchase_price: form.data.purchase_price,
+                selling_price: form.data.selling_price,
+                current_stock: form.data.current_stock,
+                minimum_stock: form.data.minimum_stock,
+                photo: form.data.photo,
+            };
+            draftForms.current.set(target.id, {
+                ...targetForm,
+                variant_mode: targetForm.variant_mode === 'none' ? 'separate' : targetForm.variant_mode,
+                variants: [...(targetForm.variants.length ? targetForm.variants : [first]), incoming],
+            });
+        }
+
+        openDraft(target);
+        productDrafts.remove(sourceId);
+        draftForms.current.delete(sourceId);
+        draftDirty.current.delete(sourceId);
+    };
+    const reviewDrafts = (id?: string) => {
+        const drafts = productDrafts.drafts;
+        setScannerOpen(false);
+        const draft = drafts.find((item) => item.id === (id ?? activeDraftId)) ?? drafts[0];
+
+        if (draft) {
+            openDraft(draft);
+        }
     };
     const handleScannerOpenChange = (open: boolean) => {
         setScannerOpen(open);
 
-        if (!open && scannerFlow === 'form-photo') {
+        if (!open && scannerFlow !== 'create') {
             setFormOpen(true);
+            requestAnimationFrame(() => {
+                if (formBodyRef.current) {
+                    formBodyRef.current.scrollTop = cameraFormScroll.current;
+                }
+            });
         }
     };
 
@@ -881,37 +1068,52 @@ export default function ProductsIndex({
         }
 
         const discoverySuggestion = active.suggestion;
+        let cancelled = false;
         queueMicrotask(() => {
-            const suggestion = suggestionValues(discoverySuggestion);
+            if (cancelled) {
+                return;
+            }
 
-            form.setData({
-                ...form.data,
-                name: form.data.name || suggestion.name,
-                description: form.data.description || suggestion.description,
-                category_public_id: form.data.category_public_id || suggestion.category_public_id,
-                retail_unit_public_id: form.data.retail_unit_public_id || suggestion.retail_unit_public_id,
-                large_unit_public_id: form.data.large_unit_public_id || suggestion.large_unit_public_id,
-                purchase_price: form.data.purchase_price || suggestion.purchase_price,
-                selling_price: form.data.selling_price || suggestion.selling_price,
-                barcode: form.data.barcode || suggestion.barcode,
+            const suggestion = suggestionValues(discoverySuggestion);
+            const dirty = draftDirty.current.get(active.id) ?? new Set<keyof ProductForm>();
+            const next = { ...form.data };
+            (Object.keys(suggestion) as Array<keyof typeof suggestion>).forEach((key) => {
+                if (!dirty.has(key)) {
+                    next[key] = suggestion[key];
+                }
             });
+            previousDraftForm.current = next;
+            form.setData(next);
             setDiscoveryPrefill(true);
             productDrafts.markApplied(active.id);
         });
+
+        return () => {
+            cancelled = true;
+        };
     }, [activeDraftId, form, productDrafts, suggestionValues]);
     const removeDraft = (draftId: string) => {
         const remaining = productDrafts.drafts.filter((draft) => draft.id !== draftId);
         const wasActive = draftId === activeDraftId;
         productDrafts.remove(draftId);
+        draftForms.current.delete(draftId);
+        draftDirty.current.delete(draftId);
 
         if (!wasActive) {
+            return;
+        }
+
+        if (scannerOpen) {
+            setActiveDraftId(null);
+            setFormOpen(false);
+
             return;
         }
 
         if (remaining[0]) {
             openDraft(remaining[0]);
         } else {
-            closeForm(false);
+            closeForm();
             setScannerFlow('create');
             setScannerOpen(true);
         }
@@ -926,7 +1128,58 @@ export default function ProductsIndex({
         pendingVariantIdRef.current = variant.client_id ?? null;
         form.setData('variants', [...form.data.variants, variant]);
     };
-    const applyScannedBarcode = (value: string) => {
+    const lookupExistingBarcode = async (value: string) => {
+        const duplicateVariant = form.data.variants.some(
+            (variant, index) =>
+                variant.barcode.trim() === value.trim() && (barcodeTarget?.kind !== 'variant' || barcodeTarget.index !== index),
+        );
+
+        if (form.data.variant_mode !== 'none' && duplicateVariant) {
+            throw new Error(translate('Kode ini digunakan lebih dari sekali pada produk yang sama.'));
+        }
+
+        const token = document.cookie
+            .split('; ')
+            .find((cookie) => cookie.startsWith('XSRF-TOKEN='))
+            ?.split('=')
+            .slice(1)
+            .join('=');
+        const response = await fetch('/scanner/catalog-item-lookups', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': token ? decodeURIComponent(token) : '',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ purpose: 'product', type: 'barcode', identifier: value, capture_id: crypto.randomUUID() }),
+        });
+        const payload = (await response.json()) as {
+            data?: Array<{ status: string; match: { name: string; productPublicId: string } | null }>;
+            message?: string;
+        };
+
+        if (!response.ok) {
+            throw new Error(payload.message || 'Barcode belum dapat diperiksa. Coba lagi.');
+        }
+
+        const match = payload.data?.find((item) => item.status === 'found')?.match;
+
+        if (match && match.productPublicId !== editing?.public_id) {
+            setExistingBarcodeProduct({ name: match.name, barcode: value });
+            setScannerOpen(false);
+            setBarcodeTarget(null);
+
+            return true;
+        }
+
+        return false;
+    };
+    const applyScannedBarcode = async (value: string) => {
+        if (await lookupExistingBarcode(value)) {
+            return;
+        }
+
         if (barcodeTarget?.kind === 'variant') {
             updateVariant(barcodeTarget.index, 'barcode', value);
 
@@ -939,7 +1192,9 @@ export default function ProductsIndex({
         event.preventDefault();
         form.transform((data) => ({
             ...data,
-            variants: data.variants.map((variant) => {
+            sku: data.variant_mode === 'none' ? data.sku : '',
+            barcode: data.variant_mode === 'none' ? data.barcode : '',
+            variants: (data.variant_mode === 'none' ? [] : data.variants).map((variant) => {
                 const submittedVariant = { ...variant };
                 delete submittedVariant.client_id;
 
@@ -949,6 +1204,17 @@ export default function ProductsIndex({
         form.post(editing ? `/master-data/products/${editing.public_id}` : '/master-data/products', {
             forceFormData: true,
             preserveScroll: true,
+            onError: () => {
+                requestAnimationFrame(() => {
+                    const body = formBodyRef.current;
+
+                    if (!body) {
+                        return;
+                    }
+
+                    body.scrollTop = 0;
+                });
+            },
             onSuccess: () => {
                 if (!activeDraftId) {
                     closeForm();
@@ -958,11 +1224,14 @@ export default function ProductsIndex({
 
                 const remaining = productDrafts.drafts.filter((draft) => draft.id !== activeDraftId);
                 productDrafts.remove(activeDraftId);
+                draftForms.current.delete(activeDraftId);
+                draftDirty.current.delete(activeDraftId);
 
                 if (remaining[0]) {
                     openDraft(remaining[0]);
                 } else {
-                    closeForm(false);
+                    closeForm();
+                    setActiveDraftId(null);
                 }
             },
         });
@@ -1159,7 +1428,7 @@ export default function ProductsIndex({
             </div>
 
             <Dialog
-                open={formOpen}
+                open={formOpen && !barcodeTarget && !scannerOpen}
                 onOpenChange={(open) => {
                     if (scannerOpen) {
                         return;
@@ -1174,7 +1443,10 @@ export default function ProductsIndex({
                     closeForm();
                 }}
             >
-                <DialogContent className="grid h-[100dvh] max-h-[100dvh] w-full grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-[#e7d8d2] bg-white p-0 shadow-[0_28px_80px_rgba(80,39,28,0.24)] sm:h-auto sm:max-h-[92dvh] sm:w-full sm:max-w-6xl sm:rounded-3xl">
+                <DialogContent
+                    style={{ height: mobileFormHeight }}
+                    className="!top-0 !left-0 grid h-[100dvh] max-h-[100dvh] w-full !max-w-none min-w-0 !translate-x-0 !translate-y-0 grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-[#e7d8d2] bg-white p-0 shadow-[0_28px_80px_rgba(80,39,28,0.24)] sm:!top-1/2 sm:!left-1/2 sm:h-auto sm:max-h-[92dvh] sm:w-full sm:!max-w-6xl sm:!-translate-x-1/2 sm:!-translate-y-1/2 sm:rounded-3xl"
+                >
                     <DialogHeader className="relative overflow-hidden border-b-2 border-[#f1d3ca] bg-[#fffaf8] px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pr-14 pb-4 text-left sm:px-7 sm:py-5 sm:pr-14">
                         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--app-primary)] via-[#f86b4b] to-[#ffb199]" />
                         <div className="absolute top-0 right-8 size-24 rounded-full bg-orange-100/90 blur-2xl" />
@@ -1186,10 +1458,10 @@ export default function ProductsIndex({
                         </DialogTitle>
                     </DialogHeader>
 
-                    <form onSubmit={submit} className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto]">
+                    <form noValidate onSubmit={submit} className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto]">
                         <div
                             ref={formBodyRef}
-                            className="min-h-0 space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#fffaf8] p-2.5 pb-5 sm:space-y-4 sm:p-5 lg:p-6"
+                            className="min-h-0 min-w-0 space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#fffaf8] p-2.5 pb-5 sm:space-y-4 sm:p-5 lg:p-6"
                         >
                             {productDrafts.drafts.length > 0 && !editing && (
                                 <div className="rounded-2xl border border-[#e7d8d2] bg-white p-3 shadow-[0_6px_18px_rgba(80,39,28,0.05)]">
@@ -1256,7 +1528,9 @@ export default function ProductsIndex({
                                                                       : 'text-slate-500',
                                                             )}
                                                         >
-                                                            {(draft.status === 'analyzing' || draft.status === 'waiting') && (
+                                                            {(draft.status === 'analyzing' ||
+                                                                draft.status === 'waiting' ||
+                                                                draft.status === 'retry_wait') && (
                                                                 <LoaderCircle className="size-3 animate-spin" />
                                                             )}
                                                             {draft.status === 'analyzing'
@@ -1282,7 +1556,7 @@ export default function ProductsIndex({
                                     </div>
                                 </div>
                             )}
-                            {activeDraft && ['waiting', 'analyzing'].includes(activeDraft.status) && (
+                            {activeDraft && ['waiting', 'analyzing', 'retry_wait'].includes(activeDraft.status) && (
                                 <div className="flex items-center gap-2 rounded-xl border border-[#f4c4b7] bg-[#fff0eb] px-3 py-2.5 text-sm font-bold text-[#9f351d]">
                                     <LoaderCircle className="size-4 shrink-0 animate-spin" />
                                     Membaca foto produk…
@@ -1291,7 +1565,7 @@ export default function ProductsIndex({
                             {activeDraft?.status === 'failed' && (
                                 <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                                     <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                                    <p className="flex-1">Foto belum berhasil dibaca.</p>
+                                    <p className="flex-1">{translate(activeDraft.error || 'Foto belum berhasil dibaca.')}</p>
                                     <Button
                                         type="button"
                                         size="sm"
@@ -1304,12 +1578,26 @@ export default function ProductsIndex({
                                 </div>
                             )}
                             {Object.keys(form.errors).length > 0 && <AlertError errors={Object.values(form.errors)} />}
+                            {relatedDraft && form.data.variant_mode === 'none' && (
+                                <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                                    <p className="font-semibold">
+                                        Mungkin produk yang sama atau varian dari {relatedDraft.suggestion?.identity.display_name}.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button type="button" variant="outline" onClick={() => combineDraft(relatedDraft, false)}>
+                                            Produk sama, hapus duplikat
+                                        </Button>
+                                        <Button type="button" variant="outline" onClick={() => combineDraft(relatedDraft, true)}>
+                                            Gabungkan sebagai varian
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                             <Section number="1" title="Informasi Produk">
                                 <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_210px] lg:grid-cols-[minmax(0,1fr)_220px]">
-                                    <div className="space-y-4">
+                                    <div className="min-w-0 space-y-4">
                                         <Field label="Nama produk" error={form.errors.name}>
                                             <Input
-                                                autoFocus
                                                 value={form.data.name}
                                                 onChange={(event) => form.setData('name', event.target.value)}
                                                 className="h-11 border-slate-200 bg-white shadow-sm"
@@ -1335,13 +1623,15 @@ export default function ProductsIndex({
                                                 <BarcodeField
                                                     value={form.data.barcode}
                                                     error={form.errors.barcode}
-                                                    onScan={() =>
+                                                    onScan={() => {
+                                                        cameraFormScroll.current = formBodyRef.current?.scrollTop ?? 0;
                                                         setBarcodeTarget({
                                                             kind: 'product',
                                                             label: form.data.name || 'produk',
-                                                        })
-                                                    }
+                                                        });
+                                                    }}
                                                     onClear={() => form.setData('barcode', '')}
+                                                    onChange={(value) => form.setData('barcode', value)}
                                                 />
                                             </div>
                                         )}
@@ -1375,64 +1665,15 @@ export default function ProductsIndex({
                                             </div>
                                         </Field>
                                     </div>
-                                    <Field label="Foto produk" error={form.errors.photo} className="mx-auto w-full max-w-[220px] lg:mx-0">
-                                        <label className="group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-[var(--app-primary)] hover:bg-teal-50/40">
-                                            {preview ? (
-                                                <ProductPhoto
-                                                    src={preview}
-                                                    alt="Pratinjau produk"
-                                                    className="size-full object-cover"
-                                                    fallbackClassName="grid size-full place-items-center"
-                                                />
-                                            ) : (
-                                                <div className="text-center text-slate-500">
-                                                    <ImagePlus className="mx-auto size-7 text-[var(--app-primary)]" />
-                                                    <span className="mt-2 block text-xs font-semibold">Pilih foto</span>
-                                                </div>
-                                            )}
-                                            <input
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp"
-                                                className="sr-only"
-                                                onChange={(event) => {
-                                                    const file = event.target.files?.[0] ?? null;
-                                                    form.setData('photo', file);
-                                                    form.setData('remove_photo', false);
-
-                                                    if (file) {
-                                                        setPreview(URL.createObjectURL(file));
-                                                    }
-                                                }}
-                                            />
-                                            {preview && (
-                                                <span className="absolute right-2 bottom-2 rounded-full bg-white/90 p-2 text-[var(--app-primary)] shadow">
-                                                    <Camera className="size-4" />
-                                                </span>
-                                            )}
-                                        </label>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={openFormPhotoScanner}
-                                            className="mt-2 w-full border-[var(--app-soft-strong)] text-[var(--app-primary)] hover:bg-[var(--app-soft)]"
-                                        >
-                                            <Camera className="size-4" />
-                                            {preview ? 'Ambil ulang dengan kamera' : 'Ambil foto dengan kamera'}
-                                        </Button>
-                                        {preview && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setPreview(null);
-                                                    form.setData('photo', null);
-                                                    form.setData('remove_photo', true);
-                                                }}
-                                                className="mt-2 text-xs font-semibold text-red-600"
-                                            >
-                                                Hapus foto
-                                            </button>
-                                        )}
+                                    <Field label="Foto produk" error={form.errors.photo}>
+                                        <ProductPhotoInput
+                                            photo={form.data.photo}
+                                            photoUrl={form.data.remove_photo ? null : editing?.photo_url}
+                                            variantName={form.data.name}
+                                            onCamera={openFormPhotoScanner}
+                                            onChange={(photo) => form.setData({ ...form.data, photo, remove_photo: false })}
+                                            onRemove={() => form.setData({ ...form.data, photo: null, remove_photo: true })}
+                                        />
                                     </Field>
                                 </div>
                             </Section>
@@ -1633,13 +1874,6 @@ export default function ProductsIndex({
                                                                 id={`variant-name-${variant.public_id ?? variant.client_id ?? index}`}
                                                                 value={variant.name}
                                                                 onChange={(event) => updateVariant(index, 'name', event.target.value)}
-                                                                onBlur={() =>
-                                                                    updateVariant(
-                                                                        index,
-                                                                        'purchase_price',
-                                                                        formatFormDecimal(variant.purchase_price),
-                                                                    )
-                                                                }
                                                                 className="border-slate-200 bg-white"
                                                             />
                                                         </Field>
@@ -1647,37 +1881,38 @@ export default function ProductsIndex({
                                                             <Input
                                                                 value={variant.sku}
                                                                 onChange={(event) => updateVariant(index, 'sku', event.target.value)}
-                                                                onBlur={() =>
-                                                                    updateVariant(
-                                                                        index,
-                                                                        'selling_price',
-                                                                        formatFormDecimal(variant.selling_price),
-                                                                    )
-                                                                }
                                                                 className="border-slate-200 bg-white"
                                                             />
                                                         </Field>
                                                         <BarcodeField
                                                             value={variant.barcode}
                                                             error={errorFor(`variants.${index}.barcode`)}
-                                                            onScan={() =>
+                                                            onScan={() => {
+                                                                cameraFormScroll.current = formBodyRef.current?.scrollTop ?? 0;
                                                                 setBarcodeTarget({
                                                                     kind: 'variant',
                                                                     index,
                                                                     label: variant.name || `varian ${index + 1}`,
-                                                                })
-                                                            }
+                                                                });
+                                                            }}
                                                             onClear={() => updateVariant(index, 'barcode', '')}
+                                                            onChange={(value) => updateVariant(index, 'barcode', value)}
                                                         />
                                                         <Field
                                                             label="Foto varian"
                                                             error={errorFor(`variants.${index}.photo`)}
                                                             className="sm:col-span-2 lg:col-span-3"
                                                         >
-                                                            <VariantPhotoInput
+                                                            <ProductPhotoInput
                                                                 photo={variant.photo}
-                                                                photoUrl={variant.photo_url}
+                                                                photoUrl={variant.remove_photo ? null : variant.photo_url}
                                                                 variantName={variant.name}
+                                                                onCamera={() => {
+                                                                    cameraFormScroll.current = formBodyRef.current?.scrollTop ?? 0;
+                                                                    setVariantPhotoIndex(index);
+                                                                    setScannerFlow('variant-photo');
+                                                                    setScannerOpen(true);
+                                                                }}
                                                                 onChange={(file) =>
                                                                     updateVariantFields(index, {
                                                                         photo: file,
@@ -1840,20 +2075,20 @@ export default function ProductsIndex({
                                 type="button"
                                 variant="ghost"
                                 onClick={() => closeForm()}
-                                className="h-11 border border-[#e7d8d2] bg-white px-5 font-bold text-[#6b3b2d] hover:bg-[#fff0eb] hover:text-[#6b3b2d] sm:min-w-28"
+                                className="h-auto min-h-12 border border-[#e7d8d2] bg-white px-5 font-bold text-[#6b3b2d] hover:bg-[#fff0eb] hover:text-[#6b3b2d] sm:min-w-28"
                             >
                                 Batal
                             </Button>
                             <Button
                                 disabled={form.processing}
-                                className="h-11 bg-[#ee4d2d] px-6 font-bold text-white shadow-[0_8px_18px_rgba(238,77,45,0.24)] hover:bg-[#d94326] hover:text-white sm:min-w-44"
+                                className="h-auto min-h-12 bg-[#ee4d2d] px-6 font-bold whitespace-normal !text-white shadow-[0_8px_18px_rgba(238,77,45,0.24)] hover:bg-[#d94326] hover:text-white sm:min-w-44"
                             >
                                 {form.processing
                                     ? 'Menyimpan...'
                                     : editing
                                       ? 'Simpan perubahan'
                                       : productDrafts.drafts.length > 1 && activeDraftIndex >= 0
-                                        ? `Simpan & lanjut · ${activeDraftIndex + 1} dari ${productDrafts.drafts.length}`
+                                        ? 'Simpan & lanjut'
                                         : 'Tambah produk'}
                                 {!form.processing && <ChevronRight className="size-4" />}
                             </Button>
@@ -1917,6 +2152,26 @@ export default function ProductsIndex({
                 units={units}
                 onOpenChange={(open) => !open && setManager(null)}
             />
+            <Dialog
+                open={existingBarcodeProduct !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setExistingBarcodeProduct(null);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Barcode sudah terdaftar</DialogTitle>
+                    </DialogHeader>
+                    <p>{existingBarcodeProduct?.name} sudah menggunakan barcode ini.</p>
+                    <Button asChild>
+                        <Link href={`/master-data/products?search=${encodeURIComponent(existingBarcodeProduct?.barcode ?? '')}`}>
+                            Buka produk
+                        </Link>
+                    </Button>
+                </DialogContent>
+            </Dialog>
             {barcodeTarget && (
                 <BarcodeScannerDialog
                     open
@@ -1924,35 +2179,57 @@ export default function ProductsIndex({
                     onOpenChange={(open) => {
                         if (!open) {
                             setBarcodeTarget(null);
+                            requestAnimationFrame(() => {
+                                if (formBodyRef.current) {
+                                    formBodyRef.current.scrollTop = cameraFormScroll.current;
+                                }
+                            });
                         }
                     }}
                     onDetected={applyScannedBarcode}
                 />
             )}
-            <Suspense fallback={null}>
+            <Suspense
+                fallback={
+                    <div role="status" className="fixed inset-0 z-[90] grid place-items-center bg-black/80 text-white">
+                        Membuka kamera…
+                    </div>
+                }
+            >
                 <ProductScanner
                     purpose="product"
-                    title={scannerFlow === 'form-photo' ? `Foto ${form.data.name || 'produk'}` : 'Foto produk baru'}
+                    title={
+                        scannerFlow === 'create'
+                            ? 'Foto produk baru'
+                            : scannerFlow === 'variant-photo'
+                              ? `Foto ${form.data.variants[variantPhotoIndex ?? -1]?.name || 'varian'}`
+                              : `Foto ${form.data.name || 'produk'}`
+                    }
                     open={scannerOpen}
                     onOpenChange={handleScannerOpenChange}
-                    onConfirm={() => undefined}
-                    onProductCaptures={handleProductCaptures}
-                    onBarcodeDetected={(value) => {
-                        if (scannerFlow === 'form-photo') {
-                            form.setData('barcode', value);
-
-                            return;
-                        }
-
-                        openManualCreate(value);
-                    }}
-                    singleCapture={scannerFlow === 'form-photo'}
-                    manualActionLabel={scannerFlow === 'form-photo' ? 'Lanjut tanpa ganti foto' : undefined}
+                    onConfirm={() => ({ applied: [], failures: [] })}
+                    onProductCapture={handleProductCapture}
+                    onReviewProducts={reviewDrafts}
+                    productPhotos={
+                        scannerFlow !== 'create'
+                            ? []
+                            : productDrafts.drafts.map((draft) => ({
+                                  id: draft.id,
+                                  previewUrl: draft.previewUrl,
+                                  status: draft.status,
+                              }))
+                    }
+                    productPendingPhotos={scannerFlow === 'create' ? productDrafts.pendingPhotos : 0}
+                    productDraftCount={scannerFlow === 'create' ? productDrafts.drafts.length : 0}
+                    productCanCapture={scannerFlow !== 'create' || productDrafts.pendingPhotos < 10}
+                    onRemoveProductPhoto={removeDraft}
+                    singleCapture={scannerFlow !== 'create'}
+                    manualActionLabel={scannerFlow !== 'create' ? 'Lanjut tanpa ganti foto' : undefined}
                     onManualSearch={() => {
                         setScannerOpen(false);
 
-                        if (scannerFlow === 'form-photo') {
-                            setFormOpen(true);
+                        if (scannerFlow !== 'create') {
+                            handleScannerOpenChange(false);
 
                             return;
                         }

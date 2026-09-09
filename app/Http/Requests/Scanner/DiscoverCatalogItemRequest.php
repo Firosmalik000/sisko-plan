@@ -10,6 +10,16 @@ use Illuminate\Validation\Rule;
 
 class DiscoverCatalogItemRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $country = app(CurrentStore::class)->get()->country;
+        $this->merge([
+            'market' => strtoupper($country->code),
+            'currency' => strtoupper($country->currency_code),
+            'language' => app()->getLocale(),
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -27,9 +37,12 @@ class DiscoverCatalogItemRequest extends FormRequest
     {
         return [
             'purpose' => ['required', Rule::in([ProductScannerPurpose::Product->value])],
-            'images' => ['required', 'array', 'min:1', 'max:'.config('services.catalog_intelligence.max_images')],
+            'scan_request_id' => ['required', 'uuid'],
+            'images' => ['required', 'array', 'min:1', 'max:'.min(3, max(1, (int) config('services.catalog_intelligence.max_images')))],
             'images.*' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'market' => ['required', Rule::in(['ID', 'MY'])],
+            'market' => ['required', Rule::in(['ID', 'MY', 'SG', 'TH', 'VN', 'PH', 'BN', 'KH', 'LA', 'MM', 'TL'])],
+            'language' => ['required', Rule::in(['id', 'en', 'ms', 'vi'])],
+            'currency' => ['required', Rule::in(['IDR', 'MYR', 'SGD', 'THB', 'VND', 'PHP', 'BND', 'KHR', 'LAK', 'MMK', 'USD'])],
         ];
     }
 }

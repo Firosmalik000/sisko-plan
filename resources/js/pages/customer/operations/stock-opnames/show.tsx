@@ -2,7 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { AlertTriangle, ArrowLeft, Camera, Check, ClipboardCheck, PackageCheck, RotateCcw, Save, Search, Send, X } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ledgerDateTime, money, OperationsShell, quantity } from '@/components/operations-shell';
-import type { ScannerSelection } from '@/components/product-scanner/types';
+import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
 import { decimalInput } from '@/lib/decimal-input';
 import { translate } from '@/lib/i18n';
@@ -131,7 +131,8 @@ export default function StockOpnameShow({
         window.history.replaceState({}, '', url);
     }, [scannerOpen]);
 
-    const useScannerSelections = (selections: ScannerSelection[]) => {
+    const useScannerSelections = (selections: ScannerSelection[]): ScannerApplyResult => {
+        const result: ScannerApplyResult = { applied: [], failures: [] };
         let changed = 0;
         let missing = 0;
         const nextValues = { ...values };
@@ -141,6 +142,11 @@ export default function StockOpnameShow({
 
             if (!item) {
                 missing++;
+                result.failures.push({
+                    captureId: selection.captureId,
+                    itemIndex: selection.itemIndex,
+                    message: 'Produk tidak ada dalam sesi opname ini.',
+                });
 
                 return;
             }
@@ -148,6 +154,7 @@ export default function StockOpnameShow({
             nextValues[item.product_id] = String(Number(nextValues[item.product_id] || 0) + selection.quantity);
             nextDirty.add(item.product_id);
             changed++;
+            result.applied.push({ captureId: selection.captureId, itemIndex: selection.itemIndex });
         });
         setValues(nextValues);
         setDirty(nextDirty);
@@ -156,6 +163,8 @@ export default function StockOpnameShow({
                 ? `${changed} hitungan diperbarui. ${missing} produk tidak ada dalam sesi opname ini.`
                 : `${changed} hitungan diperbarui. Periksa lalu simpan saat siap.`,
         );
+
+        return result;
     };
 
     const save = () => {
@@ -444,13 +453,20 @@ export default function StockOpnameShow({
                     )}
                 </div>
             </OperationsShell>
-            <Suspense fallback={null}>
+            <Suspense
+                fallback={
+                    <div role="status" className="fixed inset-0 z-[90] grid place-items-center bg-black/80 text-white">
+                        Membuka kamera…
+                    </div>
+                }
+            >
                 <ProductScanner
                     purpose="stock_count"
                     title="Scan produk untuk opname"
                     open={scannerOpen}
                     onOpenChange={setScannerOpen}
                     onConfirm={useScannerSelections}
+                    onManualSearch={() => setScannerOpen(false)}
                 />
             </Suspense>
         </>

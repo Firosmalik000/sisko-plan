@@ -71,10 +71,10 @@ class ProductRequest extends MasterDataRequest
             $retail = $this->input('retail_unit_public_id');
             $large = $this->input('large_unit_public_id');
             if (is_string($retail) && ($types[$retail] ?? null)?->value !== UnitType::Retail->value) {
-                $validator->errors()->add('retail_unit_public_id', 'Pilih satuan dari kelompok ecer.');
+                $validator->errors()->add('retail_unit_public_id', __('Pilih satuan dari kelompok ecer.'));
             }
             if (is_string($large) && $large !== $retail && ($types[$large] ?? null)?->value !== UnitType::Large->value) {
-                $validator->errors()->add('large_unit_public_id', 'Pilih satuan dari kelompok besar.');
+                $validator->errors()->add('large_unit_public_id', __('Pilih satuan dari kelompok besar.'));
             }
         }];
     }
@@ -88,7 +88,7 @@ class ProductRequest extends MasterDataRequest
             ['key' => 'barcode', 'column' => 'barcode', 'value' => $this->input('barcode')],
         ];
 
-        foreach ($this->input('variants', []) as $index => $variant) {
+        foreach ($this->input('variant_mode') === 'none' ? [] : $this->input('variants', []) as $index => $variant) {
             foreach (['sku', 'barcode'] as $column) {
                 $submitted[] = [
                     'key' => "variants.{$index}.{$column}",

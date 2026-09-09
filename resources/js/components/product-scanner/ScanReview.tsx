@@ -16,7 +16,14 @@ import {
 import { useMemo, useState } from 'react';
 import { formatMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
-import type { ScannerCapture, ScannerProductCandidate, ScannerPurpose, ScannerSaleOption, ScannerSelection } from './types';
+import type {
+    ScannerApplyResult,
+    ScannerCapture,
+    ScannerProductCandidate,
+    ScannerPurpose,
+    ScannerSaleOption,
+    ScannerSelection,
+} from './types';
 
 const actionLabels: Record<ScannerPurpose, string> = {
     sale: 'Tambahkan ke keranjang',
@@ -28,6 +35,8 @@ const actionLabels: Record<ScannerPurpose, string> = {
 const money = { format: formatMoney };
 
 export function ScanReview({
+    applyErrors,
+    onScanBarcode,
     captures,
     selections,
     purpose,
@@ -45,6 +54,8 @@ export function ScanReview({
     onConfirm,
     manualProducts = [],
 }: {
+    applyErrors: ScannerApplyResult['failures'];
+    onScanBarcode: (captureId: string, itemIndex: number) => void;
     captures: ScannerCapture[];
     selections: ScannerSelection[];
     purpose: ScannerPurpose;
@@ -68,7 +79,9 @@ export function ScanReview({
     } | null>(null);
     const [manualQuery, setManualQuery] = useState('');
     const confirmed = selections;
-    const pending = captures.some((capture) => capture.status === 'queued' || capture.status === 'recognizing');
+    const pending = captures.some(
+        (capture) => capture.status === 'queued' || capture.status === 'recognizing' || capture.status === 'retry_wait',
+    );
     const unresolved = captures.reduce((total, capture) => {
         if (capture.status === 'failed') {
             return total + 1;
@@ -113,7 +126,7 @@ export function ScanReview({
                     type="button"
                     onClick={onBack}
                     className="grid size-11 place-items-center rounded-xl bg-[var(--app-soft)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
-                    aria-label="Kembali ke kamera"
+                    aria-label="Tutup hasil scan"
                 >
                     <ChevronLeft className="size-5" />
                 </button>
@@ -131,22 +144,25 @@ export function ScanReview({
                     className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                     <Camera className="size-4" />
-                    Scan lagi
+                    Tambah foto
                 </button>
             </header>
 
             <div className="flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-5">
                 {captures.map((capture, captureIndex) => {
-                    if (capture.status === 'queued' || capture.status === 'recognizing') {
+                    if (capture.status === 'queued' || capture.status === 'recognizing' || capture.status === 'retry_wait') {
                         return (
                             <div key={capture.id} className="flex min-h-24 items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
                                 <CaptureImage previewUrl={capture.previewUrl} loading />
                                 <div className="min-w-0 flex-1">
-                                    <p className="font-black">Mencari produk…</p>
+                                    <p className="font-black">
+                                        {capture.status === 'retry_wait' ? 'Server sibuk, menunggu giliran…' : 'Mencari produk…'}
+                                    </p>
                                     <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
                                         Foto {captureIndex + 1} sedang dicocokkan dengan katalog.
                                     </p>
                                 </div>
+                                <RemoveButton onClick={() => onRemove(capture.id)} />
                             </div>
                         );
                     }
@@ -219,6 +235,22 @@ export function ScanReview({
                                 />
                             </div>
 
+                            {applyErrors
+                                .filter((error) => error.captureId === capture.id && error.itemIndex === result.itemIndex)
+                                .map((error) => (
+                                    <p key={error.message} role="alert" className="mt-2 text-sm text-red-700">
+                                        {error.message}
+                                    </p>
+                                ))}
+                            {!result.skipped && (
+                                <button
+                                    type="button"
+                                    onClick={() => onScanBarcode(capture.id, result.itemIndex)}
+                                    className="mt-2 min-h-11 text-sm font-bold text-[var(--app-primary)]"
+                                >
+                                    Pastikan dengan barcode
+                                </button>
+                            )}
                             {result.skipped ? (
                                 <button
                                     type="button"

@@ -1,7 +1,14 @@
 import { AlertCircle, Check, LoaderCircle, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { ScannerCapture } from './types';
 
 export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]; onRemove: (id: string) => void }) {
+    const tray = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (tray.current) {
+            tray.current.scrollLeft = tray.current.scrollWidth;
+        }
+    }, [captures.length]);
     const visibleCaptures = captures.filter((capture) => capture.results.length > 0 || capture.status !== 'recognized');
 
     if (visibleCaptures.length === 0) {
@@ -9,7 +16,11 @@ export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]
     }
 
     return (
-        <div className="flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 py-3" aria-label={`${visibleCaptures.length} foto diambil`}>
+        <div
+            ref={tray}
+            className="flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 py-3 [&::-webkit-scrollbar]:hidden"
+            aria-label={`${visibleCaptures.length} foto diambil`}
+        >
             {visibleCaptures.map((capture, index) => (
                 <div
                     key={capture.id}
@@ -21,7 +32,7 @@ export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]
                         <div className="size-full bg-[var(--app-ink)]" />
                     )}
                     <span className="absolute bottom-1 left-1 grid size-5 place-items-center rounded-md bg-[var(--app-ink)]/85 text-[10px] font-black text-white">
-                        {capture.status === 'recognizing' ? (
+                        {['queued', 'recognizing', 'retry_wait'].includes(capture.status) ? (
                             <LoaderCircle className="size-3 animate-spin" />
                         ) : capture.status === 'recognized' && capture.results.some((result) => result.match !== null) ? (
                             <Check className="size-3" />

@@ -13,6 +13,21 @@ class ScanQuota
 {
     public function __construct(private SubscriptionEntitlements $entitlements) {}
 
+    public function ensureAvailable(Store $store, string $requestKey, int $units): void
+    {
+        $limits = $this->entitlements->forOwner($store->owner_user_id);
+        if (DB::table('subscription_scan_events')->where([
+            'user_id' => $store->owner_user_id,
+            'request_key' => $requestKey,
+        ])->exists()) {
+            return;
+        }
+
+        if ($limits['max_scans'] > 0 && $limits['max_scans'] < $limits['scans_used'] + $units) {
+            throw new ScanQuotaExceeded($limits['max_scans'], $limits['scans_used']);
+        }
+    }
+
     public function consume(Store $store, string $requestKey, string $operation, int $units = 1): void
     {
         if ($units < 1) {

@@ -22,55 +22,36 @@ const csrfToken = () => {
     return value ? decodeURIComponent(value) : '';
 };
 
-export function useProductScanner(open: boolean, purpose: ScannerPurpose, config: ScannerConfig) {
-    const [captures, setCaptures] = useState<ScannerCapture[]>([]);
+export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig) {
+    const [captures, setCapturesState] = useState<ScannerCapture[]>([]);
     const [reviewing, setReviewing] = useState(false);
     const controllersRef = useRef(new Map<string, AbortController>());
     const capturesRef = useRef<ScannerCapture[]>([]);
+    const setCaptures = useCallback((update: ScannerCapture[] | ((current: ScannerCapture[]) => ScannerCapture[])) => {
+        const next = typeof update === 'function' ? update(capturesRef.current) : update;
+        capturesRef.current = next;
+        setCapturesState(next);
+    }, []);
+    const reservations = useRef(0);
+    const generation = useRef(0);
+    const [reserved, setReserved] = useState(0);
+    const [wake, setWake] = useState(0);
     useEffect(() => {
-        capturesRef.current = captures;
-    }, [captures]);
+        const resume = () => setWake((value) => value + 1);
+        window.addEventListener('online', resume);
+        document.addEventListener('visibilitychange', resume);
+        const timer = window.setInterval(resume, 1000);
 
-    useEffect(() => {
-        const merged: ScannerCapture[] = [];
-        const byIdentity = new Map<string, ScannerCapture>();
-        let changed = false;
-
-        captures.forEach((capture) => {
-            const identity = resultIdentity(capture.results[0]);
-            const existing = identity ? byIdentity.get(identity) : undefined;
-
-            if (!existing || capture.results.length === 0) {
-                merged.push(capture);
-
-                if (identity) {
-                    byIdentity.set(identity, capture);
-                }
-
-                return;
-            }
-
-            const quantity = (existing.results[0]?.quantity ?? 0) + (capture.results[0]?.quantity ?? 1);
-            const existingIndex = merged.findIndex((item) => item.id === existing.id);
-
-            merged[existingIndex] = {
-                ...existing,
-                results: existing.results.map((result, index) => (index === 0 ? { ...result, quantity } : result)),
-            };
-            changed = true;
-
-            if (capture.previewUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(capture.previewUrl);
-            }
-        });
-
-        if (changed) {
-            queueMicrotask(() => setCaptures(merged));
-        }
-    }, [captures]);
+        return () => {
+            window.removeEventListener('online', resume);
+            document.removeEventListener('visibilitychange', resume);
+            window.clearInterval(timer);
+        };
+    }, [setCaptures]);
 
     useEffect(
         () => () => {
+            generation.current++;
             controllersRef.current.forEach((controller) => controller.abort());
             capturesRef.current.forEach((capture) => {
                 if (capture.previewUrl.startsWith('blob:')) {
@@ -83,33 +64,63 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
 
     const addBlobs = useCallback(
         async (blobs: Blob[], normalize = true) => {
-            const normalized: Blob[] = [];
+            const space = Math.max(0, 10 - reservations.current - capturesRef.current.filter(isPending).length);
+            const accepted = blobs.slice(0, space);
+            reservations.current += accepted.length;
+            setReserved(reservations.current);
+            const session = generation.current;
+            let remaining = accepted.length;
 
-            for (const blob of blobs) {
-                normalized.push(normalize ? await normalizeImage(blob) : blob);
+            try {
+                for (const source of accepted) {
+                    const blob = normalize ? await normalizeImage(source, 768, 0.66) : source;
+                    const thumbnail = await normalizeImage(blob, 160, 0.7);
+
+                    if (session !== generation.current) {
+                        break;
+                    }
+
+                    const id = crypto.randomUUID();
+                    const capture: ScannerCapture = {
+                        id,
+                        requestId: id,
+                        attempts: 0,
+                        retryAt: 0,
+                        startedAt: 0,
+                        blob,
+                        previewUrl: URL.createObjectURL(thumbnail),
+                        status: config.visual_recognition_enabled ? 'queued' : 'failed',
+                        error: config.visual_recognition_enabled ? null : 'Layanan scanner belum terhubung.',
+                        errorCode: config.visual_recognition_enabled ? null : 'SCANNER_DISABLED',
+                        retryable: config.visual_recognition_enabled,
+                        results: [],
+                    };
+                    capturesRef.current = [...capturesRef.current, capture];
+                    setCaptures(capturesRef.current);
+                    remaining--;
+                    reservations.current--;
+                    setReserved(reservations.current);
+                }
+            } finally {
+                reservations.current -= remaining;
+                setReserved(reservations.current);
             }
 
-            setCaptures((current) => [
-                ...current,
-                ...normalized.map((blob) => ({
-                    id: crypto.randomUUID(),
-                    blob,
-                    previewUrl: URL.createObjectURL(blob),
-                    status: config.visual_recognition_enabled ? ('queued' as const) : ('failed' as const),
-                    error: config.visual_recognition_enabled ? null : 'Layanan scanner belum terhubung. Hubungi administrator.',
-                    errorCode: config.visual_recognition_enabled ? null : ('SCANNER_DISABLED' as const),
-                    retryable: config.visual_recognition_enabled,
-                    results: [],
-                })),
-            ]);
+            return accepted.length;
         },
-        [config.visual_recognition_enabled],
+        [config.visual_recognition_enabled, setCaptures],
     );
 
     const recognizeCapture = useCallback(
         async (capture: ScannerCapture) => {
+            if (controllersRef.current.size > 0 || !capture.blob) {
+                return;
+            }
+
             const controller = new AbortController();
             controllersRef.current.set(capture.id, controller);
+            const startedAt = capture.startedAt || Date.now();
+            const attempt = capture.attempts + 1;
 
             setCaptures((current) =>
                 current.map((item) =>
@@ -117,6 +128,8 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
                         ? {
                               ...item,
                               status: 'recognizing',
+                              attempts: attempt,
+                              startedAt,
                               error: null,
                               errorCode: null,
                           }
@@ -126,6 +139,7 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
 
             const form = new FormData();
             form.append('purpose', purpose);
+            form.append('scan_request_id', capture.requestId);
             form.append('images[]', capture.blob, `${capture.id}.jpg`);
             form.append('capture_ids[]', capture.id);
 
@@ -144,10 +158,12 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
                 const payload = (await response.json()) as {
                     data?: ScannerCatalogItem[];
                     code?: string;
+                    retryable?: boolean;
+                    retry_after_ms?: number;
                 };
 
                 if (!response.ok) {
-                    throw new ScannerRequestError(payload.code);
+                    throw new ScannerRequestError(payload.code, payload.retryable === true, payload.retry_after_ms);
                 }
 
                 const results = (payload.data ?? [])
@@ -158,101 +174,75 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
                         quantity: 1,
                     }));
 
-                setCaptures((current) => {
-                    // One photo represents one physical product. The
-                    // recognition service may return several detected items
-                    // or candidates for the same image; keep only the best
-                    // item so the review drawer stays one-card-per-photo.
-                    const bestResult =
-                        results.find((result) => result.status === 'found') ??
-                        results.find((result) => result.status === 'uncertain') ??
-                        results[0];
-                    const nextResults = bestResult ? [bestResult] : [unknownResult(capture.id)];
-                    const currentCapture = current.find((item) => item.id === capture.id);
-                    const identity = resultIdentity(nextResults[0]);
-                    const duplicate = identity
-                        ? current.find(
-                              (item) =>
-                                  item.id !== capture.id &&
-                                  item.results.some((result) => result.selectedOption !== null && resultIdentity(result) === identity),
-                          )
-                        : undefined;
-
-                    if (duplicate && currentCapture) {
-                        const quantity = (duplicate.results[0]?.quantity ?? 0) + (nextResults[0]?.quantity ?? 1);
-
-                        if (currentCapture.previewUrl.startsWith('blob:')) {
-                            URL.revokeObjectURL(currentCapture.previewUrl);
-                        }
-
-                        return current.map((item) => {
-                            if (item.id === duplicate.id) {
-                                return {
-                                    ...item,
-                                    results: item.results.map((result, index) => (index === 0 ? { ...result, quantity } : result)),
-                                };
-                            }
-
-                            if (item.id === capture.id) {
-                                return {
-                                    ...item,
-                                    status: 'recognized' as const,
-                                    error: null,
-                                    errorCode: null,
-                                    retryable: true,
-                                    // Keep a completion marker so the camera
-                                    // can transition to review even though
-                                    // the visible card is merged above.
-                                    results: [],
-                                };
-                            }
-
-                            return item;
-                        });
-                    }
-
-                    return current.map((item) =>
-                        item.id === capture.id
+                setCaptures((current) =>
+                    current.map((item) =>
+                        item.id === capture.id && item.requestId === capture.requestId
                             ? {
                                   ...item,
                                   status: 'recognized',
+                                  blob: null,
                                   error: null,
                                   errorCode: null,
-                                  retryable: true,
-                                  results: nextResults,
+                                  retryable: false,
+                                  results: results.length ? results : [unknownResult(capture.id)],
                               }
                             : item,
-                    );
-                });
+                    ),
+                );
             } catch (error) {
                 if (!controller.signal.aborted) {
                     const failure = scannerFailure(error instanceof ScannerRequestError ? error.code : null);
+                    const delay = Math.max(
+                        attempt * 1000 + Math.floor(Math.random() * 501),
+                        error instanceof ScannerRequestError ? (error.retryAfter ?? 0) : 0,
+                    );
+                    const retrying =
+                        error instanceof ScannerRequestError && error.capacity && attempt < 3 && Date.now() + delay - startedAt < 30000;
                     setCaptures((current) =>
-                        current.map((item) => (item.id === capture.id ? { ...item, status: 'failed', ...failure } : item)),
+                        current.map((item) =>
+                            item.id === capture.id && item.requestId === capture.requestId
+                                ? { ...item, status: retrying ? 'retry_wait' : 'failed', retryAt: Date.now() + delay, ...failure }
+                                : item,
+                        ),
                     );
                 }
             } finally {
-                controllersRef.current.delete(capture.id);
+                if (controllersRef.current.get(capture.id) === controller) {
+                    controllersRef.current.delete(capture.id);
+                }
+
                 setCaptures((current) => [...current]);
             }
         },
-        [purpose],
+        [purpose, setCaptures],
     );
 
     useEffect(() => {
-        if (!open || purpose === 'product' || !config.visual_recognition_enabled) {
+        if (
+            purpose === 'product' ||
+            !config.visual_recognition_enabled ||
+            !navigator.onLine ||
+            document.hidden ||
+            controllersRef.current.size > 0
+        ) {
             return;
         }
 
-        const available = Math.max(0, 6 - controllersRef.current.size);
-        captures
-            .filter((capture) => capture.status === 'queued')
-            .slice(0, available)
-            .forEach((capture) => void recognizeCapture(capture));
-    }, [captures, config.visual_recognition_enabled, open, purpose, recognizeCapture]);
+        const next = captures.find(
+            (capture) => capture.status === 'queued' || (capture.status === 'retry_wait' && capture.retryAt <= Date.now()),
+        );
+
+        if (next) {
+            void recognizeCapture(next);
+        }
+    }, [captures, config.visual_recognition_enabled, purpose, recognizeCapture, wake]);
 
     const lookupBarcode = useCallback(
-        async (identifier: string, captureId?: string): Promise<boolean> => {
+        async (identifier: string, captureId?: string, itemIndex = 0): Promise<boolean | ScannerSelection> => {
+            const session = generation.current;
+            const target = capturesRef.current.find((capture) => capture.id === captureId);
+            const targetEntry = target?.results.find((entry) => entry.itemIndex === itemIndex);
+            const barcodeId = crypto.randomUUID();
             const response = await fetch('/scanner/catalog-item-lookups', {
                 method: 'POST',
                 headers: {
@@ -265,7 +255,7 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
                     purpose,
                     type: 'barcode',
                     identifier,
-                    capture_id: `barcode-${identifier}`,
+                    capture_id: barcodeId,
                 }),
             });
 
@@ -284,152 +274,113 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
                 return false;
             }
 
+            if (session !== generation.current) {
+                return false;
+            }
+
+            if (captureId) {
+                const latest = capturesRef.current.find((capture) => capture.id === captureId);
+
+                if (
+                    !targetEntry ||
+                    latest?.requestId !== target?.requestId ||
+                    latest?.results.find((entry) => entry.itemIndex === itemIndex) !== targetEntry
+                ) {
+                    return false;
+                }
+            }
+
             setCaptures((current) => {
-                const targetId = captureId ?? result.captureId;
-                const nextResult = { ...result, skipped: false, quantity: 1 };
-                const currentCapture = current.find((captureItem) => captureItem.id === targetId);
-                const identity = resultIdentity(nextResult);
-                const sameCapture = currentCapture && identity && resultIdentity(currentCapture.results[0]) === identity;
+                const nextResult = { ...result, captureId: captureId ?? barcodeId, itemIndex, skipped: false, quantity: 1 };
 
-                if (sameCapture && currentCapture) {
-                    const quantity = (currentCapture.results[0]?.quantity ?? 0) + 1;
-
+                if (captureId) {
                     return current.map((item) =>
-                        item.id === targetId
-                            ? {
+                        item.id !== captureId
+                            ? item
+                            : {
                                   ...item,
-                                  results: item.results.map((entry, index) => (index === 0 ? { ...entry, quantity } : entry)),
-                              }
-                            : item,
+                                  results: item.results.map((entry) =>
+                                      entry.itemIndex === itemIndex ? { ...nextResult, quantity: entry.quantity ?? 1 } : entry,
+                                  ),
+                              },
                     );
-                }
-
-                if (currentCapture) {
-                    return current.map((item) =>
-                        item.id === targetId
-                            ? {
-                                  ...item,
-                                  status: 'recognized' as const,
-                                  error: null,
-                                  errorCode: null,
-                                  retryable: true,
-                                  results: [nextResult],
-                              }
-                            : item,
-                    );
-                }
-
-                const duplicate = identity
-                    ? current.find(
-                          (captureItem) =>
-                              captureItem.id !== targetId &&
-                              captureItem.results.some((item) => item.selectedOption !== null && resultIdentity(item) === identity),
-                      )
-                    : undefined;
-
-                if (duplicate) {
-                    const quantity = (duplicate.results[0]?.quantity ?? 0) + (nextResult.quantity ?? 1);
-
-                    return current.map((item) => {
-                        if (item.id === duplicate.id) {
-                            return {
-                                ...item,
-                                results: item.results.map((entry, index) => (index === 0 ? { ...entry, quantity } : entry)),
-                            };
-                        }
-
-                        if (item.id === targetId) {
-                            return {
-                                ...item,
-                                status: 'recognized' as const,
-                                error: null,
-                                errorCode: null,
-                                retryable: true,
-                                results: [],
-                            };
-                        }
-
-                        return item;
-                    });
                 }
 
                 return [
                     ...current,
                     {
-                        id: targetId,
-                        blob: new Blob(),
+                        id: barcodeId,
+                        requestId: barcodeId,
+                        attempts: 0,
+                        retryAt: 0,
+                        startedAt: 0,
+                        blob: null,
                         previewUrl: result.match?.photoUrl ?? '',
-                        status: 'recognized' as const,
+                        status: 'recognized',
                         error: null,
                         errorCode: null,
-                        retryable: true,
+                        retryable: false,
                         results: [nextResult],
                     },
                 ];
             });
             navigator.vibrate?.(45);
 
+            if (!captureId && result.match && result.selectedOption) {
+                return {
+                    ...result.selectedOption,
+                    captureId: barcodeId,
+                    itemIndex,
+                    name: result.match.name,
+                    photoUrl: result.match.photoUrl,
+                    quantity: 1,
+                };
+            }
+
             return true;
         },
-        [purpose],
+        [purpose, setCaptures],
     );
 
-    const consumeBarcode = useCallback(async (): Promise<void> => {
-        const response = await fetch('/scanner/usages', {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-XSRF-TOKEN': csrfToken(),
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({ purpose }),
-        });
-        const payload = (await response.json()) as { code?: string };
+    const removeCapture = useCallback(
+        (id: string) => {
+            setCaptures((current) => {
+                const capture = current.find((item) => item.id === id);
 
-        if (!response.ok) {
-            throw new ScannerRequestError(payload.code);
-        }
-    }, [purpose]);
+                if (capture?.previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(capture.previewUrl);
+                }
 
-    const removeCapture = useCallback((id: string) => {
-        controllersRef.current.get(id)?.abort();
-        controllersRef.current.delete(id);
-        setCaptures((current) => {
-            const capture = current.find((item) => item.id === id);
+                return current.filter((item) => item.id !== id);
+            });
+        },
+        [setCaptures],
+    );
 
-            if (capture?.previewUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(capture.previewUrl);
-            }
+    const removeResult = useCallback(
+        (captureId: string, itemIndex: number) => {
+            setCaptures((current) => {
+                const capture = current.find((item) => item.id === captureId);
 
-            return current.filter((item) => item.id !== id);
-        });
-    }, []);
+                if (!capture) {
+                    return current;
+                }
 
-    const removeResult = useCallback((captureId: string, itemIndex: number) => {
-        setCaptures((current) => {
-            const capture = current.find((item) => item.id === captureId);
+                const results = capture.results.filter((result) => result.itemIndex !== itemIndex);
 
-            if (!capture) {
-                return current;
-            }
+                if (results.length > 0) {
+                    return current.map((item) => (item.id === captureId ? { ...item, results } : item));
+                }
 
-            const results = capture.results.filter((result) => result.itemIndex !== itemIndex);
+                if (capture.previewUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(capture.previewUrl);
+                }
 
-            if (results.length > 0) {
-                return current.map((item) => (item.id === captureId ? { ...item, results } : item));
-            }
-
-            if (capture.previewUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(capture.previewUrl);
-            }
-
-            controllersRef.current.get(captureId)?.abort();
-            controllersRef.current.delete(captureId);
-
-            return current.filter((item) => item.id !== captureId);
-        });
-    }, []);
+                return current.filter((item) => item.id !== captureId);
+            });
+        },
+        [setCaptures],
+    );
 
     const retry = useCallback(
         (id: string) => {
@@ -439,9 +390,12 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
 
             setCaptures((current) =>
                 current.map((capture) =>
-                    capture.id === id
+                    capture.id === id && capture.blob
                         ? {
                               ...capture,
+                              attempts: 0,
+                              startedAt: 0,
+                              retryAt: 0,
                               status: 'queued',
                               error: null,
                               errorCode: null,
@@ -450,16 +404,26 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
                 ),
             );
         },
-        [config.visual_recognition_enabled],
+        [config.visual_recognition_enabled, setCaptures],
     );
 
     const replaceBlob = useCallback(
         async (id: string, blob: Blob, normalize = true) => {
-            const normalized = normalize ? await normalizeImage(blob) : blob;
-            const previewUrl = URL.createObjectURL(normalized);
+            const original = capturesRef.current.find((capture) => capture.id === id);
 
-            controllersRef.current.get(id)?.abort();
-            controllersRef.current.delete(id);
+            if (!original || (!original.blob && capturesRef.current.filter(isPending).length + reservations.current >= 10)) {
+                throw new Error('Antrean penuh. Periksa hasil atau tunggu foto selesai.');
+            }
+
+            const session = generation.current;
+            const normalized = normalize ? await normalizeImage(blob, 768, 0.66) : blob;
+
+            if (session !== generation.current || !capturesRef.current.some((capture) => capture.id === id)) {
+                return;
+            }
+
+            const previewUrl = URL.createObjectURL(await normalizeImage(normalized, 160, 0.7));
+
             setCaptures((current) =>
                 current.map((capture) => {
                     if (capture.id !== id) {
@@ -472,6 +436,10 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
 
                     return {
                         ...capture,
+                        requestId: crypto.randomUUID(),
+                        attempts: 0,
+                        startedAt: 0,
+                        retryAt: 0,
                         blob: normalized,
                         previewUrl,
                         status: config.visual_recognition_enabled ? 'queued' : 'failed',
@@ -483,101 +451,116 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
                 }),
             );
         },
-        [config.visual_recognition_enabled],
+        [config.visual_recognition_enabled, setCaptures],
     );
 
-    const selectProductCandidate = useCallback((captureId: string, itemIndex: number, candidate: ScannerProductCandidate) => {
-        setCaptures((current) =>
-            current.map((capture) =>
-                capture.id !== captureId
-                    ? capture
-                    : {
-                          ...capture,
-                          results: capture.results.map((result) =>
-                              result.itemIndex !== itemIndex
-                                  ? result
-                                  : {
-                                        ...result,
-                                        status: 'uncertain',
-                                        match: candidate,
-                                        skipped: false,
-                                        selectedOption: candidate.options.length === 1 ? candidate.options[0] : null,
-                                    },
-                          ),
-                      },
-            ),
-        );
-    }, []);
+    const selectProductCandidate = useCallback(
+        (captureId: string, itemIndex: number, candidate: ScannerProductCandidate) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) =>
+                                  result.itemIndex !== itemIndex
+                                      ? result
+                                      : {
+                                            ...result,
+                                            status: 'uncertain',
+                                            match: candidate,
+                                            skipped: false,
+                                            selectedOption: candidate.options.length === 1 ? candidate.options[0] : null,
+                                        },
+                              ),
+                          },
+                ),
+            );
+        },
+        [setCaptures],
+    );
 
-    const selectSaleOption = useCallback((captureId: string, itemIndex: number, option: ScannerSaleOption) => {
-        setCaptures((current) =>
-            current.map((capture) =>
-                capture.id !== captureId
-                    ? capture
-                    : {
-                          ...capture,
-                          results: capture.results.map((result) =>
-                              result.itemIndex !== itemIndex
-                                  ? result
-                                  : {
-                                        ...result,
-                                        skipped: false,
-                                        selectedOption: option,
-                                    },
-                          ),
-                      },
-            ),
-        );
-    }, []);
+    const selectSaleOption = useCallback(
+        (captureId: string, itemIndex: number, option: ScannerSaleOption) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) =>
+                                  result.itemIndex !== itemIndex
+                                      ? result
+                                      : {
+                                            ...result,
+                                            skipped: false,
+                                            selectedOption: option,
+                                        },
+                              ),
+                          },
+                ),
+            );
+        },
+        [setCaptures],
+    );
 
-    const clearProductSelection = useCallback((captureId: string, itemIndex: number) => {
-        setCaptures((current) =>
-            current.map((capture) =>
-                capture.id !== captureId
-                    ? capture
-                    : {
-                          ...capture,
-                          results: capture.results.map((result) =>
-                              result.itemIndex !== itemIndex
-                                  ? result
-                                  : {
-                                        ...result,
-                                        status: 'uncertain',
-                                        match: null,
-                                        selectedOption: null,
-                                        skipped: false,
-                                    },
-                          ),
-                      },
-            ),
-        );
-    }, []);
+    const clearProductSelection = useCallback(
+        (captureId: string, itemIndex: number) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) =>
+                                  result.itemIndex !== itemIndex
+                                      ? result
+                                      : {
+                                            ...result,
+                                            status: 'uncertain',
+                                            match: null,
+                                            selectedOption: null,
+                                            skipped: false,
+                                        },
+                              ),
+                          },
+                ),
+            );
+        },
+        [setCaptures],
+    );
 
-    const setResultSkipped = useCallback((captureId: string, itemIndex: number, skipped: boolean) => {
-        setCaptures((current) =>
-            current.map((capture) =>
-                capture.id !== captureId
-                    ? capture
-                    : {
-                          ...capture,
-                          results: capture.results.map((result) => (result.itemIndex !== itemIndex ? result : { ...result, skipped })),
-                      },
-            ),
-        );
-    }, []);
+    const setResultSkipped = useCallback(
+        (captureId: string, itemIndex: number, skipped: boolean) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) => (result.itemIndex !== itemIndex ? result : { ...result, skipped })),
+                          },
+                ),
+            );
+        },
+        [setCaptures],
+    );
 
-    const setResultQuantity = useCallback((captureId: string, itemIndex: number, quantity: number) => {
-        setCaptures((current) =>
-            current.map((capture) =>
-                capture.id !== captureId
-                    ? capture
-                    : {
-                          ...capture,
-                          results: capture.results.map((result) => (result.itemIndex !== itemIndex ? result : { ...result, quantity })),
-                      },
-            ),
-        );
-    }, []);
+    const setResultQuantity = useCallback(
+        (captureId: string, itemIndex: number, quantity: number) => {
+            setCaptures((current) =>
+                current.map((capture) =>
+                    capture.id !== captureId
+                        ? capture
+                        : {
+                              ...capture,
+                              results: capture.results.map((result) => (result.itemIndex !== itemIndex ? result : { ...result, quantity })),
+                          },
+                ),
+            );
+        },
+        [setCaptures],
+    );
 
     const selections = useMemo<ScannerSelection[]>(
         () =>
@@ -603,8 +586,8 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
     );
 
     const reset = useCallback(() => {
-        controllersRef.current.forEach((controller) => controller.abort());
-        controllersRef.current.clear();
+        generation.current++;
+
         setCaptures((current) => {
             current.forEach((capture) => {
                 if (capture.previewUrl.startsWith('blob:')) {
@@ -615,16 +598,16 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
             return [];
         });
         setReviewing(false);
-    }, []);
+    }, [setCaptures]);
 
     return {
         captures,
+        pendingCount: captures.filter(isPending).length + reserved,
         selections,
         reviewing,
         setReviewing,
         addBlobs,
         lookupBarcode,
-        consumeBarcode,
         removeCapture,
         removeResult,
         retry,
@@ -639,19 +622,17 @@ export function useProductScanner(open: boolean, purpose: ScannerPurpose, config
 }
 
 class ScannerRequestError extends Error {
-    public constructor(public readonly code: string | undefined) {
+    public constructor(
+        public readonly code: string | undefined,
+        public readonly capacity = false,
+        public readonly retryAfter?: number,
+    ) {
         super(scannerFailure(code).error);
     }
 }
 
-function resultIdentity(result: ScannerCatalogItem | undefined): string {
-    if (!result?.match || !result.selectedOption) {
-        return '';
-    }
-
-    const option = result.selectedOption;
-
-    return [option.productPublicId || result.match.productPublicId, option.variantPublicId ?? 'base', option.unitId].join(':');
+function isPending(capture: ScannerCapture): boolean {
+    return capture.blob !== null;
 }
 
 function scannerFailure(code: string | null | undefined): {
@@ -684,6 +665,10 @@ function scannerFailure(code: string | null | undefined): {
                 errorCode: code,
                 retryable: true,
             };
+        case 'SCANNER_RATE_LIMITED':
+        case 'DISCOVERY_QUOTA_EXCEEDED':
+        case 'DISCOVERY_SPEND_LIMIT_EXCEEDED':
+            return { error: 'Batas layanan tercapai. Coba lagi nanti atau hubungi administrator.', errorCode: code, retryable: false };
         case 'SCAN_LIMIT_REACHED':
             return {
                 error: 'Kuota scan bulan ini sudah habis. Tambahkan kapasitas untuk melanjutkan.',

@@ -5,7 +5,7 @@ import type { FormEvent } from 'react';
 import { buttonClass, currentDateTime, fieldClass, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
-import type { ScannerSelection } from '@/components/product-scanner/types';
+import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 type Supplier = {
@@ -127,47 +127,35 @@ export default function PurchasingPage({
         window.history.replaceState({}, '', url);
     }, [scannerOpen]);
 
-    const addScannerSelections = (selections: ScannerSelection[]) => {
-        let added = 0;
-        let skipped = 0;
-        purchase.setData((data) => {
-            const items = data.items.filter((item) => item.product_id !== '' && item.unit_id !== '');
-            selections.forEach((selection) => {
-                const option = products.find(
-                    (product) => product.product_id === selection.productId && product.unit_id === selection.unitId,
-                );
+    const addScannerSelections = (selections: ScannerSelection[]): ScannerApplyResult => {
+        const result: ScannerApplyResult = { applied: [], failures: [] };
+        const items = purchase.data.items.filter((item) => item.product_id !== '' && item.unit_id !== '');
 
-                if (!option) {
-                    skipped++;
+        for (const selection of selections) {
+            const identity = { captureId: selection.captureId, itemIndex: selection.itemIndex };
+            const option = products.find((product) => product.product_id === selection.productId && product.unit_id === selection.unitId);
 
-                    return;
-                }
+            if (!option || !Number.isFinite(selection.quantity) || selection.quantity <= 0) {
+                result.failures.push({ ...identity, message: 'Produk atau jumlah tidak tersedia untuk pembelian.' });
+                continue;
+            }
 
-                const index = items.findIndex((item) => item.product_id === option.product_id && item.unit_id === option.unit_id);
+            const index = items.findIndex((item) => item.product_id === option.product_id && item.unit_id === option.unit_id);
 
-                if (index >= 0) {
-                    items[index] = {
-                        ...items[index],
-                        quantity: String(Number(items[index].quantity) + selection.quantity),
-                    };
-                } else {
-                    items.push({
-                        ...defaultItem(option),
-                        quantity: String(selection.quantity),
-                    });
-                }
+            if (index >= 0) {
+                items[index] = { ...items[index], quantity: String(Number(items[index].quantity) + selection.quantity) };
+            } else {
+                items.push({ ...defaultItem(option), quantity: String(selection.quantity) });
+            }
 
-                added++;
-            });
+            result.applied.push(identity);
+        }
 
-            return { ...data, items };
-        });
-        setScannerSummary(
-            skipped
-                ? `${added} produk ditambahkan, ${skipped} tidak tersedia di daftar pembelian.`
-                : `${added} produk ditambahkan. Periksa jumlah dan harga sebelum simpan.`,
-        );
+        purchase.setData('items', items);
+        setScannerSummary(`${result.applied.length} produk ditambahkan. Periksa jumlah dan harga sebelum simpan.`);
         setPurchaseOpen(true);
+
+        return result;
     };
 
     const chooseProduct = (index: number, composite: string) => {
@@ -749,13 +737,20 @@ export default function PurchasingPage({
                     </section>
                 </div>
             </div>
-            <Suspense fallback={null}>
+            <Suspense
+                fallback={
+                    <div role="status" className="fixed inset-0 z-[90] grid place-items-center bg-black/80 text-white">
+                        Membuka kamera…
+                    </div>
+                }
+            >
                 <ProductScanner
                     purpose="purchase"
                     title="Scan produk pembelian"
                     open={scannerOpen}
                     onOpenChange={setScannerOpen}
                     onConfirm={addScannerSelections}
+                    onManualSearch={() => setScannerOpen(false)}
                 />
             </Suspense>
         </>

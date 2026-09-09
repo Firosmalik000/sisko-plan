@@ -42,12 +42,17 @@ export type DiscoverySuggestion = {
 
 export type ProductDraft = {
     id: string;
-    file: File;
+    requestId: string;
+    file: File | null;
     previewUrl: string;
-    status: 'waiting' | 'analyzing' | 'ready' | 'failed';
+    barcode: string;
+    status: 'waiting' | 'analyzing' | 'retry_wait' | 'ready' | 'failed';
     suggestion: DiscoverySuggestion | null;
     error: string | null;
     applied: boolean;
+    attempts: number;
+    retryAt: number;
+    startedAt: number;
 };
 
 const csrfToken = () => {
@@ -64,147 +69,214 @@ const csrfToken = () => {
 export function useProductDrafts() {
     const [drafts, setDrafts] = useState<ProductDraft[]>([]);
     const draftsRef = useRef<ProductDraft[]>([]);
-    const controllers = useRef(new Map<string, AbortController>());
+    const controllerRef = useRef<AbortController | null>(null);
+    const mounted = useRef(true);
+    const update = useCallback((change: (current: ProductDraft[]) => ProductDraft[]) => {
+        draftsRef.current = change(draftsRef.current);
 
-    useEffect(() => {
-        draftsRef.current = drafts;
-    }, [drafts]);
-
-    useEffect(
-        () => () => {
-            controllers.current.forEach((controller) => controller.abort());
-            draftsRef.current.forEach((draft) => URL.revokeObjectURL(draft.previewUrl));
-        },
-        [],
-    );
-
-    const analyze = useCallback(async (draft: ProductDraft) => {
-        const controller = new AbortController();
-        controllers.current.set(draft.id, controller);
-        setDrafts((current) => current.map((item) => (item.id === draft.id ? { ...item, status: 'analyzing', error: null } : item)));
-
-        const form = new FormData();
-        form.append('purpose', 'product');
-        form.append('market', 'ID');
-        form.append('images[]', draft.file, draft.file.name);
-
-        try {
-            const response = await fetch('/scanner/catalog-item-discoveries', {
-                method: 'POST',
-                body: form,
-                signal: controller.signal,
-                headers: {
-                    Accept: 'application/json',
-                    'X-XSRF-TOKEN': csrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-            const payload = (await response.json()) as {
-                data?: DiscoverySuggestion;
-                message?: string;
-            };
-
-            if (!response.ok || !payload.data) {
-                throw new Error(payload.message || 'Discovery gagal.');
-            }
-
-            setDrafts((current) =>
-                current.map((item) =>
-                    item.id === draft.id
-                        ? {
-                              ...item,
-                              status: 'ready',
-                              suggestion: payload.data ?? null,
-                              error: null,
-                          }
-                        : item,
-                ),
-            );
-        } catch (error) {
-            if (!controller.signal.aborted) {
-                setDrafts((current) =>
-                    current.map((item) =>
-                        item.id === draft.id
-                            ? {
-                                  ...item,
-                                  status: 'failed',
-                                  error: error instanceof Error ? error.message : 'Discovery gagal. Isi manual atau coba lagi.',
-                              }
-                            : item,
-                    ),
-                );
-            }
-        } finally {
-            controllers.current.delete(draft.id);
+        if (mounted.current) {
+            setDrafts(draftsRef.current);
         }
     }, []);
 
     useEffect(() => {
-        const available = Math.max(0, 2 - controllers.current.size);
-        drafts
-            .filter((draft) => draft.status === 'waiting')
-            .slice(0, available)
-            .forEach((draft) => void analyze(draft));
-    }, [analyze, drafts]);
+        mounted.current = true;
 
-    const start = useCallback((files: File[], append = false) => {
-        const next = files.map((file): ProductDraft => ({
-            id: crypto.randomUUID(),
-            file,
-            previewUrl: URL.createObjectURL(file),
-            status: 'waiting',
-            suggestion: null,
-            error: null,
-            applied: false,
-        }));
-        setDrafts((current) => (append ? [...current, ...next] : next));
-
-        return next;
+        return () => {
+            mounted.current = false;
+            controllerRef.current?.abort();
+            draftsRef.current.forEach((draft) => URL.revokeObjectURL(draft.previewUrl));
+        };
     }, []);
 
-    const remove = useCallback((id: string) => {
-        controllers.current.get(id)?.abort();
-        controllers.current.delete(id);
-        setDrafts((current) => {
-            const draft = current.find((item) => item.id === id);
-
-            if (draft) {
-                URL.revokeObjectURL(draft.previewUrl);
+    useEffect(() => {
+        const dispatch = async () => {
+            if (controllerRef.current || document.hidden || !navigator.onLine) {
+                return;
             }
 
-            return current.filter((item) => item.id !== id);
-        });
-    }, []);
+            const draft = draftsRef.current.find(
+                (item) => item.status === 'waiting' || (item.status === 'retry_wait' && item.retryAt <= Date.now()),
+            );
 
-    const retry = useCallback((id: string) => {
-        setDrafts((current) =>
-            current.map((draft) =>
-                draft.id === id
-                    ? {
-                          ...draft,
-                          status: 'waiting',
-                          suggestion: null,
-                          error: null,
-                          applied: false,
-                      }
-                    : draft,
-            ),
-        );
-    }, []);
+            if (!draft) {
+                return;
+            }
 
-    const markApplied = useCallback((id: string) => {
-        setDrafts((current) => current.map((draft) => (draft.id === id ? { ...draft, applied: true } : draft)));
-    }, []);
+            const controller = new AbortController();
 
-    const clear = useCallback(() => {
-        controllers.current.forEach((controller) => controller.abort());
-        controllers.current.clear();
-        setDrafts((current) => {
-            current.forEach((draft) => URL.revokeObjectURL(draft.previewUrl));
+            controllerRef.current = controller;
+            const timeout = window.setTimeout(() => controller.abort(), 45000);
+            const startedAt = draft.startedAt || Date.now();
+            const attempts = draft.attempts + 1;
+            update((current) =>
+                current.map((item) => (item.id === draft.id ? { ...item, status: 'analyzing', startedAt, attempts, error: null } : item)),
+            );
+            const form = new FormData();
+            form.append('purpose', 'product');
+            form.append('scan_request_id', draft.requestId);
 
-            return [];
-        });
-    }, []);
+            if (draft.file) {
+                form.append('images[]', draft.file, draft.file.name);
+            }
 
-    return { drafts, start, remove, retry, markApplied, clear };
+            try {
+                const response = await fetch('/scanner/catalog-item-discoveries', {
+                    method: 'POST',
+                    body: form,
+                    signal: controller.signal,
+                    headers: { Accept: 'application/json', 'X-XSRF-TOKEN': csrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const payload = (await response.json()) as {
+                    data?: DiscoverySuggestion;
+                    message?: string;
+                    code?: string;
+                    retryable?: boolean;
+                    retry_after_ms?: number;
+                };
+
+                if (!response.ok || !payload.data) {
+                    const delay = Math.min(
+                        10000,
+                        Math.max(
+                            0,
+                            payload.retry_after_ms ??
+                                (Number(response.headers.get('Retry-After')) * 1000 ||
+                                    Math.min(2000, 1000 * 2 ** (attempts - 1)) + Math.random() * 500),
+                        ),
+                    );
+
+                    if (
+                        [429, 503].includes(response.status) &&
+                        payload.retryable &&
+                        attempts < 3 &&
+                        Date.now() + delay - startedAt < 30000
+                    ) {
+                        update((current) =>
+                            current.map((item) =>
+                                item.id === draft.id ? { ...item, status: 'retry_wait', retryAt: Date.now() + delay } : item,
+                            ),
+                        );
+
+                        return;
+                    }
+
+                    throw new Error(payload.message || 'Analisis gagal. Isi manual atau coba lagi.');
+                }
+
+                const recognized =
+                    (payload.data.quality.confidence ?? 0) > 0 &&
+                    !!payload.data.identity.product_name.trim() &&
+                    payload.data.identity.product_name.trim().toLowerCase() !== 'tidak tersedia';
+                update((current) =>
+                    current.map((item) =>
+                        item.id === draft.id
+                            ? {
+                                  ...item,
+                                  status: recognized ? 'ready' : 'failed',
+                                  suggestion: recognized ? payload.data! : null,
+                                  error: recognized ? null : 'Produk belum dikenali. Foto ulang atau isi manual.',
+                              }
+                            : item,
+                    ),
+                );
+            } catch (error) {
+                if (mounted.current) {
+                    update((current) =>
+                        current.map((item) =>
+                            item.id === draft.id
+                                ? { ...item, status: 'failed', error: error instanceof Error ? error.message : 'Analisis gagal.' }
+                                : item,
+                        ),
+                    );
+                }
+            } finally {
+                window.clearTimeout(timeout);
+                controllerRef.current = null;
+            }
+        };
+        void dispatch();
+        const timer = window.setInterval(() => void dispatch(), 250);
+
+        return () => window.clearInterval(timer);
+    }, [update]);
+
+    const addPhoto = useCallback(
+        (file: File) => {
+            const current = draftsRef.current;
+            const pending = current
+                .filter((draft) => ['waiting', 'analyzing', 'retry_wait'].includes(draft.status))
+                .reduce((sum, draft) => sum + (draft.file ? 1 : 0), 0);
+
+            if (pending >= 10) {
+                return false;
+            }
+
+            update((items) => [
+                ...items,
+                {
+                    id: crypto.randomUUID(),
+                    requestId: crypto.randomUUID(),
+                    file,
+                    previewUrl: URL.createObjectURL(file),
+                    barcode: '',
+                    status: 'waiting',
+                    suggestion: null,
+                    error: null,
+                    applied: false,
+                    attempts: 0,
+                    retryAt: 0,
+                    startedAt: 0,
+                },
+            ]);
+
+            return true;
+        },
+        [update],
+    );
+    const remove = useCallback(
+        (id: string) => {
+            update((current) => {
+                const removed = current.find((draft) => draft.id === id);
+
+                if (removed) {
+                    URL.revokeObjectURL(removed.previewUrl);
+                }
+
+                return current.filter((draft) => draft.id !== id);
+            });
+        },
+        [update],
+    );
+    const retry = useCallback(
+        (id: string) => {
+            update((current) => {
+                const pending = current
+                    .filter((draft) => ['waiting', 'analyzing', 'retry_wait'].includes(draft.status))
+                    .reduce((sum, draft) => sum + (draft.file ? 1 : 0), 0);
+
+                return current.map((draft) => {
+                    if (draft.id !== id || draft.status !== 'failed') {
+                        return draft;
+                    }
+
+                    if (pending + (draft.file ? 1 : 0) > 10) {
+                        return { ...draft, error: 'Antrean penuh. Tunggu pemrosesan sebelum mencoba lagi.' };
+                    }
+
+                    return { ...draft, status: 'waiting', attempts: 0, startedAt: 0, error: null };
+                });
+            });
+        },
+        [update],
+    );
+    const markApplied = useCallback(
+        (id: string) => update((current) => current.map((draft) => (draft.id === id ? { ...draft, applied: true } : draft))),
+        [update],
+    );
+    const pendingPhotos = drafts
+        .filter((draft) => ['waiting', 'analyzing', 'retry_wait'].includes(draft.status))
+        .reduce((sum, draft) => sum + (draft.file ? 1 : 0), 0);
+
+    return { drafts, pendingPhotos, addPhoto, remove, retry, markApplied };
 }

@@ -1,9 +1,12 @@
 export type ScannerPurpose = 'sale' | 'purchase' | 'stock_count' | 'product';
 export type ScannerStatus = 'found' | 'uncertain' | 'unknown' | 'failed';
 export type ScannerErrorCode =
+    | 'DISCOVERY_QUOTA_EXCEEDED'
+    | 'DISCOVERY_SPEND_LIMIT_EXCEEDED'
     | 'SCANNER_DISABLED'
     | 'SCANNER_SETUP_PENDING'
     | 'SCANNER_NOT_CONNECTED'
+    | 'SCANNER_RATE_LIMITED'
     | 'SCANNER_BUSY'
     | 'SCANNER_UNAVAILABLE'
     | 'SCAN_LIMIT_REACHED'
@@ -46,9 +49,13 @@ export type ScannerCatalogItem = {
 
 export type ScannerCapture = {
     id: string;
-    blob: Blob;
+    requestId: string;
+    attempts: number;
+    retryAt: number;
+    startedAt: number;
+    blob: Blob | null;
     previewUrl: string;
-    status: 'queued' | 'recognizing' | 'recognized' | 'failed';
+    status: 'queued' | 'recognizing' | 'retry_wait' | 'recognized' | 'failed';
     error: string | null;
     errorCode: ScannerErrorCode | null;
     retryable: boolean;
@@ -67,4 +74,9 @@ export type ScannerConfig = {
     max_images_per_request: number;
     auto_capture_enabled: boolean;
     visual_recognition_enabled: boolean;
+};
+
+export type ScannerApplyResult = {
+    applied: Array<{ captureId: string; itemIndex: number }>;
+    failures: Array<{ captureId: string; itemIndex: number; message: string }>;
 };

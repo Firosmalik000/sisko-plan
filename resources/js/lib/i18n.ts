@@ -79,15 +79,41 @@ export function translate(text: string, locale: AppLocale = activeLocale): strin
                   ? lookup
                   : locale === 'vi'
                     ? `Bạn có chắc muốn xóa passkey "${passkeyRemoval[1]}" không? Bạn sẽ không thể dùng passkey này để đăng nhập nữa.`
-                  : `Yakin ingin menghapus passkey "${passkeyRemoval[1]}"? Passkey ini tidak dapat digunakan lagi untuk masuk.`;
+                    : `Yakin ingin menghapus passkey "${passkeyRemoval[1]}"? Passkey ini tidak dapat digunakan lagi untuk masuk.`;
 
         return text.replace(source, message);
     }
 
-    const translated = locale === 'ms' ? malayCatalog[lookup] : locale === 'en' ? englishCatalog[lookup] : locale === 'vi' ? vietnameseCatalog[lookup] : indonesianCatalog[lookup];
+    const translated =
+        locale === 'ms'
+            ? malayCatalog[lookup]
+            : locale === 'en'
+              ? englishCatalog[lookup]
+              : locale === 'vi'
+                ? vietnameseCatalog[lookup]
+                : indonesianCatalog[lookup];
 
     if (translated !== undefined) {
         return text.replace(source, translated);
+    }
+
+    const photoLabel = lookup.match(/^(Foto|Scan barcode) (.+)$/u);
+
+    if (photoLabel && locale !== 'id') {
+        const prefix =
+            locale === 'en'
+                ? photoLabel[1] === 'Foto'
+                    ? 'Photo:'
+                    : 'Scan barcode:'
+                : locale === 'ms'
+                  ? photoLabel[1] === 'Foto'
+                      ? 'Gambar:'
+                      : 'Imbas kod bar:'
+                  : photoLabel[1] === 'Foto'
+                    ? 'Ảnh:'
+                    : 'Quét mã vạch:';
+
+        return text.replace(source, `${prefix} ${photoLabel[2]}`);
     }
 
     if (locale === 'vi') {

@@ -1,4 +1,8 @@
 {
+    "Analisis untuk pasar toko ini belum tersedia. Isi data produk secara manual.": "Chưa hỗ trợ phân tích cho thị trường của cửa hàng này. Vui lòng nhập thông tin sản phẩm thủ công.",
+    "Pilih satuan dari kelompok ecer.": "Chọn đơn vị bán lẻ.",
+    "Pilih satuan dari kelompok besar.": "Chọn đơn vị lớn.",
+    "Kode ini sudah digunakan produk lain di toko ini.": "Mã này đã được sản phẩm khác trong cửa hàng sử dụng.",
     "The name field is required.": "Trường tên là bắt buộc.",
     "The email field is required.": "Trường email là bắt buộc.",
     "The password field is required.": "Trường mật khẩu là bắt buộc.",

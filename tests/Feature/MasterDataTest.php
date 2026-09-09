@@ -400,6 +400,22 @@ class MasterDataTest extends TestCase
             ->assertOk();
     }
 
+    public function test_disabled_variant_drafts_do_not_conflict_with_product_codes(): void
+    {
+        [$owner, $store] = $this->ownerAndStore();
+        $category = Category::factory()->for($store)->create();
+        $retail = Unit::factory()->for($store)->create(['unit_type' => UnitType::Retail]);
+        $large = Unit::factory()->for($store)->create(['unit_type' => UnitType::Large]);
+        $payload = $this->modernProductPayload($category, $retail, $large, 'none');
+        $payload['barcode'] = '00123456789';
+        $payload['variants'] = [['name' => 'Draft', 'barcode' => '00123456789']];
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.store'), $payload)
+            ->assertRedirect()->assertSessionDoesntHaveErrors();
+        $this->assertDatabaseCount('product_variants', 0);
+        $this->assertDatabaseHas('product_units', ['barcode' => '00123456789']);
+    }
+
     public function test_wholesale_variants_share_retail_inventory_and_conversion(): void
     {
         [$owner, $store] = $this->ownerAndStore();
