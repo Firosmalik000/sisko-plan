@@ -7,6 +7,9 @@ use App\Http\Controllers\PublicSite\PricingController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'public/welcome')->name('home');
+Route::get('app', fn () => auth()->check()
+    ? to_route('dashboard')
+    : to_route('login'))->name('app.entry');
 Route::get('brand/logo', BrandLogoController::class)->name('platform.logo');
 Route::get('pricing', PricingController::class)->name('pricing');
 Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');

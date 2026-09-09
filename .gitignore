@@ -30,6 +30,14 @@ yarn-error.log
 
 /.certs/
 
+# Android TWA build and signing material
+/android-twa/.gradle/
+/android-twa/app/build/
+/android-twa/build/
+/android-twa/local.properties
+/android-twa/*.jks
+/android-twa/*.keystore
+
 # Machine-local AI agent MCP configuration
 /.codex/config.toml
 /.mcp.json

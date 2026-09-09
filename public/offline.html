@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <meta name="theme-color" content="#fff8f5">
+        <title>Tidak ada koneksi - XSISTEN</title>
+        <style>
+            :root { color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+            * { box-sizing: border-box; }
+            body { min-height: 100vh; min-height: 100dvh; margin: 0; display: grid; place-items: center; padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); color: #243d35; background: #fff8f5; }
+            main { width: min(100%, 420px); text-align: center; }
+            .mark { width: 72px; height: 72px; margin: 0 auto 24px; display: grid; place-items: center; border-radius: 22px; color: #fff; background: #245c4f; box-shadow: 0 16px 40px rgb(36 92 79 / 20%); }
+            svg { width: 36px; height: 36px; }
+            h1 { margin: 0; color: #203c34; font-size: clamp(28px, 8vw, 38px); line-height: 1.1; letter-spacing: -.04em; }
+            p { margin: 14px auto 0; max-width: 34ch; color: #58756c; font-size: 16px; line-height: 1.6; }
+            button { width: 100%; min-height: 52px; margin-top: 28px; border: 0; border-radius: 16px; color: #fff; background: #ee4d2d; font: inherit; font-weight: 750; cursor: pointer; box-shadow: 0 12px 28px rgb(238 77 45 / 24%); }
+            button:active { transform: translateY(1px); }
+            small { display: block; margin-top: 16px; color: #789087; }
+        </style>
+    </head>
+    <body>
+        <main>
+            <div class="mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M5 12.6a10.8 10.8 0 0 1 14 0" />
+                    <path d="M8.5 16a5.7 5.7 0 0 1 7 0" />
+                    <path d="m3 3 18 18" />
+                    <path d="M12 20h.01" />
+                </svg>
+            </div>
+            <h1>Tidak ada koneksi</h1>
+            <p>XSISTEN belum dapat terhubung ke server. Periksa internet Anda, lalu coba kembali.</p>
+            <button type="button" onclick="retry()">Coba lagi</button>
+            <small id="status" aria-live="polite">Menunggu koneksi internet…</small>
+        </main>
+        <script>
+            const status = document.getElementById('status');
+            function retry() {
+                status.textContent = 'Menghubungkan kembali…';
+                location.reload();
+            }
+            window.addEventListener('online', retry);
+        </script>
+    </body>
+</html>

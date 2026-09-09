@@ -122,3 +122,9 @@ createInertiaApp({
 
 // Keep one visual mode while the product design is being standardized.
 initializeTheme();
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        void navigator.serviceWorker.register('/service-worker.js').catch(() => undefined);
+    });
+}

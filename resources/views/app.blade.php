@@ -12,6 +12,8 @@
         @php($socialImageUrl = $page['props']['branding']['social_image_url'] ?? $brandLogoUrl)
         <meta name="application-name" content="{{ $brandName }}">
         <meta name="apple-mobile-web-app-title" content="{{ $brandName }}">
+        <meta name="theme-color" content="#fff8f5">
+        <link rel="manifest" href="/manifest.webmanifest">
         <meta name="description" content="{{ $page['props']['branding']['seo_description'] ?? '' }}">
         @if (! empty($page['props']['branding']['seo_keywords']))
             <meta name="keywords" content="{{ $page['props']['branding']['seo_keywords'] }}">
