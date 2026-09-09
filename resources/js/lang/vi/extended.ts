@@ -114,7 +114,8 @@ export const vietnameseExtendedCatalog: Record<string, string> = {
     'Konfirmasi kata sandi baru': 'Xác nhận mật khẩu mới',
     'Konfirmasi kata sandi': 'Xác nhận mật khẩu',
     Konfirmasi: 'Xác nhận',
-    'Konten ini telah dipindahkan atau dihapus dan tidak dapat dibuka lagi.': 'Nội dung này đã được di chuyển hoặc xóa và không thể mở lại.',
+    'Konten ini telah dipindahkan atau dihapus dan tidak dapat dibuka lagi.':
+        'Nội dung này đã được di chuyển hoặc xóa và không thể mở lại.',
     Lanjutkan: 'Tiếp tục',
     'Last used': 'Lần dùng gần nhất',
     'Loading recovery codes': 'Đang tải mã khôi phục',
@@ -171,15 +172,11 @@ export const vietnameseExtendedCatalog: Record<string, string> = {
     'Perbarui kata sandi': 'Cập nhật mật khẩu',
     'Perlu ditangani': 'Cần xử lý',
     'Periksa hasil': 'Kiểm tra kết quả',
-    'Pengenalan sedang terganggu. Coba lagi atau cari manual.':
-        'Tính năng nhận diện đang gặp sự cố. Hãy thử lại hoặc tìm kiếm thủ công.',
-    'Foto belum berhasil diproses. Coba lagi atau cari manual.':
-        'Chưa thể xử lý ảnh. Hãy thử lại hoặc tìm kiếm thủ công.',
-    'Scanner toko sedang disiapkan. Coba lagi sebentar.':
-        'Máy quét của cửa hàng đang được chuẩn bị. Vui lòng thử lại sau giây lát.',
+    'Pengenalan sedang terganggu. Coba lagi atau cari manual.': 'Tính năng nhận diện đang gặp sự cố. Hãy thử lại hoặc tìm kiếm thủ công.',
+    'Foto belum berhasil diproses. Coba lagi atau cari manual.': 'Chưa thể xử lý ảnh. Hãy thử lại hoặc tìm kiếm thủ công.',
+    'Scanner toko sedang disiapkan. Coba lagi sebentar.': 'Máy quét của cửa hàng đang được chuẩn bị. Vui lòng thử lại sau giây lát.',
     'Scanner sedang sibuk. Coba lagi sebentar.': 'Máy quét đang bận. Vui lòng thử lại sau giây lát.',
-    'Layanan scanner belum terhubung. Hubungi administrator.':
-        'Dịch vụ quét chưa được kết nối. Hãy liên hệ quản trị viên.',
+    'Layanan scanner belum terhubung. Hubungi administrator.': 'Dịch vụ quét chưa được kết nối. Hãy liên hệ quản trị viên.',
     'Kuota scan bulan ini sudah habis. Tambahkan kapasitas untuk melanjutkan.':
         'Hạn mức quét tháng này đã hết. Hãy mua thêm dung lượng để tiếp tục.',
     'Akses kamera memerlukan HTTPS. Buka halaman ini melalui alamat HTTPS.':
@@ -201,7 +198,8 @@ export const vietnameseExtendedCatalog: Record<string, string> = {
     'Pilihan untuk': 'Lựa chọn cho',
     'Pindai dan konfirmasi': 'Quét và xác nhận',
     'Please enter your new password below': 'Vui lòng nhập mật khẩu mới bên dưới',
-    'Please verify your email address by clicking on the link we just emailed to you.': 'Vui lòng xác minh địa chỉ email bằng liên kết chúng tôi vừa gửi.',
+    'Please verify your email address by clicking on the link we just emailed to you.':
+        'Vui lòng xác minh địa chỉ email bằng liên kết chúng tôi vừa gửi.',
     'Posting pembelian': 'Ghi nhận mua hàng',
     'Pratinjau kamera': 'Xem trước camera',
     'Pratinjau pencarian': 'Xem trước kết quả tìm kiếm',

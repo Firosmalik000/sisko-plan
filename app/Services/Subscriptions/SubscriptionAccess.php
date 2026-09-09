@@ -58,7 +58,7 @@ class SubscriptionAccess
 
         return [
             'can_write' => $reason === null,
-            'reason' => $reason === null ? null : __($reason),
+            'reason' => $reason === null ? null : str(__($reason))->toString(),
             'status' => $subscription->status->value,
             'plan_name' => $subscription->plan->name,
             'max_stores' => $limits['max_stores'],
@@ -117,17 +117,17 @@ class SubscriptionAccess
         $reason = null;
 
         if ($subscription !== null && ($blockedReason = $this->blockedReason($subscription)) !== null) {
-            $reason = __('Toko baru tidak dapat dibuat. :reason', [
+            $reason = str(__('Toko baru tidak dapat dibuat. :reason', [
                 'reason' => __($blockedReason),
-            ]);
+            ]))->toString();
         }
 
         $limit = $this->entitlements->forOwner($owner->id, $plan)['max_stores'];
         if ($reason === null && $limit > 0 && $storesUsed >= $limit) {
-            $reason = __('Batas :limit toko pada paket :plan sudah tercapai.', [
+            $reason = str(__('Batas :limit toko pada paket :plan sudah tercapai.', [
                 'limit' => $limit,
                 'plan' => $plan->name,
-            ]);
+            ]))->toString();
         }
 
         return [

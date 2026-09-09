@@ -136,7 +136,9 @@ export default function PaymentHistory({ summary, payments, filters }: Props) {
                                         </span>
                                     </td>
                                     <td className="px-5 py-4">
-                                        <Badge variant="outline">{translate(methodLabels[payment.payment_method] ?? payment.payment_method)}</Badge>
+                                        <Badge variant="outline">
+                                            {translate(methodLabels[payment.payment_method] ?? payment.payment_method)}
+                                        </Badge>
                                         {payment.external_reference && (
                                             <p className="mt-1 text-xs text-slate-500">{payment.external_reference}</p>
                                         )}

@@ -294,6 +294,12 @@ class CountryCurrencyTest extends TestCase
             'store_id' => $store->id,
             'photo_path' => $photoPath,
         ]);
+        DB::table('inventory_balances')->insert([
+            'store_id' => $store->id,
+            'product_id' => $product->id,
+            'stock_key' => 'product:'.$product->id,
+        ]);
+        $otherProduct = Product::factory()->create();
         $this->actingAs($owner)->delete(route('stores.destroy', $store));
 
         $this->actingAs($owner)->delete(route('stores.force-destroy', $store), [
@@ -309,6 +315,9 @@ class CountryCurrencyTest extends TestCase
 
         $this->assertDatabaseMissing('stores', ['id' => $store->id]);
         $this->assertDatabaseMissing('products', ['id' => $product->id]);
+        $this->assertDatabaseMissing('inventory_balances', ['store_id' => $store->id]);
+        $this->assertDatabaseHas('products', ['id' => $otherProduct->id]);
+        $this->assertDatabaseHas('users', ['id' => $owner->id]);
         Storage::disk('local')->assertMissing($photoPath);
         Storage::disk('local')->assertMissing($variantPhotoPath);
         $this->assertDatabaseHas('audit_logs', [

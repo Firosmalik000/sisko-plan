@@ -20,5 +20,6 @@
     "Complete :document before starting a new stock count.": "Hoàn tất :document trước khi bắt đầu lần kiểm kê mới.",
     "Selected currency is unavailable.": "Tiền tệ đã chọn không khả dụng.",
     "Nama pelanggan dan nomor telepon harus diisi bersama.": "Tên và số điện thoại khách hàng phải được nhập cùng nhau.",
-    "Nomor telepon pelanggan tidak valid.": "Số điện thoại khách hàng không hợp lệ."
+    "Nomor telepon pelanggan tidak valid.": "Số điện thoại khách hàng không hợp lệ.",
+    "Fixed quantity products require whole quantities.": "Sản phẩm có số lượng cố định phải được bán theo số lượng nguyên."
 }

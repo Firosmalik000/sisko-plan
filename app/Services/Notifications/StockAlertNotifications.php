@@ -48,11 +48,11 @@ class StockAlertNotifications
             ->map(fn (InventoryBalance $alert) => [
                 'id' => $alert->id,
                 'name' => $alert->name ?? __('Produk'),
-                'variant_name' => $alert->variant_name,
-                'unit' => $alert->unit,
+                'variant_name' => $alert->getAttribute('variant_name'),
+                'unit' => $alert->getAttribute('unit'),
                 'quantity' => (string) $alert->quantity,
                 'minimum_quantity' => (string) $alert->minimum_quantity,
-                'unread' => (bool) $alert->is_unread,
+                'unread' => (bool) $alert->getAttribute('is_unread'),
             ])
             ->values()
             ->all();
@@ -102,6 +102,7 @@ class StockAlertNotifications
         );
     }
 
+    /** @return Builder<InventoryBalance> */
     private function criticalBalances(Store $store): Builder
     {
         return InventoryBalance::query()
@@ -125,6 +126,7 @@ class StockAlertNotifications
             ->orWhereColumn('inventory_balances.updated_at', '>', 'stock_alert_reads.balance_updated_at');
     }
 
+    /** @return literal-string */
     private function unreadSql(): string
     {
         return 'CASE WHEN stock_alert_reads.id IS NULL'

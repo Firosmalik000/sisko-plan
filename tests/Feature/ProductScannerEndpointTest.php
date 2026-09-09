@@ -14,8 +14,10 @@ use App\Models\User;
 use App\Services\Intelligence\CatalogIntelligenceClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Mockery\MockInterface;
@@ -327,6 +329,32 @@ class ProductScannerEndpointTest extends TestCase
         $this->assertStringContainsString('name="images"', $parentBody);
         $this->assertStringContainsString('name="images"', $withPhotoBody);
         $this->assertStringNotContainsString('name="images"', $withoutPhotoBody);
+    }
+
+    public function test_failed_catalog_sync_is_logged_and_can_be_retried_with_same_identity(): void
+    {
+        [, $store] = $this->ownerAndStore();
+        $product = Product::factory()->for($store)->create();
+        Log::spy();
+        $fail = true;
+        $urls = [];
+        Http::fake(function (Request $request) use (&$fail, &$urls) {
+            $urls[] = $request->url();
+
+            return $fail ? Http::response([], 503) : Http::response(['status' => 'success', 'message' => 'OK', 'data' => []]);
+        });
+        $client = app(CatalogIntelligenceClient::class);
+        try {
+            $client->syncProduct($product, 'first-attempt');
+            $this->fail('Expected sync failure');
+        } catch (RequestException) {
+            Log::shouldHaveReceived('warning')->once();
+        }
+        $fail = false;
+        $client->syncProduct($product, 'retry-attempt');
+        $this->assertCount(2, $urls);
+        $this->assertSame($urls[0], $urls[1]);
+        $this->assertStringEndsWith('product:'.$product->public_id, $urls[1]);
     }
 
     public function test_capacity_rejection_does_not_consume_scan_quota(): void

@@ -482,9 +482,7 @@ function PlanRow({ plan, canManage, compact = false }: { plan: Plan; canManage: 
                         {plan.billing_cycle === 'fixed' ? translate('/bulan') : ''}
                     </span>
                     <span>{planTerm(plan)}</span>
-                    <span>
-                        {localizedQuantity(plan.subscriptions_count, plan.kind === 'addon' ? 'aktivasi' : 'akun')}
-                    </span>
+                    <span>{localizedQuantity(plan.subscriptions_count, plan.kind === 'addon' ? 'aktivasi' : 'akun')}</span>
                     {(plan.kind === 'base' || plan.max_stores > 0) && <span>{localizedCapacity(plan, plan.max_stores, 'toko')}</span>}
                     {(plan.kind === 'base' || plan.max_products > 0) && <span>{localizedCapacity(plan, plan.max_products, 'produk')}</span>}
                     {(plan.kind === 'base' || plan.max_members > 0) && <span>{localizedCapacity(plan, plan.max_members, 'staf')}</span>}
@@ -895,7 +893,9 @@ function SubscriptionRow({
                                             {addon.quantity}×
                                         </span>
                                     )}
-                                    <span className="min-w-0 truncate text-sm font-black text-violet-950">{translate(addon.plan_name)}</span>
+                                    <span className="min-w-0 truncate text-sm font-black text-violet-950">
+                                        {translate(addon.plan_name)}
+                                    </span>
                                 </div>
                                 <p className="mt-1 text-xs font-semibold text-violet-700">
                                     {addonCapacity(addon)} · {periodLabel(addon.starts_on, addon.ends_on)}

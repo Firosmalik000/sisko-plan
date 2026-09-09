@@ -73,7 +73,9 @@ class SaveProduct
                     ? Category::query()->where(['store_id' => $store->id, 'public_id' => $data['category_public_id']])->valueOrFail('id')
                     : null;
                 $retailUnitId = Unit::query()->where(['store_id' => $store->id, 'public_id' => $data['retail_unit_public_id']])->valueOrFail('id');
-                $largeUnitId = Unit::query()->where(['store_id' => $store->id, 'public_id' => $data['large_unit_public_id']])->valueOrFail('id');
+                $largeUnitId = filled($data['large_unit_public_id'] ?? null)
+                    ? Unit::query()->where(['store_id' => $store->id, 'public_id' => $data['large_unit_public_id']])->valueOrFail('id')
+                    : null;
                 $mode = ProductVariantMode::from($data['variant_mode']);
                 $oldPhotoPath = $locked?->photo_path;
                 $photoPath = $newPhotoPath ?: (($data['remove_photo'] ?? false) ? null : $oldPhotoPath);
@@ -83,6 +85,7 @@ class SaveProduct
                     'base_unit_id' => $retailUnitId,
                     'large_unit_id' => $largeUnitId,
                     'variant_mode' => $mode->value,
+                    'quantity_mode' => $data['quantity_mode'] ?? ($locked === null ? 'variable' : $locked->quantity_mode),
                     'name' => $data['name'],
                     'description' => filled($data['description'] ?? null) ? $data['description'] : null,
                     'photo_path' => $photoPath,
@@ -148,6 +151,7 @@ class SaveProduct
                     ]])->sortKeys()->all();
                 $metadata = [
                     'variant_mode' => $mode->value,
+                    'quantity_mode' => $locked->quantity_mode,
                     'variants' => count($activeVariantIds),
                 ];
                 if ($oldPrices !== $newPrices) {
@@ -189,7 +193,7 @@ class SaveProduct
      * @param  array<string, mixed>  $variant
      * @param  list<string>  $newPhotoPaths
      */
-    private function saveVariant(Store $store, Product $parent, array $variant, ProductVariantMode $mode, int $retailUnitId, int $largeUnitId, array &$newPhotoPaths): ProductVariant
+    private function saveVariant(Store $store, Product $parent, array $variant, ProductVariantMode $mode, int $retailUnitId, ?int $largeUnitId, array &$newPhotoPaths): ProductVariant
     {
         $child = isset($variant['public_id'])
             ? ProductVariant::query()->where(['store_id' => $store->id, 'product_id' => $parent->id, 'public_id' => $variant['public_id']])->lockForUpdate()->first()

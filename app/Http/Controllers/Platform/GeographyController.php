@@ -38,7 +38,7 @@ class GeographyController extends Controller
         ]);
         $admin = AuthenticatedPlatformAdmin::get($request);
         DB::transaction(function () use ($validated, $audit, $admin, $request): void {
-            $currency = Currency::query()->lockForUpdate()->find($validated['currency_code']);
+            $currency = Currency::query()->lockForUpdate()->where('code', $validated['currency_code'])->first();
             if ($currency === null || ! $currency->is_active) {
                 throw ValidationException::withMessages([
                     'currency_code' => __('Selected currency is unavailable.'),
@@ -86,7 +86,7 @@ class GeographyController extends Controller
         $admin = AuthenticatedPlatformAdmin::get($request);
 
         DB::transaction(function () use ($country, $validated, $audit, $admin, $request): void {
-            $currency = Currency::query()->lockForUpdate()->find($validated['currency_code']);
+            $currency = Currency::query()->lockForUpdate()->where('code', $validated['currency_code'])->first();
             if ($currency === null || ! $currency->is_active) {
                 throw ValidationException::withMessages([
                     'currency_code' => __('Selected currency is unavailable.'),

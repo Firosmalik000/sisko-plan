@@ -5,6 +5,7 @@ namespace App\Http\Controllers\MasterData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MasterData\UnitRequest;
 use App\Models\Unit;
+use App\Models\UnitReference;
 use App\Support\CurrentStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,12 +26,14 @@ class UnitController extends Controller
             ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('is_active', $status === 'active'))
             ->orderBy('unit_type')->orderBy('name')->paginate(20)->withQueryString()
             ->through(fn (Unit $unit) => [
-                ...$unit->only(['public_id', 'name', 'symbol', 'is_active']),
+                ...$unit->only(['public_id', 'name', 'symbol', 'reference_code', 'name_is_custom', 'is_active']),
                 'unit_type' => $unit->unit_type->value,
                 'unit_type_label' => $unit->unit_type->label(),
             ]);
 
-        return Inertia::render('customer/master-data/units/index', compact('units', 'search', 'status', 'canManage'));
+        $unitReferences = UnitReference::query()->orderBy('code')->get();
+
+        return Inertia::render('customer/master-data/units/index', compact('units', 'search', 'status', 'canManage', 'unitReferences'));
     }
 
     public function store(UnitRequest $request, CurrentStore $currentStore): RedirectResponse

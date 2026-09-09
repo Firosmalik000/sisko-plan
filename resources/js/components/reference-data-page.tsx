@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 type FormValue = string | boolean;
+type FieldOption = { value: string; label: string; disabled?: boolean };
 export type ReferenceRecord = {
     public_id: string;
     name: string;
@@ -24,7 +25,8 @@ type Field = {
     label: string;
     type?: 'text' | 'email' | 'textarea' | 'select';
     placeholder?: string;
-    options?: Array<{ value: string; label: string }>;
+    options?: FieldOption[] | ((values: Record<string, FormValue>) => FieldOption[]);
+    change?: (value: string, values: Record<string, FormValue>) => Record<string, FormValue>;
 };
 type Paginator<T> = {
     data: T[];
@@ -43,6 +45,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
     status: initialStatus,
     details,
     canManage,
+    displayName = (item: T) => item.name,
 }: {
     title: string;
     endpoint: string;
@@ -54,6 +57,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
     status: string;
     details: Array<{ key: string; label: string }>;
     canManage: boolean;
+    displayName?: (item: T) => string;
 }) {
     const [openCreateFromQuery] = useState(
         () => typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('create') === '1',
@@ -87,7 +91,10 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
         setEditing(item);
         form.setData(
             Object.fromEntries(
-                [...fields.map((field) => field.name), 'is_active'].map((key) => [key, (item[key] as FormValue | null) ?? '']),
+                [...new Set([...Object.keys(initialValues), ...fields.map((field) => field.name), 'is_active'])].map((key) => [
+                    key,
+                    (item[key] as FormValue | null) ?? initialValues[key] ?? '',
+                ]),
             ),
         );
         form.clearErrors();
@@ -180,7 +187,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                         >
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>
-                                                    <h2 className="font-semibold text-stone-900">{item.name}</h2>
+                                                    <h2 className="font-semibold text-stone-900">{displayName(item)}</h2>
                                                     <Badge
                                                         variant={item.is_active ? 'secondary' : 'outline'}
                                                         className="mt-2 h-5 px-2 text-[10px] uppercase"
@@ -194,7 +201,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                                         size="icon"
                                                         variant="ghost"
                                                         onClick={() => openEdit(item)}
-                                                        aria-label={`Edit ${item.name}`}
+                                                        aria-label={`Edit ${displayName(item)}`}
                                                     >
                                                         <Edit3 className="size-4" />
                                                     </Button>
@@ -251,6 +258,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                                                 form.setData((data) => ({
                                                                     ...data,
                                                                     [field.name]: event.target.value,
+                                                                    ...field.change?.(event.target.value, data),
                                                                 }))
                                                             }
                                                             placeholder={field.placeholder}
@@ -264,12 +272,16 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                                                 form.setData((data) => ({
                                                                     ...data,
                                                                     [field.name]: event.target.value,
+                                                                    ...field.change?.(event.target.value, data),
                                                                 }))
                                                             }
                                                             className="h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-stone-900 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/15 focus:outline-none"
                                                         >
-                                                            {field.options?.map((option) => (
-                                                                <option key={option.value} value={option.value}>
+                                                            {(typeof field.options === 'function'
+                                                                ? field.options(form.data)
+                                                                : field.options
+                                                            )?.map((option) => (
+                                                                <option key={option.value} value={option.value} disabled={option.disabled}>
                                                                     {option.label}
                                                                 </option>
                                                             ))}
@@ -278,11 +290,16 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                                         <Input
                                                             id={field.name}
                                                             type={field.type ?? 'text'}
-                                                            value={String(form.data[field.name] ?? '')}
+                                                            value={
+                                                                field.name === 'name' && form.data.name_is_custom === false
+                                                                    ? displayName({ ...editing, ...form.data } as T)
+                                                                    : String(form.data[field.name] ?? '')
+                                                            }
                                                             onChange={(event) =>
                                                                 form.setData((data) => ({
                                                                     ...data,
                                                                     [field.name]: event.target.value,
+                                                                    ...field.change?.(event.target.value, data),
                                                                 }))
                                                             }
                                                             placeholder={field.placeholder}

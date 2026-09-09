@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { translate } from '@/lib/i18n';
 import { CameraViewport } from './CameraViewport';
 import { decodeBarcodeImage } from './decode-barcode-image';
 import { playScannerSuccessTone } from './scanner-feedback';
@@ -62,6 +63,26 @@ export default function ProductScanner({
     const [barcodeTarget, setBarcodeTarget] = useState<{ captureId: string; itemIndex: number } | null>(null);
     const wasOpen = useRef(false);
     const previousReset = useRef(resetKey);
+    const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+    const [savingPhoto, setSavingPhoto] = useState(false);
+    const attachPhotoPreview = useCallback(
+        (node: HTMLImageElement | null) => {
+            if (!node || !pendingPhoto) {
+                return;
+            }
+
+            const url = URL.createObjectURL(pendingPhoto);
+            node.src = url;
+
+            return () => URL.revokeObjectURL(url);
+        },
+        [pendingPhoto],
+    );
+
+    if (!open && pendingPhoto) {
+        setPendingPhoto(null);
+    }
+
     useEffect(() => {
         if (open && !wasOpen.current) {
             scanner.setReviewing(initialView === 'review');
@@ -151,7 +172,7 @@ export default function ProductScanner({
         },
         [barcodeTarget, lookupBarcode, scanner, onConfirm, purpose],
     );
-    const camera = useCamera(open && !scanner.reviewing, handleBarcode, scanMode === 'barcode');
+    const camera = useCamera(open && !scanner.reviewing && !pendingPhoto, handleBarcode, scanMode === 'barcode');
 
     const takePhoto = useCallback(async () => {
         if (
@@ -193,10 +214,12 @@ export default function ProductScanner({
             }
 
             if (purpose === 'product' && onProductCapture) {
-                await onProductCapture(new File([blob], 'produk.jpg', { type: 'image/jpeg' }));
+                const photo = new File([blob], 'produk.jpg', { type: 'image/jpeg' });
 
                 if (singleCapture) {
-                    onOpenChange(false);
+                    setPendingPhoto(photo);
+                } else {
+                    await onProductCapture(photo);
                 }
 
                 return;
@@ -222,18 +245,7 @@ export default function ProductScanner({
         } finally {
             captureBusyRef.current = false;
         }
-    }, [
-        camera,
-        handleBarcode,
-        onOpenChange,
-        onProductCapture,
-        productCanCapture,
-        purpose,
-        retakeCaptureId,
-        scanMode,
-        scanner,
-        singleCapture,
-    ]);
+    }, [camera, handleBarcode, onProductCapture, productCanCapture, purpose, retakeCaptureId, scanMode, scanner, singleCapture]);
 
     const takePhotoRef = useRef(takePhoto);
     useEffect(() => {
@@ -292,6 +304,11 @@ export default function ProductScanner({
     }, [autoActive, open, scanner.reviewing, camera.ready, camera.videoRef, scanMode]);
 
     const dismiss = () => {
+        if (savingPhoto) {
+            return;
+        }
+
+        setPendingPhoto(null);
         setRetakeCaptureId(null);
         setBarcodeTarget(null);
         setScanMode('photo');
@@ -368,11 +385,13 @@ export default function ProductScanner({
             void (async () => {
                 for (const file of files.slice(0, singleCapture ? 1 : Math.max(0, 10 - productPendingPhotos))) {
                     const normalized = await normalizeImage(file, 1280, 0.82);
-                    await onProductCapture(new File([normalized], 'produk.jpg', { type: 'image/jpeg' }));
-                }
+                    const photo = new File([normalized], 'produk.jpg', { type: 'image/jpeg' });
 
-                if (singleCapture) {
-                    onOpenChange(false);
+                    if (singleCapture) {
+                        setPendingPhoto(photo);
+                    } else {
+                        await onProductCapture(photo);
+                    }
                 }
             })().catch((error: unknown) => setBarcodeError(error instanceof Error ? error.message : 'Foto gagal disiapkan. Coba lagi.'));
 
@@ -420,7 +439,64 @@ export default function ProductScanner({
                 className="!inset-0 z-[70] block !h-[100dvh] !w-auto !max-w-none !translate-x-0 !translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[var(--app-ink)] p-0 shadow-none duration-300 [&>button]:hidden"
             >
                 <DialogTitle className="sr-only">{title}</DialogTitle>
-                {scanner.reviewing ? (
+                {pendingPhoto ? (
+                    <div className="flex h-full flex-col bg-black p-4 text-white">
+                        <img ref={attachPhotoPreview} alt={title} className="min-h-0 flex-1 object-contain" />
+                        {barcodeError && (
+                            <p role="alert" className="py-2 text-center text-white">
+                                {translate(barcodeError)}
+                            </p>
+                        )}
+                        <div className="flex flex-wrap justify-center gap-3 pt-4 pb-[env(safe-area-inset-bottom)]">
+                            <button
+                                type="button"
+                                disabled={savingPhoto}
+                                onClick={dismiss}
+                                className="min-h-11 rounded-xl border border-white px-5 text-white"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                disabled={savingPhoto}
+                                onClick={() => {
+                                    setPendingPhoto(null);
+                                    setBarcodeError('');
+                                }}
+                                className="min-h-11 rounded-xl border border-white px-5 text-white"
+                            >
+                                Ulangi
+                            </button>
+                            <button
+                                type="button"
+                                disabled={savingPhoto}
+                                className="min-h-11 rounded-xl bg-white px-5 font-semibold text-black disabled:opacity-60"
+                                onClick={async () => {
+                                    if (applyingRef.current) {
+                                        return;
+                                    }
+
+                                    applyingRef.current = true;
+                                    setSavingPhoto(true);
+                                    setBarcodeError('');
+
+                                    try {
+                                        await onProductCapture?.(pendingPhoto);
+                                        setPendingPhoto(null);
+                                        onOpenChange(false);
+                                    } catch {
+                                        setBarcodeError('Foto gagal disiapkan. Coba lagi.');
+                                    } finally {
+                                        applyingRef.current = false;
+                                        setSavingPhoto(false);
+                                    }
+                                }}
+                            >
+                                {savingPhoto ? 'Memproses foto…' : 'Gunakan foto'}
+                            </button>
+                        </div>
+                    </div>
+                ) : scanner.reviewing ? (
                     <ScanReview
                         captures={scanner.captures}
                         applyErrors={applyErrors}

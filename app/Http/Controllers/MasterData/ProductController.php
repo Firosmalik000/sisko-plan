@@ -6,9 +6,11 @@ use App\Actions\MasterData\SaveProduct;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MasterData\ProductRequest;
 use App\Models\Category;
+use App\Models\CategoryReference;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Unit;
+use App\Models\UnitReference;
 use App\Support\Authentication\AuthenticatedUser;
 use App\Support\CurrentStore;
 use Illuminate\Http\RedirectResponse;
@@ -32,10 +34,10 @@ class ProductController extends Controller
         $products = Product::query()
             ->where('store_id', $currentStore->id())
             ->with([
-                'category:id,public_id,name', 'baseUnit:id,public_id,name,symbol', 'largeUnit:id,public_id,name,symbol',
-                'productUnits' => fn ($query) => $query->where('is_active', true)->with('unit:id,public_id,name,symbol'),
+                'category:id,public_id,name,reference_code,name_is_custom', 'baseUnit:id,public_id,name,symbol,reference_code,name_is_custom', 'largeUnit:id,public_id,name,symbol,reference_code,name_is_custom',
+                'productUnits' => fn ($query) => $query->where('is_active', true)->with('unit:id,public_id,name,symbol,reference_code,name_is_custom'),
                 'variants' => fn ($query) => $query->where('is_active', true)->with([
-                    'productUnits' => fn ($units) => $units->where('is_active', true)->with('unit:id,public_id,name,symbol'),
+                    'productUnits' => fn ($units) => $units->where('is_active', true)->with('unit:id,public_id,name,symbol,reference_code,name_is_custom'),
                 ]),
                 'inventoryBalances',
             ])
@@ -53,11 +55,13 @@ class ProductController extends Controller
             'categories' => Category::query()
                 ->where('store_id', $currentStore->id())
                 ->orderBy('name')
-                ->get(['public_id', 'name', 'is_active']),
+                ->get(['public_id', 'name', 'reference_code', 'name_is_custom', 'is_active']),
+            'categoryReferences' => CategoryReference::query()->orderBy('code')->get(),
+            'unitReferences' => UnitReference::query()->orderBy('code')->get(),
             'units' => Unit::query()
                 ->where('store_id', $currentStore->id())
                 ->orderBy('unit_type')->orderBy('name')
-                ->get(['public_id', 'name', 'symbol', 'unit_type', 'is_active']),
+                ->get(['public_id', 'name', 'symbol', 'unit_type', 'reference_code', 'name_is_custom', 'is_active']),
             'search' => $search,
             'status' => $status,
             'canManage' => Gate::allows('manageMasterData', $currentStore->get()),
@@ -167,8 +171,9 @@ class ProductController extends Controller
             'barcode' => $defaultUnit?->barcode,
             'category' => $product->category?->only(['public_id', 'name']),
             'retail_unit_public_id' => $product->baseUnit->public_id,
-            'large_unit_public_id' => $product->large_unit_id === null ? $product->baseUnit->public_id : $product->largeUnit->public_id,
+            'large_unit_public_id' => $product->largeUnit?->public_id,
             'variant_mode' => $product->variant_mode,
+            'quantity_mode' => $product->quantity_mode,
             'purchase_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->purchase_price,
             'selling_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->selling_price,
             'current_stock' => $parentBalance === null ? '0.000000' : $parentBalance->quantity,

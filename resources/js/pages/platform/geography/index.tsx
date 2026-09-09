@@ -306,7 +306,9 @@ function CurrencyCard({ currency, canManage }: { currency: Currency; canManage: 
                 <>
                     <div className="flex items-center justify-between gap-3">
                         <strong>{currency.code}</strong>
-                        <Badge variant="outline">{currency.countries_count} {translate('negara')}</Badge>
+                        <Badge variant="outline">
+                            {currency.countries_count} {translate('negara')}
+                        </Badge>
                     </div>
                     <CreateField label="Nama" htmlFor={`${prefix}-name`}>
                         <Input id={`${prefix}-name`} name="name" defaultValue={currency.name} disabled={!canManage} className="h-11" />

@@ -5,7 +5,6 @@ import {
     Camera,
     ChevronRight,
     Edit3,
-    ImagePlus,
     LoaderCircle,
     PackagePlus,
     Plus,
@@ -15,21 +14,22 @@ import {
     Settings2,
     Trash2,
 } from 'lucide-react';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import BarcodeScannerDialog from '@/components/product-scanner/BarcodeScannerDialog';
-import { normalizeImage } from '@/components/product-scanner/use-camera';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatMoney, localeTag } from '@/lib/currency';
+import { formatMoney } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
+import { resolveUnit, resolveCategory, referenceLabel } from '@/lib/unit-references';
+import type { UnitReference, CategoryReference } from '@/lib/unit-references';
 import { cn } from '@/lib/utils';
 import { useProductDrafts } from './use-product-drafts';
 import type { DiscoverySuggestion, ProductDraft } from './use-product-drafts';
@@ -39,10 +39,13 @@ type Option = {
     name: string;
     symbol?: string;
     is_active: boolean;
+    reference_code?: string | null;
+    name_is_custom?: boolean;
 };
 type UnitOption = Option & {
     symbol: string;
     unit_type: 'large' | 'retail';
+    reference_code: string | null;
 };
 type VariantMode = 'none' | 'separate' | 'shared';
 type ScannerFlow = 'create' | 'form-photo' | 'variant-photo';
@@ -99,8 +102,9 @@ type Product = {
     is_active: boolean;
     category: { public_id: string; name: string } | null;
     retail_unit_public_id: string;
-    large_unit_public_id: string;
+    large_unit_public_id: string | null;
     variant_mode: VariantMode;
+    quantity_mode: 'fixed' | 'variable';
     purchase_price: string;
     selling_price: string;
     current_stock: string;
@@ -121,6 +125,7 @@ type ProductForm = {
     retail_unit_public_id: string;
     large_unit_public_id: string;
     variant_mode: VariantMode;
+    quantity_mode: 'fixed' | 'variable';
     purchase_price: string;
     selling_price: string;
     current_stock: string;
@@ -135,70 +140,6 @@ type SubscriptionState = {
     max_products: number;
     products_used: number;
 };
-
-const unitCodeAliases: Record<'large' | 'retail', Record<string, string[]>> = {
-    retail: {
-        piece: ['piece', 'pc', 'pcs', 'buah', 'butir', 'unit'],
-        pair: ['pair', 'pasang'],
-        set: ['set'],
-        serving: ['serving', 'porsi'],
-        milligram: ['milligram', 'mg'],
-        gram: ['gram', 'g'],
-        kilogram: ['kilogram', 'kg'],
-        milliliter: ['milliliter', 'ml'],
-        liter: ['liter', 'l'],
-        millimeter: ['millimeter', 'mm'],
-        centimeter: ['centimeter', 'cm'],
-        meter: ['meter', 'm'],
-        square_meter: ['square meter', 'm2', 'm²'],
-        sachet: ['sachet', 'saset'],
-        packet: ['packet', 'pkt', 'bungkus', 'bks'],
-        pouch: ['pouch'],
-        bag: ['bag', 'kantong'],
-        bottle: ['bottle', 'botol', 'btl'],
-        jar: ['jar', 'toples'],
-        can: ['can', 'kaleng'],
-        cup: ['cup', 'gelas'],
-        tube: ['tube', 'tabung'],
-        box: ['box', 'kotak'],
-        tray: ['tray', 'baki'],
-        blister: ['blister'],
-        strip: ['strip'],
-        roll: ['roll', 'gulung'],
-        sheet: ['sheet', 'lembar'],
-        stick: ['stick', 'batang'],
-        bar: ['bar'],
-        bundle: ['bundle', 'ikat'],
-        tablet: ['tablet'],
-        capsule: ['capsule', 'kapsul'],
-        vial: ['vial'],
-        ampoule: ['ampoule', 'ampul'],
-        jug: ['jug', 'galon'],
-    },
-    large: {
-        pack: ['pack', 'pak'],
-        dozen: ['dozen', 'lusin'],
-        score: ['score', 'kodi'],
-        gross: ['gross'],
-        ream: ['ream', 'rim'],
-        carton: ['carton', 'ctn', 'dus', 'kardus'],
-        cigarette_carton: ['cigarette carton', 'cig-ctn', 'slop'],
-        hanging_strip: ['hanging strip', 'renceng', 'renteng'],
-        case: ['case'],
-        crate: ['crate', 'krat'],
-        sack: ['sack', 'karung'],
-        bale: ['bale', 'bal'],
-        jerrycan: ['jerrycan', 'jcan', 'jerigen'],
-        drum: ['drum'],
-        barrel: ['barrel', 'barel', 'bbl'],
-        keg: ['keg'],
-        bucket: ['bucket', 'ember', 'bkt'],
-        pallet: ['pallet', 'palet', 'plt'],
-        container: ['container', 'ctr'],
-    },
-};
-
-const normalizeUnitLabel = (value: string) => value.trim().toLocaleLowerCase(localeTag());
 
 const createIdempotencyKey = () => {
     if (globalThis.crypto?.randomUUID) {
@@ -238,6 +179,7 @@ const blankForm = (): ProductForm => ({
     retail_unit_public_id: '',
     large_unit_public_id: '',
     variant_mode: 'none',
+    quantity_mode: 'variable',
     purchase_price: '',
     selling_price: '',
     current_stock: '',
@@ -335,94 +277,63 @@ function ProductPhotoInput({
     photoUrl,
     variantName,
     onCamera,
-    onChange,
     onRemove,
 }: {
     photo: File | null;
     photoUrl?: string | null;
     variantName: string;
     onCamera: () => void;
-    onChange: (file: File) => void;
     onRemove: () => void;
 }) {
-    const [busy, setBusy] = useState(false);
-    const [photoError, setPhotoError] = useState('');
-    const previewUrl = useMemo(() => (photo ? URL.createObjectURL(photo) : (photoUrl ?? null)), [photo, photoUrl]);
-
-    useEffect(
-        () => () => {
-            if (photo && previewUrl) {
-                URL.revokeObjectURL(previewUrl);
+    const attachPhoto = useCallback(
+        (node: HTMLImageElement | null) => {
+            if (!node || !photo) {
+                return;
             }
+
+            const url = URL.createObjectURL(photo);
+            node.src = url;
+
+            return () => URL.revokeObjectURL(url);
         },
-        [photo, previewUrl],
+        [photo],
     );
+    const hasPhoto = Boolean(photo || photoUrl);
 
     return (
-        <div className="flex min-h-16 flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-2">
-            <ProductPhoto
-                src={previewUrl}
-                alt={`Foto ${variantName || 'varian'}`}
-                className="size-14 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
-                fallbackClassName="grid size-14 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-400"
-            />
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                <Button type="button" variant="outline" onClick={onCamera} disabled={busy} className="min-h-11">
+        <div className="grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-2 rounded-xl border border-[var(--app-soft-strong)] bg-white p-2">
+            {photo ? (
+                <img ref={attachPhoto} alt={`Foto ${variantName || 'varian'}`} className="size-12 rounded-lg object-cover" />
+            ) : (
+                <ProductPhoto
+                    src={photoUrl}
+                    alt={`Foto ${variantName || 'varian'}`}
+                    className="size-12 rounded-lg object-cover"
+                    fallbackClassName="grid size-12 place-items-center rounded-lg bg-[var(--app-soft)] text-[var(--app-primary)]"
+                />
+            )}
+            <div className="flex min-w-0 items-center gap-1">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onCamera}
+                    className="min-h-11 min-w-0 flex-1 gap-1 px-2 text-xs text-[var(--app-primary)]"
+                >
                     <Camera className="size-4" /> Ambil foto
                 </Button>
-                <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)] hover:bg-[var(--app-soft)]">
-                    <ImagePlus className="size-4" />
-                    {busy ? 'Memproses foto…' : 'Pilih foto'}
-                    <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="sr-only"
-                        disabled={busy}
-                        onChange={async (event) => {
-                            const file = event.target.files?.[0];
-                            event.target.value = '';
-
-                            if (file) {
-                                setBusy(true);
-                                setPhotoError('');
-
-                                try {
-                                    if (file.size > 20 * 1024 * 1024) {
-                                        throw new Error('size');
-                                    }
-
-                                    const normalized = await normalizeImage(file);
-
-                                    if (normalized.size > 3 * 1024 * 1024) {
-                                        throw new Error('size');
-                                    }
-
-                                    onChange(new File([normalized], 'product.jpg', { type: 'image/jpeg' }));
-                                } catch {
-                                    setPhotoError('Foto tidak dapat diproses. Pilih JPG, PNG, atau WebP di bawah 20 MB.');
-                                } finally {
-                                    setBusy(false);
-                                }
-                            }
-                        }}
-                    />
-                </label>
-                {previewUrl && (
+                {hasPhoto && (
                     <button
                         type="button"
                         onClick={onRemove}
-                        disabled={busy}
-                        className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+
+                        aria-label={translate('Hapus foto')}
+                        title={translate('Hapus foto')}
+                        className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
                     >
-                        <Trash2 className="size-4" /> Hapus foto
+                        <Trash2 className="size-4" />
                     </button>
                 )}
             </div>
-            {photoError && (
-                <p role="alert" className="w-full text-sm text-red-700">
-                    {translate(photoError)}
-                </p>
-            )}
         </div>
     );
 }
@@ -459,16 +370,42 @@ function ReferenceManager({
     type,
     categories,
     units,
+    unitReferences,
+    suggestedUnitCode,
+    suggestedRole,
+    categoryReferences,
+    suggestedCategoryCode,
     onOpenChange,
 }: {
     open: boolean;
     type: 'category' | 'unit';
     categories: Option[];
     units: UnitOption[];
+    unitReferences: UnitReference[];
+    suggestedUnitCode: string | null;
+    suggestedRole: 'retail' | 'large';
+    categoryReferences: CategoryReference[];
+    suggestedCategoryCode: string | null;
     onOpenChange: (open: boolean) => void;
 }) {
-    const categoryForm = useForm({ name: '' });
-    const unitForm = useForm({ name: '', symbol: '', unit_type: 'retail' });
+    const suggestedCategory = categoryReferences.find(
+        (item) => item.is_active && item.code === suggestedCategoryCode && item.code !== 'other',
+    );
+    const categoryForm = useForm({
+        name: suggestedCategory?.name ?? '',
+        reference_code: suggestedCategory?.code ?? '',
+        name_is_custom: !suggestedCategory,
+    });
+    const suggestedReference = unitReferences.find(
+        (item) => item.is_active && item.code === suggestedUnitCode && item.roles.includes(suggestedRole === 'retail' ? 'sale' : 'large'),
+    );
+    const unitForm = useForm({
+        name: suggestedReference?.name ?? '',
+        symbol: suggestedReference?.symbol ?? '',
+        unit_type: suggestedRole,
+        reference_code: suggestedReference?.code ?? '',
+        name_is_custom: !suggestedReference,
+    });
     const isCategory = type === 'category';
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -514,17 +451,86 @@ function ReferenceManager({
                 </DialogHeader>
                 <div className="space-y-5 p-5">
                     <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                        {isCategory && (
+                            <Field label="Referensi kategori" error={categoryForm.errors.reference_code}>
+                                <select
+                                    aria-label={translate('Referensi kategori')}
+                                    className="mb-3 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                                    value={categoryForm.data.reference_code}
+                                    onChange={(event) => {
+                                        const reference = categoryReferences.find((item) => item.code === event.target.value);
+                                        categoryForm.setData({
+                                            name: reference?.name ?? categoryForm.data.name,
+                                            reference_code: reference?.code ?? '',
+                                            name_is_custom: !reference,
+                                        });
+                                    }}
+                                >
+                                    <option value="">Kategori custom</option>
+                                    {categoryReferences
+                                        .filter((item) => item.is_active)
+                                        .map((item) => (
+                                            <option key={item.code} value={item.code}>
+                                                {referenceLabel(
+                                                    { ...item, reference_code: item.code, name_is_custom: false },
+                                                    'categories',
+                                                    translate,
+                                                )}
+                                            </option>
+                                        ))}
+                                </select>
+                            </Field>
+                        )}
+                        {!isCategory && (
+                            <Field label="Referensi satuan" error={unitForm.errors.reference_code}>
+                                <select
+                                    aria-label={translate('Referensi satuan')}
+                                    className="mb-3 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                                    value={unitForm.data.reference_code}
+                                    onChange={(event) => {
+                                        const reference = unitReferences.find((item) => item.code === event.target.value);
+                                        unitForm.setData({
+                                            ...unitForm.data,
+                                            reference_code: reference?.code ?? '',
+                                            name: reference?.name ?? unitForm.data.name,
+                                            name_is_custom: !reference,
+                                            symbol: reference?.symbol ?? unitForm.data.symbol,
+                                        });
+                                    }}
+                                >
+                                    <option value="">Satuan custom</option>
+                                    {unitReferences
+                                        .filter(
+                                            (item) =>
+                                                item.is_active &&
+                                                item.roles.includes(unitForm.data.unit_type === 'large' ? 'large' : 'sale'),
+                                        )
+                                        .map((item) => (
+                                            <option key={item.code} value={item.code}>
+                                                {translate(`units.${item.code}`) === `units.${item.code}`
+                                                    ? item.name
+                                                    : translate(`units.${item.code}`)}{' '}
+                                                ({item.symbol})
+                                            </option>
+                                        ))}
+                                </select>
+                            </Field>
+                        )}
                         <div className="grid gap-3 sm:grid-cols-2">
                             <Field
                                 label={isCategory ? 'Nama kategori' : 'Nama satuan'}
                                 error={isCategory ? categoryForm.errors.name : unitForm.errors.name}
                             >
                                 <Input
-                                    value={isCategory ? categoryForm.data.name : unitForm.data.name}
+                                    value={
+                                        isCategory
+                                            ? referenceLabel(categoryForm.data, 'categories', translate)
+                                            : referenceLabel(unitForm.data, 'units', translate)
+                                    }
                                     onChange={(event) =>
                                         isCategory
-                                            ? categoryForm.setData('name', event.target.value)
-                                            : unitForm.setData('name', event.target.value)
+                                            ? categoryForm.setData({ ...categoryForm.data, name: event.target.value, name_is_custom: true })
+                                            : unitForm.setData({ ...unitForm.data, name: event.target.value, name_is_custom: true })
                                     }
                                     className="border-slate-200 bg-white"
                                 />
@@ -545,7 +551,7 @@ function ReferenceManager({
                                     <button
                                         key={group}
                                         type="button"
-                                        onClick={() => unitForm.setData('unit_type', group)}
+                                        onClick={() => unitForm.setData({ ...unitForm.data, unit_type: group, reference_code: '' })}
                                         className={cn(
                                             'h-10 rounded-xl border text-sm font-semibold',
                                             unitForm.data.unit_type === group
@@ -573,7 +579,7 @@ function ReferenceManager({
                             >
                                 <div className="min-w-0">
                                     <p className="truncate text-sm font-semibold text-slate-800">
-                                        {item.name}
+                                        {referenceLabel(item, isCategory ? 'categories' : 'units', translate)}
                                         {'symbol' in item && ` (${item.symbol})`}
                                     </p>
                                     {'unit_type' in item && (
@@ -602,6 +608,8 @@ export default function ProductsIndex({
     products,
     categories,
     units,
+    unitReferences,
+    categoryReferences,
     search: initialSearch,
     status: initialStatus,
     canManage,
@@ -609,6 +617,8 @@ export default function ProductsIndex({
     products: { data: Product[]; links: PaginationLink[]; total: number };
     categories: Option[];
     units: UnitOption[];
+    unitReferences: UnitReference[];
+    categoryReferences: CategoryReference[];
     search: string;
     status: string;
     canManage: boolean;
@@ -627,6 +637,7 @@ export default function ProductsIndex({
     const [deleteError, setDeleteError] = useState('');
     const [formOpen, setFormOpen] = useState(false);
     const [manager, setManager] = useState<'category' | 'unit' | null>(null);
+    const [unitManagerRole, setUnitManagerRole] = useState<'retail' | 'large'>('retail');
     const [search, setSearch] = useState(initialSearch);
     const [status, setStatus] = useState(initialStatus);
     const [scannerOpen, setScannerOpen] = useState(
@@ -822,8 +833,9 @@ export default function ProductsIndex({
             barcode: product.barcode ?? '',
             category_public_id: product.category?.public_id ?? '',
             retail_unit_public_id: product.retail_unit_public_id,
-            large_unit_public_id: product.large_unit_public_id,
+            large_unit_public_id: product.large_unit_public_id ?? '',
             variant_mode: product.variant_mode,
+            quantity_mode: product.quantity_mode,
             purchase_price: formatFormDecimal(product.purchase_price),
             selling_price: formatFormDecimal(product.selling_price),
             current_stock: formatFormDecimal(product.current_stock),
@@ -873,34 +885,16 @@ export default function ProductsIndex({
         updateVariantFields(index, { [key]: value });
     const suggestionValues = useCallback(
         (suggestion: DiscoverySuggestion) => {
-            const category = categories.find(
-                (item) =>
-                    item.is_active &&
-                    item.name.toLocaleLowerCase(localeTag()) ===
-                        suggestion.classification.category_suggestion?.toLocaleLowerCase(localeTag()),
-            );
-            const findUnit = (code: string | null, type: UnitOption['unit_type']) => {
-                if (!code) {
-                    return undefined;
-                }
-
-                const acceptedLabels = new Set((unitCodeAliases[type][normalizeUnitLabel(code)] ?? [code]).map(normalizeUnitLabel));
-
-                return units.find(
-                    (item) =>
-                        item.is_active &&
-                        item.unit_type === type &&
-                        [item.name, item.symbol].some((value) => acceptedLabels.has(normalizeUnitLabel(value))),
-                );
-            };
-            const retailUnit = findUnit(suggestion.quantity.sale_unit_code, 'retail');
-            const largeUnit = findUnit(suggestion.quantity.larger_unit_code, 'large');
+            const category = resolveCategory(categories, suggestion.classification.department_code);
+            const retailUnit = resolveUnit(units, suggestion.quantity.sale_unit_code, 'retail');
+            const largeUnit = resolveUnit(units, suggestion.quantity.larger_unit_code, 'large');
 
             return {
                 name: suggestion.identity.display_name,
                 description: suggestion.identity.description ?? '',
                 category_public_id: category?.public_id ?? '',
                 retail_unit_public_id: retailUnit?.public_id ?? '',
+                quantity_mode: suggestion.quantity.mode === 'fixed' ? ('fixed' as const) : ('variable' as const),
                 large_unit_public_id: largeUnit?.public_id ?? '',
                 purchase_price: String(suggestion.pricing.estimated_purchase_price ?? ''),
                 selling_price: String(suggestion.pricing.recommended_selling_price ?? ''),
@@ -1076,10 +1070,10 @@ export default function ProductsIndex({
 
             const suggestion = suggestionValues(discoverySuggestion);
             const dirty = draftDirty.current.get(active.id) ?? new Set<keyof ProductForm>();
-            const next = { ...form.data };
+            let next = { ...form.data };
             (Object.keys(suggestion) as Array<keyof typeof suggestion>).forEach((key) => {
                 if (!dirty.has(key)) {
-                    next[key] = suggestion[key];
+                    next = { ...next, [key]: suggestion[key] };
                 }
             });
             previousDraftForm.current = next;
@@ -1594,13 +1588,22 @@ export default function ProductsIndex({
                                 </div>
                             )}
                             <Section number="1" title="Informasi Produk">
-                                <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_210px] lg:grid-cols-[minmax(0,1fr)_220px]">
+                                <div className="grid gap-5">
                                     <div className="min-w-0 space-y-4">
                                         <Field label="Nama produk" error={form.errors.name}>
                                             <Input
                                                 value={form.data.name}
                                                 onChange={(event) => form.setData('name', event.target.value)}
                                                 className="h-11 border-slate-200 bg-white shadow-sm"
+                                            />
+                                        </Field>
+                                        <Field label="Foto produk" error={form.errors.photo}>
+                                            <ProductPhotoInput
+                                                photo={form.data.photo}
+                                                photoUrl={form.data.remove_photo ? null : editing?.photo_url}
+                                                variantName={form.data.name}
+                                                onCamera={openFormPhotoScanner}
+                                                onRemove={() => form.setData({ ...form.data, photo: null, remove_photo: true })}
                                             />
                                         </Field>
                                         <Field label="Deskripsi" error={form.errors.description}>
@@ -1649,7 +1652,7 @@ export default function ProductsIndex({
                                                             value={category.public_id}
                                                             disabled={!category.is_active}
                                                         >
-                                                            {category.name}
+                                                            {referenceLabel(category, 'categories', translate)}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -1665,16 +1668,6 @@ export default function ProductsIndex({
                                             </div>
                                         </Field>
                                     </div>
-                                    <Field label="Foto produk" error={form.errors.photo}>
-                                        <ProductPhotoInput
-                                            photo={form.data.photo}
-                                            photoUrl={form.data.remove_photo ? null : editing?.photo_url}
-                                            variantName={form.data.name}
-                                            onCamera={openFormPhotoScanner}
-                                            onChange={(photo) => form.setData({ ...form.data, photo, remove_photo: false })}
-                                            onRemove={() => form.setData({ ...form.data, photo: null, remove_photo: true })}
-                                        />
-                                    </Field>
                                 </div>
                             </Section>
 
@@ -1686,7 +1679,10 @@ export default function ProductsIndex({
                                         type="button"
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() => setManager('unit')}
+                                        onClick={() => {
+                                            setUnitManagerRole('retail');
+                                            setManager('unit');
+                                        }}
                                         className="text-[var(--app-primary)]"
                                     >
                                         <Settings2 className="size-4" />
@@ -1701,10 +1697,12 @@ export default function ProductsIndex({
                                             onChange={(event) => form.setData('large_unit_public_id', event.target.value)}
                                             className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm shadow-sm"
                                         >
-                                            <option value="">Pilih satuan besar</option>
+                                            <option value="">
+                                                {form.data.variant_mode === 'shared' ? 'Pilih satuan besar' : 'Tanpa satuan besar'}
+                                            </option>
                                             {largeUnits.map((unit) => (
                                                 <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
-                                                    {unit.name} ({unit.symbol})
+                                                    {referenceLabel(unit, 'units', translate)} ({unit.symbol})
                                                 </option>
                                             ))}
                                         </select>
@@ -1718,12 +1716,67 @@ export default function ProductsIndex({
                                             <option value="">Pilih satuan ecer</option>
                                             {retailUnits.map((unit) => (
                                                 <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
-                                                    {unit.name} ({unit.symbol})
+                                                    {referenceLabel(unit, 'units', translate)} ({unit.symbol})
                                                 </option>
                                             ))}
                                         </select>
                                     </Field>
                                 </div>
+                                <div className="mt-3">
+                                    <Field label="Penjualan pecahan" error={form.errors.quantity_mode}>
+                                        <select
+                                            aria-label={translate('Penjualan pecahan')}
+                                            value={form.data.quantity_mode}
+                                            onChange={(event) => form.setData('quantity_mode', event.target.value as 'fixed' | 'variable')}
+                                            className="h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                                        >
+                                            <option value="fixed">Jumlah bulat</option>
+                                            <option value="variable">Boleh pecahan</option>
+                                        </select>
+                                    </Field>
+                                </div>
+                                {activeDraft?.suggestion && !form.data.retail_unit_public_id && (
+                                    <div role="status" className="mt-3 flex flex-wrap items-center gap-2 text-sm text-amber-800">
+                                        <span>
+                                            {activeDraft.suggestion.quantity.sale_unit_code
+                                                ? 'Satuan dikenali, pilih satuan toko.'
+                                                : 'Satuan belum dikenali'}
+                                        </span>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setUnitManagerRole('retail');
+                                                setManager('unit');
+                                            }}
+                                        >
+                                            <Plus className="size-4" /> Tambah satuan
+                                        </Button>
+                                    </div>
+                                )}
+                                {activeDraft?.suggestion?.quantity.larger_unit_code && !form.data.large_unit_public_id && (
+                                    <div role="status" className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                                        <span>Satuan besar</span>: {translate(`units.${activeDraft.suggestion.quantity.larger_unit_code}`)}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setUnitManagerRole('large');
+                                                setManager('unit');
+                                            }}
+                                        >
+                                            <Plus className="size-4" /> Tambah satuan
+                                        </Button>
+                                    </div>
+                                )}
+                                {activeDraft?.suggestion?.quantity.net_content && (
+                                    <p className="mt-3 text-sm text-slate-600">
+                                        <span>Isi bersih</span>: {activeDraft.suggestion.quantity.net_content.value}{' '}
+                                        {translate(`units.${activeDraft.suggestion.quantity.net_content.unit_code}`)}
+                                    </p>
+                                )}
                             </Section>
 
                             <Section number="3" title="Harga dan Stok">
@@ -1913,12 +1966,6 @@ export default function ProductsIndex({
                                                                     setScannerFlow('variant-photo');
                                                                     setScannerOpen(true);
                                                                 }}
-                                                                onChange={(file) =>
-                                                                    updateVariantFields(index, {
-                                                                        photo: file,
-                                                                        remove_photo: false,
-                                                                    })
-                                                                }
                                                                 onRemove={() =>
                                                                     updateVariantFields(index, {
                                                                         photo: null,
@@ -1998,26 +2045,61 @@ export default function ProductsIndex({
                                                                 </Field>
                                                             </>
                                                         ) : (
-                                                            <Field
-                                                                label="Isi per kemasan"
-                                                                error={errorFor(`variants.${index}.conversion_factor`)}
-                                                            >
-                                                                <Input
-                                                                    inputMode="decimal"
-                                                                    value={variant.conversion_factor}
-                                                                    onChange={(event) =>
-                                                                        updateVariant(index, 'conversion_factor', event.target.value)
-                                                                    }
-                                                                    onBlur={() =>
-                                                                        updateVariant(
-                                                                            index,
-                                                                            'conversion_factor',
-                                                                            formatFormDecimal(variant.conversion_factor),
-                                                                        )
-                                                                    }
-                                                                    className="border-slate-200 bg-white"
-                                                                />
-                                                            </Field>
+                                                            <>
+                                                                {activeDraft?.suggestion?.quantity.conversion_factor &&
+                                                                    !activeDraft.suggestion.quality.unit_issues?.some(
+                                                                        (issue) => issue.code === 'conversion_ungrounded',
+                                                                    ) &&
+                                                                    form.data.variant_mode === 'shared' &&
+                                                                    units.find((unit) => unit.public_id === form.data.large_unit_public_id)
+                                                                        ?.reference_code ===
+                                                                        activeDraft.suggestion.quantity.larger_unit_code &&
+                                                                    units.find((unit) => unit.public_id === form.data.retail_unit_public_id)
+                                                                        ?.reference_code ===
+                                                                        activeDraft.suggestion.quantity.sale_unit_code &&
+                                                                    (form.data.variants.length === 1 ||
+                                                                        variant.name === activeDraft.suggestion.identity.variant) && (
+                                                                        <div className="text-sm text-slate-600">
+                                                                            <span>Saran konversi</span>:{' '}
+                                                                            {activeDraft.suggestion.quantity.conversion_factor}
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className="ml-2"
+                                                                                onClick={() =>
+                                                                                    updateVariant(
+                                                                                        index,
+                                                                                        'conversion_factor',
+                                                                                        activeDraft.suggestion!.quantity.conversion_factor!,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                Gunakan konversi
+                                                                            </Button>
+                                                                        </div>
+                                                                    )}
+                                                                <Field
+                                                                    label="Isi per kemasan"
+                                                                    error={errorFor(`variants.${index}.conversion_factor`)}
+                                                                >
+                                                                    <Input
+                                                                        inputMode="decimal"
+                                                                        value={variant.conversion_factor}
+                                                                        onChange={(event) =>
+                                                                            updateVariant(index, 'conversion_factor', event.target.value)
+                                                                        }
+                                                                        onBlur={() =>
+                                                                            updateVariant(
+                                                                                index,
+                                                                                'conversion_factor',
+                                                                                formatFormDecimal(variant.conversion_factor),
+                                                                            )
+                                                                        }
+                                                                        className="border-slate-200 bg-white"
+                                                                    />
+                                                                </Field>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
@@ -2146,10 +2228,20 @@ export default function ProductsIndex({
             </Dialog>
 
             <ReferenceManager
+                categoryReferences={categoryReferences}
+                suggestedCategoryCode={activeDraft?.suggestion?.classification.department_code ?? null}
+                key={`${manager}:${activeDraftId}:${unitManagerRole}`}
+                suggestedUnitCode={
+                    (unitManagerRole === 'retail'
+                        ? activeDraft?.suggestion?.quantity.sale_unit_code
+                        : activeDraft?.suggestion?.quantity.larger_unit_code) ?? null
+                }
+                suggestedRole={unitManagerRole}
                 open={manager !== null}
                 type={manager ?? 'category'}
                 categories={categories}
                 units={units}
+                unitReferences={unitReferences}
                 onOpenChange={(open) => !open && setManager(null)}
             />
             <Dialog

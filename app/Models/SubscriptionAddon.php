@@ -3,10 +3,15 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPublicId;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property CarbonImmutable $starts_on
+ * @property CarbonImmutable|null $ends_on
+ */
 #[Fillable(['subscription_id', 'user_id', 'plan_id', 'plan_name', 'offer_category', 'price', 'duration_months', 'stores', 'products', 'members', 'scans', 'starts_on', 'ends_on', 'source', 'created_by_user_id'])]
 class SubscriptionAddon extends Model
 {

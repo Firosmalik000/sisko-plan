@@ -39,19 +39,13 @@ SESSION_DOMAIN=null
 SESSION_SECURE_COOKIE=true
 ```
 
-Run `php artisan config:clear`, then keep these three terminals running:
-
-```sh
-php artisan serve --host=127.0.0.1 --port=8000
-```
+Start all three processes from the project folder with one command:
 
 ```sh
 npm run dev
 ```
 
-```sh
-caddy run --config Caddyfile.local --adapter caddyfile --envfile .env
-```
+The command starts missing services and reuses occupied development ports without stopping existing processes. Keep the terminal open for services it starts; Ctrl+C stops those services only. Run it again after restarting the laptop. It does not install a login or boot service. Without DEV_LAN=true it starts Vite only.
 
 Laptop access at `http://localhost:8000` also remains allowed while LAN mode is
 active. The laptop browser must trust the mkcert CA because Vite assets use HTTPS;

@@ -665,4 +665,6 @@ export const vietnameseCatalog: Record<string, string> = {
         'Chưa hỗ trợ phân tích cho thị trường của cửa hàng này. Vui lòng nhập thông tin sản phẩm thủ công.',
     'Ada beberapa kode. Foto satu barcode saja.': 'Phát hiện nhiều mã. Chỉ chụp một mã vạch.',
     'Foto tidak dapat ditampilkan.': 'Không thể hiển thị ảnh.',
+    'Gunakan foto': 'Dùng ảnh',
+    Ulangi: 'Chụp lại',
 };

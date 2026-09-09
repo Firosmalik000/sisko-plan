@@ -10,3 +10,7 @@ Artisan::command('inspire', function () {
 
 Schedule::command('auth:clear-resets')->daily();
 Schedule::command('telescope:prune --hours=48')->daily();
+
+Schedule::command('intelligence:sync-units')->daily()->withoutOverlapping();
+
+Schedule::command('intelligence:sync-categories')->daily()->withoutOverlapping();

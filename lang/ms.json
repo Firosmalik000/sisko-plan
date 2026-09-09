@@ -269,5 +269,6 @@
     "Bukti pembayaran hanya dapat ditambahkan untuk QRIS.": "Bukti bayaran hanya boleh ditambah untuk QRIS.",
     "Bukti pembayaran gagal disimpan. Coba unggah kembali.": "Bukti bayaran gagal disimpan. Cuba muat naik semula.",
     "Nama pelanggan dan nomor telepon harus diisi bersama.": "Nama pelanggan dan nombor telefon mesti diisi bersama.",
-    "Nomor telepon pelanggan tidak valid.": "Nombor telefon pelanggan tidak sah."
+    "Nomor telepon pelanggan tidak valid.": "Nombor telefon pelanggan tidak sah.",
+    "Fixed quantity products require whole quantities.": "Produk dengan kuantiti tetap mesti dijual dalam kuantiti bulat."
 }

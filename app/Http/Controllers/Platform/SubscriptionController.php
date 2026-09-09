@@ -57,43 +57,50 @@ class SubscriptionController extends Controller
                     ->orWhereHas('user.ownedStores', fn ($store) => $store->where('name', 'like', "%{$search}%"));
             }))
             ->when(in_array($status, array_column(SubscriptionStatus::cases(), 'value'), true), fn ($query) => $query->where('status', $status))
-            ->latest('id')->paginate(15)->withQueryString()->through(fn (Subscription $subscription): array => [
-                ...$subscription->only(['public_id', 'status', 'starts_at', 'trial_ends_at', 'current_period_start', 'current_period_end', 'notes']),
-                'status' => $subscription->status->value,
-                'account' => [
-                    'name' => $subscription->user->name,
-                    'email' => $subscription->user->email,
-                    'stores_count' => $subscription->user->owned_stores_count,
-                ],
-                'plan' => $subscription->plan->only(['public_id', 'name', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_active']),
-                'active_addons' => $subscription->addons
-                    ->filter(fn ($addon): bool => $addon->starts_on->lte(now()->toDateString()))
-                    ->map(fn ($addon): array => [
+            ->latest('id')->paginate(15)->withQueryString()->through(function (Subscription $subscription): array {
+                $scheduledPeriods = [];
+                foreach ($subscription->periods as $period) {
+                    $scheduledPeriods[] = [
+                        ...$period->only(['public_id', 'plan_name', 'monthly_price', 'duration_months']),
+                        'is_trial' => $period->was_trial,
+                        'period_start' => $period->period_start->toDateString(),
+                        'period_end' => $period->period_end?->toDateString(),
+                    ];
+                }
+
+                return [
+                    ...$subscription->only(['public_id', 'status', 'starts_at', 'trial_ends_at', 'current_period_start', 'current_period_end', 'notes']),
+                    'status' => $subscription->status->value,
+                    'account' => [
+                        'name' => $subscription->user->name,
+                        'email' => $subscription->user->email,
+                        'stores_count' => $subscription->user->owned_stores_count,
+                    ],
+                    'plan' => $subscription->plan->only(['public_id', 'name', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_active']),
+                    'active_addons' => $subscription->addons
+                        ->filter(fn ($addon): bool => $addon->starts_on->lte(now()->toDateString()))
+                        ->map(fn ($addon): array => [
+                            ...$addon->only(['public_id', 'plan_name', 'offer_category', 'stores', 'products', 'members', 'scans']),
+                            'starts_on' => $addon->starts_on->toDateString(),
+                            'ends_on' => $addon->ends_on?->toDateString(),
+                        ])->values()->all(),
+                    'scheduled_addons' => $subscription->addons
+                        ->filter(fn ($addon): bool => $addon->starts_on->gt(now()->toDateString()))
+                        ->map(fn ($addon): array => [
+                            ...$addon->only(['public_id', 'plan_name', 'offer_category', 'stores', 'products', 'members', 'scans']),
+                            'starts_on' => $addon->starts_on->toDateString(),
+                            'ends_on' => $addon->ends_on?->toDateString(),
+                        ])->values()->all(),
+                    'assigned_addons' => $subscription->addons->map(fn ($addon): array => [
                         ...$addon->only(['public_id', 'plan_name', 'offer_category', 'stores', 'products', 'members', 'scans']),
+                        'plan_id' => $addon->plan->public_id,
+                        'plan_is_active' => $addon->plan->is_active,
                         'starts_on' => $addon->starts_on->toDateString(),
                         'ends_on' => $addon->ends_on?->toDateString(),
                     ])->values()->all(),
-                'scheduled_addons' => $subscription->addons
-                    ->filter(fn ($addon): bool => $addon->starts_on->gt(now()->toDateString()))
-                    ->map(fn ($addon): array => [
-                        ...$addon->only(['public_id', 'plan_name', 'offer_category', 'stores', 'products', 'members', 'scans']),
-                        'starts_on' => $addon->starts_on->toDateString(),
-                        'ends_on' => $addon->ends_on?->toDateString(),
-                    ])->values()->all(),
-                'assigned_addons' => $subscription->addons->map(fn ($addon): array => [
-                    ...$addon->only(['public_id', 'plan_name', 'offer_category', 'stores', 'products', 'members', 'scans']),
-                    'plan_id' => $addon->plan->public_id,
-                    'plan_is_active' => $addon->plan->is_active,
-                    'starts_on' => $addon->starts_on->toDateString(),
-                    'ends_on' => $addon->ends_on?->toDateString(),
-                ])->values()->all(),
-                'scheduled_periods' => $subscription->periods->map(fn ($period): array => [
-                    ...$period->only(['public_id', 'plan_name', 'monthly_price', 'duration_months']),
-                    'is_trial' => $period->was_trial,
-                    'period_start' => $period->period_start->toDateString(),
-                    'period_end' => $period->period_end?->toDateString(),
-                ])->values()->all(),
-            ]);
+                    'scheduled_periods' => $scheduledPeriods,
+                ];
+            });
 
         return Inertia::render('platform/subscriptions/index', [
             'plans' => $plans, 'subscriptions' => $subscriptions,
@@ -167,16 +174,21 @@ class SubscriptionController extends Controller
         }
         $addons = null;
         if (array_key_exists('addons', $validated)) {
+            $addonInput = $validated['addons'];
+            if (! is_array($addonInput)) {
+                throw ValidationException::withMessages(['addons' => __('Invalid add-ons.')]);
+            }
             $existingAddons = $subscription->addons()
                 ->where(fn ($query) => $query->whereNull('ends_on')->orWhereDate('ends_on', '>=', now()->toDateString()))
                 ->get(['id', 'public_id', 'plan_id'])
                 ->keyBy('public_id');
             $addonPlans = Plan::query()
                 ->where('kind', Plan::KIND_ADDON)
-                ->whereIn('public_id', collect($validated['addons'])->pluck('plan_id')->unique())
+                ->whereIn('public_id', collect($addonInput)->pluck('plan_id')->unique())
                 ->get()
                 ->keyBy('public_id');
-            $addons = collect($validated['addons'])->map(function (array $addon, int $index) use ($addonPlans, $existingAddons): array {
+            $addons = [];
+            foreach ($addonInput as $index => $addon) {
                 $selectedPlan = $addonPlans->get($addon['plan_id']);
                 $existingAddon = isset($addon['public_id']) ? $existingAddons->get($addon['public_id']) : null;
                 if ($selectedPlan === null || (! $selectedPlan->is_active && $existingAddon?->plan_id !== $selectedPlan->id)) {
@@ -185,13 +197,13 @@ class SubscriptionController extends Controller
                     ]);
                 }
 
-                return [
+                $addons[] = [
                     'id' => $existingAddon?->id,
                     'plan_id' => $selectedPlan->id,
                     'starts_on' => $addon['starts_on'],
                     'ends_on' => $addon['ends_on'] ?? null,
                 ];
-            })->values()->all();
+            }
         }
         $action->handle(AuthenticatedPlatformAdmin::get($request), $subscription, [
             'plan_id' => $plan->id,

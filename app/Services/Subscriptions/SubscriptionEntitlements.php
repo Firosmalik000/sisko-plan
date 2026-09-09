@@ -15,7 +15,7 @@ class SubscriptionEntitlements
     /** @return array{max_stores:int,max_products:int,max_members:int,max_scans:int,scans_used:int,scan_period_start:string,scan_period_end:string} */
     public function forOwner(int $ownerId, ?Plan $basePlan = null): array
     {
-        $basePlan ??= Subscription::query()->with('plan')->where('user_id', $ownerId)->first()?->plan
+        $basePlan ??= Subscription::query()->with('plan')->where('user_id', $ownerId)->first()->plan
             ?? Plan::query()->where(['kind' => Plan::KIND_BASE, 'is_default' => true, 'is_active' => true])->firstOrFail();
         $today = CarbonImmutable::now(self::USAGE_TIMEZONE)->startOfDay();
         $addons = SubscriptionAddon::query()

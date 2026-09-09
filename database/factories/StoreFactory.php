@@ -27,7 +27,7 @@ class StoreFactory extends Factory
             ]);
             $store->loadMissing('country');
             $store->settings()->firstOrCreate([], [
-                'currency' => $store->country?->currency_code ?? 'IDR',
+                'currency' => $store->country->currency_code ?? 'IDR',
             ]);
             app(StartDefaultSubscription::class)->handle($store);
         });

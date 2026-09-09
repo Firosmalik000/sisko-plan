@@ -37,6 +37,11 @@ export type DiscoverySuggestion = {
         uncertain_fields: string[];
         issues: string[];
         warnings: string[];
+        unit_issues?: Array<{
+            code: 'unit_missing' | 'unit_unsupported' | 'net_content_incomplete' | 'conversion_ungrounded';
+            field: string;
+            observed_text: string | null;
+        }>;
     };
 };
 

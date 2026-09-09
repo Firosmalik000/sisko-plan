@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Stores;
 
+use App\Models\Store;
 use App\Support\Authentication\AuthenticatedUser;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -18,6 +19,7 @@ class StoreUpdateRequest extends FormRequest
     public function rules(): array
     {
         $store = $this->route('store');
+        abort_unless($store instanceof Store, 404);
 
         return [
             'name' => ['required', 'string', 'max:120'],

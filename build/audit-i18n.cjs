@@ -8,6 +8,71 @@ const translateUiLiterals = require('./translate-ui.cjs');
 const root = process.cwd();
 const sourceRoot = path.join(root, 'resources', 'js');
 
+// Execute the real resolver so catalog composition and locale selection are covered.
+const auditModules = new Map();
+function loadTranslationModule(filename) {
+    if (!path.extname(filename)) {
+        filename = fs.existsSync(`${filename}.ts`) ? `${filename}.ts` : path.join(filename, 'index.ts');
+    }
+    if (auditModules.has(filename)) return auditModules.get(filename).exports;
+    const module = { exports: {} };
+    auditModules.set(filename, module);
+    const compiled = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    const localRequire = (specifier) => {
+        if (specifier.startsWith('@/')) return loadTranslationModule(path.join(sourceRoot, specifier.slice(2)));
+        if (specifier.startsWith('.')) return loadTranslationModule(path.resolve(path.dirname(filename), specifier));
+        return require(specifier);
+    };
+    new Function('require', 'module', 'exports', compiled)(localRequire, module, module.exports);
+    return module.exports;
+}
+
+const { translate } = loadTranslationModule(path.join(sourceRoot, 'lib/i18n.ts'));
+const { englishCatalog: referenceEnglishCatalog } = loadTranslationModule(path.join(sourceRoot, 'lang/en'));
+const unitKeys = Object.keys(referenceEnglishCatalog)
+    .filter((key) => key.startsWith('units.'))
+    .sort();
+const categoryKeys = Object.keys(referenceEnglishCatalog)
+    .filter((key) => key.startsWith('categories.'))
+    .sort();
+if (categoryKeys.length !== 39) throw new Error('Standard category translations must cover 39 category codes.');
+if (unitKeys.length < 62) throw new Error('Standard unit translations must cover at least 62 unit codes.');
+for (const [locale, exportName, bottle, pack] of [
+    ['id', 'indonesianCatalog', 'Botol', 'Pak'],
+    ['ms', 'malayCatalog', 'Botol', 'Pek'],
+    ['en', 'englishCatalog', 'Bottle', 'Pack'],
+    ['vi', 'vietnameseCatalog', 'Chai', 'Lốc'],
+]) {
+    const catalog = loadTranslationModule(path.join(sourceRoot, 'lang', locale))[exportName];
+    const localeUnitKeys = Object.keys(catalog)
+        .filter((key) => key.startsWith('units.'))
+        .sort();
+    if (JSON.stringify(localeUnitKeys) !== JSON.stringify(unitKeys)) {
+        throw new Error(`Standard unit keys differ in ${locale}.`);
+    }
+    for (const key of unitKeys) {
+        if (!catalog[key]?.trim() || translate(key, locale) !== catalog[key] || translate(key, locale) === key) {
+            throw new Error(`Standard unit translation does not resolve: ${locale}:${key}`);
+        }
+    }
+    const localeCategoryKeys = Object.keys(catalog)
+        .filter((key) => key.startsWith('categories.'))
+        .sort();
+    if (JSON.stringify(localeCategoryKeys) !== JSON.stringify(categoryKeys)) {
+        throw new Error(`Standard category keys differ in ${locale}.`);
+    }
+    for (const key of categoryKeys) {
+        if (!catalog[key]?.trim() || translate(key, locale) !== catalog[key] || translate(key, locale) === key) {
+            throw new Error(`Standard category translation does not resolve: ${locale}:${key}`);
+        }
+    }
+    if (translate('units.bottle', locale) !== bottle || translate('units.pack', locale) !== pack) {
+        throw new Error(`Bottle and pack labels must be localized in ${locale}.`);
+    }
+}
+
 const transformProbe = babel.transformSync("const menu = [{ title: 'Beranda', description: 'Ringkasan usaha' }];", {
     configFile: false,
     babelrc: false,

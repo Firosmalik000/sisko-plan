@@ -60,6 +60,7 @@ class Store extends Model
         return $this->belongsTo(User::class, 'owner_user_id');
     }
 
+    /** @return BelongsTo<Country, $this> */
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);

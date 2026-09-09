@@ -13,12 +13,25 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use SplFileInfo;
 use Throwable;
 use UnexpectedValueException;
 
 class CatalogIntelligenceClient
 {
+    /** @return array<string, mixed> */
+    public function categoryReferences(): array
+    {
+        return $this->validatedEnvelope($this->request(null, (string) Str::uuid())->get('/api/v1/reference-data/categories'));
+    }
+
+    /** @return array<string, mixed> */
+    public function unitReferences(): array
+    {
+        return $this->validatedEnvelope($this->request(null, (string) Str::uuid())->get('/api/v1/reference-data/units'));
+    }
+
     /** @return array<string, mixed> */
     public function provisionNamespace(Store $store, string $requestId): array
     {

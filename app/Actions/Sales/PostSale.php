@@ -66,6 +66,9 @@ class PostSale
                     if (! $productUnit->product->is_active || ! $productUnit->unit->is_active || $productUnit->productVariant?->is_active === false) {
                         throw ValidationException::withMessages(['items' => 'Produk dan satuan harus aktif.']);
                     }
+                    if ($productUnit->product->quantity_mode === 'fixed' && Decimal::compare($item['quantity'], Decimal::add($item['quantity'], '0', 0), Decimal::QUANTITY_SCALE) !== 0) {
+                        throw ValidationException::withMessages(['items' => __('Fixed quantity products require whole quantities.')]);
+                    }
                     $resolvedItems[] = [
                         'product_id' => $productUnit->product_id, 'product_variant_id' => $productUnit->product_variant_id, 'product_unit_id' => $productUnit->id,
                         'stock_variant_id' => $productUnit->product->variant_mode === 'separate' ? $productUnit->product_variant_id : null,

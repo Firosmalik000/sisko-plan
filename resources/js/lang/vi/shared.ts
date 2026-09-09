@@ -39,8 +39,7 @@ export const vietnameseSharedCatalog: Record<string, string> = {
     'Kategori penawaran': 'Danh mục ưu đãi',
     'Kelola operasional dan akun.': 'Quản lý hoạt động và tài khoản.',
     'Kembali ke Super Admin': 'Quay lại Super Admin',
-    'Kembali ke halaman sebelumnya atau buka halaman utama untuk melanjutkan.':
-        'Quay lại trang trước hoặc mở trang chủ để tiếp tục.',
+    'Kembali ke halaman sebelumnya atau buka halaman utama untuk melanjutkan.': 'Quay lại trang trước hoặc mở trang chủ để tiếp tục.',
     'Kembali ke hasil scan': 'Quay lại kết quả quét',
     'Kembali ke kamera': 'Quay lại camera',
     'Kondisi data sudah berbeda dari saat halaman dibuka. Muat ulang sebelum melanjutkan.':
@@ -73,8 +72,7 @@ export const vietnameseSharedCatalog: Record<string, string> = {
     'Pilih dari galeri': 'Chọn từ thư viện',
     'Pilih foto': 'Chọn ảnh',
     'Pilih mode dan aksi kasir': 'Chọn chế độ và thao tác thu ngân',
-    'Pilih paket berjangka untuk kapasitas operasional yang lebih besar.':
-        'Chọn gói có thời hạn để có dung lượng vận hành lớn hơn.',
+    'Pilih paket berjangka untuk kapasitas operasional yang lebih besar.': 'Chọn gói có thời hạn để có dung lượng vận hành lớn hơn.',
     'Pilih paket': 'Chọn gói',
     'Pilih produk': 'Chọn sản phẩm',
     'Pilih ruang kerja': 'Chọn không gian làm việc',

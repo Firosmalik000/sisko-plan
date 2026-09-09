@@ -13,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\Unit;
+use App\Models\UnitReference;
 use App\Models\User;
 use App\Services\Operations\ProductionReadiness;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -571,6 +572,37 @@ class MasterDataTest extends TestCase
     }
 
     /** @return array{User, Store} */
+    public function test_base_only_product_persists_without_large_unit(): void
+    {
+        [$owner, $store] = $this->ownerAndStore();
+        $unit = Unit::factory()->for($store)->create(['unit_type' => UnitType::Retail]);
+        $payload = $this->productPayload(null, $unit);
+        $payload['large_unit_public_id'] = null;
+        $payload['quantity_mode'] = 'fixed';
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.store'), $payload)->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('products', ['store_id' => $store->id, 'base_unit_id' => $unit->id, 'large_unit_id' => null, 'quantity_mode' => 'fixed']);
+        $this->assertDatabaseHas('product_units', ['unit_id' => $unit->id, 'conversion_factor' => 1, 'is_active' => true]);
+    }
+
+    public function test_unit_reference_role_and_retirement_validation(): void
+    {
+        [$owner, $store] = $this->ownerAndStore();
+        $reference = UnitReference::create(['code' => 'bottle', 'name' => 'Bottle', 'symbol' => 'btl', 'roles' => ['sale'], 'dimension' => 'package', 'allows_fraction' => false, 'is_active' => true, 'catalog_version' => 'v1']);
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id]);
+        $payload = ['name' => 'Custom bottle label', 'symbol' => 'cb', 'unit_type' => 'large', 'reference_code' => 'bottle'];
+        $this->post(route('master-data.units.store'), $payload)->assertSessionHasErrors('reference_code');
+        $payload['unit_type'] = 'retail';
+        $this->post(route('master-data.units.store'), $payload)->assertSessionHasNoErrors();
+        $unit = Unit::query()->where('store_id', $store->id)->where('symbol', 'cb')->sole();
+        $this->assertSame('bottle', $unit->reference_code);
+        $reference->update(['is_active' => false]);
+        $payload['name'] = 'Renamed bottle';
+        $this->patch(route('master-data.units.update', $unit->public_id), $payload)->assertSessionHasNoErrors();
+        $payload['symbol'] = 'new';
+        $this->post(route('master-data.units.store'), $payload)->assertSessionHasErrors('reference_code');
+    }
+
     private function ownerAndStore(): array
     {
         $owner = User::factory()->create();

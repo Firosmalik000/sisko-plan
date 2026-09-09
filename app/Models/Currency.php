@@ -15,6 +15,7 @@ class Currency extends Model
 
     protected $keyType = 'string';
 
+    /** @return HasMany<Country, $this> */
     public function countries(): HasMany
     {
         return $this->hasMany(Country::class, 'currency_code', 'code');

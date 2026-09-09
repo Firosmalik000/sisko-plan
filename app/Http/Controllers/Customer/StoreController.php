@@ -44,7 +44,7 @@ class StoreController extends Controller
             'membership_status' => $store->pivot->status,
             'country' => $store->country?->localizedName(),
             'country_code' => $store->country?->code,
-            'currency_code' => $store->settings?->currency ?? $store->country?->currency_code,
+            'currency_code' => $store->settings->currency ?? $store->country->currency_code,
             'currency_symbol' => $currencies->get($store->settings?->currency)?->symbol,
         ]);
 
@@ -105,7 +105,7 @@ class StoreController extends Controller
         Gate::authorize('viewManagement', $store);
 
         $store->load(['country.currency', 'settings', 'users' => fn ($query) => $query->orderBy('name')]);
-        $storeCurrency = Currency::query()->find($store->settings?->currency ?? $store->country?->currency_code);
+        $storeCurrency = Currency::query()->find($store->settings->currency ?? $store->country->currency_code);
         $countries = Country::query()
             ->with('currency')
             ->where(fn ($query) => $query->where('is_active', true)->orWhereKey($store->country_id))
@@ -128,7 +128,7 @@ class StoreController extends Controller
                 'owner_user_id' => $store->owner_user_id,
                 'country_code' => $store->country?->code,
                 'country_name' => $store->country?->localizedName(),
-                'currency_code' => $store->settings?->currency ?? $store->country?->currency_code,
+                'currency_code' => $store->settings->currency ?? $store->country->currency_code,
                 'currency_symbol' => $storeCurrency?->symbol,
                 'can_manage' => AuthenticatedUser::get(request())->can('update', $store),
                 'can_archive' => AuthenticatedUser::get(request())->can('archive', $store),
@@ -164,7 +164,7 @@ class StoreController extends Controller
             if ($countryCode !== null && $countryCode !== $lockedStore->country?->code) {
                 $countryChange->assertAllowed($lockedStore);
                 $country = Country::query()->with('currency')->where('code', $countryCode)->where('is_active', true)->sharedLock()->firstOrFail();
-                $lockedStore->country_id = $country->id;
+                $lockedStore->country()->associate($country);
                 $lockedStore->settings()->updateOrCreate([], ['currency' => $country->currency_code]);
             }
 
@@ -227,6 +227,20 @@ class StoreController extends Controller
                 'store_name' => $lockedStore->name,
             ]);
             $publicId = $lockedStore->public_id;
+            // Remove dependent records before store cascades reach their restricted masters.
+            // Keep every delete tenant-scoped and inside the existing transaction.
+            foreach ([
+                'sale_returns', 'sale_payments', 'sales',
+                'purchase_payments', 'purchases',
+                'stock_adjustments', 'stock_counts',
+                'capital_transactions', 'account_transfers', 'expenses',
+                'cash_transactions', 'stock_movements',
+                'inventory_balances', 'financial_account_balances',
+                'supplier_payable_transactions', 'supplier_payable_balances',
+                'products',
+            ] as $table) {
+                DB::table($table)->where('store_id', $lockedStore->id)->delete();
+            }
             $lockedStore->delete();
             DB::afterCommit(function () use ($publicId): void {
                 Storage::disk('local')->deleteDirectory("product-photos/{$publicId}");

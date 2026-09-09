@@ -42,6 +42,31 @@ class SalesPosTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_fixed_quantity_product_rejects_fractional_sales_without_posting(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $product->update(['quantity_mode' => 'fixed']);
+        $this->openStock($store, $owner, $product, '10', '500');
+        try {
+            $this->postSale($store, $owner, $product, $cash, quantity: '0.5');
+            $this->fail('A fixed quantity product must reject fractional sales.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('items', $exception->errors());
+            $this->assertDatabaseCount('sales', 0);
+            $this->assertSame('10.000000', InventoryBalance::query()->sole()->quantity);
+        }
+        $sale = $this->postSale($store, $owner, $product, $cash, quantity: '1.000000');
+        $this->assertSame('1000.0000', $sale->total_amount);
+    }
+
+    public function test_variable_quantity_product_preserves_fractional_sales(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '10', '500');
+        $sale = $this->postSale($store, $owner, $product, $cash, quantity: '0.5');
+        $this->assertSame('500.0000', $sale->total_amount);
+    }
+
     public function test_cash_sale_reconciles_stock_cash_cogs_profit_discount_and_change(): void
     {
         [$owner, $store, $product, $cash] = $this->fixtures('1000');

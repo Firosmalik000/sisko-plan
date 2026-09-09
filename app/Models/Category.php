@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['store_id', 'name', 'description', 'is_active'])]
+#[Fillable(['store_id', 'name', 'description', 'is_active', 'reference_code', 'name_is_custom'])]
 class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
@@ -30,6 +30,6 @@ class Category extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['name_is_custom' => 'boolean', 'is_active' => 'boolean'];
     }
 }

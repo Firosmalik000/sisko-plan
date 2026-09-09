@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property UnitType $unit_type
  */
-#[Fillable(['store_id', 'name', 'symbol', 'unit_type', 'is_active'])]
+#[Fillable(['store_id', 'name', 'symbol', 'unit_type', 'is_active', 'reference_code', 'name_is_custom'])]
 class Unit extends Model
 {
     /** @use HasFactory<UnitFactory> */
@@ -42,7 +42,7 @@ class Unit extends Model
     {
         return [
             'unit_type' => UnitType::class,
-            'is_active' => 'boolean',
+            'name_is_custom' => 'boolean', 'is_active' => 'boolean',
         ];
     }
 }

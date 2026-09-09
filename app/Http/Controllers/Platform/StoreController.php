@@ -40,7 +40,7 @@ class StoreController extends Controller
                     'code' => $store->country->code,
                     'name' => $store->country->localizedName(),
                 ],
-                'currency' => $store->settings?->currency ?? $store->country?->currency_code ?? 'IDR',
+                'currency' => $store->settings->currency ?? $store->country->currency_code ?? 'IDR',
                 'subscription' => $store->subscription === null ? null : ['status' => $store->subscription->status->value, 'plan_name' => $store->subscription->plan->name],
                 'created_at' => $store->created_at?->toDateString(),
             ]);

@@ -45,7 +45,7 @@ return new class extends Migration
         });
     }
 
-    private function categoryFor(object $plan): string
+    private function categoryFor(stdClass $plan): string
     {
         $capacities = [
             'store_capacity' => (int) $plan->max_stores,

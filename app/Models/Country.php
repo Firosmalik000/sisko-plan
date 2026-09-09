@@ -15,11 +15,13 @@ class Country extends Model
         return 'code';
     }
 
+    /** @return BelongsTo<Currency, $this> */
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_code', 'code');
     }
 
+    /** @return HasMany<Store, $this> */
     public function stores(): HasMany
     {
         return $this->hasMany(Store::class);

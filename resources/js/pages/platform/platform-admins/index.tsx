@@ -226,7 +226,9 @@ function PermissionDialog({ admin, groups }: { admin: AdminItem; groups: Permiss
                     <div className="grid min-h-0 gap-3 overflow-y-auto p-4 sm:grid-cols-2 sm:p-5">
                         {groups.map((group) => (
                             <fieldset key={group.label} className="rounded-xl border border-slate-200 p-3">
-                                <legend className="px-1 text-xs font-black tracking-wide text-slate-500 uppercase">{translate(group.label)}</legend>
+                                <legend className="px-1 text-xs font-black tracking-wide text-slate-500 uppercase">
+                                    {translate(group.label)}
+                                </legend>
                                 <div className="mt-1 space-y-1">
                                     {group.permissions.map((permission) => (
                                         <label

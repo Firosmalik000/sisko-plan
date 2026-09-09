@@ -69,7 +69,6 @@ class ManageSubscription
                         'created_by_user_id' => $admin->id,
                     ];
                     if ($addonData['id'] !== null) {
-                        assert($currentAddon instanceof SubscriptionAddon);
                         $addon = $currentAddon;
                         $addon->update($attributes);
                     } else {

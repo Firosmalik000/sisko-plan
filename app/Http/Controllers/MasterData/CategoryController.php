@@ -5,6 +5,7 @@ namespace App\Http\Controllers\MasterData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MasterData\CategoryRequest;
 use App\Models\Category;
+use App\Models\CategoryReference;
 use App\Support\CurrentStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,9 +26,11 @@ class CategoryController extends Controller
             ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('is_active', $status === 'active'))
             ->orderBy('name')->paginate(12)->withQueryString()
-            ->through(fn (Category $category) => $category->only(['public_id', 'name', 'description', 'is_active']));
+            ->through(fn (Category $category) => $category->only(['public_id', 'name', 'description', 'reference_code', 'name_is_custom', 'is_active']));
 
-        return Inertia::render('customer/master-data/categories/index', compact('categories', 'search', 'status', 'canManage'));
+        $categoryReferences = CategoryReference::query()->orderBy('code')->get();
+
+        return Inertia::render('customer/master-data/categories/index', compact('categories', 'search', 'status', 'canManage', 'categoryReferences'));
     }
 
     public function store(CategoryRequest $request, CurrentStore $currentStore): RedirectResponse
