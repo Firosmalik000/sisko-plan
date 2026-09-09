@@ -40,4 +40,21 @@ class PwaShellTest extends TestCase
         $this->assertStringContainsString("navigator.serviceWorker.register('/service-worker.js')", $application);
         $this->assertStringContainsString('.catch(() => undefined)', $application);
     }
+
+    public function test_digital_asset_links_authorizes_the_signed_android_app(): void
+    {
+        $statements = json_decode(
+            file_get_contents(public_path('.well-known/assetlinks.json')),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        $this->assertSame(['delegate_permission/common.handle_all_urls'], $statements[0]['relation']);
+        $this->assertSame('android_app', $statements[0]['target']['namespace']);
+        $this->assertSame('com.xsisten.app', $statements[0]['target']['package_name']);
+        $this->assertContains(
+            '9A:F5:AA:67:14:7D:1A:87:28:FB:EE:A7:EF:C0:70:BC:63:8A:17:6C:91:DE:B8:4A:E9:C9:72:8D:72:12:26:2D',
+            $statements[0]['target']['sha256_cert_fingerprints'],
+        );
+    }
 }

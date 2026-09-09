@@ -37,6 +37,9 @@ yarn-error.log
 /android-twa/local.properties
 /android-twa/*.jks
 /android-twa/*.keystore
+/android-twa/*.aab
+/android-twa/*.apk
+/android-twa/*.apk.idsig
 
 # Machine-local AI agent MCP configuration
 /.codex/config.toml

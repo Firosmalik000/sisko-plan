@@ -1,0 +1,14 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "com.xsisten.app",
+            "sha256_cert_fingerprints": [
+                "9A:F5:AA:67:14:7D:1A:87:28:FB:EE:A7:EF:C0:70:BC:63:8A:17:6C:91:DE:B8:4A:E9:C9:72:8D:72:12:26:2D"
+            ]
+        }
+    }
+]
