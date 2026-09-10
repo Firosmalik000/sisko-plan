@@ -176,7 +176,7 @@ class StoreController extends Controller
             if ($countryCode !== null && $countryCode !== $lockedStore->country?->code) {
                 $countryChange->assertAllowed($lockedStore);
                 $country = Country::query()->with('currency')->where('code', $countryCode)->where('is_active', true)->sharedLock()->firstOrFail();
-                $lockedStore->country_id = $country->id;
+                $lockedStore->country()->associate($country);
                 $settings['currency'] = $country->currency_code;
             }
 

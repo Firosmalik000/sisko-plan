@@ -278,5 +278,16 @@
     "Saldo :marketplace": "Baki :marketplace",
     "Menyiapkan aplikasi…": "Menyediakan aplikasi…",
     "Koneksi bermasalah": "Sambungan bermasalah",
-    "Coba lagi": "Cuba lagi"
+    "Coba lagi": "Cuba lagi",
+    "Receipt": "Resit",
+    "Cashier": "Juruwang",
+    "Customer": "Pelanggan",
+    "Subtotal": "Subjumlah",
+    "Item discount": "Diskaun item",
+    "Transaction discount": "Diskaun transaksi",
+    "Total": "Jumlah",
+    "Paid": "Dibayar",
+    "Change": "Baki",
+    "Order": "Pesanan",
+    "Fixed quantity products require whole quantities.": "Produk berkuantiti tetap mesti dijual dalam jumlah bulat."
 }

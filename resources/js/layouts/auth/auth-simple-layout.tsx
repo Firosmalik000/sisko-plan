@@ -107,7 +107,6 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                                     <ArrowLeft className="size-4" />
                                 </Link>
                             </div>
-                            <LanguageSwitcher />
                         </div>
 
                         <div className="rounded-[2rem] border border-[#f1d8d0] bg-white p-6 shadow-[0_30px_80px_-34px_rgba(111,34,19,0.38)] sm:p-9 lg:max-w-[34rem]">

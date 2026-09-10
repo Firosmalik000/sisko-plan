@@ -220,4 +220,17 @@ export const indonesianOverrides: Record<string, string> = {
         'Saat autentikasi dua faktor diaktifkan, Anda akan diminta memasukkan PIN aman ketika masuk. PIN tersedia di aplikasi TOTP pada ponsel Anda.',
     'You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.':
         'Anda akan diminta memasukkan PIN acak yang aman ketika masuk. PIN tersedia di aplikasi TOTP pada ponsel Anda.',
+    'Berlaku untuk toko dan perangkat ini. Pengaturan perangkat kasir lain tidak berubah.':
+        'Berlaku untuk toko dan perangkat ini. Pengaturan perangkat kasir lain tidak berubah.',
+    'Cetak sistem/browser': 'Cetak sistem/browser',
+    'Cetak langsung Android': 'Cetak langsung Android',
+    'Mendukung printer ESC/POS 58 mm atau 80 mm melalui Bluetooth, USB, dan Wi-Fi/LAN.':
+        'Mendukung printer ESC/POS 58 mm atau 80 mm melalui Bluetooth, USB, dan Wi-Fi/LAN.',
+    'Atur dan tes printer Android': 'Atur dan tes printer Android',
+    'Cetak otomatis setelah transaksi': 'Cetak otomatis setelah transaksi',
+    'Tes cetak sistem': 'Tes cetak sistem',
+    'Transaksi tetap tersimpan jika printer gagal mencetak.': 'Transaksi tetap tersimpan jika printer gagal mencetak.',
+    'Cetak sistem': 'Cetak sistem',
+    'Cetak langsung': 'Cetak langsung',
+    'Printer struk': 'Printer struk',
 };

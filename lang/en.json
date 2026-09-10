@@ -197,5 +197,16 @@
     "Saldo :marketplace": ":marketplace balance",
     "Menyiapkan aplikasi…": "Preparing the app…",
     "Koneksi bermasalah": "Connection problem",
-    "Coba lagi": "Try again"
+    "Coba lagi": "Try again",
+    "Receipt": "Receipt",
+    "Cashier": "Cashier",
+    "Customer": "Customer",
+    "Subtotal": "Subtotal",
+    "Item discount": "Item discount",
+    "Transaction discount": "Transaction discount",
+    "Total": "Total",
+    "Paid": "Paid",
+    "Change": "Change",
+    "Order": "Order",
+    "Fixed quantity products require whole quantities.": "Fixed quantity products require whole quantities."
 }

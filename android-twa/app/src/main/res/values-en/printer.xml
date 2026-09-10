@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="printer_settings_title">Receipt printer</string><string name="printer_settings_description">Applies to this store and device.</string>
+    <string name="printer_connection">Connection</string><string name="printer_device">Printer</string><string name="printer_paper">Paper size</string>
+    <string name="printer_host">IP address</string><string name="printer_port">Port</string><string name="printer_save">Save printer</string>
+    <string name="printer_test">Test print</string><string name="printer_pair">Pair Bluetooth</string><string name="printer_saved">Printer saved.</string>
+    <string name="printer_printing">Sending receipt to printer…</string><string name="printer_success">Receipt sent successfully.</string>
+    <string name="printer_retry">Try again</string><string name="printer_close">Back to transaction</string>
+    <string name="printer_missing">Set up a printer for this device first.</string><string name="printer_invalid_job">The print request is invalid or has expired.</string>
+    <string name="printer_bt_off">Turn on Bluetooth, then try again.</string><string name="printer_usb_permission">Allow USB printer access, then try again.</string>
+    <string name="printer_usb_endpoint">This USB device does not support ESC/POS printing.</string><string name="printer_usb_open">The USB printer could not be opened.</string>
+    <string name="printer_usb_write">The complete receipt was not sent.</string><string name="printer_connection_failed">The printer could not be reached. Check the connection and try again.</string>
+    <string name="printer_required">Select a printer or enter an IP address first.</string><string name="printer_no_devices">No printers are available yet.</string>
+    <string name="printer_test_item">ESC/POS connection test</string>
+    <string name="receipt_cashier">Cashier</string><string name="receipt_customer">Customer</string><string name="receipt_subtotal">Subtotal</string>
+    <string name="receipt_order">Order</string>
+    <string name="receipt_item_discount">Item discount</string><string name="receipt_transaction_discount">Transaction discount</string>
+    <string name="receipt_total">Total</string><string name="receipt_paid">Paid</string><string name="receipt_change">Change</string>
+</resources>

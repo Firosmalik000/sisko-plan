@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -148,6 +149,11 @@ class SalesController extends Controller
             ...$this->saleData($sale, $currentStore),
             'showReturnForm' => false,
             'openPrintDialog' => $request->boolean('print'),
+            'nativePrintUrl' => URL::temporarySignedRoute(
+                'sales.native-print',
+                now()->addMinutes(15),
+                ['sale' => $sale, 'locale' => app()->getLocale()],
+            ),
         ]);
     }
 
@@ -242,6 +248,7 @@ class SalesController extends Controller
         }
 
         return [
+            'storeId' => $store->public_id,
             'sale' => [
                 ...$sale->only(['public_id', 'document_number', 'customer_name', 'customer_phone', 'customer_email', 'sales_channel', 'marketplace_code', 'external_order_number', 'subtotal', 'item_discount_amount', 'transaction_discount_amount', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'notes', 'cashier_name']),
                 'marketplace_label' => $sale->marketplace_code === null

@@ -27,8 +27,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { currentLocale } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
-import { readReceiptPrintPreferences, receiptPrintStyles, writeReceiptPrintPreferences } from '@/lib/receipt-printing';
+import {
+    buildAndroidPrinterIntent,
+    readReceiptPrintPreferences,
+    receiptPrintStyles,
+    writeReceiptPrintPreferences,
+} from '@/lib/receipt-printing';
 import { previewStoreTheme } from '@/lib/store-theme';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
@@ -92,8 +98,9 @@ export default function Profile({
     const [storeAddress, setStoreAddress] = useState(settings?.address ?? '');
     const [receiptHeader, setReceiptHeader] = useState(settings?.receipt_header ?? 'Terima kasih sudah berbelanja');
     const [receiptFooter, setReceiptFooter] = useState(settings?.receipt_footer ?? 'Barang yang sudah dibeli tidak dapat dikembalikan.');
-    const [autoOpenPrintDialog, setAutoOpenPrintDialog] = useState(
-        () => readReceiptPrintPreferences(typeof window === 'undefined' ? undefined : window.localStorage).autoOpenDialog,
+    const storeId = store?.public_id ?? 'no-store';
+    const [printPreferences, setPrintPreferences] = useState(() =>
+        readReceiptPrintPreferences(storeId, typeof window === 'undefined' ? undefined : window.localStorage),
     );
     const initials = useMemo(
         () =>
@@ -110,9 +117,9 @@ export default function Profile({
         setThemeColor(color);
         previewStoreTheme(color);
     };
-    const updateAutoOpenPrintDialog = (enabled: boolean) => {
-        setAutoOpenPrintDialog(enabled);
-        writeReceiptPrintPreferences({ autoOpenDialog: enabled }, typeof window === 'undefined' ? undefined : window.localStorage);
+    const updatePrintPreferences = (next: typeof printPreferences) => {
+        setPrintPreferences(next);
+        writeReceiptPrintPreferences(storeId, next, typeof window === 'undefined' ? undefined : window.localStorage);
     };
 
     return (
@@ -353,35 +360,76 @@ export default function Profile({
 
                                     <SettingsCard icon={Printer} eyebrow="Perangkat ini" title="Printer struk">
                                         <p className="text-sm leading-6 text-muted-foreground">
-                                            Hubungkan printer melalui pengaturan perangkat. Printer Bluetooth, USB, atau Wi-Fi akan muncul
-                                            jika didukung driver atau Print Service.
+                                            {translate(
+                                                'Berlaku untuk toko dan perangkat ini. Pengaturan perangkat kasir lain tidak berubah.',
+                                            )}
                                         </p>
+                                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                                            {(
+                                                [
+                                                    ['system', 'Cetak sistem/browser'],
+                                                    ['android-direct', 'Cetak langsung Android'],
+                                                ] as const
+                                            ).map(([mode, label]) => (
+                                                <button
+                                                    key={mode}
+                                                    type="button"
+                                                    onClick={() => updatePrintPreferences({ ...printPreferences, mode })}
+                                                    className={`min-h-12 rounded-xl border px-4 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none ${
+                                                        printPreferences.mode === mode
+                                                            ? 'border-[var(--app-primary)] bg-[var(--app-soft)] text-[var(--app-ink)]'
+                                                            : 'border-border bg-background text-muted-foreground hover:bg-muted/60'
+                                                    }`}
+                                                >
+                                                    {translate(label)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {printPreferences.mode === 'android-direct' && (
+                                            <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-950">
+                                                <p>
+                                                    {translate(
+                                                        'Mendukung printer ESC/POS 58 mm atau 80 mm melalui Bluetooth, USB, dan Wi-Fi/LAN.',
+                                                    )}
+                                                </p>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="mt-3 min-h-11 bg-white"
+                                                    onClick={() => {
+                                                        window.location.href = buildAndroidPrinterIntent(
+                                                            'settings',
+                                                            storeId,
+                                                            undefined,
+                                                            currentLocale(),
+                                                        );
+                                                    }}
+                                                >
+                                                    <Printer className="size-4" />
+                                                    {translate('Atur dan tes printer Android')}
+                                                </Button>
+                                            </div>
+                                        )}
                                         <label className="mt-4 flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium">
                                             <input
                                                 type="checkbox"
-                                                checked={autoOpenPrintDialog}
-                                                onChange={(event) => updateAutoOpenPrintDialog(event.target.checked)}
+                                                checked={printPreferences.autoPrint}
+                                                onChange={(event) =>
+                                                    updatePrintPreferences({ ...printPreferences, autoPrint: event.target.checked })
+                                                }
                                                 className="size-4 accent-[var(--app-primary)]"
                                             />
-                                            Buka dialog cetak otomatis setelah transaksi
+                                            {translate('Cetak otomatis setelah transaksi')}
                                         </label>
                                         <div className="mt-4 flex flex-wrap items-center gap-3">
                                             <Button type="button" variant="outline" onClick={() => window.print()} className="min-h-11">
                                                 <Printer className="size-4" />
-                                                Cetak percobaan
+                                                {translate('Tes cetak sistem')}
                                             </Button>
                                             <span className="text-xs text-muted-foreground">
-                                                Pilihan ini hanya berlaku di perangkat ini.
+                                                {translate('Transaksi tetap tersimpan jika printer gagal mencetak.')}
                                             </span>
                                         </div>
-                                        <details className="mt-4 rounded-xl bg-muted/60 px-4 py-3 text-sm">
-                                            <summary className="cursor-pointer font-bold">Cara menyiapkan printer</summary>
-                                            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-muted-foreground">
-                                                <li>Pasangkan printer di pengaturan Bluetooth, USB, atau Wi-Fi perangkat.</li>
-                                                <li>Pasang Print Service atau driver printer bila perangkat memerlukannya.</li>
-                                                <li>Tekan Cetak percobaan, lalu pilih printer dan ukuran kertas yang sesuai.</li>
-                                            </ol>
-                                        </details>
                                     </SettingsCard>
 
                                     <SettingsCard icon={Palette} eyebrow="Personalisasi" title="Warna aplikasi">

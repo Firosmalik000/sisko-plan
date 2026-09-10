@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="printer_settings_title">Pencetak resit</string><string name="printer_settings_description">Digunakan untuk kedai dan peranti ini.</string>
+    <string name="printer_connection">Sambungan</string><string name="printer_device">Pencetak</string><string name="printer_paper">Saiz kertas</string>
+    <string name="printer_host">Alamat IP</string><string name="printer_port">Port</string><string name="printer_save">Simpan pencetak</string>
+    <string name="printer_test">Cetakan ujian</string><string name="printer_pair">Pasangkan Bluetooth</string><string name="printer_saved">Pencetak disimpan.</string>
+    <string name="printer_printing">Menghantar resit ke pencetak…</string><string name="printer_success">Resit berjaya dihantar.</string>
+    <string name="printer_retry">Cuba lagi</string><string name="printer_close">Kembali ke transaksi</string>
+    <string name="printer_missing">Tetapkan pencetak untuk peranti ini dahulu.</string><string name="printer_invalid_job">Permintaan cetakan tidak sah atau telah tamat tempoh.</string>
+    <string name="printer_bt_off">Aktifkan Bluetooth, kemudian cuba lagi.</string><string name="printer_usb_permission">Benarkan akses pencetak USB, kemudian cuba lagi.</string>
+    <string name="printer_usb_endpoint">Peranti USB ini tidak menyokong cetakan ESC/POS.</string><string name="printer_usb_open">Pencetak USB tidak dapat dibuka.</string>
+    <string name="printer_usb_write">Data resit tidak dihantar sepenuhnya.</string><string name="printer_connection_failed">Pencetak tidak dapat dihubungi. Semak sambungan dan cuba lagi.</string>
+    <string name="printer_required">Pilih pencetak atau masukkan alamat IP dahulu.</string><string name="printer_no_devices">Belum ada pencetak tersedia.</string>
+    <string name="printer_test_item">Ujian sambungan ESC/POS</string>
+    <string name="receipt_cashier">Juruwang</string><string name="receipt_customer">Pelanggan</string><string name="receipt_subtotal">Subjumlah</string>
+    <string name="receipt_order">Pesanan</string>
+    <string name="receipt_item_discount">Diskaun item</string><string name="receipt_transaction_discount">Diskaun transaksi</string>
+    <string name="receipt_total">Jumlah</string><string name="receipt_paid">Dibayar</string><string name="receipt_change">Baki</string>
+</resources>

@@ -548,7 +548,7 @@ class SubscriptionManagementTest extends TestCase
                 ->where('account.trial_used', true)
                 ->where('plans.0.is_trial', true)
                 ->where('plans.0.can_select', false)
-                ->where('plans.0.disabled_reason', 'Trial sudah digunakan.')
+                ->where('plans.0.disabled_reason', 'The trial has already been used.')
                 ->where('plans.1.name', 'Growth')
                 ->where('plans.1.can_select', true));
     }
@@ -1098,7 +1098,7 @@ class SubscriptionManagementTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('customer/subscription/index')
                 ->where('usage.can_write', false)
-                ->where('usage.reason', 'Periode subscription belum ditetapkan.'));
+                ->where('usage.reason', 'The subscription period has not been set.'));
 
         $this->actingAs($admin)->patch(route('super-admin.subscriptions.update', $store->subscription()->sole()), [
             'plan_id' => $store->subscription()->sole()->plan->public_id,

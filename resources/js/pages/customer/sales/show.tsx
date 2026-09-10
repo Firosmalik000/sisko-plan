@@ -1,10 +1,11 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeft, FileCheck2, Printer, RotateCcw } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { currentDateTime, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
+import { currentLocale } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
-import { readReceiptPrintPreferences, receiptPrintStyles } from '@/lib/receipt-printing';
+import { buildAndroidPrinterIntent, readReceiptPrintPreferences, receiptPrintStyles } from '@/lib/receipt-printing';
 
 type Sale = {
     public_id: string;
@@ -81,6 +82,7 @@ const fieldClass =
     'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15';
 
 export default function SaleShow({
+    storeId,
     sale,
     items,
     payment,
@@ -92,7 +94,9 @@ export default function SaleShow({
     receipt,
     showReturnForm = false,
     openPrintDialog = false,
+    nativePrintUrl,
 }: {
+    storeId: string;
     sale: Sale;
     items: Item[];
     payment: Payment;
@@ -104,6 +108,7 @@ export default function SaleShow({
     receipt: ReceiptSettings;
     showReturnForm?: boolean;
     openPrintDialog?: boolean;
+    nativePrintUrl: string;
 }) {
     const pageUrl = usePage().url;
     const query = pageUrl.includes('?') ? pageUrl.slice(pageUrl.indexOf('?')) : '';
@@ -139,12 +144,32 @@ export default function SaleShow({
     const profit = items.reduce((sum, item) => sum + Number(item.gross_profit ?? 0), 0);
 
     const automaticPrintOpened = useRef(false);
-    useEffect(() => {
-        if (openPrintDialog && !automaticPrintOpened.current && readReceiptPrintPreferences(window.localStorage).autoOpenDialog) {
-            automaticPrintOpened.current = true;
-            window.print();
+    const printPreferences = useMemo(
+        () => readReceiptPrintPreferences(storeId, typeof window === 'undefined' ? undefined : window.localStorage),
+        [storeId],
+    );
+    const printReceipt = useCallback(() => {
+        if (printPreferences.mode === 'android-direct') {
+            window.location.href = buildAndroidPrinterIntent('print', storeId, nativePrintUrl, currentLocale());
+
+            return;
         }
-    }, [openPrintDialog]);
+
+        window.print();
+    }, [nativePrintUrl, printPreferences.mode, storeId]);
+    useEffect(() => {
+        if (openPrintDialog && !automaticPrintOpened.current && printPreferences.autoPrint) {
+            automaticPrintOpened.current = true;
+            const automaticPrintKey = `xsisten.printed.${sale.public_id}`;
+
+            if (window.sessionStorage.getItem(automaticPrintKey)) {
+                return;
+            }
+
+            window.sessionStorage.setItem(automaticPrintKey, '1');
+            printReceipt();
+        }
+    }, [openPrintDialog, printPreferences.autoPrint, printReceipt, sale.public_id]);
 
     return (
         <>
@@ -158,14 +183,25 @@ export default function SaleShow({
                                 <ArrowLeft className="size-4" />
                                 Daftar transaksi
                             </Link>
-                            <button
-                                type="button"
-                                onClick={() => window.print()}
-                                className="inline-flex items-center gap-2 rounded-full bg-[var(--app-primary)] px-5 py-2.5 text-sm font-bold text-[var(--app-primary-foreground)]"
-                            >
-                                <Printer className="size-4" />
-                                Cetak struk
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {printPreferences.mode === 'android-direct' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => window.print()}
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700"
+                                    >
+                                        {translate('Cetak sistem')}
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={printReceipt}
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-5 text-sm font-bold text-[var(--app-primary-foreground)]"
+                                >
+                                    <Printer className="size-4" />
+                                    {translate(printPreferences.mode === 'android-direct' ? 'Cetak langsung' : 'Cetak struk')}
+                                </button>
+                            </div>
                         </div>
                         <section
                             data-print-receipt

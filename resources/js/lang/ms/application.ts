@@ -584,4 +584,35 @@ export const malayOverrides: Record<string, string> = {
         'Semua produk, transaksi, ahli dan sejarah kedai akan dipadam secara kekal dan tidak boleh dipulihkan.',
     'tanpa batas akhir': 'tanpa tarikh akhir',
     'Gunakan untuk opname': 'Gunakan untuk kiraan stok',
+    'Berlaku untuk toko dan perangkat ini. Pengaturan perangkat kasir lain tidak berubah.':
+        'Digunakan untuk kedai dan peranti ini. Tetapan peranti juruwang lain tidak berubah.',
+    'Cetak sistem/browser': 'Cetakan sistem/pelayar',
+    'Cetak langsung Android': 'Cetakan terus Android',
+    'Mendukung printer ESC/POS 58 mm atau 80 mm melalui Bluetooth, USB, dan Wi-Fi/LAN.':
+        'Menyokong pencetak ESC/POS 58 mm atau 80 mm melalui Bluetooth, USB dan Wi-Fi/LAN.',
+    'Atur dan tes printer Android': 'Tetapkan dan uji pencetak Android',
+    'Cetak otomatis setelah transaksi': 'Cetak secara automatik selepas transaksi',
+    'Tes cetak sistem': 'Uji cetakan sistem',
+    'Transaksi tetap tersimpan jika printer gagal mencetak.': 'Transaksi kekal disimpan jika cetakan gagal.',
+    'Cetak sistem': 'Cetakan sistem',
+    'Cetak langsung': 'Cetak terus',
+    'Printer struk': 'Pencetak resit',
+    'Barcode terbaca otomatis tanpa menekan tombol': 'Kod bar dibaca secara automatik tanpa menekan butang',
+    'Berhasil. Barcode ditemukan.': 'Kod bar ditemui.',
+    'Foto AI sedang tidak tersedia. Barcode tetap bisa digunakan.':
+        'Pengecaman gambar AI belum boleh digunakan buat masa ini. Kod bar masih boleh digunakan.',
+    'Foto AI sedang tidak tersedia. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'Pengecaman gambar AI belum boleh digunakan buat masa ini. Gambar ini masih boleh digunakan untuk mengisi produk secara manual.',
+    'Foto berhasil diambil': 'Gambar berjaya diambil',
+    'Foto otomatis setelah kamera stabil': 'Gambar diambil secara automatik apabila kamera stabil',
+    'Gunakan foto': 'Gunakan gambar',
+    'Kuota foto AI bulan ini habis. Barcode tetap bisa digunakan.': 'Kuota gambar AI bulan ini telah habis. Kod bar masih boleh digunakan.',
+    'Kuota foto AI habis. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'Kuota gambar AI telah habis. Gambar ini masih boleh digunakan untuk mengisi produk secara manual.',
+    'Membaca foto…': 'Membaca gambar…',
+    'Memproses foto…': 'Memproses gambar…',
+    'Pilih foto barcode': 'Pilih gambar kod bar',
+    'Produk sama, hapus duplikat': 'Produk sama, padam pendua',
+    'Tambah kuota AI untuk mengenali produk dari foto.': 'Tambah kuota AI untuk mengenal pasti produk daripada gambar.',
+    'Tambah pengenalan produk dari foto untuk bulan ini.': 'Tambah pengecaman produk melalui gambar untuk bulan ini.',
 };

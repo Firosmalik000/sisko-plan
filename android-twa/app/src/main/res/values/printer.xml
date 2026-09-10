@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="PrinterTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#EE4D2D</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:statusBarColor">#FFF8F5</item>
+    </style>
+    <string name="printer_settings_title">Printer struk</string>
+    <string name="printer_settings_description">Berlaku untuk toko dan perangkat ini.</string>
+    <string name="printer_connection">Koneksi</string>
+    <string name="printer_device">Printer</string>
+    <string name="printer_paper">Ukuran kertas</string>
+    <string name="printer_host">Alamat IP</string>
+    <string name="printer_port">Port</string>
+    <string name="printer_save">Simpan printer</string>
+    <string name="printer_test">Tes cetak</string>
+    <string name="printer_pair">Pasangkan Bluetooth</string>
+    <string name="printer_saved">Printer tersimpan.</string>
+    <string name="printer_printing">Mengirim struk ke printer…</string>
+    <string name="printer_success">Struk berhasil dikirim.</string>
+    <string name="printer_retry">Coba lagi</string>
+    <string name="printer_close">Kembali ke transaksi</string>
+    <string name="printer_missing">Atur printer untuk perangkat ini terlebih dahulu.</string>
+    <string name="printer_invalid_job">Permintaan cetak tidak valid atau sudah kedaluwarsa.</string>
+    <string name="printer_bt_off">Aktifkan Bluetooth, lalu coba lagi.</string>
+    <string name="printer_usb_permission">Izinkan akses ke printer USB, lalu coba lagi.</string>
+    <string name="printer_usb_endpoint">Perangkat USB ini tidak mendukung pencetakan ESC/POS.</string>
+    <string name="printer_usb_open">Printer USB tidak dapat dibuka.</string>
+    <string name="printer_usb_write">Data struk tidak terkirim seluruhnya.</string>
+    <string name="printer_connection_failed">Printer tidak dapat dihubungi. Periksa koneksi, lalu coba lagi.</string>
+    <string name="printer_required">Pilih printer atau isi alamat IP terlebih dahulu.</string>
+    <string name="printer_no_devices">Belum ada printer yang tersedia.</string>
+    <string name="printer_test_item">Tes koneksi ESC/POS</string>
+    <string name="receipt_cashier">Kasir</string><string name="receipt_customer">Pelanggan</string><string name="receipt_subtotal">Subtotal</string>
+    <string name="receipt_order">Pesanan</string>
+    <string name="receipt_item_discount">Diskon item</string><string name="receipt_transaction_discount">Diskon transaksi</string>
+    <string name="receipt_total">Total</string><string name="receipt_paid">Dibayar</string><string name="receipt_change">Kembalian</string>
+</resources>

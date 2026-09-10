@@ -5,8 +5,8 @@ import type { FormEvent } from 'react';
 import { buttonClass, currentDateTime, fieldClass, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
-import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
 import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
+import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useTranslation } from '@/lib/i18n';
 

@@ -62,11 +62,11 @@ class GoogleAuthenticationTest extends TestCase
 
         $this->get(route('auth.google.redirect'))
             ->assertRedirect(route('login'))
-            ->assertSessionHas('oauth_error', 'Login Google belum dikonfigurasi.');
+            ->assertSessionHas('oauth_error', 'Google sign-in has not been configured.');
 
         $this->get(route('auth.google.callback'))
             ->assertRedirect(route('login'))
-            ->assertSessionHas('oauth_error', 'Login Google belum dikonfigurasi.');
+            ->assertSessionHas('oauth_error', 'Google sign-in has not been configured.');
     }
 
     public function test_verified_google_user_can_create_and_login_to_tenant_account(): void
@@ -116,7 +116,7 @@ class GoogleAuthenticationTest extends TestCase
 
         $this->get(route('auth.google.callback'))
             ->assertRedirect(route('login'))
-            ->assertSessionHas('oauth_error', 'Google tidak memberikan email terverifikasi.');
+            ->assertSessionHas('oauth_error', 'Google did not provide a verified email address.');
 
         $this->assertGuest();
         $this->assertDatabaseMissing('users', ['email' => 'owner@example.com']);
@@ -128,7 +128,7 @@ class GoogleAuthenticationTest extends TestCase
 
         $this->get(route('auth.google.callback'))
             ->assertRedirect(route('login'))
-            ->assertSessionHas('oauth_error', 'Login Google tidak dapat diselesaikan. Silakan coba lagi.');
+            ->assertSessionHas('oauth_error', 'Google sign-in could not be completed. Please try again.');
 
         $this->assertGuest();
     }
@@ -143,7 +143,7 @@ class GoogleAuthenticationTest extends TestCase
 
         $this->get(route('auth.google.callback'))
             ->assertRedirect(route('login'))
-            ->assertSessionHas('oauth_error', 'Akun Anda sedang dinonaktifkan.');
+            ->assertSessionHas('oauth_error', 'Your account is currently deactivated.');
 
         $this->assertGuest();
         $this->assertNull($user->refresh()->google_id);
@@ -156,7 +156,7 @@ class GoogleAuthenticationTest extends TestCase
 
         $this->get(route('auth.google.callback'))
             ->assertRedirect(route('login'))
-            ->assertSessionHas('oauth_error', 'Admin platform harus masuk menggunakan metode utama.');
+            ->assertSessionHas('oauth_error', 'Platform administrators must sign in using the primary method.');
 
         $this->assertGuest();
         $this->assertNull($admin->refresh()->google_id);

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="printer_settings_title">Máy in hóa đơn</string><string name="printer_settings_description">Áp dụng cho cửa hàng và thiết bị này.</string>
+    <string name="printer_connection">Kết nối</string><string name="printer_device">Máy in</string><string name="printer_paper">Khổ giấy</string>
+    <string name="printer_host">Địa chỉ IP</string><string name="printer_port">Cổng</string><string name="printer_save">Lưu máy in</string>
+    <string name="printer_test">In thử</string><string name="printer_pair">Ghép đôi Bluetooth</string><string name="printer_saved">Đã lưu máy in.</string>
+    <string name="printer_printing">Đang gửi hóa đơn đến máy in…</string><string name="printer_success">Đã gửi hóa đơn.</string>
+    <string name="printer_retry">Thử lại</string><string name="printer_close">Quay lại giao dịch</string>
+    <string name="printer_missing">Hãy thiết lập máy in cho thiết bị này trước.</string><string name="printer_invalid_job">Yêu cầu in không hợp lệ hoặc đã hết hạn.</string>
+    <string name="printer_bt_off">Bật Bluetooth rồi thử lại.</string><string name="printer_usb_permission">Cho phép truy cập máy in USB rồi thử lại.</string>
+    <string name="printer_usb_endpoint">Thiết bị USB này không hỗ trợ in ESC/POS.</string><string name="printer_usb_open">Không thể mở máy in USB.</string>
+    <string name="printer_usb_write">Hóa đơn chưa được gửi đầy đủ.</string><string name="printer_connection_failed">Không thể kết nối máy in. Kiểm tra kết nối rồi thử lại.</string>
+    <string name="printer_required">Chọn máy in hoặc nhập địa chỉ IP trước.</string><string name="printer_no_devices">Chưa có máy in khả dụng.</string>
+    <string name="printer_test_item">Thử kết nối ESC/POS</string>
+    <string name="receipt_cashier">Thu ngân</string><string name="receipt_customer">Khách hàng</string><string name="receipt_subtotal">Tạm tính</string>
+    <string name="receipt_order">Đơn hàng</string>
+    <string name="receipt_item_discount">Giảm giá sản phẩm</string><string name="receipt_transaction_discount">Giảm giá giao dịch</string>
+    <string name="receipt_total">Tổng cộng</string><string name="receipt_paid">Đã trả</string><string name="receipt_change">Tiền thừa</string>
+</resources>

@@ -32,6 +32,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -1265,6 +1266,51 @@ class SalesPosTest extends TestCase
             'items' => [['sale_item_id' => SaleItem::query()->sole()->public_id, 'quantity' => '1']],
         ])->assertRedirect();
         $this->assertDatabaseCount('sale_returns', 1);
+    }
+
+    public function test_receipt_page_issues_a_short_lived_native_print_url_for_the_active_store(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $sale = $this->postSale($store, $owner, $product, $cash);
+
+        $response = $this->actingAs($owner)
+            ->withSession(['active_store_id' => $store->id, 'locale' => 'id'])
+            ->get(route('sales.show', $sale));
+
+        $nativePrintUrl = $response->viewData('page')['props']['nativePrintUrl'];
+
+        $this->assertIsString($nativePrintUrl);
+        $this->get($nativePrintUrl)
+            ->assertOk()
+            ->assertJsonPath('version', 1)
+            ->assertJsonPath('store_id', $store->public_id)
+            ->assertJsonPath('sale_id', $sale->public_id)
+            ->assertJsonPath('currency', 'IDR')
+            ->assertJsonPath('currency_format.symbol', 'Rp')
+            ->assertJsonPath('currency_format.decimal_places', 0)
+            ->assertJsonPath('currency_format.symbol_position', 'before')
+            ->assertJsonPath('receipt.store_name', $store->name)
+            ->assertJsonPath('sale.document_number', $sale->document_number)
+            ->assertJsonPath('sale.sales_channel', 'in_store')
+            ->assertJsonPath('sale.marketplace_label', null)
+            ->assertJsonPath('labels.cashier', 'Kasir')
+            ->assertJsonPath('labels.order', 'Pesanan')
+            ->assertJsonCount(1, 'items')
+            ->assertHeader('cache-control', 'no-store, private');
+    }
+
+    public function test_native_print_payload_rejects_invalid_and_expired_signatures(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $sale = $this->postSale($store, $owner, $product, $cash);
+
+        $this->get(route('sales.native-print', $sale))->assertForbidden();
+
+        $url = URL::temporarySignedRoute('sales.native-print', now()->addSecond(), ['sale' => $sale]);
+        $this->travel(2)->seconds();
+        $this->get($url)->assertForbidden();
     }
 
     public function test_default_receipt_copy_follows_locale_without_translating_store_copy(): void

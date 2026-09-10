@@ -196,7 +196,7 @@ class PlatformSettingTest extends TestCase
                 ])
                 ->assertRedirect()
                 ->assertSessionHasErrors([
-                    'logo' => 'Penyimpanan logo di server belum siap. Periksa volume storage aplikasi lalu coba lagi.',
+                    'logo' => 'Logo storage is not ready on the server. Check the application storage volume and try again.',
                 ]);
 
             $this->assertNull(PlatformSetting::current()->logo_path);
@@ -219,7 +219,7 @@ class PlatformSettingTest extends TestCase
             ])
             ->assertRedirect()
             ->assertSessionHasErrors([
-                'logo' => 'Database Brand & SEO belum siap. Jalankan migration produksi lalu coba lagi.',
+                'logo' => 'The Brand & SEO database is not ready. Run the production migrations and try again.',
             ]);
     }
 

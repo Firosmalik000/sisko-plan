@@ -33,5 +33,16 @@
     "Saldo :marketplace": "Số dư :marketplace",
     "Menyiapkan aplikasi…": "Đang chuẩn bị ứng dụng…",
     "Koneksi bermasalah": "Kết nối gặp sự cố",
-    "Coba lagi": "Thử lại"
+    "Coba lagi": "Thử lại",
+    "Receipt": "Hóa đơn",
+    "Cashier": "Thu ngân",
+    "Customer": "Khách hàng",
+    "Subtotal": "Tạm tính",
+    "Item discount": "Giảm giá sản phẩm",
+    "Transaction discount": "Giảm giá giao dịch",
+    "Total": "Tổng cộng",
+    "Paid": "Đã trả",
+    "Change": "Tiền thừa",
+    "Order": "Đơn hàng",
+    "Fixed quantity products require whole quantities.": "Sản phẩm có số lượng cố định phải được bán theo số nguyên."
 }

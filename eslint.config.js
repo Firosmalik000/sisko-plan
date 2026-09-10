@@ -108,6 +108,8 @@ export default [
             'node_modules',
             'public',
             'bootstrap/ssr',
+            'android-twa/app/build/**',
+            'android-twa/build/**',
             'tailwind.config.js',
             'vite.config.ts',
             'resources/js/actions/**',

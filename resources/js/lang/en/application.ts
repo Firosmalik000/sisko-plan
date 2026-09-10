@@ -692,4 +692,46 @@ export const englishOverrides: Record<string, string> = {
     'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.':
         'The support WhatsApp number is not available yet. Please contact the platform administrator.',
     'WhatsApp dukungan': 'Support WhatsApp',
+    'Berlaku untuk toko dan perangkat ini. Pengaturan perangkat kasir lain tidak berubah.':
+        'Applies to this store and device. Settings on other cashier devices will not change.',
+    'Cetak sistem/browser': 'System/browser printing',
+    'Cetak langsung Android': 'Direct Android printing',
+    'Mendukung printer ESC/POS 58 mm atau 80 mm melalui Bluetooth, USB, dan Wi-Fi/LAN.':
+        'Supports 58 mm or 80 mm ESC/POS printers over Bluetooth, USB, and Wi-Fi/LAN.',
+    'Atur dan tes printer Android': 'Set up and test Android printer',
+    'Cetak otomatis setelah transaksi': 'Print automatically after a transaction',
+    'Tes cetak sistem': 'Test system printing',
+    'Transaksi tetap tersimpan jika printer gagal mencetak.': 'The transaction remains saved if printing fails.',
+    'Cetak sistem': 'System print',
+    'Cetak langsung': 'Print directly',
+    'Printer struk': 'Receipt printer',
+    'Antrean penuh. Periksa hasil atau tunggu foto selesai.': 'Queue full. Review the results or wait for photo processing to finish.',
+    'Barcode terbaca otomatis tanpa menekan tombol': 'Barcode is detected automatically without pressing a button',
+    'Batas layanan tercapai. Coba lagi nanti atau hubungi administrator.':
+        'Service limit reached. Try again later or contact the administrator.',
+    'Berhasil. Barcode ditemukan.': 'Barcode found.',
+    'Buang hasil scan': 'Discard scan results',
+    'Buka produk': 'Open product',
+    'Foto AI sedang tidak tersedia. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'AI photo recognition is currently unavailable. You can still use this photo to enter the product manually.',
+    'Foto otomatis setelah kamera stabil': 'Photo is taken automatically when the camera is steady',
+    'Gabungkan sebagai varian': 'Merge as a variant',
+    'Gunakan konversi': 'Use conversion',
+    'Isi bersih': 'Net content',
+    'Jumlah bulat': 'Whole quantities',
+    'Kategori custom': 'User-defined category',
+    'Kuota foto AI habis. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'AI photo quota is exhausted. You can still use this photo to enter the product manually.',
+    'Memproses foto…': 'Processing photo…',
+    'Mungkin produk yang sama atau varian dari': 'Possibly the same product or a variant of',
+    'Penjualan pecahan': 'Fractional sales',
+    'Posisikan barang lalu tahan stabil': 'Position the item and hold steady',
+    'Produk sama, hapus duplikat': 'Same product, remove duplicate',
+    'Produk tidak tersedia atau jumlah melebihi stok. Kurangi jumlah lalu coba lagi.':
+        'The product is unavailable or the quantity exceeds stock. Reduce the quantity and try again.',
+    'Satuan custom': 'User-defined unit',
+    'Server sibuk, menunggu giliran…': 'Service is busy, waiting for a slot…',
+    'Tambah pengenalan produk dari foto untuk bulan ini.': 'Add product recognition from photos for this month.',
+    'Tekan tombol untuk mengambil foto': 'Press the button to take a photo',
+    'sudah menggunakan barcode ini.': 'already uses this barcode.',
 };

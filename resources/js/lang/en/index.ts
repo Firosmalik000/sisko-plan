@@ -1,7 +1,7 @@
 import { englishOverrides } from './application';
 import { englishDynamicCatalog } from './dynamic';
-import { landingEnglishOverrides } from './public';
 import { englishProductCatalog } from './product';
+import { landingEnglishOverrides } from './public';
 
 export const englishCatalog: Record<string, string> = {
     ...englishOverrides,

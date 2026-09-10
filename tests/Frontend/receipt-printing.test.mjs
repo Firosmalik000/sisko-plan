@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readReceiptPrintPreferences, receiptPrintStyles, writeReceiptPrintPreferences } from '../../resources/js/lib/receipt-printing.ts';
+import {
+    buildAndroidPrinterIntent,
+    readReceiptPrintPreferences,
+    receiptPrintStyles,
+    writeReceiptPrintPreferences,
+} from '../../resources/js/lib/receipt-printing.ts';
 
 const storageWith = (initialValue) => {
     let value = initialValue;
@@ -16,15 +21,29 @@ const storageWith = (initialValue) => {
     };
 };
 
-test('receipt print preferences default safely and persist only the device auto-dialog choice', () => {
-    assert.deepEqual(readReceiptPrintPreferences(storageWith(null)), { autoOpenDialog: false });
-    assert.deepEqual(readReceiptPrintPreferences(storageWith('{bad')), { autoOpenDialog: false });
-    assert.deepEqual(readReceiptPrintPreferences(storageWith('{"autoOpenDialog":"yes"}')), { autoOpenDialog: false });
-    assert.deepEqual(readReceiptPrintPreferences(storageWith('{"autoOpenDialog":true}')), { autoOpenDialog: true });
+test('receipt print preferences are isolated by store and reject stale formats', () => {
+    assert.deepEqual(readReceiptPrintPreferences('store-a', storageWith(null)), { mode: 'system', autoPrint: false });
+    assert.deepEqual(readReceiptPrintPreferences('store-a', storageWith('{bad')), { mode: 'system', autoPrint: false });
+    assert.deepEqual(readReceiptPrintPreferences('store-a', storageWith('{"autoOpenDialog":true}')), { mode: 'system', autoPrint: false });
+    assert.deepEqual(readReceiptPrintPreferences('store-a', storageWith('{"mode":"android-direct","autoPrint":true}')), {
+        mode: 'android-direct',
+        autoPrint: true,
+    });
 
     const storage = storageWith(null);
-    writeReceiptPrintPreferences({ autoOpenDialog: true }, storage);
-    assert.equal(storage.value, '{"autoOpenDialog":true}');
+    writeReceiptPrintPreferences('store-a', { mode: 'android-direct', autoPrint: true }, storage);
+    assert.equal(storage.value, '{"mode":"android-direct","autoPrint":true}');
+});
+
+test('android printer intents target only the XSISTEN package and encode signed URLs', () => {
+    assert.equal(
+        buildAndroidPrinterIntent('settings', 'store A'),
+        'intent://printer/settings?store_id=store%20A#Intent;scheme=xsisten;package=com.xsisten.app;end',
+    );
+    assert.equal(
+        buildAndroidPrinterIntent('print', 'store-a', 'https://xsisten.com/native-print/sales/abc?expires=1&signature=x'),
+        'intent://printer/print?store_id=store-a&payload_url=https%3A%2F%2Fxsisten.com%2Fnative-print%2Fsales%2Fabc%3Fexpires%3D1%26signature%3Dx#Intent;scheme=xsisten;package=com.xsisten.app;end',
+    );
 });
 
 test('receipt print styles isolate the receipt at the selected paper width', () => {

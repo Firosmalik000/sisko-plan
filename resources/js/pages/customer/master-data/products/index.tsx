@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatMoney, localeTag } from '@/lib/currency';
+import { formatMoney } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
 import { referenceLabel, resolveCategory, resolveUnit } from '@/lib/unit-references';
 import type { CategoryReference, UnitReference } from '@/lib/unit-references';
@@ -213,19 +213,7 @@ function Field({ label, error, children, className }: { label: string; error?: s
     );
 }
 
-function BarcodeField({
-    value,
-    error,
-    onScan,
-    onClear,
-    onChange,
-}: {
-    value: string;
-    error?: string;
-    onScan: () => void;
-    onClear: () => void;
-    onChange: (value: string) => void;
-}) {
+function BarcodeField({ value, error, onScan, onClear }: { value: string; error?: string; onScan: () => void; onClear: () => void }) {
     return (
         <Field label="Barcode / QR" error={error}>
             <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)]/15">
@@ -1646,7 +1634,6 @@ export default function ProductsIndex({
                                                         });
                                                     }}
                                                     onClear={() => form.setData('barcode', '')}
-                                                    onChange={(value) => form.setData('barcode', value)}
                                                 />
                                             </div>
                                         )}
@@ -1961,7 +1948,6 @@ export default function ProductsIndex({
                                                                 });
                                                             }}
                                                             onClear={() => updateVariant(index, 'barcode', '')}
-                                                            onChange={(value) => updateVariant(index, 'barcode', value)}
                                                         />
                                                         <Field
                                                             label="Foto varian"

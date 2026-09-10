@@ -89,5 +89,15 @@
     "Fixed quantity products require whole quantities.": "Produk dengan jumlah tetap harus dijual dalam jumlah bulat.",
     "Menyiapkan aplikasi…": "Menyiapkan aplikasi…",
     "Koneksi bermasalah": "Koneksi bermasalah",
-    "Coba lagi": "Coba lagi"
+    "Coba lagi": "Coba lagi",
+    "Receipt": "Struk",
+    "Cashier": "Kasir",
+    "Customer": "Pelanggan",
+    "Subtotal": "Subtotal",
+    "Item discount": "Diskon item",
+    "Transaction discount": "Diskon transaksi",
+    "Total": "Total",
+    "Paid": "Dibayar",
+    "Change": "Kembalian",
+    "Order": "Pesanan"
 }
