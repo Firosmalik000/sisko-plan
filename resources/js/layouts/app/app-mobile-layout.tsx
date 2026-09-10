@@ -25,7 +25,7 @@ import {
     Truck,
 } from 'lucide-react';
 import { useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import BrandMark from '@/components/brand-mark';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
 import LanguageSwitcher from '@/components/language-switcher';
@@ -269,11 +269,7 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                         aria-label={name}
                         className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[var(--app-shadow)] shadow-lg"
                     >
-                        {branding.logo_url ? (
-                            <img src={branding.logo_url} alt="" className="size-full rounded-xl object-contain" />
-                        ) : (
-                            <AppLogoIcon className="size-5 fill-current" />
-                        )}
+                        <BrandMark logoUrl={branding.logo_url} className="size-full rounded-xl object-contain" />
                     </Link>
                 )}
 

@@ -10,11 +10,11 @@ import {
     Mail,
     MapPin,
     Palette,
+    Pipette,
     Printer,
     ReceiptText,
     Save,
     ShieldCheck,
-    Sparkles,
     Store as StoreIcon,
     UserRound,
 } from 'lucide-react';
@@ -415,7 +415,7 @@ export default function Profile({
                                                         backgroundColor: themeColor,
                                                     }}
                                                 >
-                                                    <Sparkles className="size-4" />
+                                                    <Pipette className="size-4" />
                                                 </span>
                                                 <span className="mt-1.5 block">Kustom</span>
                                                 <input

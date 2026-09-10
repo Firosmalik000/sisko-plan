@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { ImageUp, ExternalLink, Globe2, Link2, Mail, Plus, Search, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
+import BrandMark from '@/components/brand-mark';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -468,15 +469,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                         <p className="text-sm font-black text-[#3b211b]">Identitas aktif</p>
                         <div className="mt-4 flex items-center gap-3">
                             <span className="flex size-11 items-center justify-center overflow-hidden rounded-xl bg-[#ee4d2d] text-white">
-                                {selectedLogoPreview || settings.logo_url ? (
-                                    <img
-                                        src={selectedLogoPreview ?? settings.logo_url ?? undefined}
-                                        alt=""
-                                        className="size-full object-contain"
-                                    />
-                                ) : (
-                                    <Globe2 className="size-5" />
-                                )}
+                                <BrandMark logoUrl={selectedLogoPreview ?? settings.logo_url} className="size-full object-contain" />
                             </span>
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-black text-[#3b211b]">{form.data.brand_name || 'Nama brand'}</p>

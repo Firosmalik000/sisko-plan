@@ -15,7 +15,7 @@ import { applyStoreCurrency } from '@/lib/currency';
 import type { AppLocale, MarketCode } from '@/lib/currency';
 import { setActiveLocale, useTranslation } from '@/lib/i18n';
 
-let appName = (typeof document !== 'undefined' && document.documentElement.dataset.appName) || import.meta.env.VITE_APP_NAME || 'Laravel';
+let appName = (typeof document !== 'undefined' && document.documentElement.dataset.appName) || import.meta.env.VITE_APP_NAME || 'XSISTEN';
 let localeListenerRegistered = false;
 const pages = import.meta.glob<{ default: ComponentType }>('./pages/**/*.tsx');
 const normalizeLocale = (locale: unknown): AppLocale => (locale === 'en' || locale === 'ms' || locale === 'vi' ? locale : 'id');
@@ -53,7 +53,45 @@ function LocaleBoundary({ children }: { children: ReactNode }) {
     return <Fragment>{children}</Fragment>;
 }
 
-createInertiaApp({
+const bootScreen = typeof document === 'undefined' ? null : document.getElementById('app-boot');
+const bootRetry = typeof document === 'undefined' ? null : document.getElementById('app-boot-retry');
+const bootSlowTimer =
+    bootScreen === null
+        ? null
+        : window.setTimeout(() => {
+              bootScreen.dataset.state = 'slow';
+          }, 700);
+const bootFailureTimer =
+    bootScreen === null
+        ? null
+        : window.setTimeout(() => {
+              bootScreen.dataset.state = 'failed';
+          }, 8_000);
+
+bootRetry?.addEventListener('click', () => window.location.reload());
+
+function dismissBootScreen(): void {
+    if (bootScreen === null) {
+        return;
+    }
+
+    if (bootSlowTimer !== null) {
+        window.clearTimeout(bootSlowTimer);
+    }
+
+    if (bootFailureTimer !== null) {
+        window.clearTimeout(bootFailureTimer);
+    }
+
+    window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+            bootScreen.dataset.state = 'ready';
+            window.setTimeout(() => bootScreen.remove(), 180);
+        });
+    });
+}
+
+void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: async (name) => (await resolvePageComponent(`./pages/${name}.tsx`, pages)).default,
     layout: (name) => {
@@ -118,7 +156,7 @@ createInertiaApp({
     progress: {
         color: '#ee4d2d',
     },
-});
+}).then(dismissBootScreen);
 
 // Keep one visual mode while the product design is being standardized.
 initializeTheme();

@@ -2,7 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { domAnimation, LazyMotion, MotionConfig } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import BrandMark from '@/components/brand-mark';
 import LanguageSwitcher from '@/components/language-switcher';
 import { useTranslation } from '@/lib/i18n';
 import { dashboard, home, login, register } from '@/routes';
@@ -121,11 +121,7 @@ function Brand({ name, logoUrl }: { name: string; logoUrl: string | null }) {
     return (
         <Link className="ledger-brand" href={home()} aria-label={`${name}, ${translateHomeLabel()}`}>
             <span className="ledger-brand-mark">
-                {logoUrl ? (
-                    <img src={logoUrl} alt="" className="size-full object-contain" />
-                ) : (
-                    <AppLogoIcon className="size-5 fill-current" />
-                )}
+                <BrandMark logoUrl={logoUrl} className="size-full object-contain" />
             </span>
             <span>{name}</span>
         </Link>

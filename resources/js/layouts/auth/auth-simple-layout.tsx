@@ -1,9 +1,8 @@
-import { Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, BadgeCheck, BarChart3, Boxes, ReceiptText, ShieldCheck, Sparkles } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { usePage } from '@inertiajs/react';
+import { BadgeCheck, BarChart3, Boxes, ReceiptText, ShieldCheck, Store } from 'lucide-react';
+import BrandMark from '@/components/brand-mark';
 import LanguageSwitcher from '@/components/language-switcher';
 import { useTranslation } from '@/lib/i18n';
-import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
 const highlights = [
@@ -13,7 +12,7 @@ const highlights = [
 ];
 
 export default function AuthSimpleLayout({ children, title, description }: AuthLayoutProps) {
-    const { name } = usePage().props;
+    const { name, branding } = usePage().props;
     const { t } = useTranslation();
 
     return (
@@ -29,18 +28,18 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
 
                     <div className="relative z-10 flex h-full flex-col">
                         <div className="flex items-center justify-between gap-4">
-                            <Link href={home()} className="inline-flex w-fit items-center gap-3">
+                            <div className="inline-flex w-fit items-center gap-3">
                                 <span className="flex size-11 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/10">
-                                    <AppLogoIcon className="size-6 fill-current" />
+                                    <BrandMark logoUrl={branding.logo_url} className="size-full rounded-2xl object-contain" />
                                 </span>
                                 <span className="text-lg font-bold tracking-[-0.03em]">{name}</span>
-                            </Link>
+                            </div>
                             <LanguageSwitcher />
                         </div>
 
                         <div className="my-auto max-w-xl py-12">
                             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold tracking-[0.14em] text-white uppercase">
-                                <Sparkles className="size-3.5" />
+                                <Store className="size-3.5" />
                                 {t('Ruang kerja toko Anda')}
                             </div>
                             <h1 className="mt-7 text-4xl leading-[1.08] font-bold tracking-[-0.055em] xl:text-[3.5rem]">
@@ -73,22 +72,13 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
 
                     <div className="relative z-10 w-full max-w-md">
                         <div className="mb-8 flex items-center justify-between lg:hidden">
-                            <Link href={home()} className="inline-flex items-center gap-3">
+                            <div className="inline-flex items-center gap-3">
                                 <span className="flex size-11 items-center justify-center rounded-2xl bg-white text-[#ee4d2d] shadow-lg shadow-[#a8321b]/20">
-                                    <AppLogoIcon className="size-6 fill-current" />
+                                    <BrandMark logoUrl={branding.logo_url} className="size-full rounded-2xl object-contain" />
                                 </span>
                                 <span className="font-bold tracking-[-0.03em] text-white">{name}</span>
-                            </Link>
-                            <div className="flex items-center gap-2">
-                                <LanguageSwitcher />
-                                <Link
-                                    href={home()}
-                                    aria-label={t('Kembali ke halaman utama')}
-                                    className="flex size-10 items-center justify-center rounded-full border border-white/35 bg-white text-[#ee4d2d] shadow-lg shadow-[#a8321b]/15"
-                                >
-                                    <ArrowLeft className="size-4" />
-                                </Link>
                             </div>
+                            <LanguageSwitcher />
                         </div>
 
                         <div className="rounded-[2rem] border border-white/45 bg-white p-6 shadow-[0_32px_90px_-38px_rgba(111,34,19,0.58)] sm:p-8">
@@ -103,16 +93,6 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
 
                             <div className="[--color-accent-foreground:#b83219] [--color-accent:#fff0eb] [--color-background:#ffffff] [--color-border:#efd9d2] [--color-foreground:#3b211b] [--color-input:#e8c8be] [--color-muted-foreground:#765f59] [--color-primary-foreground:#ffffff] [--color-primary:#ee4d2d] [--color-ring:#ee4d2d]">
                                 {children}
-                            </div>
-
-                            <div className="mt-8 border-t border-[#ee4d2d]/10 pt-6 text-center text-xs text-[#806963]">
-                                <Link
-                                    href={home()}
-                                    className="inline-flex items-center gap-2 font-bold text-[#b83219] transition-colors hover:text-[#ee4d2d]"
-                                >
-                                    <ArrowLeft className="size-3.5" />
-                                    {t('Kembali ke halaman utama')}
-                                </Link>
                             </div>
                         </div>
 

@@ -38,6 +38,102 @@
                 background-color: #fff8f5;
                 color-scheme: light;
             }
+
+            #app-boot {
+                display: none;
+            }
+
+            @media (display-mode: standalone) {
+                #app-boot {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 2147483647;
+                    display: grid;
+                    place-items: center;
+                    background: #fff8f5;
+                    color: #2d2928;
+                    opacity: 1;
+                    transition: opacity 180ms ease-out;
+                }
+
+                #app-boot[data-state='ready'] {
+                    pointer-events: none;
+                    opacity: 0;
+                }
+
+                .app-boot__content {
+                    display: flex;
+                    align-items: center;
+                    flex-direction: column;
+                    gap: 18px;
+                    padding: 24px;
+                    text-align: center;
+                }
+
+                .app-boot__logo {
+                    width: 88px;
+                    height: 88px;
+                    border-radius: 0.5rem;
+                }
+
+                .app-boot__status,
+                .app-boot__error {
+                    margin: 0;
+                    font-family: ui-sans-serif, system-ui, sans-serif;
+                }
+
+                .app-boot__status {
+                    color: #6f6764;
+                    font-size: 14px;
+                    opacity: 0;
+                    transition: opacity 160ms ease-out;
+                }
+
+                #app-boot[data-state='slow'] .app-boot__status {
+                    opacity: 1;
+                }
+
+                .app-boot__error {
+                    display: none;
+                    align-items: center;
+                    flex-direction: column;
+                    gap: 12px;
+                    color: #2d2928;
+                    font-size: 14px;
+                    font-weight: 600;
+                }
+
+                #app-boot[data-state='failed'] .app-boot__status {
+                    display: none;
+                }
+
+                #app-boot[data-state='failed'] .app-boot__error {
+                    display: flex;
+                }
+
+                .app-boot__retry {
+                    min-height: 44px;
+                    border: 0;
+                    border-radius: 0.45rem;
+                    background: #ee4d2d;
+                    padding: 0 18px;
+                    color: #fff;
+                    font: inherit;
+                    font-weight: 700;
+                }
+
+                .app-boot__retry:focus-visible {
+                    outline: 3px solid rgb(238 77 45 / 35%);
+                    outline-offset: 3px;
+                }
+            }
+
+            @media (display-mode: standalone) and (prefers-reduced-motion: reduce) {
+                #app-boot,
+                .app-boot__status {
+                    transition: none;
+                }
+            }
         </style>
 
         @if ($brandLogoUrl)
@@ -45,9 +141,8 @@
             <link rel="shortcut icon" href="{{ $brandLogoUrl }}">
             <link rel="apple-touch-icon" href="{{ $brandLogoUrl }}">
         @else
-            <link rel="icon" href="/favicon.ico" sizes="any">
-            <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-            <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+            <link rel="icon" href="/icons/icon-192.png" type="image/png">
+            <link rel="apple-touch-icon" href="/icons/icon-192.png">
         @endif
 
         @fonts
@@ -60,6 +155,16 @@
     </head>
     <body class="font-sans antialiased">
         <!-- THESIS: Sisko Plan is a calm operational ledger for Indonesian retail teams, not a generic SaaS brochure. OWN-WORLD: Ivory paper, forest ink, ruled records, compact operational tables, and one orange action color. STORY: Daily transactions flow visibly through stock and cash into business reports. FIRST VIEWPORT: A decisive editorial promise sits beside a working Kasir-to-Laporan board built from believable example data. FORM: Canon direction selected from the attended concept round; AsistenToko is the sole category benchmark; approved reference .impeccable/mocks/decision/store-ledger-reference.png; seed b2d4ef92. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
+        <div id="app-boot" data-state="loading" aria-live="polite">
+            <div class="app-boot__content">
+                <img class="app-boot__logo" src="/icons/icon-192.png" alt="" width="88" height="88">
+                <p class="app-boot__status">{{ __('Menyiapkan aplikasi…') }}</p>
+                <div class="app-boot__error" role="alert">
+                    <span>{{ __('Koneksi bermasalah') }}</span>
+                    <button id="app-boot-retry" class="app-boot__retry" type="button">{{ __('Coba lagi') }}</button>
+                </div>
+            </div>
+        </div>
         <x-inertia::app />
     </body>
 </html>

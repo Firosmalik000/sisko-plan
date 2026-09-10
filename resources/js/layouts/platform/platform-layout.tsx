@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Building2, ChevronUp, CreditCard, Gauge, Globe2, LogOut, LockKeyhole, MapPinned, ReceiptText, UserCog, Users } from 'lucide-react';
 import type { ComponentType } from 'react';
+import BrandMark from '@/components/brand-mark';
 import LanguageSwitcher from '@/components/language-switcher';
 import {
     DropdownMenu,
@@ -107,11 +108,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 <div className="flex items-center justify-between px-4 py-4 md:px-5 md:py-5">
                     <Link href={platformAdmin.home_url} className="flex items-center gap-3">
                         <span className="flex size-9 items-center justify-center overflow-hidden rounded-lg bg-white text-[#ee4d2d] shadow-sm">
-                            {branding.logo_url ? (
-                                <img src={branding.logo_url} alt="" className="size-full object-contain" />
-                            ) : (
-                                <Globe2 className="size-5" />
-                            )}
+                            <BrandMark logoUrl={branding.logo_url} className="size-full object-contain" />
                         </span>
                         <span>
                             <span className="block text-sm font-black tracking-[0.12em]">{name.toUpperCase()}</span>

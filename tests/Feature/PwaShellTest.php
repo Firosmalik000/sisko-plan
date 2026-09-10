@@ -6,12 +6,25 @@ use Tests\TestCase;
 
 class PwaShellTest extends TestCase
 {
-    public function test_web_app_manifest_starts_at_android_entry(): void
+    public function test_web_app_manifest_starts_at_dashboard(): void
     {
         $manifest = json_decode(file_get_contents(public_path('manifest.webmanifest')), true, flags: JSON_THROW_ON_ERROR);
+        $androidManifest = json_decode(
+            file_get_contents(base_path('android-twa/twa-manifest.json')),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+        $bundledManifest = json_decode(
+            file_get_contents(base_path('android-twa/app/src/main/res/raw/web_app_manifest.json')),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
 
         $this->assertSame('XSISTEN', $manifest['name']);
-        $this->assertSame('/app', $manifest['start_url']);
+        $this->assertSame('/dashboard', $manifest['start_url']);
+        $this->assertSame('/dashboard', $androidManifest['startUrl']);
+        $this->assertSame('/dashboard', $bundledManifest['start_url']);
+        $this->assertStringContainsString("launchUrl: '/dashboard'", file_get_contents(base_path('android-twa/app/build.gradle')));
         $this->assertSame('standalone', $manifest['display']);
         $this->assertFileExists(public_path('icons/icon-192.png'));
         $this->assertFileExists(public_path('icons/icon-512.png'));

@@ -2,7 +2,7 @@
     "name": "XSISTEN",
     "short_name": "XSISTEN",
     "description": "Kelola operasional toko dari satu aplikasi.",
-    "start_url": "/app",
+    "start_url": "/dashboard",
     "scope": "/",
     "display": "standalone",
     "background_color": "#fff8f5",
