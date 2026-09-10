@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { translate } from '@/lib/i18n';
+import { barcodeStatusResetDelay } from './barcode-scanner-feedback';
+import type { AutoCaptureStatus, BarcodeScanStatus } from './barcode-scanner-feedback';
 import { CameraViewport } from './CameraViewport';
 import { decodeBarcodeImage } from './decode-barcode-image';
 import { playScannerSuccessTone } from './scanner-feedback';
@@ -115,14 +117,27 @@ export default function ProductScanner({
     }, [scanner.captures.length]);
     const lookupBarcode = scanner.lookupBarcode;
     const [autoActive, setAutoActive] = useState(false);
+    const [autoCaptureStatus, setAutoCaptureStatus] = useState<AutoCaptureStatus>('idle');
+    const [autoCaptureProgress, setAutoCaptureProgress] = useState(0);
     const [retakeCaptureId, setRetakeCaptureId] = useState<string | null>(null);
 
     const [scanMode, setScanMode] = useState<ScanMode>('photo');
     const [barcodeError, setBarcodeError] = useState('');
     const [barcodeLimitReached, setBarcodeLimitReached] = useState(false);
-    const [barcodeStatus, setBarcodeStatus] = useState<'idle' | 'reading' | 'success' | 'not_found'>('idle');
+    const [barcodeStatus, setBarcodeStatus] = useState<BarcodeScanStatus>('scanning');
     const barcodeBusyRef = useRef(false);
     const captureBusyRef = useRef(false);
+    useEffect(() => {
+        const resetDelay = barcodeStatusResetDelay(barcodeStatus);
+
+        if (resetDelay === null || barcodeTarget || barcodeError) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => setBarcodeStatus('scanning'), resetDelay);
+
+        return () => window.clearTimeout(timer);
+    }, [barcodeError, barcodeStatus, barcodeTarget]);
     const handleBarcode = useCallback(
         (value: string) => {
             if (barcodeBusyRef.current) {
@@ -213,6 +228,16 @@ export default function ProductScanner({
                 return;
             }
 
+            setAutoCaptureProgress(100);
+            setAutoCaptureStatus('captured');
+            window.setTimeout(() => {
+                setAutoCaptureStatus(autoActive ? 'processing' : 'idle');
+
+                if (!autoActive) {
+                    setAutoCaptureProgress(0);
+                }
+            }, 500);
+
             if (purpose === 'product' && onProductCapture) {
                 const photo = new File([blob], 'produk.jpg', { type: 'image/jpeg' });
 
@@ -245,7 +270,18 @@ export default function ProductScanner({
         } finally {
             captureBusyRef.current = false;
         }
-    }, [camera, handleBarcode, onProductCapture, productCanCapture, purpose, retakeCaptureId, scanMode, scanner, singleCapture]);
+    }, [
+        autoActive,
+        camera,
+        handleBarcode,
+        onProductCapture,
+        productCanCapture,
+        purpose,
+        retakeCaptureId,
+        scanMode,
+        scanner,
+        singleCapture,
+    ]);
 
     const takePhotoRef = useRef(takePhoto);
     useEffect(() => {
@@ -282,17 +318,33 @@ export default function ProductScanner({
                 return total / (pixels.length / 4);
             };
 
-            if (!previous || difference(previous) > 12) {
-                stableSince = Date.now();
-            }
-
+            const moved = !previous || difference(previous) > 12;
             previous = pixels;
 
-            if (captured && difference(captured) < 30) {
+            if (moved) {
+                stableSince = Date.now();
+                setAutoCaptureStatus('positioning');
+                setAutoCaptureProgress(0);
+
                 return;
             }
 
-            if (Date.now() - stableSince < 1500 || captureBusyRef.current) {
+            if (captured && difference(captured) < 30) {
+                if (!captureBusyRef.current) {
+                    setAutoCaptureStatus('processing');
+                }
+
+                return;
+            }
+
+            const stableFor = Date.now() - stableSince;
+
+            if (stableFor < 1500 || captureBusyRef.current) {
+                if (!captureBusyRef.current) {
+                    setAutoCaptureStatus('stabilizing');
+                    setAutoCaptureProgress(Math.min(100, Math.round((stableFor / 1500) * 100)));
+                }
+
                 return;
             }
 
@@ -314,7 +366,7 @@ export default function ProductScanner({
         setScanMode('photo');
         setBarcodeError('');
         setBarcodeLimitReached(false);
-        setBarcodeStatus('idle');
+        setBarcodeStatus('scanning');
         barcodeBusyRef.current = false;
         onOpenChange(false);
     };
@@ -327,7 +379,7 @@ export default function ProductScanner({
         setRetakeCaptureId(null);
         setBarcodeError('');
         setBarcodeLimitReached(false);
-        setBarcodeStatus('idle');
+        setBarcodeStatus('scanning');
         barcodeBusyRef.current = false;
         scanner.setReviewing(false);
     };
@@ -438,10 +490,10 @@ export default function ProductScanner({
                 aria-describedby={undefined}
                 className="!inset-0 z-[70] block !h-[100dvh] !w-auto !max-w-none !translate-x-0 !translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[var(--app-ink)] p-0 shadow-none duration-300 [&>button]:hidden"
             >
-                <DialogTitle className="sr-only">{title}</DialogTitle>
+                <DialogTitle className="sr-only">{translate(title)}</DialogTitle>
                 {pendingPhoto ? (
                     <div className="flex h-full flex-col bg-black p-4 text-white">
-                        <img ref={attachPhotoPreview} alt={title} className="min-h-0 flex-1 object-contain" />
+                        <img ref={attachPhotoPreview} alt={translate(title)} className="min-h-0 flex-1 object-contain" />
                         {barcodeError && (
                             <p role="alert" className="py-2 text-center text-white">
                                 {translate(barcodeError)}
@@ -454,7 +506,7 @@ export default function ProductScanner({
                                 onClick={dismiss}
                                 className="min-h-11 rounded-xl border border-white px-5 text-white"
                             >
-                                Batal
+                                {translate('Batal')}
                             </button>
                             <button
                                 type="button"
@@ -465,7 +517,7 @@ export default function ProductScanner({
                                 }}
                                 className="min-h-11 rounded-xl border border-white px-5 text-white"
                             >
-                                Ulangi
+                                {translate('Ulangi')}
                             </button>
                             <button
                                 type="button"
@@ -492,7 +544,7 @@ export default function ProductScanner({
                                     }
                                 }}
                             >
-                                {savingPhoto ? 'Memproses foto…' : 'Gunakan foto'}
+                                {translate(savingPhoto ? 'Memproses foto…' : 'Gunakan foto')}
                             </button>
                         </div>
                     </div>
@@ -547,7 +599,13 @@ export default function ProductScanner({
                     <CameraViewport
                         barcodeEnabled={purpose !== 'product'}
                         autoActive={autoActive}
-                        onToggleAuto={() => setAutoActive((value) => !value)}
+                        autoCaptureStatus={autoCaptureStatus}
+                        autoCaptureProgress={autoCaptureProgress}
+                        onToggleAuto={() => {
+                            setAutoActive((value) => !value);
+                            setAutoCaptureStatus(autoActive ? 'idle' : 'positioning');
+                            setAutoCaptureProgress(0);
+                        }}
                         onReviewPhoto={(id) => {
                             onReviewProducts?.(id);
                             onOpenChange(false);
@@ -592,7 +650,7 @@ export default function ProductScanner({
                         onToggleScanMode={() => {
                             setBarcodeError('');
                             setBarcodeLimitReached(false);
-                            setBarcodeStatus('idle');
+                            setBarcodeStatus('scanning');
                             barcodeBusyRef.current = false;
                             setScanMode((mode) => {
                                 const nextMode = mode === 'photo' ? 'barcode' : 'photo';

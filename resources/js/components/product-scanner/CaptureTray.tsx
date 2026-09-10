@@ -1,5 +1,6 @@
 import { AlertCircle, Check, LoaderCircle, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { translate } from '@/lib/i18n';
 import type { ScannerCapture } from './types';
 
 export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]; onRemove: (id: string) => void }) {
@@ -19,7 +20,7 @@ export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]
         <div
             ref={tray}
             className="flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 py-3 [&::-webkit-scrollbar]:hidden"
-            aria-label={`${visibleCaptures.length} foto diambil`}
+            aria-label={translate(`${visibleCaptures.length} foto diambil`)}
         >
             {visibleCaptures.map((capture, index) => (
                 <div
@@ -27,7 +28,7 @@ export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]
                     className={`relative size-16 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-2 ${capture.status === 'recognized' && capture.results.some((result) => result.match !== null) ? 'ring-[var(--workspace-400)]' : capture.status === 'failed' || capture.status === 'recognized' ? 'ring-[#f0a35d]' : 'ring-white/20'}`}
                 >
                     {capture.previewUrl ? (
-                        <img src={capture.previewUrl} alt={`Foto ${index + 1}`} className="size-full object-cover" />
+                        <img src={capture.previewUrl} alt={translate(`Foto ${index + 1}`)} className="size-full object-cover" />
                     ) : (
                         <div className="size-full bg-[var(--app-ink)]" />
                     )}
@@ -51,18 +52,20 @@ export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]
                         type="button"
                         onClick={() => onRemove(capture.id)}
                         className="absolute top-1 right-1 grid size-7 place-items-center rounded-full bg-[var(--app-ink)]/80 text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                        aria-label={`Hapus foto ${index + 1}`}
+                        aria-label={translate(`Hapus foto ${index + 1}`)}
                     >
                         <X className="size-3.5" />
                     </button>
                     <span className="sr-only">
-                        {capture.status === 'recognizing'
-                            ? 'sedang dikenali'
-                            : capture.status === 'recognized' && capture.results.some((result) => result.match !== null)
-                              ? 'produk berhasil dikenali'
-                              : capture.status === 'failed' || capture.status === 'recognized'
-                                ? 'gagal dikenali'
-                                : 'menunggu diproses'}
+                        {translate(
+                            capture.status === 'recognizing'
+                                ? 'sedang dikenali'
+                                : capture.status === 'recognized' && capture.results.some((result) => result.match !== null)
+                                  ? 'produk berhasil dikenali'
+                                  : capture.status === 'failed' || capture.status === 'recognized'
+                                    ? 'gagal dikenali'
+                                    : 'menunggu diproses',
+                        )}
                     </span>
                 </div>
             ))}

@@ -1,7 +1,9 @@
-import { Camera, ImageUp, LoaderCircle, RefreshCw, ScanBarcode, X, Zap, ZapOff } from 'lucide-react';
+import { AlertCircle, Camera, Check, ImageUp, LoaderCircle, RefreshCw, ScanBarcode, X, Zap, ZapOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { translate } from '@/lib/i18n';
+import { barcodeScannerFeedback } from './barcode-scanner-feedback';
+import type { BarcodeScanStatus } from './barcode-scanner-feedback';
 import { decodeBarcodeImage } from './decode-barcode-image';
 import { useCamera } from './use-camera';
 
@@ -18,6 +20,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [processingPhoto, setProcessingPhoto] = useState(false);
     const [scanError, setScanError] = useState('');
+    const [barcodeStatus, setBarcodeStatus] = useState<BarcodeScanStatus>('scanning');
     const handleDetected = useCallback(
         (value: string) => {
             const normalized = value.trim();
@@ -27,22 +30,29 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
             }
 
             handledRef.current = true;
-            navigator.vibrate?.(45);
+            setBarcodeStatus('reading');
             void Promise.resolve()
                 .then(() => onDetected(normalized))
                 .then(() => {
                     if (activeRef.current) {
-                        onOpenChange(false);
+                        setBarcodeStatus('success');
+                        navigator.vibrate?.(45);
+                        window.setTimeout(() => {
+                            if (activeRef.current) {
+                                onOpenChange(false);
+                            }
+                        }, 450);
                     }
                 })
                 .catch((error: unknown) => {
                     setScanError(error instanceof Error ? error.message : 'Kode belum terbaca. Coba lagi.');
+                    setBarcodeStatus('not_found');
                     handledRef.current = false;
                 });
         },
         [onDetected, onOpenChange],
     );
-    const { videoRef, ready, error: cameraError, capture, torchAvailable, torchOn, toggleTorch, retry } = useCamera(open, handleDetected);
+    const { videoRef, error: cameraError, torchAvailable, torchOn, toggleTorch, retry } = useCamera(open, handleDetected);
 
     useEffect(() => {
         activeRef.current = open;
@@ -61,6 +71,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
             activeRef.current = false;
             setProcessingPhoto(false);
             setScanError('');
+            setBarcodeStatus('scanning');
         }
 
         onOpenChange(nextOpen);
@@ -73,6 +84,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
 
         setProcessingPhoto(true);
         setScanError('');
+        setBarcodeStatus('reading');
 
         try {
             if (image.size > 20 * 1024 * 1024) {
@@ -88,25 +100,30 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
             handleDetected(barcode);
         } catch (error) {
             setScanError(error instanceof Error ? error.message : 'Kode belum terbaca. Coba lagi.');
+            setBarcodeStatus('not_found');
         } finally {
             setProcessingPhoto(false);
         }
     };
 
-    const readFromCamera = async () => {
-        await readImage(await capture());
-    };
+    const feedback = barcodeScannerFeedback(barcodeStatus);
+    const frameTone =
+        feedback.tone === 'success'
+            ? 'border-[#8bd5a0] shadow-[0_0_0_1px_rgba(139,213,160,.35),0_24px_70px_-28px_rgba(0,0,0,.9)]'
+            : feedback.tone === 'warning'
+              ? 'border-[#f5bd67] shadow-[0_0_0_1px_rgba(245,189,103,.3),0_24px_70px_-28px_rgba(0,0,0,.9)]'
+              : 'border-white/80 shadow-[0_24px_70px_-28px_rgba(0,0,0,.9)]';
 
     return (
         <Dialog open={open} onOpenChange={changeOpen}>
             <DialogContent className="!inset-0 !top-0 !left-0 z-[80] block h-[100dvh] w-screen !max-w-none !translate-x-0 !translate-y-0 overflow-hidden rounded-none border-0 bg-[#14201d] p-0 text-white shadow-none [&>button]:hidden">
-                <DialogTitle className="sr-only">{title}</DialogTitle>
+                <DialogTitle className="sr-only">{translate(title)}</DialogTitle>
                 <video
                     ref={videoRef}
                     muted
                     playsInline
                     className="absolute inset-0 size-full object-cover"
-                    aria-label="Kamera pemindai barcode"
+                    aria-label={translate('Kamera pemindai barcode')}
                 />
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,25,22,.86)_0%,rgba(5,25,22,.18)_32%,rgba(5,25,22,.18)_58%,rgba(5,25,22,.92)_100%)]" />
 
@@ -115,20 +132,20 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                         type="button"
                         onClick={() => changeOpen(false)}
                         className="grid size-12 place-items-center rounded-full bg-[#14201d]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                        aria-label="Tutup scanner barcode"
+                        aria-label={translate('Tutup scanner barcode')}
                     >
                         <X className="size-5" />
                     </button>
                     <div className="min-w-0 rounded-xl bg-[#14201d]/80 px-4 py-2 text-center backdrop-blur-sm">
-                        <p className="truncate text-sm font-black">{title}</p>
-                        <p className="text-[11px] text-[var(--app-soft-strong)]">Barcode atau QR akan terbaca otomatis</p>
+                        <p className="truncate text-sm font-black">{translate(title)}</p>
+                        <p className="text-[11px] text-[var(--app-soft-strong)]">{translate('Barcode atau QR akan terbaca otomatis')}</p>
                     </div>
                     <button
                         type="button"
                         onClick={() => void toggleTorch()}
                         disabled={!torchAvailable}
                         className="grid size-12 place-items-center rounded-full bg-[#14201d]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
-                        aria-label={torchOn ? 'Matikan lampu' : 'Nyalakan lampu'}
+                        aria-label={translate(torchOn ? 'Matikan lampu' : 'Nyalakan lampu')}
                     >
                         {torchOn ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
                     </button>
@@ -138,14 +155,18 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                     {cameraError ? (
                         <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center !text-[#14201d] shadow-[0_20px_60px_-24px_rgba(0,0,0,.8)]">
                             <Camera className="mx-auto size-8 text-[#c75d32]" />
-                            <p className="mt-3 font-black">Scanner belum tersedia</p>
+                            <p className="mt-3 font-black">{translate('Scanner belum tersedia')}</p>
                             <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{translate(cameraError)}</p>
                             <button
                                 type="button"
-                                onClick={retry}
+                                onClick={() => {
+                                    setBarcodeStatus('scanning');
+                                    setScanError('');
+                                    retry();
+                                }}
                                 className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] font-bold"
                             >
-                                <RefreshCw className="size-4" /> Coba lagi
+                                <RefreshCw className="size-4" /> {translate('Coba lagi')}
                             </button>
                             {scanError && (
                                 <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
@@ -155,13 +176,32 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                         </div>
                     ) : (
                         <div className="w-full max-w-xl">
-                            <div className="relative mx-auto aspect-[2.25/1] w-full overflow-hidden rounded-2xl border border-white/80 shadow-[0_24px_70px_-28px_rgba(0,0,0,.9)]">
-                                <span className="absolute top-1/2 right-5 left-5 h-px bg-[#f3a15e] shadow-[0_0_16px_2px_rgba(243,161,94,.7)] motion-safe:animate-pulse" />
+                            <div
+                                className={`relative mx-auto aspect-[2.25/1] w-full overflow-hidden rounded-2xl border transition-colors ${frameTone}`}
+                            >
+                                {barcodeStatus === 'scanning' && (
+                                    <span className="absolute top-1/2 right-5 left-5 h-px bg-[#f3a15e] shadow-[0_0_16px_2px_rgba(243,161,94,.7)] motion-safe:animate-pulse" />
+                                )}
+                                <div
+                                    role="status"
+                                    aria-live="polite"
+                                    className={`absolute bottom-3 left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-2 rounded-full px-3 text-xs font-black whitespace-nowrap shadow-[0_8px_24px_-12px_rgba(0,0,0,.8)] ${feedback.tone === 'success' ? 'bg-[#d6f4df] text-[#185b32]' : feedback.tone === 'warning' ? 'bg-[#fff0d9] text-[#87531a]' : 'bg-[#14201d]/85 text-white'}`}
+                                >
+                                    {barcodeStatus === 'success' ? (
+                                        <Check className="size-4" />
+                                    ) : barcodeStatus === 'not_found' ? (
+                                        <AlertCircle className="size-4" />
+                                    ) : barcodeStatus === 'reading' ? (
+                                        <LoaderCircle className="size-4 animate-spin" />
+                                    ) : (
+                                        <ScanBarcode className="size-4 text-[#f3a15e]" />
+                                    )}
+                                    {translate(feedback.message)}
+                                </div>
                             </div>
-                            <div className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-[var(--app-soft-strong)]">
-                                <ScanBarcode className="size-5 text-[#f3a15e]" />
-                                Arahkan kode ke dalam bingkai
-                            </div>
+                            <p className="mt-5 text-center text-sm font-bold text-[var(--app-soft-strong)]">
+                                {translate('Arahkan kode ke dalam bingkai')}
+                            </p>
                             {scanError && (
                                 <p
                                     role="alert"
@@ -185,24 +225,15 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                             event.target.value = '';
                         }}
                     />
-                    <div className="grid w-full max-w-sm grid-cols-2 gap-2">
+                    <div className="w-full max-w-sm">
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={processingPhoto}
-                            className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/40 bg-[var(--app-primary)]/90 px-3 text-sm font-black text-[var(--app-primary-foreground)] disabled:opacity-70"
+                            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/40 bg-[var(--app-primary)]/90 px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-70"
                         >
-                            <ImageUp className="size-4" />
-                            Pilih foto
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => void readFromCamera()}
-                            disabled={!ready || processingPhoto}
-                            className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-black !text-[#14201d] shadow-[0_16px_40px_-18px_rgba(0,0,0,.8)] disabled:opacity-70"
-                        >
-                            {processingPhoto ? <LoaderCircle className="size-4 animate-spin" /> : <Camera className="size-4" />}
-                            {processingPhoto ? 'Membaca kode...' : 'Ambil foto'}
+                            {processingPhoto ? <LoaderCircle className="size-4 animate-spin" /> : <ImageUp className="size-4" />}
+                            {translate(processingPhoto ? 'Membaca foto…' : 'Pilih foto barcode')}
                         </button>
                     </div>
                 </div>

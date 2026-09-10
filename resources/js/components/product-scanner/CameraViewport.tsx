@@ -1,14 +1,18 @@
 import { Link } from '@inertiajs/react';
-import { Camera, Check, AlertCircle, LoaderCircle, Pause, Play, Images, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
+import { AlertCircle, Camera, Check, Images, LoaderCircle, Pause, Play, ScanBarcode, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { ChangeEvent, RefObject } from 'react';
 import { translate } from '@/lib/i18n';
+import { autoCaptureFeedback, barcodeScannerFeedback } from './barcode-scanner-feedback';
+import type { AutoCaptureStatus, BarcodeScanStatus } from './barcode-scanner-feedback';
 import { CaptureTray } from './CaptureTray';
 import type { ScannerCapture } from './types';
 
 export function CameraViewport({
     barcodeEnabled,
     autoActive,
+    autoCaptureStatus,
+    autoCaptureProgress,
     onToggleAuto,
     onReviewPhoto,
     canCapture,
@@ -41,6 +45,8 @@ export function CameraViewport({
 }: {
     barcodeEnabled: boolean;
     autoActive: boolean;
+    autoCaptureStatus: AutoCaptureStatus;
+    autoCaptureProgress: number;
     onToggleAuto: () => void;
     onReviewPhoto: (id: string) => void;
     canCapture: boolean;
@@ -66,12 +72,22 @@ export function CameraViewport({
     scanMode: 'photo' | 'barcode';
     barcodeError: string;
     barcodeLimitReached: boolean;
-    barcodeStatus: 'idle' | 'reading' | 'success' | 'not_found';
+    barcodeStatus: BarcodeScanStatus;
     photoStatus: 'idle' | 'reading' | 'success' | 'not_found' | 'failed';
     photoError: string;
     onToggleScanMode: () => void;
 }) {
     const tray = useRef<HTMLDivElement>(null);
+    const barcodeFeedback = barcodeScannerFeedback(barcodeStatus);
+    const autoFeedback = autoCaptureFeedback(autoCaptureStatus);
+    const barcodeFrameTone =
+        barcodeFeedback.tone === 'success'
+            ? 'border-[#8bd5a0]'
+            : barcodeFeedback.tone === 'warning'
+              ? 'border-[#f5bd67]'
+              : barcodeFeedback.tone === 'progress'
+                ? 'border-[#f0a35d]'
+                : 'border-white/70';
     useEffect(() => {
         if (tray.current) {
             tray.current.scrollLeft = tray.current.scrollWidth;
@@ -80,7 +96,13 @@ export function CameraViewport({
 
     return (
         <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[#14201d] text-white">
-            <video ref={videoRef} muted playsInline className="absolute inset-0 size-full object-cover" aria-label="Pratinjau kamera" />
+            <video
+                ref={videoRef}
+                muted
+                playsInline
+                className="absolute inset-0 size-full object-cover"
+                aria-label={translate('Pratinjau kamera')}
+            />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,28,24,.7)_0%,transparent_25%,transparent_62%,rgba(8,28,24,.9)_100%)]" />
 
             <header className="relative z-10 grid grid-cols-[3rem_minmax(0,1fr)_3rem] items-start gap-2 px-[max(1rem,env(safe-area-inset-left))] pt-[calc(env(safe-area-inset-top)+.75rem)] sm:gap-3">
@@ -88,14 +110,22 @@ export function CameraViewport({
                     type="button"
                     onClick={onClose}
                     className="grid size-12 place-items-center rounded-full bg-[#14201d]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                    aria-label="Tutup kamera"
+                    aria-label={translate('Tutup kamera')}
                 >
                     <X className="size-5" />
                 </button>
                 <div className="min-w-0 rounded-xl bg-[#14201d]/75 px-2 py-2 text-center backdrop-blur-sm sm:px-3">
-                    <p className="text-sm font-black">{scanMode === 'photo' ? 'Arahkan ke satu barang' : 'Arahkan ke barcode'}</p>
+                    <p className="text-sm font-black">
+                        {translate(scanMode === 'photo' ? 'Arahkan ke satu barang' : 'Arahkan ke barcode')}
+                    </p>
                     <p className="text-[11px] text-[var(--app-soft-strong)]">
-                        {scanMode === 'photo' ? 'Tekan tombol untuk mengambil foto' : 'Pindahkan kode setelah berhasil terbaca'}
+                        {translate(
+                            scanMode === 'photo'
+                                ? autoActive
+                                    ? 'Foto otomatis setelah kamera stabil'
+                                    : 'Tekan tombol untuk mengambil foto'
+                                : 'Barcode terbaca otomatis tanpa menekan tombol',
+                        )}
                     </p>
                 </div>
                 <button
@@ -103,7 +133,7 @@ export function CameraViewport({
                     onClick={onToggleTorch}
                     disabled={!torchAvailable}
                     className="grid size-12 place-items-center rounded-full bg-[#14201d]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
-                    aria-label={torchOn ? 'Matikan lampu' : 'Nyalakan lampu'}
+                    aria-label={translate(torchOn ? 'Matikan lampu' : 'Nyalakan lampu')}
                 >
                     {torchOn ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
                 </button>
@@ -117,14 +147,14 @@ export function CameraViewport({
                         aria-live="polite"
                     >
                         <Camera className="mx-auto size-8 text-[#d66a35]" />
-                        <p className="mt-3 text-base font-black">Kamera belum tersedia</p>
+                        <p className="mt-3 text-base font-black">{translate('Kamera belum tersedia')}</p>
                         <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{translate(error)}</p>
                         <button
                             type="button"
                             onClick={onRetry}
                             className="mt-4 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm font-black text-[#14201d] focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
                         >
-                            Coba lagi
+                            {translate('Coba lagi')}
                         </button>
                         {onManualSearch && (
                             <button
@@ -132,21 +162,92 @@ export function CameraViewport({
                                 onClick={onManualSearch}
                                 className="mt-2 min-h-11 w-full rounded-xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
                             >
-                                {manualActionLabel ?? 'Cari manual'}
+                                {translate(manualActionLabel ?? 'Cari manual')}
                             </button>
                         )}
                     </div>
                 ) : (
                     <div
-                        className="relative aspect-[4/3] max-h-full w-[min(100%,61svh)] max-w-xl rounded-[1.75rem] border border-white/70 shadow-[0_16px_50px_-22px_rgba(0,0,0,.8)]"
-                        aria-hidden="true"
+                        className={`relative max-h-full max-w-xl rounded-[1.75rem] border shadow-[0_16px_50px_-22px_rgba(0,0,0,.8)] transition-colors ${scanMode === 'barcode' ? `aspect-[2.25/1] w-full ${barcodeFrameTone}` : `aspect-[4/3] w-[min(100%,61svh)] ${autoCaptureStatus === 'captured' ? 'border-[#8bd5a0]' : autoActive ? 'border-[#f0a35d]' : 'border-white/70'}`}`}
                     >
-                        <span className="absolute -top-px -left-px size-14 rounded-tl-[1.75rem] border-t-4 border-l-4 border-[#f0a35d]" />
-                        <span className="absolute -right-px -bottom-px size-14 rounded-br-[1.75rem] border-r-4 border-b-4 border-[#f0a35d]" />
+                        <span
+                            aria-hidden="true"
+                            className="absolute -top-px -left-px size-14 rounded-tl-[1.75rem] border-t-4 border-l-4 border-[#f0a35d]"
+                        />
+                        <span
+                            aria-hidden="true"
+                            className="absolute -right-px -bottom-px size-14 rounded-br-[1.75rem] border-r-4 border-b-4 border-[#f0a35d]"
+                        />
                         {!ready && (
                             <div className="grid size-full place-items-center">
                                 <SwitchCamera className="size-7 animate-pulse" />
                             </div>
+                        )}
+                        {ready && scanMode === 'photo' && (autoActive || autoCaptureStatus === 'captured') && (
+                            <>
+                                <svg aria-hidden="true" className="pointer-events-none absolute inset-0 size-full overflow-visible">
+                                    <rect
+                                        x="2"
+                                        y="2"
+                                        width="calc(100% - 4px)"
+                                        height="calc(100% - 4px)"
+                                        rx="28"
+                                        pathLength="100"
+                                        fill="none"
+                                        stroke={autoCaptureStatus === 'captured' ? '#8bd5a0' : '#ffd0a7'}
+                                        strokeWidth="5"
+                                        strokeLinecap="round"
+                                        strokeDasharray={`${autoCaptureProgress} 100`}
+                                        className="transition-[stroke-dasharray,stroke] duration-300 motion-reduce:transition-none"
+                                    />
+                                </svg>
+                                <div
+                                    role="status"
+                                    aria-live="polite"
+                                    className={`absolute bottom-3 left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-2 rounded-full px-3 text-xs font-black whitespace-nowrap shadow-[0_8px_24px_-12px_rgba(0,0,0,.8)] ${autoFeedback.tone === 'success' ? 'bg-[#d6f4df] text-[#185b32]' : 'bg-[#14201d]/85 text-white'}`}
+                                >
+                                    {autoCaptureStatus === 'captured' ? (
+                                        <Check className="size-4" />
+                                    ) : autoCaptureStatus === 'processing' ? (
+                                        <LoaderCircle className="size-4 animate-spin" />
+                                    ) : (
+                                        <Camera className="size-4 text-[#f0a35d]" />
+                                    )}
+                                    {translate(autoFeedback.message)}
+                                </div>
+                            </>
+                        )}
+                        {ready && scanMode === 'barcode' && (
+                            <>
+                                {barcodeStatus === 'scanning' && (
+                                    <span
+                                        aria-hidden="true"
+                                        className="absolute top-1/2 right-5 left-5 h-px bg-[#f0a35d] shadow-[0_0_16px_2px_rgba(240,163,93,.65)] motion-safe:animate-pulse"
+                                    />
+                                )}
+                                <div
+                                    role="status"
+                                    aria-live="polite"
+                                    className={`absolute bottom-3 left-1/2 flex min-h-9 -translate-x-1/2 items-center gap-2 rounded-full px-3 text-xs font-black whitespace-nowrap shadow-[0_8px_24px_-12px_rgba(0,0,0,.8)] ${barcodeFeedback.tone === 'success' ? 'bg-[#d6f4df] text-[#185b32]' : barcodeFeedback.tone === 'warning' ? 'bg-[#fff0d9] text-[#87531a]' : 'bg-[#14201d]/85 text-white'}`}
+                                >
+                                    {barcodeStatus === 'success' ? (
+                                        <Check className="size-4" />
+                                    ) : barcodeStatus === 'not_found' ? (
+                                        <AlertCircle className="size-4" />
+                                    ) : barcodeStatus === 'reading' ? (
+                                        <LoaderCircle className="size-4 animate-spin" />
+                                    ) : (
+                                        <ScanBarcode className="size-4 text-[#f0a35d]" />
+                                    )}
+                                    {translate(
+                                        barcodeStatus === 'success'
+                                            ? 'Berhasil. Produk masuk ke hasil scan.'
+                                            : barcodeStatus === 'not_found'
+                                              ? 'Produk belum terdaftar'
+                                              : barcodeFeedback.message,
+                                    )}
+                                </div>
+                            </>
                         )}
                     </div>
                 )}
@@ -165,10 +266,10 @@ export function CameraViewport({
                                     type="button"
                                     onClick={() => onReviewPhoto(photo.id)}
                                     className="size-full"
-                                    aria-label="Lihat hasil"
+                                    aria-label={translate('Lihat hasil')}
                                 >
                                     {photo.previewUrl ? (
-                                        <img src={photo.previewUrl} alt="Foto produk" className="size-full object-cover" />
+                                        <img src={photo.previewUrl} alt={translate('Foto produk')} className="size-full object-cover" />
                                     ) : (
                                         <Camera className="m-auto size-6" />
                                     )}
@@ -185,7 +286,7 @@ export function CameraViewport({
                                 <button
                                     type="button"
                                     onClick={() => onRemoveProductPhoto?.(photo.id)}
-                                    aria-label="Hapus foto produk"
+                                    aria-label={translate('Hapus foto produk')}
                                     className="absolute top-0 right-0 grid size-8 place-items-center rounded-full bg-black/70 text-white"
                                 >
                                     <X className="size-4" />
@@ -196,7 +297,7 @@ export function CameraViewport({
                 )}
                 {pendingCount >= 10 && (
                     <p role="status" className="mb-2 text-center text-xs text-white">
-                        Antrean penuh. Periksa hasil atau tunggu foto selesai.
+                        {translate('Antrean penuh. Periksa hasil atau tunggu foto selesai.')}
                     </p>
                 )}
                 <div className="mx-auto mb-3 flex w-full max-w-sm items-center gap-2 px-4">
@@ -212,7 +313,7 @@ export function CameraViewport({
                                 className={`min-h-12 min-w-0 flex-1 rounded-full px-2 text-xs font-black transition ${scanMode === 'photo' ? 'bg-white !text-[#14201d]' : 'text-white/70'}`}
                                 aria-pressed={scanMode === 'photo'}
                             >
-                                Foto barang
+                                {translate('Foto barang')}
                             </button>
                             <button
                                 type="button"
@@ -224,19 +325,21 @@ export function CameraViewport({
                                 className={`min-h-12 min-w-0 flex-1 rounded-full px-2 text-xs font-black transition ${scanMode === 'barcode' ? 'bg-white !text-[#14201d]' : 'text-white/70'}`}
                                 aria-pressed={scanMode === 'barcode'}
                             >
-                                Barcode
+                                {translate('Barcode')}
                             </button>
                         </div>
                     )}
-                    <button
-                        type="button"
-                        onClick={onToggleAuto}
-                        disabled={scanMode === 'barcode' || !canCapture}
-                        className="flex min-h-12 items-center gap-2 rounded-full bg-black/50 px-3 text-xs font-bold text-white disabled:opacity-50"
-                    >
-                        {autoActive ? <Pause className="size-4" /> : <Play className="size-4" />}
-                        {autoActive && canCapture ? 'Auto aktif' : 'Auto jeda'}
-                    </button>
+                    {scanMode === 'photo' && (
+                        <button
+                            type="button"
+                            onClick={onToggleAuto}
+                            disabled={!canCapture}
+                            className="flex min-h-12 items-center gap-2 rounded-full bg-black/50 px-3 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-50"
+                        >
+                            {autoActive ? <Pause className="size-4" /> : <Play className="size-4" />}
+                            {translate(autoActive && canCapture ? 'Auto aktif' : 'Auto jeda')}
+                        </button>
+                    )}
                 </div>
                 {barcodeError && (
                     <div role="alert" className="mx-5 mb-3 rounded-xl bg-red-950/75 px-3 py-2 text-center text-xs font-bold text-red-100">
@@ -246,7 +349,7 @@ export function CameraViewport({
                                 href="/pricing?category=scan_capacity#category-scan_capacity"
                                 className="mt-2 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-[#14201d] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-red-950 focus-visible:outline-none"
                             >
-                                Tambah kuota scan
+                                {translate('Tambah kuota scan')}
                             </Link>
                         )}
                     </div>
@@ -256,43 +359,41 @@ export function CameraViewport({
                         {translate(photoError || 'Foto gagal diproses. Coba lagi.')}
                     </p>
                 )}
-                {scanMode === 'barcode' && (
-                    <p
-                        role="status"
-                        aria-live="polite"
-                        className={`mx-5 mb-3 rounded-xl px-3 py-2 text-center text-xs font-black ${barcodeStatus === 'success' ? 'bg-[#d6f4df] text-[var(--app-primary)]' : barcodeStatus === 'not_found' ? 'bg-[#fff0d9] text-[#87531a]' : 'bg-white/15 text-[var(--app-soft-strong)]'}`}
-                    >
-                        {barcodeStatus === 'idle'
-                            ? 'Mode barcode aktif. Arahkan kode ke kamera.'
-                            : barcodeStatus === 'reading'
-                              ? 'Barcode terbaca, mencari produk…'
-                              : barcodeStatus === 'success'
-                                ? 'Berhasil. Produk masuk ke hasil scan.'
-                                : 'Kode terbaca, tetapi produk belum ada di katalog.'}
-                    </p>
+                {scanMode === 'barcode' && barcodeStatus === 'not_found' && onManualSearch && !barcodeError && (
+                    <div className="mx-5 mb-3 text-center">
+                        <button
+                            type="button"
+                            onClick={onManualSearch}
+                            className="min-h-11 rounded-xl bg-white px-4 text-sm font-black text-[#14201d] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        >
+                            {translate(manualActionLabel ?? 'Cari manual')}
+                        </button>
+                    </div>
                 )}
                 <div className="flex w-full items-center justify-between gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:gap-4 sm:px-5">
                     <label className="grid size-12 cursor-pointer place-items-center rounded-2xl bg-white/12 text-white focus-within:ring-2 focus-within:ring-white">
                         <Images className="size-5" />
-                        <span className="sr-only">Pilih dari galeri</span>
+                        <span className="sr-only">{translate('Pilih dari galeri')}</span>
                         <input type="file" accept="image/*" multiple onChange={onGallery} className="sr-only" />
                     </label>
-                    <button
-                        type="button"
-                        onClick={onCapture}
-                        disabled={!ready || !canCapture}
-                        className="grid size-[4.5rem] place-items-center rounded-full border-[5px] border-white bg-[#e2793c] shadow-[0_12px_30px_-12px_rgba(226,121,60,.8)] transition active:scale-95 disabled:opacity-70 motion-reduce:transition-none"
-                        aria-label="Ambil foto"
-                    >
-                        <span className="size-10 rounded-full border-2 border-white/80" />
-                    </button>
+                    {scanMode === 'photo' && (
+                        <button
+                            type="button"
+                            onClick={onCapture}
+                            disabled={!ready || !canCapture}
+                            className="grid size-[4.5rem] place-items-center rounded-full border-[5px] border-white bg-[#e2793c] shadow-[0_12px_30px_-12px_rgba(226,121,60,.8)] transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none active:scale-95 disabled:opacity-70 motion-reduce:transition-none"
+                            aria-label={translate('Ambil foto')}
+                        >
+                            <span className="size-10 rounded-full border-2 border-white/80" />
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={onFinish}
                         disabled={captures.length === 0 && productPhotos.length === 0 && productDraftCount === 0}
                         className="min-h-12 min-w-20 rounded-2xl bg-white px-3 text-sm font-black !text-[#14201d] disabled:opacity-70 sm:min-w-24"
                     >
-                        Hasil ({captures.length || productDraftCount || productPhotos.length})
+                        {translate('Hasil')} ({captures.length || productDraftCount || productPhotos.length})
                     </button>
                 </div>
             </div>
