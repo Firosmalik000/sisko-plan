@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import groovy.json.JsonSlurper
 import groovy.xml.MarkupBuilder
 
 plugins {
@@ -49,6 +50,15 @@ def twaManifest = [
     enableSiteSettingsShortcut: 'true',
     orientation: 'default',
 ]
+def twaConfiguration = new JsonSlurper().parse(rootProject.file('twa-manifest.json'))
+
+def releaseSigningValues = [
+    XSISTEN_UPLOAD_STORE_FILE: System.getenv('XSISTEN_UPLOAD_STORE_FILE'),
+    XSISTEN_UPLOAD_STORE_PASSWORD: System.getenv('XSISTEN_UPLOAD_STORE_PASSWORD'),
+    XSISTEN_UPLOAD_KEY_ALIAS: System.getenv('XSISTEN_UPLOAD_KEY_ALIAS'),
+    XSISTEN_UPLOAD_KEY_PASSWORD: System.getenv('XSISTEN_UPLOAD_KEY_PASSWORD'),
+]
+def releaseSigningConfigured = releaseSigningValues.values().every { value -> value != null && !value.isBlank() }
 
 android {
     compileSdkVersion 36
@@ -57,8 +67,8 @@ android {
         applicationId "com.xsisten.app"
         minSdkVersion 21
         targetSdkVersion 36
-        versionCode 3
-        versionName "1.1.0"
+        versionCode twaConfiguration.appVersionCode as int
+        versionName twaConfiguration.appVersionName as String
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
@@ -150,9 +160,22 @@ android {
 
 
     }
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            release {
+                storeFile file(releaseSigningValues.XSISTEN_UPLOAD_STORE_FILE)
+                storePassword releaseSigningValues.XSISTEN_UPLOAD_STORE_PASSWORD
+                keyAlias releaseSigningValues.XSISTEN_UPLOAD_KEY_ALIAS
+                keyPassword releaseSigningValues.XSISTEN_UPLOAD_KEY_PASSWORD
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled true
+            if (releaseSigningConfigured) {
+                signingConfig signingConfigs.release
+            }
         }
     }
     compileOptions {
@@ -166,6 +189,24 @@ android {
         language {
             enableSplit = false
         }
+    }
+}
+
+tasks.register('validateReleaseSigning') {
+    doLast {
+        def missing = releaseSigningValues.findAll { name, value -> value == null || value.isBlank() }.keySet()
+        if (!missing.isEmpty()) {
+            throw new GradleException("Release signing is not configured. Missing environment values: ${missing.join(', ')}")
+        }
+        if (!file(releaseSigningValues.XSISTEN_UPLOAD_STORE_FILE).isFile()) {
+            throw new GradleException('Release keystore does not exist at XSISTEN_UPLOAD_STORE_FILE.')
+        }
+    }
+}
+
+tasks.configureEach { task ->
+    if (task.name in ['packageRelease', 'bundleRelease']) {
+        task.dependsOn tasks.named('validateReleaseSigning')
     }
 }
 

@@ -5,6 +5,10 @@ import java.io.IOException;
 public final class PrinterException extends IOException {
     public enum Code {
         BLUETOOTH_OFF,
+        BLUETOOTH_PERMISSION_REQUIRED,
+        BLUETOOTH_NOT_PAIRED,
+        BLUETOOTH_CONNECTION_FAILED,
+        BLUETOOTH_WRITE_FAILED,
         USB_PERMISSION_REQUIRED,
         USB_ENDPOINT_MISSING,
         USB_OPEN_FAILED,

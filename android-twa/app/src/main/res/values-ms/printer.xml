@@ -2,12 +2,20 @@
 <resources>
     <string name="printer_settings_title">Pencetak resit</string><string name="printer_settings_description">Digunakan untuk kedai dan peranti ini.</string>
     <string name="printer_connection">Sambungan</string><string name="printer_device">Pencetak</string><string name="printer_paper">Saiz kertas</string>
-    <string name="printer_host">Alamat IP</string><string name="printer_port">Port</string><string name="printer_save">Simpan pencetak</string>
-    <string name="printer_test">Cetakan ujian</string><string name="printer_pair">Pasangkan Bluetooth</string><string name="printer_saved">Pencetak disimpan.</string>
-    <string name="printer_printing">Menghantar resit ke pencetak…</string><string name="printer_success">Resit berjaya dihantar.</string>
+    <string name="printer_host">Alamat IP</string><string name="printer_port">Port</string>
+    <string name="printer_test">Cetakan ujian</string><string name="printer_pair">Pasangkan Bluetooth</string>
+    <string name="printer_save_and_test">Simpan &amp; cetak ujian</string><string name="printer_preparing">Menyediakan resit…</string>
+    <string name="printer_print_title">Mencetak resit</string><string name="printer_success_title">Berjaya</string><string name="printer_error_title">Tidak dapat mencetak</string>
+    <string name="printer_printing_to">Mencetak ke %1$s…</string><string name="printer_paired_selected">%1$s telah dipasangkan dan dipilih.</string>
+    <string name="printer_success">Resit berjaya dihantar.</string>
     <string name="printer_retry">Cuba lagi</string><string name="printer_close">Kembali ke transaksi</string>
+    <string name="printer_change">Tukar pencetak</string>
     <string name="printer_missing">Tetapkan pencetak untuk peranti ini dahulu.</string><string name="printer_invalid_job">Permintaan cetakan tidak sah atau telah tamat tempoh.</string>
     <string name="printer_bt_off">Aktifkan Bluetooth, kemudian cuba lagi.</string><string name="printer_usb_permission">Benarkan akses pencetak USB, kemudian cuba lagi.</string>
+    <string name="printer_bt_permission">Benarkan akses peranti Bluetooth untuk mencetak.</string>
+    <string name="printer_bt_not_paired">%1$s belum dipasangkan dengan peranti ini.</string>
+    <string name="printer_bt_connection">Tidak dapat menyambung ke %1$s. Pastikan pencetak hidup dan tidak digunakan oleh peranti lain.</string>
+    <string name="printer_bt_write">Sambungan ke %1$s terputus semasa mencetak. Mulakan semula pencetak dan cuba lagi.</string>
     <string name="printer_usb_endpoint">Peranti USB ini tidak menyokong cetakan ESC/POS.</string><string name="printer_usb_open">Pencetak USB tidak dapat dibuka.</string>
     <string name="printer_usb_write">Data resit tidak dihantar sepenuhnya.</string><string name="printer_connection_failed">Pencetak tidak dapat dihubungi. Semak sambungan dan cuba lagi.</string>
     <string name="printer_required">Pilih pencetak atau masukkan alamat IP dahulu.</string><string name="printer_no_devices">Belum ada pencetak tersedia.</string>

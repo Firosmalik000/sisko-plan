@@ -2,12 +2,20 @@
 <resources>
     <string name="printer_settings_title">Receipt printer</string><string name="printer_settings_description">Applies to this store and device.</string>
     <string name="printer_connection">Connection</string><string name="printer_device">Printer</string><string name="printer_paper">Paper size</string>
-    <string name="printer_host">IP address</string><string name="printer_port">Port</string><string name="printer_save">Save printer</string>
-    <string name="printer_test">Test print</string><string name="printer_pair">Pair Bluetooth</string><string name="printer_saved">Printer saved.</string>
-    <string name="printer_printing">Sending receipt to printer…</string><string name="printer_success">Receipt sent successfully.</string>
+    <string name="printer_host">IP address</string><string name="printer_port">Port</string>
+    <string name="printer_test">Test print</string><string name="printer_pair">Pair Bluetooth</string>
+    <string name="printer_save_and_test">Save &amp; test print</string><string name="printer_preparing">Preparing receipt…</string>
+    <string name="printer_print_title">Printing receipt</string><string name="printer_success_title">Success</string><string name="printer_error_title">Unable to print</string>
+    <string name="printer_printing_to">Printing to %1$s…</string><string name="printer_paired_selected">%1$s was paired and selected.</string>
+    <string name="printer_success">Receipt sent successfully.</string>
     <string name="printer_retry">Try again</string><string name="printer_close">Back to transaction</string>
+    <string name="printer_change">Change printer</string>
     <string name="printer_missing">Set up a printer for this device first.</string><string name="printer_invalid_job">The print request is invalid or has expired.</string>
     <string name="printer_bt_off">Turn on Bluetooth, then try again.</string><string name="printer_usb_permission">Allow USB printer access, then try again.</string>
+    <string name="printer_bt_permission">Allow access to Bluetooth devices to print.</string>
+    <string name="printer_bt_not_paired">%1$s is not paired with this device.</string>
+    <string name="printer_bt_connection">Could not connect to %1$s. Make sure the printer is on and is not being used by another device.</string>
+    <string name="printer_bt_write">The connection to %1$s was interrupted while printing. Restart the printer and try again.</string>
     <string name="printer_usb_endpoint">This USB device does not support ESC/POS printing.</string><string name="printer_usb_open">The USB printer could not be opened.</string>
     <string name="printer_usb_write">The complete receipt was not sent.</string><string name="printer_connection_failed">The printer could not be reached. Check the connection and try again.</string>
     <string name="printer_required">Select a printer or enter an IP address first.</string><string name="printer_no_devices">No printers are available yet.</string>

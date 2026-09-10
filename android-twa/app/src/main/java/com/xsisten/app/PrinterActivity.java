@@ -17,11 +17,16 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -32,8 +37,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -45,6 +52,8 @@ public final class PrinterActivity extends Activity {
     private TextView status;
     private Spinner transport;
     private Spinner device;
+    private TextView deviceLabel;
+    private Button pair;
     private Spinner paper;
     private EditText host;
     private EditText port;
@@ -52,25 +61,39 @@ public final class PrinterActivity extends Activity {
     private boolean settingsMode;
     private PrinterConfig pendingConfig;
     private byte[] pendingBytes;
+    private boolean returningFromBluetoothSettings;
+    private Set<String> bondedDevicesBeforeSettings = new HashSet<>();
     private String activityLocale = Locale.getDefault().getLanguage();
 
     @Override
     protected void onCreate(Bundle state) {
+        Uri data = getIntent().getData();
+        settingsMode = data != null && "settings".equals(data.getLastPathSegment());
+        setTheme(settingsMode ? R.style.PrinterTheme : R.style.PrinterDialogTheme);
         applyLocale();
         super.onCreate(state);
-        Uri data = getIntent().getData();
         storeId = data == null ? "" : safe(data.getQueryParameter("store_id"));
         payloadUrl = data == null ? "" : safe(data.getQueryParameter("payload_url"));
         if (storeId.isEmpty()) {
-            showPrintStatus(getString(R.string.printer_invalid_job), false, false);
+            showPrintStatus(PrintScreenState.INVALID, getString(R.string.printer_invalid_job));
             return;
         }
-        settingsMode = data != null && "settings".equals(data.getLastPathSegment());
         if (settingsMode) {
             showSettings();
         } else {
-            showPrintStatus(getString(R.string.printer_printing), true, false);
+            showPrintStatus(PrintScreenState.BUSY, getString(R.string.printer_preparing));
             printPayload();
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (!settingsMode) {
+            Window window = getWindow();
+            int availableWidth = getResources().getDisplayMetrics().widthPixels - dp(32);
+            window.setLayout(Math.min(dp(380), availableWidth), WindowManager.LayoutParams.WRAP_CONTENT);
+            window.setDimAmount(0.48f);
         }
     }
 
@@ -89,15 +112,18 @@ public final class PrinterActivity extends Activity {
     private void showSettings() {
         LinearLayout root = root();
         root.addView(title(getString(R.string.printer_settings_title)));
-        root.addView(body(getString(R.string.printer_settings_description)));
+        TextView description = body(getString(R.string.printer_settings_description));
+        description.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        root.addView(description);
         transport = spinner(Arrays.asList("Bluetooth", "USB / OTG", "Wi-Fi / LAN"));
         root.addView(label(getString(R.string.printer_connection)));
         root.addView(transport);
         device = spinner(new ArrayList<>());
-        root.addView(label(getString(R.string.printer_device)));
+        deviceLabel = label(getString(R.string.printer_device));
+        root.addView(deviceLabel);
         root.addView(device);
-        Button pair = button(getString(R.string.printer_pair));
-        pair.setOnClickListener(view -> startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)));
+        pair = button(getString(R.string.printer_pair));
+        pair.setOnClickListener(view -> openBluetoothSettings());
         root.addView(pair);
         host = input(getString(R.string.printer_host));
         port = input(getString(R.string.printer_port));
@@ -108,16 +134,22 @@ public final class PrinterActivity extends Activity {
         root.addView(label(getString(R.string.printer_paper)));
         root.addView(paper);
         status = body("");
+        status.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         root.addView(status);
-        Button save = primaryButton(getString(R.string.printer_save));
-        save.setOnClickListener(view -> saveSettings(false));
-        root.addView(save);
-        Button test = button(getString(R.string.printer_test));
-        test.setOnClickListener(view -> saveSettings(true));
-        root.addView(test);
+        Button saveAndTest = primaryButton(getString(R.string.printer_save_and_test));
+        saveAndTest.setOnClickListener(view -> saveAndTestSettings());
+        root.addView(saveAndTest);
         ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
         scroll.addView(root);
-        setContentView(scroll);
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackgroundColor(Color.rgb(255, 248, 245));
+        FrameLayout.LayoutParams content = new FrameLayout.LayoutParams(
+                Math.min(dp(520), getResources().getDisplayMetrics().widthPixels),
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER_HORIZONTAL);
+        frame.addView(scroll, content);
+        setContentView(frame);
 
         PrinterConfig saved = PrinterConfig.load(this, storeId);
         if (saved != null) {
@@ -128,16 +160,18 @@ public final class PrinterActivity extends Activity {
                 port.setText(String.valueOf(saved.port));
             }
         }
-        transport.setOnItemSelectedListener(new SimpleItemSelectedListener(position -> refreshTransport(position, saved)));
-        refreshTransport(transport.getSelectedItemPosition(), saved);
+        transport.setOnItemSelectedListener(new SimpleItemSelectedListener(position -> refreshTransport(position, saved, "")));
+        refreshTransport(transport.getSelectedItemPosition(), saved, saved == null ? "" : saved.target);
     }
 
     @SuppressLint("MissingPermission")
-    private void refreshTransport(int position, PrinterConfig saved) {
+    private void refreshTransport(int position, PrinterConfig saved, String preferredTarget) {
         boolean lan = position == 2;
         host.setVisibility(lan ? View.VISIBLE : View.GONE);
         port.setVisibility(lan ? View.VISIBLE : View.GONE);
         device.setVisibility(lan ? View.GONE : View.VISIBLE);
+        deviceLabel.setVisibility(lan ? View.GONE : View.VISIBLE);
+        pair.setVisibility(position == 0 ? View.VISIBLE : View.GONE);
         choices.clear();
         if (position == 0) {
             if (!hasBluetoothPermission()) {
@@ -160,9 +194,14 @@ public final class PrinterActivity extends Activity {
             choices.add(new DeviceChoice("", getString(R.string.printer_no_devices)));
         }
         device.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, choices));
-        if (saved != null && ((position == 0 && "bluetooth".equals(saved.transport)) || (position == 1 && "usb".equals(saved.transport)))) {
+        String selectedTarget = preferredTarget;
+        if (selectedTarget.isEmpty() && saved != null
+                && ((position == 0 && "bluetooth".equals(saved.transport)) || (position == 1 && "usb".equals(saved.transport)))) {
+            selectedTarget = saved.target;
+        }
+        if (!selectedTarget.isEmpty()) {
             for (int index = 0; index < choices.size(); index++) {
-                if (saved.target.equals(choices.get(index).target)) {
+                if (selectedTarget.equals(choices.get(index).target)) {
                     device.setSelection(index);
                     break;
                 }
@@ -170,7 +209,59 @@ public final class PrinterActivity extends Activity {
         }
     }
 
-    private void saveSettings(boolean test) {
+    private void openBluetoothSettings() {
+        bondedDevicesBeforeSettings = bondedDeviceAddresses();
+        returningFromBluetoothSettings = true;
+        startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!settingsMode || !returningFromBluetoothSettings || transport == null) {
+            return;
+        }
+        returningFromBluetoothSettings = false;
+        Set<String> after = bondedDeviceAddresses();
+        String preferred = preferredBondedDevice(bondedDevicesBeforeSettings, after, selectedDeviceTarget());
+        PrinterConfig saved = PrinterConfig.load(this, storeId);
+        transport.setSelection(0);
+        refreshTransport(0, saved, preferred);
+        if (!preferred.isEmpty() && status != null) {
+            status.setText(getString(R.string.printer_paired_selected, deviceName(preferred)));
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private Set<String> bondedDeviceAddresses() {
+        Set<String> addresses = new HashSet<>();
+        if (!hasBluetoothPermission()) {
+            return addresses;
+        }
+        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        if (adapter != null) {
+            for (BluetoothDevice bonded : adapter.getBondedDevices()) {
+                addresses.add(bonded.getAddress());
+            }
+        }
+        return addresses;
+    }
+
+    private String selectedDeviceTarget() {
+        Object selected = device == null ? null : device.getSelectedItem();
+        return selected instanceof DeviceChoice ? ((DeviceChoice) selected).target : "";
+    }
+
+    private String deviceName(String target) {
+        for (DeviceChoice choice : choices) {
+            if (target.equals(choice.target)) {
+                return choice.name;
+            }
+        }
+        return target;
+    }
+
+    private void saveAndTestSettings() {
         int position = transport.getSelectedItemPosition();
         String type = position == 0 ? "bluetooth" : position == 1 ? "usb" : "lan";
         String target;
@@ -195,36 +286,34 @@ public final class PrinterActivity extends Activity {
         }
         PrinterConfig config = new PrinterConfig(type, target, name, targetPort, paper.getSelectedItemPosition() == 1 ? 48 : 32);
         config.save(this, storeId);
-        status.setText(R.string.printer_saved);
-        if (test) {
-            ReceiptPayload sample = new ReceiptPayload(activityLocale, "Rp", 0, "before", "XSISTEN", null,
-                    getString(R.string.printer_test),
-                    getString(R.string.printer_success), false, false, "TEST-PRINT", "", "", null, null, null, null,
-                    "10000", "0", "0", "10000",
-                    "", "10000", "0", Arrays.asList(new ReceiptPayload.Item(getString(R.string.printer_test_item), "", "1", "10000", "10000")),
-                    new ReceiptPayload.Labels(getString(R.string.receipt_cashier), getString(R.string.receipt_customer),
-                            getString(R.string.receipt_order),
-                            getString(R.string.receipt_subtotal), getString(R.string.receipt_item_discount),
-                            getString(R.string.receipt_transaction_discount), getString(R.string.receipt_total),
-                            getString(R.string.receipt_paid), getString(R.string.receipt_change)));
-            send(config, ReceiptBitmapEncoder.encode(sample, config.columns));
-        }
+        ReceiptPayload sample = new ReceiptPayload(activityLocale, "Rp", 0, "before", "XSISTEN", null,
+                getString(R.string.printer_test),
+                getString(R.string.printer_success), false, false, "TEST-PRINT", "", "", null, null, null, null,
+                "10000", "0", "0", "10000",
+                "", "10000", "0", Arrays.asList(new ReceiptPayload.Item(getString(R.string.printer_test_item), "", "1", "10000", "10000")),
+                new ReceiptPayload.Labels(getString(R.string.receipt_cashier), getString(R.string.receipt_customer),
+                        getString(R.string.receipt_order),
+                        getString(R.string.receipt_subtotal), getString(R.string.receipt_item_discount),
+                        getString(R.string.receipt_transaction_discount), getString(R.string.receipt_total),
+                        getString(R.string.receipt_paid), getString(R.string.receipt_change)));
+        send(config, ReceiptBitmapEncoder.encode(sample, config.columns));
     }
 
     private void printPayload() {
         PrinterConfig config = PrinterConfig.load(this, storeId);
         if (config == null) {
-            showPrintStatus(getString(R.string.printer_missing), false, false);
+            showPrintStatus(PrintScreenState.SETUP_REQUIRED, getString(R.string.printer_missing));
             return;
         }
         if (!validPayloadUrl(payloadUrl)) {
-            showPrintStatus(getString(R.string.printer_invalid_job), false, false);
+            showPrintStatus(PrintScreenState.INVALID, getString(R.string.printer_invalid_job));
             return;
         }
         if ("bluetooth".equals(config.transport) && !hasBluetoothPermission()) {
             requestPermissions(new String[] {Manifest.permission.BLUETOOTH_CONNECT}, BLUETOOTH_PERMISSION_REQUEST);
             return;
         }
+        status.setText(getString(R.string.printer_printing_to, config.name));
         executor.execute(() -> {
             try {
                 HttpURLConnection connection = (HttpURLConnection) new URL(payloadUrl).openConnection();
@@ -247,7 +336,7 @@ public final class PrinterActivity extends Activity {
                 sendNow(config, ReceiptBitmapEncoder.encode(receipt, config.columns));
                 runOnUiThread(this::showPrintSuccess);
             } catch (Exception exception) {
-                runOnUiThread(() -> showPrintStatus(errorMessage(exception), false, true));
+                runOnUiThread(() -> showPrintStatus(PrintScreenState.ERROR, errorMessage(exception, config)));
             }
         });
     }
@@ -259,13 +348,13 @@ public final class PrinterActivity extends Activity {
             requestPermissions(new String[] {Manifest.permission.BLUETOOTH_CONNECT}, BLUETOOTH_PERMISSION_REQUEST);
             return;
         }
-        status.setText(R.string.printer_printing);
+        status.setText(getString(R.string.printer_printing_to, config.name));
         executor.execute(() -> {
             try {
                 sendNow(config, bytes);
                 runOnUiThread(() -> status.setText(R.string.printer_success));
             } catch (Exception exception) {
-                runOnUiThread(() -> status.setText(errorMessage(exception)));
+                runOnUiThread(() -> status.setText(errorMessage(exception, config)));
             }
         });
     }
@@ -315,10 +404,14 @@ public final class PrinterActivity extends Activity {
         }
     }
 
-    private String errorMessage(Exception exception) {
+    private String errorMessage(Exception exception, PrinterConfig config) {
         PrinterException.Code code = exception instanceof PrinterException ? ((PrinterException) exception).code : PrinterException.Code.CONNECTION_FAILED;
         switch (code) {
             case BLUETOOTH_OFF: return getString(R.string.printer_bt_off);
+            case BLUETOOTH_PERMISSION_REQUIRED: return getString(R.string.printer_bt_permission);
+            case BLUETOOTH_NOT_PAIRED: return getString(R.string.printer_bt_not_paired, config.name);
+            case BLUETOOTH_CONNECTION_FAILED: return getString(R.string.printer_bt_connection, config.name);
+            case BLUETOOTH_WRITE_FAILED: return getString(R.string.printer_bt_write, config.name);
             case USB_PERMISSION_REQUIRED: return getString(R.string.printer_usb_permission);
             case USB_ENDPOINT_MISSING: return getString(R.string.printer_usb_endpoint);
             case USB_OPEN_FAILED: return getString(R.string.printer_usb_open);
@@ -327,22 +420,41 @@ public final class PrinterActivity extends Activity {
         }
     }
 
-    private void showPrintStatus(String message, boolean busy, boolean allowRetry) {
+    private void showPrintStatus(PrintScreenState state, String message) {
         LinearLayout root = root();
-        root.setGravity(android.view.Gravity.CENTER);
-        root.addView(title(getString(R.string.printer_settings_title)));
+        root.setGravity(Gravity.CENTER);
+        if (state == PrintScreenState.BUSY) {
+            ProgressBar progress = new ProgressBar(this);
+            LinearLayout.LayoutParams progressLayout = new LinearLayout.LayoutParams(dp(44), dp(44));
+            progressLayout.gravity = Gravity.CENTER_HORIZONTAL;
+            progressLayout.bottomMargin = dp(18);
+            root.addView(progress, progressLayout);
+        }
+        int titleResource = state == PrintScreenState.SUCCESS
+                ? R.string.printer_success_title
+                : state == PrintScreenState.BUSY ? R.string.printer_print_title : R.string.printer_error_title;
+        root.addView(title(getString(titleResource)));
         status = body(message);
         status.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         root.addView(status);
-        if (!busy && allowRetry) {
+        if (state == PrintScreenState.ERROR) {
             Button retry = primaryButton(getString(R.string.printer_retry));
             retry.setOnClickListener(view -> {
-                showPrintStatus(getString(R.string.printer_printing), true, false);
+                showPrintStatus(PrintScreenState.BUSY, getString(R.string.printer_preparing));
                 printPayload();
             });
             root.addView(retry);
         }
-        if (!busy) {
+        if (state == PrintScreenState.ERROR || state == PrintScreenState.SETUP_REQUIRED) {
+            Button settings = button(getString(R.string.printer_change));
+            settings.setOnClickListener(view -> openPrinterSettings());
+            root.addView(settings);
+        }
+        if (state == PrintScreenState.BUSY) {
+            Button cancel = button(getString(R.string.printer_close));
+            cancel.setOnClickListener(view -> finish());
+            root.addView(cancel);
+        } else if (state != PrintScreenState.SUCCESS) {
             Button close = button(getString(R.string.printer_close));
             close.setOnClickListener(view -> finish());
             root.addView(close);
@@ -351,24 +463,39 @@ public final class PrinterActivity extends Activity {
     }
 
     private void showPrintSuccess() {
-        showPrintStatus(getString(R.string.printer_success), true, false);
-        status.postDelayed(this::finish, 900);
+        showPrintStatus(PrintScreenState.SUCCESS, getString(R.string.printer_success));
+        status.postDelayed(this::finish, 700);
+    }
+
+    private void openPrinterSettings() {
+        Uri settings = new Uri.Builder()
+                .scheme("xsisten")
+                .authority("printer")
+                .appendPath("settings")
+                .appendQueryParameter("store_id", storeId)
+                .appendQueryParameter("locale", activityLocale)
+                .build();
+        startActivity(new Intent(this, PrinterActivity.class).setData(settings));
+        finish();
     }
 
     private LinearLayout root() {
         LinearLayout view = new LinearLayout(this);
         view.setOrientation(LinearLayout.VERTICAL);
-        view.setPadding(dp(24), dp(36), dp(24), dp(24));
-        view.setBackgroundColor(Color.rgb(255, 248, 245));
+        view.setPadding(dp(24), settingsMode ? dp(36) : dp(28), dp(24), dp(24));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(Color.rgb(255, 248, 245));
+        background.setCornerRadius(settingsMode ? 0 : dp(16));
+        view.setBackground(background);
         return view;
     }
 
-    private TextView title(String text) { TextView view = body(text); view.setTextSize(26); view.setTextColor(Color.rgb(45, 41, 40)); view.setPadding(0, 0, 0, dp(12)); return view; }
-    private TextView label(String text) { TextView view = body(text); view.setTextColor(Color.rgb(45, 41, 40)); view.setPadding(0, dp(14), 0, dp(6)); return view; }
+    private TextView title(String text) { TextView view = body(text); view.setTextSize(26); view.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); view.setTextColor(Color.rgb(45, 41, 40)); view.setTextAlignment(View.TEXT_ALIGNMENT_CENTER); view.setPadding(0, 0, 0, dp(12)); return view; }
+    private TextView label(String text) { TextView view = body(text); view.setTextColor(Color.rgb(45, 41, 40)); view.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START); view.setPadding(0, dp(14), 0, dp(6)); return view; }
     private TextView body(String text) { TextView view = new TextView(this); view.setText(text); view.setTextSize(16); view.setTextColor(Color.rgb(111, 103, 100)); view.setPadding(0, dp(6), 0, dp(10)); return view; }
-    private EditText input(String hint) { EditText view = new EditText(this); view.setHint(hint); view.setTextSize(16); view.setMinHeight(dp(48)); return view; }
-    private Spinner spinner(List<?> items) { Spinner view = new Spinner(this); view.setMinimumHeight(dp(48)); view.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items)); return view; }
-    private Button button(String text) { Button view = new Button(this); view.setText(text); view.setMinHeight(dp(48)); return view; }
+    private EditText input(String hint) { EditText view = new EditText(this); view.setHint(hint); view.setTextSize(16); view.setMinHeight(dp(48)); fullWidth(view, 0); return view; }
+    private Spinner spinner(List<?> items) { Spinner view = new Spinner(this); view.setMinimumHeight(dp(48)); view.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, items)); fullWidth(view, 0); return view; }
+    private Button button(String text) { Button view = new Button(this); view.setText(text); view.setMinHeight(dp(48)); view.setAllCaps(false); fullWidth(view, 10); return view; }
     private Button primaryButton(String text) {
         Button view = button(text);
         view.setTextColor(Color.WHITE);
@@ -378,12 +505,22 @@ public final class PrinterActivity extends Activity {
         view.setBackground(background);
         return view;
     }
+    private void fullWidth(View view, int topMargin) { LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT); layout.topMargin = dp(topMargin); view.setLayoutParams(layout); }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private static String safe(String value) { return value == null ? "" : value; }
 
+    static String preferredBondedDevice(Set<String> before, Set<String> after, String current) {
+        Set<String> newlyBonded = new HashSet<>(after);
+        newlyBonded.removeAll(before);
+        if (newlyBonded.size() == 1) {
+            return newlyBonded.iterator().next();
+        }
+        return after.contains(current) ? current : "";
+    }
+
     @Override
     protected void onDestroy() {
-        executor.shutdownNow();
+        executor.shutdown();
         super.onDestroy();
     }
 
@@ -412,7 +549,7 @@ public final class PrinterActivity extends Activity {
         if (requestCode == BLUETOOTH_PERMISSION_REQUEST) {
             if (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 if (status != null) {
-                    status.setText(R.string.printer_bt_off);
+                    status.setText(R.string.printer_bt_permission);
                 }
                 return;
             }
@@ -425,9 +562,17 @@ public final class PrinterActivity extends Activity {
                 pendingBytes = null;
                 send(config, bytes);
             } else {
-                showPrintStatus(getString(R.string.printer_printing), true, false);
+                showPrintStatus(PrintScreenState.BUSY, getString(R.string.printer_preparing));
                 printPayload();
             }
         }
+    }
+
+    private enum PrintScreenState {
+        BUSY,
+        SUCCESS,
+        ERROR,
+        SETUP_REQUIRED,
+        INVALID
     }
 }
