@@ -511,6 +511,7 @@ export default function PosPage({
                                         type="button"
                                         className="min-h-11 rounded-lg bg-white px-3 font-bold"
                                         onClick={() => {
+                                            prepareScannerTone();
                                             setScannerView('review');
                                             setScannerOpen(true);
                                         }}

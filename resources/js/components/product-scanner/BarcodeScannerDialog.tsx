@@ -5,6 +5,7 @@ import { translate } from '@/lib/i18n';
 import { barcodeScannerFeedback } from './barcode-scanner-feedback';
 import type { BarcodeScanStatus } from './barcode-scanner-feedback';
 import { decodeBarcodeImage } from './decode-barcode-image';
+import { playScannerSuccessTone, prepareScannerTone } from './scanner-feedback';
 import { useCamera } from './use-camera';
 
 type BarcodeScannerDialogProps = {
@@ -29,12 +30,14 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                 return;
             }
 
+            prepareScannerTone();
             handledRef.current = true;
             setBarcodeStatus('reading');
             void Promise.resolve()
                 .then(() => onDetected(normalized))
                 .then(() => {
                     if (activeRef.current) {
+                        playScannerSuccessTone();
                         setBarcodeStatus('success');
                         navigator.vibrate?.(45);
                         window.setTimeout(() => {
@@ -228,7 +231,10 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                     <div className="w-full max-w-sm">
                         <button
                             type="button"
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => {
+                                prepareScannerTone();
+                                fileInputRef.current?.click();
+                            }}
                             disabled={processingPhoto}
                             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/40 bg-[var(--app-primary)]/90 px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-70"
                         >

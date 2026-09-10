@@ -6,6 +6,7 @@ import { buttonClass, currentDateTime, fieldClass, ledgerDateTime, money, postin
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
+import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useTranslation } from '@/lib/i18n';
 
@@ -228,7 +229,10 @@ export default function PurchasingPage({
                                 <>
                                     <button
                                         type="button"
-                                        onClick={() => setScannerOpen(true)}
+                                        onClick={() => {
+                                            prepareScannerTone();
+                                            setScannerOpen(true);
+                                        }}
                                         className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--app-ink)]/15 bg-white px-3 text-sm font-black text-[var(--app-ink)] transition hover:border-[var(--app-ink)]/30 hover:bg-[#fffaf7] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none"
                                     >
                                         <Camera className="size-4" /> Scan produk

@@ -21,6 +21,7 @@ import InputError from '@/components/input-error';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import BarcodeScannerDialog from '@/components/product-scanner/BarcodeScannerDialog';
+import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
 import type { ScannerConfig } from '@/components/product-scanner/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -806,10 +807,12 @@ export default function ProductsIndex({
         setFormOpen(true);
     };
     const openCreate = () => {
+        prepareScannerTone();
         setScannerFlow('create');
         setScannerOpen(true);
     };
     const openFormPhotoScanner = () => {
+        prepareScannerTone();
         cameraFormScroll.current = formBodyRef.current?.scrollTop ?? 0;
         setScannerFlow('form-photo');
         setScannerOpen(true);
@@ -1114,6 +1117,7 @@ export default function ProductsIndex({
             openDraft(remaining[0]);
         } else {
             closeForm();
+            prepareScannerTone();
             setScannerFlow('create');
             setScannerOpen(true);
         }
@@ -1482,6 +1486,7 @@ export default function ProductsIndex({
                                             size="sm"
                                             variant="outline"
                                             onClick={() => {
+                                                prepareScannerTone();
                                                 setScannerFlow('create');
                                                 setFormOpen(false);
                                                 setScannerOpen(true);
@@ -1968,6 +1973,7 @@ export default function ProductsIndex({
                                                                 photoUrl={variant.remove_photo ? null : variant.photo_url}
                                                                 variantName={variant.name}
                                                                 onCamera={() => {
+                                                                    prepareScannerTone();
                                                                     cameraFormScroll.current = formBodyRef.current?.scrollTop ?? 0;
                                                                     setVariantPhotoIndex(index);
                                                                     setScannerFlow('variant-photo');

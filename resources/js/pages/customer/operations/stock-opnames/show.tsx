@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowLeft, Camera, Check, ClipboardCheck, PackageCheck, 
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ledgerDateTime, money, OperationsShell, quantity } from '@/components/operations-shell';
 import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
+import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
 import { decimalInput } from '@/lib/decimal-input';
 import { translate } from '@/lib/i18n';
@@ -273,7 +274,10 @@ export default function StockOpnameShow({
                         {editable && (
                             <button
                                 type="button"
-                                onClick={() => setScannerOpen(true)}
+                                onClick={() => {
+                                    prepareScannerTone();
+                                    setScannerOpen(true);
+                                }}
                                 className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] sm:text-sm"
                             >
                                 <Camera className="size-4" /> Scan produk

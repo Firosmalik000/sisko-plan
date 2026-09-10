@@ -8,7 +8,7 @@ import { barcodeStatusResetDelay } from './barcode-scanner-feedback';
 import type { AutoCaptureStatus, BarcodeScanStatus } from './barcode-scanner-feedback';
 import { CameraViewport } from './CameraViewport';
 import { decodeBarcodeImage } from './decode-barcode-image';
-import { playScannerSuccessTone } from './scanner-feedback';
+import { playScannerSuccessTone, prepareScannerTone } from './scanner-feedback';
 import { ScanReview } from './ScanReview';
 import type { ScannerApplyResult, ScannerConfig, ScannerProductCandidate, ScannerPurpose, ScannerSelection } from './types';
 import { normalizeImage, useCamera } from './use-camera';
@@ -166,7 +166,9 @@ export default function ProductScanner({
                 return false;
             }
 
+            prepareScannerTone();
             barcodeBusyRef.current = true;
+            playScannerSuccessTone();
             setBarcodeError('');
             setBarcodeStatus('reading');
 
@@ -185,8 +187,6 @@ export default function ProductScanner({
                     }
 
                     if (found) {
-                        playScannerSuccessTone();
-
                         if (barcodeTarget) {
                             setBarcodeTarget(null);
                             scanner.setReviewing(true);
@@ -217,6 +217,7 @@ export default function ProductScanner({
             return;
         }
 
+        prepareScannerTone();
         captureBusyRef.current = true;
 
         try {
@@ -230,6 +231,10 @@ export default function ProductScanner({
             }
 
             navigator.vibrate?.(30);
+
+            if (scanMode === 'photo') {
+                playScannerSuccessTone();
+            }
 
             if (scanMode === 'barcode') {
                 setBarcodeError('');
