@@ -275,5 +275,8 @@
     "Metode bayar tidak sesuai dengan akun penerimaan.": "Kaedah bayaran tidak sepadan dengan akaun penerimaan.",
     "Bukti pembayaran hanya dapat ditambahkan untuk pembayaran non-tunai langsung.": "Bukti bayaran hanya boleh ditambah untuk bayaran bukan tunai secara langsung.",
     "Akun penampung transaksi marketplace.": "Akaun penampung transaksi marketplace.",
-    "Saldo :marketplace": "Baki :marketplace"
+    "Saldo :marketplace": "Baki :marketplace",
+    "Menyiapkan aplikasi…": "Menyediakan aplikasi…",
+    "Koneksi bermasalah": "Sambungan bermasalah",
+    "Coba lagi": "Cuba lagi"
 }

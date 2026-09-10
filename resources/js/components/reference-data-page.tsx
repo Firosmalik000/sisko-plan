@@ -278,7 +278,10 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                                             }
                                                             className="h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-stone-900 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/15 focus:outline-none"
                                                         >
-                                                            {field.options?.map((option) => (
+                                                            {(typeof field.options === 'function'
+                                                                ? field.options(form.data)
+                                                                : field.options
+                                                            )?.map((option) => (
                                                                 <option key={option.value} value={option.value}>
                                                                     {translate(option.label)}
                                                                 </option>

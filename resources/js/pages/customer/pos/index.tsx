@@ -27,7 +27,7 @@ import type { FormEvent } from 'react';
 import { CommerceBrandMark } from '@/components/commerce-brand-mark';
 import { currentDateTime, money, postingToken, quantity } from '@/components/operations-shell';
 import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
-import type { ScannerProductCandidate, ScannerSelection } from '@/components/product-scanner/types';
+import type { ScannerApplyResult, ScannerProductCandidate, ScannerSelection } from '@/components/product-scanner/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cashTenderSuggestions, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
@@ -318,9 +318,9 @@ export default function PosPage({
 
         sale.setData('items', items);
         setScannerSummary(
-            skipped > 0
-                ? `${added} ${translate('produk ditambahkan')}, ${skipped} ${translate('dilewati karena tidak tersedia atau stok habis.')}`
-                : `${added} ${translate('produk ditambahkan ke keranjang.')}`,
+            result.failures.length > 0
+                ? `${result.applied.length} ${translate('produk ditambahkan')}, ${result.failures.length} ${translate('dilewati karena tidak tersedia atau stok habis.')}`
+                : `${result.applied.length} ${translate('produk ditambahkan ke keranjang.')}`,
         );
 
         return result;

@@ -29,6 +29,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
+import { referenceLabel, resolveCategory, resolveUnit } from '@/lib/unit-references';
+import type { CategoryReference, UnitReference } from '@/lib/unit-references';
 import { cn } from '@/lib/utils';
 import { useProductDrafts } from './use-product-drafts';
 import type { DiscoverySuggestion, ProductDraft } from './use-product-drafts';
@@ -290,32 +292,28 @@ function ProductPhotoInput({
     const hasPhoto = Boolean(photo || photoUrl);
 
     return (
-        <div className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-white p-2">
-            <ProductPhoto
-                src={previewUrl}
-                alt={translate(`Foto ${variantName || 'varian'}`)}
-                className="size-14 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
-                fallbackClassName="grid size-14 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-400"
-            />
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)] hover:bg-[var(--app-soft)]">
+        <div className="grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-2 rounded-xl border border-[var(--app-soft-strong)] bg-white p-2">
+            {photo ? (
+                <img ref={attachPhoto} alt={translate(`Foto ${variantName || 'varian'}`)} className="size-12 rounded-lg object-cover" />
+            ) : (
+                <ProductPhoto
+                    src={photoUrl}
+                    alt={translate(`Foto ${variantName || 'varian'}`)}
+                    className="size-12 rounded-lg object-cover"
+                    fallbackClassName="grid size-12 place-items-center rounded-lg bg-[var(--app-soft)] text-[var(--app-primary)]"
+                />
+            )}
+            <div className="flex min-w-0 items-center gap-1">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onCamera}
+                    className="min-h-11 min-w-0 flex-1 gap-1 px-2 text-xs text-[var(--app-primary)]"
+                >
                     <Camera className="size-4" />
-                    {translate(previewUrl ? 'Ganti foto' : 'Pilih foto')}
-                    <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="sr-only"
-                        onChange={(event) => {
-                            const file = event.target.files?.[0];
-                            event.target.value = '';
-
-                            if (file) {
-                                onChange(file);
-                            }
-                        }}
-                    />
-                </label>
-                {previewUrl && (
+                    {translate('Ambil foto')}
+                </Button>
+                {hasPhoto && (
                     <button
                         type="button"
                         onClick={onRemove}
@@ -324,7 +322,7 @@ function ProductPhotoInput({
                         title={translate('Hapus foto')}
                         className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
                     >
-                        <Trash2 className="size-4" /> {translate('Hapus')}
+                        <Trash2 className="size-4" />
                     </button>
                 )}
             </div>

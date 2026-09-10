@@ -30,5 +30,8 @@
     "Metode bayar tidak sesuai dengan akun penerimaan.": "Phương thức thanh toán không khớp với tài khoản nhận.",
     "Bukti pembayaran hanya dapat ditambahkan untuk pembayaran non-tunai langsung.": "Chỉ có thể thêm chứng từ cho thanh toán không tiền mặt trực tiếp.",
     "Akun penampung transaksi marketplace.": "Tài khoản trung gian cho giao dịch sàn.",
-    "Saldo :marketplace": "Số dư :marketplace"
+    "Saldo :marketplace": "Số dư :marketplace",
+    "Menyiapkan aplikasi…": "Đang chuẩn bị ứng dụng…",
+    "Koneksi bermasalah": "Kết nối gặp sự cố",
+    "Coba lagi": "Thử lại"
 }

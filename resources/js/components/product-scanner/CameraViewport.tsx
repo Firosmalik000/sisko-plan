@@ -1,4 +1,6 @@
-import { Camera, Images, Pause, Play, ScanLine, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { AlertCircle, Camera, Check, Images, LoaderCircle, Pause, Play, ScanBarcode, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import type { ChangeEvent, RefObject } from 'react';
 import { translate } from '@/lib/i18n';
 import { autoCaptureFeedback, barcodeScannerFeedback } from './barcode-scanner-feedback';
@@ -38,6 +40,7 @@ export function CameraViewport({
     manualActionLabel,
     scanMode,
     barcodeError,
+    barcodeLimitReached,
     barcodeStatus,
     photoStatus,
     photoError,
@@ -75,6 +78,7 @@ export function CameraViewport({
     manualActionLabel?: string;
     scanMode: 'photo' | 'barcode';
     barcodeError: string;
+    barcodeLimitReached: boolean;
     barcodeStatus: BarcodeScanStatus;
     photoStatus: 'idle' | 'reading' | 'success' | 'not_found' | 'failed';
     photoError: string;

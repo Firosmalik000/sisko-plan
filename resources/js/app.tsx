@@ -75,7 +75,45 @@ function localizedPage(name: string, Page: InertiaPage): InertiaPage {
     return LocalizedPage;
 }
 
-createInertiaApp({
+const bootScreen = typeof document === 'undefined' ? null : document.getElementById('app-boot');
+const bootRetry = typeof document === 'undefined' ? null : document.getElementById('app-boot-retry');
+const bootSlowTimer =
+    bootScreen === null
+        ? null
+        : window.setTimeout(() => {
+              bootScreen.dataset.state = 'slow';
+          }, 700);
+const bootFailureTimer =
+    bootScreen === null
+        ? null
+        : window.setTimeout(() => {
+              bootScreen.dataset.state = 'failed';
+          }, 8_000);
+
+bootRetry?.addEventListener('click', () => window.location.reload());
+
+function dismissBootScreen(): void {
+    if (bootScreen === null) {
+        return;
+    }
+
+    if (bootSlowTimer !== null) {
+        window.clearTimeout(bootSlowTimer);
+    }
+
+    if (bootFailureTimer !== null) {
+        window.clearTimeout(bootFailureTimer);
+    }
+
+    window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+            bootScreen.dataset.state = 'ready';
+            window.setTimeout(() => bootScreen.remove(), 180);
+        });
+    });
+}
+
+void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: async (name) => {
         const Page = (await resolvePageComponent(`./pages/${name}.tsx`, pages)).default;
@@ -134,9 +172,7 @@ createInertiaApp({
 
         return (
             <TooltipProvider delayDuration={0}>
-                <LocaleBoundary>
-                    {app}
-                </LocaleBoundary>
+                <LocaleBoundary>{app}</LocaleBoundary>
                 <Toaster />
             </TooltipProvider>
         );

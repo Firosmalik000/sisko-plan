@@ -1,8 +1,9 @@
-import { usePage } from '@inertiajs/react';
-import { BadgeCheck, BarChart3, Boxes, ReceiptText, ShieldCheck, Store } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { ArrowLeft, BadgeCheck, BarChart3, Boxes, ReceiptText, ShieldCheck, Store } from 'lucide-react';
 import BrandMark from '@/components/brand-mark';
 import LanguageSwitcher from '@/components/language-switcher';
 import { useTranslation } from '@/lib/i18n';
+import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
 const highlights = [
@@ -43,7 +44,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                                     {brandLogo ? (
                                         <img src={brandLogo} alt="" className="size-full object-contain p-2" />
                                     ) : (
-                                        <AppLogoIcon className="size-6 fill-current" />
+                                        <BrandMark className="size-6 object-contain" />
                                     )}
                                 </span>
                                 <span className="text-lg font-bold tracking-[-0.03em]">{brandName}</span>
@@ -91,7 +92,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                                     {brandLogo ? (
                                         <img src={brandLogo} alt="" className="size-full object-contain p-2" />
                                     ) : (
-                                        <AppLogoIcon className="size-6 fill-current" />
+                                        <BrandMark className="size-6 object-contain" />
                                     )}
                                 </span>
                                 <span className="font-bold tracking-[-0.03em] text-[#3b211b]">{brandName}</span>

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { currentDateTime, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
 import { translate } from '@/lib/i18n';
+import { readReceiptPrintPreferences, receiptPrintStyles } from '@/lib/receipt-printing';
 
 type Sale = {
     public_id: string;

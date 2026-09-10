@@ -194,5 +194,8 @@
     "Metode bayar tidak sesuai dengan akun penerimaan.": "The payment method does not match the receiving account.",
     "Bukti pembayaran hanya dapat ditambahkan untuk pembayaran non-tunai langsung.": "Payment proof can only be added to direct non-cash payments.",
     "Akun penampung transaksi marketplace.": "Marketplace transaction clearing account.",
-    "Saldo :marketplace": ":marketplace balance"
+    "Saldo :marketplace": ":marketplace balance",
+    "Menyiapkan aplikasi…": "Preparing the app…",
+    "Koneksi bermasalah": "Connection problem",
+    "Coba lagi": "Try again"
 }

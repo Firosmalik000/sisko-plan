@@ -153,9 +153,8 @@ export default function PurchasingPage({
             result.applied.push(identity);
         }
 
-            return { ...data, items };
-        });
-        setScannerSummary({ added, skipped });
+        purchase.setData('items', items);
+        setScannerSummary({ added: result.applied.length, skipped: result.failures.length });
         setPurchaseOpen(true);
 
         return result;
