@@ -30,8 +30,10 @@ export function Pagination({ links }: { links: PaginationLink[] }) {
                 ) : (
                     link.label
                 );
-                const className = `inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-lg px-3 text-sm transition ${
-                    link.active ? 'bg-[#102b31] text-white' : 'border border-slate-900/10 bg-white/60 text-slate-700 hover:bg-white'
+                const className = `inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-3 text-sm transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none ${
+                    link.active
+                        ? 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[0_8px_18px_-12px_var(--app-shadow)]'
+                        : 'border border-slate-900/10 bg-white/60 text-slate-700 hover:bg-white'
                 }`;
 
                 if (link.url === null) {

@@ -78,64 +78,6 @@ const primaryItems = [
     { title: 'Transaksi', href: '/sales', icon: ReceiptText },
 ];
 
-const quickMenuItems = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: Home,
-    },
-    {
-        title: 'Produk',
-        href: '/master-data/products',
-        icon: PackageSearch,
-    },
-    {
-        title: 'Kasir',
-        href: '/pos',
-        icon: ShoppingCart,
-    },
-    {
-        title: 'Transaksi',
-        href: '/sales',
-        icon: ReceiptText,
-    },
-    {
-        title: 'Laporan',
-        href: '/reports',
-        icon: BarChart3,
-    },
-    {
-        title: 'Stok',
-        href: '/operations/inventory',
-        icon: Boxes,
-    },
-    {
-        title: 'Stock opname',
-        href: '/operations/stock-opnames',
-        icon: ClipboardCheck,
-    },
-    {
-        title: 'Pembelian',
-        href: '/purchasing',
-        icon: Truck,
-    },
-    {
-        title: 'Supplier',
-        href: '/master-data/suppliers',
-        icon: Handshake,
-    },
-    {
-        title: 'Kas & Bank',
-        href: '/operations/cash',
-        icon: CreditCard,
-    },
-    {
-        title: 'Biaya Toko',
-        href: '/expenses',
-        icon: CircleDollarSign,
-    },
-];
-
 const cashierActions = [
     {
         title: 'Scan penjualan',
@@ -200,14 +142,24 @@ const moreMenuSections = [
                 icon: BarChart3,
             },
             {
-                title: 'Toko',
-                href: '/stores',
-                icon: Store,
+                title: 'Stok',
+                href: '/operations/inventory',
+                icon: Boxes,
             },
             {
                 title: 'Stock opname',
                 href: '/operations/stock-opnames',
                 icon: ClipboardCheck,
+            },
+            {
+                title: 'Pembelian',
+                href: '/purchasing',
+                icon: Truck,
+            },
+            {
+                title: 'Supplier',
+                href: '/master-data/suppliers',
+                icon: Handshake,
             },
             {
                 title: 'Kas & Bank',
@@ -220,9 +172,9 @@ const moreMenuSections = [
                 icon: CircleDollarSign,
             },
             {
-                title: 'Supplier',
-                href: '/master-data/suppliers',
-                icon: Handshake,
+                title: 'Toko',
+                href: '/stores',
+                icon: Store,
             },
         ],
     },
@@ -473,42 +425,17 @@ function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
                                 <p className="truncate text-sm font-black text-[var(--app-ink)]">{auth.user.name}</p>
                                 <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">{auth.user.email}</p>
                             </DropdownMenuLabel>
-                            <div className="px-1 py-3">
-                                <p className="px-2 pb-2 text-[10px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">
-                                    Menu cepat
-                                </p>
-                                <div className="space-y-1">
-                                    {quickMenuItems.map((item) => (
-                                        <DropdownMenuItem asChild key={item.href} className="rounded-2xl p-0 focus:bg-[var(--app-soft)]">
-                                            <Link
-                                                href={item.href}
-                                                className="group flex min-w-0 items-center gap-3 rounded-2xl px-2.5 py-2"
-                                            >
-                                                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-soft)] text-[var(--app-primary)] transition group-hover:bg-white">
-                                                    <item.icon className="size-4" />
-                                                </span>
-                                                <span className="min-w-0 flex-1">
-                                                    <span className="block truncate text-xs font-bold text-[var(--app-ink)]">
-                                                        {t(item.title)}
-                                                    </span>
-                                                </span>
-                                                <ChevronRight className="size-3.5 shrink-0 text-[var(--muted-foreground)]" />
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    ))}
-                                </div>
-                            </div>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem asChild className="rounded-xl p-3">
                                 <Link href={edit()}>
                                     <Settings className="size-4" />
-                                    Pengaturan akun
+                                    {t('Pengaturan akun')}
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild className="rounded-xl p-3 text-rose-700">
                                 <Link href={logout()} as="button" className="w-full" onClick={() => router.flushAll()}>
                                     <LogOut className="size-4" />
-                                    Keluar
+                                    {t('Keluar')}
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -787,7 +714,7 @@ function CashierMenu({ active, disabled }: { active: boolean; disabled: boolean 
 
             <SheetContent
                 side="bottom"
-                className="max-h-[90svh] overflow-y-auto rounded-t-[1.5rem] border-0 bg-[#fffaf7] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] sm:!inset-x-auto sm:!left-1/2 sm:w-full sm:max-w-xl sm:-translate-x-1/2 sm:rounded-t-[1.75rem] [&>button]:top-4 [&>button]:right-4 [&>button]:size-11 [&>button]:rounded-xl [&>button]:bg-white [&>button]:opacity-100 [&>button]:shadow-sm [&>button]:ring-1 [&>button]:ring-[var(--app-ink)]/8"
+                className="max-h-[90svh] overflow-y-auto rounded-t-[1.5rem] border-0 bg-[#fffaf7] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] sm:rounded-t-[1.75rem]"
             >
                 <SheetHeader className="mx-auto w-full max-w-lg px-4 pt-5 pb-3 text-left sm:px-6 sm:pt-6">
                     <div className="mb-3 h-1 w-10 self-center rounded-full bg-[var(--app-primary)]/25" />
@@ -901,12 +828,12 @@ function MoreMenu({ active, disabled }: { active: boolean; disabled: boolean }) 
 
             <SheetContent
                 side="bottom"
-                className="max-h-[88svh] overflow-y-auto rounded-t-[2rem] border-0 bg-[#fff3ef] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)] [&>button]:top-5 [&>button]:right-5 [&>button]:rounded-full [&>button]:bg-white [&>button]:p-2"
+                className="max-h-[88svh] overflow-y-auto rounded-t-[2rem] border-0 bg-[#fff3ef] p-0 text-[var(--app-ink)] shadow-[0_-24px_70px_-20px_var(--app-shadow)]"
             >
                 <SheetHeader className="mx-auto w-full max-w-xl px-4 pt-6 pb-2 text-left sm:px-6">
                     <div className="mb-2 h-1.5 w-12 self-center rounded-full bg-[var(--app-primary)]/15" />
-                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Menu lainnya</SheetTitle>
-                    <SheetDescription className="sr-only">Kelola operasional dan akun.</SheetDescription>
+                    <SheetTitle className="text-xl font-black tracking-[-0.04em] text-[var(--app-ink)]">{t('Menu lainnya')}</SheetTitle>
+                    <SheetDescription className="sr-only">{t('Kelola operasional dan akun.')}</SheetDescription>
                 </SheetHeader>
 
                 <div className="mx-auto w-full max-w-xl space-y-5 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] sm:px-6">
