@@ -1,4 +1,5 @@
 let audioContext: AudioContext | null = null;
+let resumePromise: Promise<void> | null = null;
 let lastToneAt = 0;
 
 type ScannerAudioWindow = Window &
@@ -18,10 +19,18 @@ export function prepareScannerTone(): void {
             return;
         }
 
-        audioContext ??= new AudioContextConstructor();
+        const context = (audioContext ??= new AudioContextConstructor());
 
-        if (audioContext.state === 'suspended') {
-            void audioContext.resume();
+        if (context.state !== 'running' && context.state !== 'closed') {
+            // Starting a source inside the user's tap unlocks Web Audio on
+            // mobile Safari and installed PWAs where resume() alone is ignored.
+            const source = context.createBufferSource();
+            source.buffer = context.createBuffer(1, 1, context.sampleRate);
+            source.connect(context.destination);
+            source.start();
+            resumePromise ??= context.resume().finally(() => {
+                resumePromise = null;
+            });
         }
     } catch {
         // Scanner remains usable when the browser or device blocks audio.
@@ -45,8 +54,8 @@ async function playTone(): Promise<void> {
             return;
         }
 
-        if (audioContext.state === 'suspended') {
-            await audioContext.resume();
+        if (audioContext.state !== 'running' && audioContext.state !== 'closed') {
+            await (resumePromise ?? audioContext.resume());
         }
 
         if (audioContext.state !== 'running') {
