@@ -19,8 +19,6 @@ class GoogleAuthenticationTest extends TestCase
     {
         parent::setUp();
 
-        $this->withSession(['locale' => 'id']);
-
         config()->set('services.google', [
             'enabled' => true,
             'client_id' => 'google-client-id',

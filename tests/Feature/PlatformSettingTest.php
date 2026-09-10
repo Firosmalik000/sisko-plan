@@ -17,13 +17,6 @@ class PlatformSettingTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withSession(['locale' => 'id']);
-    }
-
     public function test_branding_defaults_remain_available_before_the_settings_table_exists(): void
     {
         Schema::drop('platform_settings');
