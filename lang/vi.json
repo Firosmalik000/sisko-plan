@@ -16,6 +16,7 @@
     "The :attribute must be a valid email address.": "Trường :attribute phải là địa chỉ email hợp lệ.",
     "Batas :limit toko pada paket :plan sudah tercapai.": "Đã đạt giới hạn :limit cửa hàng của gói :plan.",
     "Complete :document before starting a new stock count.": "Hoàn tất :document trước khi bắt đầu lần kiểm kê mới.",
+    "Fixed quantity products require whole quantities.": "Sản phẩm có số lượng cố định phải dùng số lượng nguyên.",
     "Selected currency is unavailable.": "Tiền tệ đã chọn không khả dụng.",
     "Nama pelanggan dan nomor telepon harus diisi bersama.": "Tên và số điện thoại khách hàng phải được nhập cùng nhau.",
     "Nomor telepon pelanggan tidak valid.": "Số điện thoại khách hàng không hợp lệ.",

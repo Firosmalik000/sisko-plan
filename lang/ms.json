@@ -276,6 +276,7 @@
     "Bukti pembayaran hanya dapat ditambahkan untuk pembayaran non-tunai langsung.": "Bukti bayaran hanya boleh ditambah untuk bayaran bukan tunai secara langsung.",
     "Akun penampung transaksi marketplace.": "Akaun penampung transaksi marketplace.",
     "Saldo :marketplace": "Baki :marketplace",
+    "Fixed quantity products require whole quantities.": "Produk berkuantiti tetap memerlukan kuantiti nombor bulat.",
     "Menyiapkan aplikasi…": "Menyediakan aplikasi…",
     "Koneksi bermasalah": "Sambungan bermasalah",
     "Coba lagi": "Cuba lagi",

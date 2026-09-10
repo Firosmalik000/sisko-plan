@@ -195,6 +195,7 @@
     "Bukti pembayaran hanya dapat ditambahkan untuk pembayaran non-tunai langsung.": "Payment proof can only be added to direct non-cash payments.",
     "Akun penampung transaksi marketplace.": "Marketplace transaction clearing account.",
     "Saldo :marketplace": ":marketplace balance",
+    "Fixed quantity products require whole quantities.": "Fixed quantity products require whole quantities.",
     "Menyiapkan aplikasi…": "Preparing the app…",
     "Koneksi bermasalah": "Connection problem",
     "Coba lagi": "Try again",

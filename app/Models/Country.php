@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int<0, max> $id
+ */
 #[Fillable(['code', 'name_id', 'name_ms', 'name_en', 'currency_code', 'is_active'])]
 class Country extends Model
 {

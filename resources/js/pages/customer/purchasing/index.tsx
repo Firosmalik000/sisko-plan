@@ -8,6 +8,7 @@ import type { PaginationLink } from '@/components/pagination';
 import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
 import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { decimalInput } from '@/lib/decimal-input';
 import { useTranslation } from '@/lib/i18n';
 
 type Supplier = {
@@ -58,13 +59,13 @@ type PayableTransaction = {
 };
 type Page<T> = { data: T[]; links: PaginationLink[]; total: number };
 
-const cardClass = 'rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-sm sm:p-5';
+const cardClass = 'rounded-2xl bg-white shadow-[0_14px_40px_-32px_rgba(63,31,22,0.55)]';
 const labelClass = 'space-y-1 text-sm font-semibold text-stone-700';
 const defaultItem = (product?: ProductOption) => ({
     product_id: product?.product_id ?? '',
     unit_id: product?.unit_id ?? '',
     quantity: '1',
-    unit_price: product?.purchase_price ?? '0',
+    unit_price: decimalInput(product?.purchase_price ?? '0'),
 });
 const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
 
@@ -111,7 +112,7 @@ export default function PurchasingPage({
     const payment = useForm({
         purchase_id: unpaidPurchases[0]?.public_id ?? '',
         account_id: accounts[0]?.public_id ?? '',
-        amount: unpaidPurchases[0]?.outstanding_amount ?? '',
+        amount: decimalInput(unpaidPurchases[0]?.outstanding_amount ?? ''),
         occurred_at: currentDateTime(timezone),
         notes: '',
         idempotency_key: postingToken(),
@@ -172,7 +173,7 @@ export default function PurchasingPage({
                           ...item,
                           product_id: productId,
                           unit_id: unitId,
-                          unit_price: selected?.purchase_price ?? item.unit_price,
+                          unit_price: decimalInput(selected?.purchase_price ?? item.unit_price),
                       }
                     : item,
             ),

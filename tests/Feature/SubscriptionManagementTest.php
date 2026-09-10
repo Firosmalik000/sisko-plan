@@ -33,6 +33,13 @@ class SubscriptionManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withSession(['locale' => 'id']);
+    }
+
     public function test_new_store_receives_the_active_default_subscription(): void
     {
         $owner = User::factory()->create();
