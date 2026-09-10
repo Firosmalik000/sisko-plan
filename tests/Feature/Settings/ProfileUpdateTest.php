@@ -7,6 +7,7 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -49,7 +50,7 @@ class ProfileUpdateTest extends TestCase
         $this->assertSame('#ee4d2d', $store->settings()->value('theme_color'));
     }
 
-    public function test_owner_can_update_store_receipt_printer_and_theme_preferences(): void
+    public function test_owner_can_update_store_receipt_and_theme_preferences(): void
     {
         $owner = User::factory()->create();
         $store = Store::factory()->for($owner, 'owner')->create();
@@ -66,9 +67,6 @@ class ProfileUpdateTest extends TestCase
                 'receipt_paper_size' => '80mm',
                 'receipt_show_address' => true,
                 'receipt_show_cashier' => false,
-                'printer_name' => 'RPP02N',
-                'auto_print_receipt' => true,
-                'receipt_copies' => 2,
                 'theme_color' => '#176b87',
             ])
             ->assertSessionHasNoErrors();
@@ -77,10 +75,9 @@ class ProfileUpdateTest extends TestCase
         $this->assertDatabaseHas('store_settings', [
             'store_id' => $store->id,
             'receipt_paper_size' => '80mm',
-            'printer_name' => 'RPP02N',
-            'auto_print_receipt' => true,
             'theme_color' => '#176b87',
         ]);
+        $this->assertFalse(Schema::hasColumns('store_settings', ['printer_name', 'auto_print_receipt', 'receipt_copies']));
     }
 
     public function test_non_owner_cannot_update_store_preferences(): void

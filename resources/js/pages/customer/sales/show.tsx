@@ -1,8 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, FileCheck2, Printer, RotateCcw } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { currentDateTime, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
+import { readReceiptPrintPreferences, receiptPrintStyles } from '@/lib/receipt-printing';
 
 type Sale = {
     public_id: string;
@@ -69,7 +70,6 @@ type ReceiptSettings = {
     paper_size: '58mm' | '80mm';
     show_address: boolean;
     show_cashier: boolean;
-    auto_print: boolean;
 };
 const fieldClass =
     'h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15';
@@ -85,6 +85,7 @@ export default function SaleShow({
     timezone,
     receipt,
     showReturnForm = false,
+    openPrintDialog = false,
 }: {
     sale: Sale;
     items: Item[];
@@ -96,6 +97,7 @@ export default function SaleShow({
     timezone: string;
     receipt: ReceiptSettings;
     showReturnForm?: boolean;
+    openPrintDialog?: boolean;
 }) {
     const returnableItems = items.filter((item) => Number(item.returnable_quantity) > 0);
     const returnForm = useForm<ReturnForm>({
@@ -127,18 +129,18 @@ export default function SaleShow({
     const cogs = items.reduce((sum, item) => sum + Number(item.cogs_amount ?? 0), 0);
     const profit = items.reduce((sum, item) => sum + Number(item.gross_profit ?? 0), 0);
 
+    const automaticPrintOpened = useRef(false);
     useEffect(() => {
-        if (receipt.auto_print) {
+        if (openPrintDialog && !automaticPrintOpened.current && readReceiptPrintPreferences(window.localStorage).autoOpenDialog) {
+            automaticPrintOpened.current = true;
             window.print();
         }
-    }, [receipt.auto_print]);
-
-    const paperWidth = receipt.paper_size === '80mm' ? '80mm' : '58mm';
+    }, [openPrintDialog]);
 
     return (
         <>
             <Head title={showReturnForm ? `Retur ${sale.document_number}` : `Struk ${sale.document_number}`} />
-            <style>{`@page { size: ${paperWidth} auto; margin: 3mm; } @media print { body * { visibility: hidden !important; } .print-receipt, .print-receipt * { visibility: visible !important; } .print-receipt { position: absolute; inset: 0; width: ${paperWidth}; max-width: ${paperWidth}; padding: 2mm !important; box-shadow: none !important; border: 0 !important; font-size: 10px !important; } }`}</style>
+            <style>{receiptPrintStyles(receipt.paper_size)}</style>
             <div className="min-h-full bg-[linear-gradient(145deg,var(--app-soft),#fff8ef)] p-4 md:p-8">
                 <div className="mx-auto grid max-w-6xl gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
                     <div className="space-y-5">
@@ -156,7 +158,10 @@ export default function SaleShow({
                                 Cetak struk
                             </button>
                         </div>
-                        <section className="print-receipt rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/8 md:p-9">
+                        <section
+                            data-print-receipt
+                            className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/8 md:p-9"
+                        >
                             <header className="border-b-2 border-dashed border-slate-200 pb-6 text-center">
                                 <p className="font-black tracking-wide text-slate-900 uppercase">{receipt.store_name}</p>
                                 {receipt.show_address && receipt.address && (

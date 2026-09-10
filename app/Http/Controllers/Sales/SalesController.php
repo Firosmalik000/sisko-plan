@@ -129,11 +129,12 @@ class SalesController extends Controller
         ]);
     }
 
-    public function show(Sale $sale, CurrentStore $currentStore): Response
+    public function show(Request $request, Sale $sale, CurrentStore $currentStore): Response
     {
         return Inertia::render('customer/sales/show', [
             ...$this->saleData($sale, $currentStore),
             'showReturnForm' => false,
+            'openPrintDialog' => $request->boolean('print'),
         ]);
     }
 
@@ -259,7 +260,6 @@ class SalesController extends Controller
                 'paper_size' => $storeSettings->receipt_paper_size ?? '58mm',
                 'show_address' => $storeSettings->receipt_show_address ?? true,
                 'show_cashier' => $storeSettings->receipt_show_cashier ?? true,
-                'auto_print' => $storeSettings->auto_print_receipt ?? false,
             ],
         ];
     }

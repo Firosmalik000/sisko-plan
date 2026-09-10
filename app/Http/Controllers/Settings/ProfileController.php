@@ -47,7 +47,7 @@ class ProfileController extends Controller
                 'settings' => $store->settings?->only([
                     'phone', 'email', 'address', 'receipt_header', 'receipt_footer',
                     'receipt_paper_size', 'receipt_show_address', 'receipt_show_cashier',
-                    'printer_name', 'auto_print_receipt', 'receipt_copies', 'theme_color',
+                    'theme_color',
                 ]),
             ],
             'subscription' => $store === null ? null : $subscriptionAccess->summary($store),

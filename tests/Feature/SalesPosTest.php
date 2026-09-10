@@ -641,7 +641,7 @@ class SalesPosTest extends TestCase
             'account_id' => $cash->public_id, 'transaction_discount_amount' => '0', 'paid_amount' => '1000',
             'occurred_at' => '2026-08-07T16:00', 'idempotency_key' => (string) Str::uuid(),
             'items' => [['product_id' => $product->public_id, 'unit_id' => $product->baseUnit->public_id, 'quantity' => '1', 'discount_amount' => '0']],
-        ])->assertRedirect(route('sales.show', Sale::query()->sole()));
+        ])->assertRedirect(route('sales.show', ['sale' => Sale::query()->sole(), 'print' => 1]));
         $sale = Sale::query()->sole();
         $store->settings()->update([
             'address' => 'Jl. Melati No. 10',
@@ -650,18 +650,18 @@ class SalesPosTest extends TestCase
             'receipt_paper_size' => '80mm',
             'receipt_show_address' => true,
             'receipt_show_cashier' => false,
-            'auto_print_receipt' => true,
         ]);
         $this->actingAs($owner)->withSession($session)->get(route('sales.show', $sale))
             ->assertInertia(fn (Assert $page) => $page->component('customer/sales/show')
                 ->where('canReturn', true)
                 ->where('canViewProfit', true)
+                ->where('openPrintDialog', false)
                 ->where('receipt.address', 'Jl. Melati No. 10')
                 ->where('receipt.header', 'Struk Toko Senja')
                 ->where('receipt.footer', 'Terima kasih sudah datang.')
                 ->where('receipt.paper_size', '80mm')
                 ->where('receipt.show_cashier', false)
-                ->where('receipt.auto_print', true)
+                ->missing('receipt.auto_print')
                 ->has('items', 1));
         $this->actingAs($owner)->withSession($session)->post(route('sales.returns.store', $sale), [
             'account_id' => $cash->public_id, 'occurred_at' => '2026-08-07T17:00', 'idempotency_key' => (string) Str::uuid(),

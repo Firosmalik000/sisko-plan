@@ -1,6 +1,5 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import {
-    Bluetooth,
     Building2,
     Camera,
     Check,
@@ -29,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { translate } from '@/lib/i18n';
+import { readReceiptPrintPreferences, receiptPrintStyles, writeReceiptPrintPreferences } from '@/lib/receipt-printing';
 import { previewStoreTheme } from '@/lib/store-theme';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
@@ -43,9 +43,6 @@ type StoreSettings = {
     receipt_paper_size: '58mm' | '80mm';
     receipt_show_address: boolean;
     receipt_show_cashier: boolean;
-    printer_name: string | null;
-    auto_print_receipt: boolean;
-    receipt_copies: number;
     theme_color: string;
 };
 type Store = {
@@ -95,8 +92,9 @@ export default function Profile({
     const [storeAddress, setStoreAddress] = useState(settings?.address ?? '');
     const [receiptHeader, setReceiptHeader] = useState(settings?.receipt_header ?? 'Terima kasih sudah berbelanja');
     const [receiptFooter, setReceiptFooter] = useState(settings?.receipt_footer ?? 'Barang yang sudah dibeli tidak dapat dikembalikan.');
-    const [printerName, setPrinterName] = useState(settings?.printer_name ?? '');
-    const [bluetoothStatus, setBluetoothStatus] = useState<string>();
+    const [autoOpenPrintDialog, setAutoOpenPrintDialog] = useState(
+        () => readReceiptPrintPreferences(typeof window === 'undefined' ? undefined : window.localStorage).autoOpenDialog,
+    );
     const initials = useMemo(
         () =>
             auth.user.name
@@ -112,35 +110,15 @@ export default function Profile({
         setThemeColor(color);
         previewStoreTheme(color);
     };
-    const connectPrinter = async () => {
-        const bluetooth = (
-            navigator as Navigator & {
-                bluetooth?: {
-                    requestDevice(options: { acceptAllDevices: boolean }): Promise<{ name?: string }>;
-                };
-            }
-        ).bluetooth;
-
-        if (!bluetooth) {
-            setBluetoothStatus('Bluetooth belum didukung browser ini. Isi nama printer secara manual.');
-
-            return;
-        }
-
-        try {
-            const device = await bluetooth.requestDevice({
-                acceptAllDevices: true,
-            });
-            setPrinterName(device.name ?? 'Printer Bluetooth');
-            setBluetoothStatus('Printer ditemukan. Simpan untuk mengingatnya.');
-        } catch {
-            setBluetoothStatus('Pemilihan printer dibatalkan.');
-        }
+    const updateAutoOpenPrintDialog = (enabled: boolean) => {
+        setAutoOpenPrintDialog(enabled);
+        writeReceiptPrintPreferences({ autoOpenDialog: enabled }, typeof window === 'undefined' ? undefined : window.localStorage);
     };
 
     return (
         <>
             <Head title="Pengaturan akun & toko" />
+            <style>{receiptPrintStyles(paperSize)}</style>
             <h1 className="sr-only">Pengaturan akun dan toko</h1>
 
             <section className="relative overflow-hidden rounded-[1.35rem] bg-[var(--app-ink)] px-4 py-4 text-white shadow-sm sm:px-5">
@@ -334,7 +312,7 @@ export default function Profile({
                                                     />
                                                     <InputError message={errors.receipt_footer} />
                                                 </Field>
-                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                <div className="grid gap-3">
                                                     <Field label="Lebar kertas">
                                                         <select
                                                             name="receipt_paper_size"
@@ -345,18 +323,6 @@ export default function Profile({
                                                         >
                                                             <option value="58mm">58 mm</option>
                                                             <option value="80mm">80 mm</option>
-                                                        </select>
-                                                    </Field>
-                                                    <Field label="Jumlah salinan">
-                                                        <select
-                                                            name="receipt_copies"
-                                                            defaultValue={settings?.receipt_copies ?? 1}
-                                                            disabled={!store.can_manage}
-                                                            className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                                        >
-                                                            <option value="1">1 lembar</option>
-                                                            <option value="2">2 lembar</option>
-                                                            <option value="3">3 lembar</option>
                                                         </select>
                                                     </Field>
                                                 </div>
@@ -385,38 +351,37 @@ export default function Profile({
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard icon={Bluetooth} eyebrow="Perangkat" title="Printer Bluetooth">
-                                        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-                                            <Field label="Nama printer">
-                                                <Input
-                                                    name="printer_name"
-                                                    value={printerName}
-                                                    onChange={(event) => setPrinterName(event.target.value)}
-                                                    placeholder="Contoh: RPP02N"
-                                                    disabled={!store.can_manage}
-                                                />
-                                                <InputError message={errors.printer_name} />
-                                            </Field>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={connectPrinter}
-                                                disabled={!store.can_manage}
-                                                className="min-h-11"
-                                            >
-                                                <Bluetooth className="size-4" />
-                                                Cari printer
-                                            </Button>
-                                        </div>
-                                        {bluetoothStatus && <p className="mt-2 text-sm text-muted-foreground">{bluetoothStatus}</p>}
-                                        <div className="mt-4">
-                                            <CheckSetting
-                                                name="auto_print_receipt"
-                                                label="Cetak otomatis setelah transaksi berhasil"
-                                                defaultChecked={settings?.auto_print_receipt ?? false}
-                                                disabled={!store.can_manage}
+                                    <SettingsCard icon={Printer} eyebrow="Perangkat ini" title="Printer struk">
+                                        <p className="text-sm leading-6 text-muted-foreground">
+                                            Hubungkan printer melalui pengaturan perangkat. Printer Bluetooth, USB, atau Wi-Fi akan muncul
+                                            jika didukung driver atau Print Service.
+                                        </p>
+                                        <label className="mt-4 flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium">
+                                            <input
+                                                type="checkbox"
+                                                checked={autoOpenPrintDialog}
+                                                onChange={(event) => updateAutoOpenPrintDialog(event.target.checked)}
+                                                className="size-4 accent-[var(--app-primary)]"
                                             />
+                                            Buka dialog cetak otomatis setelah transaksi
+                                        </label>
+                                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                                            <Button type="button" variant="outline" onClick={() => window.print()} className="min-h-11">
+                                                <Printer className="size-4" />
+                                                Cetak percobaan
+                                            </Button>
+                                            <span className="text-xs text-muted-foreground">
+                                                Pilihan ini hanya berlaku di perangkat ini.
+                                            </span>
                                         </div>
+                                        <details className="mt-4 rounded-xl bg-muted/60 px-4 py-3 text-sm">
+                                            <summary className="cursor-pointer font-bold">Cara menyiapkan printer</summary>
+                                            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-muted-foreground">
+                                                <li>Pasangkan printer di pengaturan Bluetooth, USB, atau Wi-Fi perangkat.</li>
+                                                <li>Pasang Print Service atau driver printer bila perangkat memerlukannya.</li>
+                                                <li>Tekan Cetak percobaan, lalu pilih printer dan ukuran kertas yang sesuai.</li>
+                                            </ol>
+                                        </details>
                                     </SettingsCard>
 
                                     <SettingsCard icon={Palette} eyebrow="Personalisasi" title="Warna aplikasi">
@@ -654,6 +619,7 @@ function ReceiptPreview({
     return (
         <div className="rounded-2xl bg-slate-100 p-3">
             <div
+                data-print-receipt
                 className={`mx-auto bg-white p-4 font-mono text-[10px] leading-4 text-slate-800 shadow-md transition-all ${paperSize === '58mm' ? 'max-w-48' : 'max-w-60'}`}
             >
                 <div className="text-center">

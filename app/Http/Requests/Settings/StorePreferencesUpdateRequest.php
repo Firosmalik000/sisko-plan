@@ -25,9 +25,6 @@ class StorePreferencesUpdateRequest extends FormRequest
             'receipt_paper_size' => ['required', 'in:58mm,80mm'],
             'receipt_show_address' => ['required', 'boolean'],
             'receipt_show_cashier' => ['required', 'boolean'],
-            'printer_name' => ['nullable', 'string', 'max:120'],
-            'auto_print_receipt' => ['required', 'boolean'],
-            'receipt_copies' => ['required', 'integer', 'between:1,3'],
             'theme_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ];
     }

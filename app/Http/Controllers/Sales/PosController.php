@@ -107,7 +107,7 @@ class PosController extends Controller
         );
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Sale posted successfully.')]);
 
-        return to_route('sales.show', $sale);
+        return to_route('sales.show', ['sale' => $sale, 'print' => 1]);
     }
 
     private function ensurePaymentMethods(int $storeId): void
