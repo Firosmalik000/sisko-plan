@@ -60,6 +60,7 @@ export default function ProductScanner({
 }: ProductScannerProps) {
     const { scanner: config } = usePage<{ scanner: ScannerConfig }>().props;
     const scanner = useProductScanner(purpose, config);
+    const aiPhotoAvailable = config.visual_recognition_enabled && config.ai_scan_available;
     const [applyErrors, setApplyErrors] = useState<ScannerApplyResult['failures']>([]);
     const applyingRef = useRef(false);
     const [barcodeTarget, setBarcodeTarget] = useState<{ captureId: string; itemIndex: number } | null>(null);
@@ -123,10 +124,29 @@ export default function ProductScanner({
 
     const [scanMode, setScanMode] = useState<ScanMode>('photo');
     const [barcodeError, setBarcodeError] = useState('');
-    const [barcodeLimitReached, setBarcodeLimitReached] = useState(false);
     const [barcodeStatus, setBarcodeStatus] = useState<BarcodeScanStatus>('scanning');
     const barcodeBusyRef = useRef(false);
     const captureBusyRef = useRef(false);
+    useEffect(() => {
+        if (!open || purpose === 'product' || aiPhotoAvailable) {
+            return;
+        }
+
+        queueMicrotask(() => {
+            setAutoActive(false);
+            setScanMode('barcode');
+        });
+    }, [aiPhotoAvailable, open, purpose]);
+    useEffect(() => {
+        if (purpose === 'product' || !scanner.captures.some((capture) => capture.errorCode === 'SCAN_LIMIT_REACHED')) {
+            return;
+        }
+
+        queueMicrotask(() => {
+            setAutoActive(false);
+            setScanMode('barcode');
+        });
+    }, [purpose, scanner.captures]);
     useEffect(() => {
         const resetDelay = barcodeStatusResetDelay(barcodeStatus);
 
@@ -146,7 +166,6 @@ export default function ProductScanner({
 
             barcodeBusyRef.current = true;
             setBarcodeError('');
-            setBarcodeLimitReached(false);
             setBarcodeStatus('reading');
 
             void lookupBarcode(value, barcodeTarget?.captureId, barcodeTarget?.itemIndex)
@@ -174,7 +193,6 @@ export default function ProductScanner({
                 })
                 .catch((error: unknown) => {
                     setBarcodeStatus('not_found');
-                    setBarcodeLimitReached(scannerErrorCode(error) === 'SCAN_LIMIT_REACHED');
                     setBarcodeError(error instanceof Error ? error.message : 'Pencarian barcode gagal. Coba lagi.');
                 })
                 .finally(() => {
@@ -363,9 +381,8 @@ export default function ProductScanner({
         setPendingPhoto(null);
         setRetakeCaptureId(null);
         setBarcodeTarget(null);
-        setScanMode('photo');
+        setScanMode(purpose !== 'product' && !aiPhotoAvailable ? 'barcode' : 'photo');
         setBarcodeError('');
-        setBarcodeLimitReached(false);
         setBarcodeStatus('scanning');
         barcodeBusyRef.current = false;
         onOpenChange(false);
@@ -378,7 +395,6 @@ export default function ProductScanner({
     const startScanningAgain = () => {
         setRetakeCaptureId(null);
         setBarcodeError('');
-        setBarcodeLimitReached(false);
         setBarcodeStatus('scanning');
         barcodeBusyRef.current = false;
         scanner.setReviewing(false);
@@ -598,6 +614,9 @@ export default function ProductScanner({
                 ) : (
                     <CameraViewport
                         barcodeEnabled={purpose !== 'product'}
+                        aiPhotoAvailable={aiPhotoAvailable}
+                        aiQuotaExhausted={config.visual_recognition_enabled && !config.ai_scan_available}
+                        manualPhotoFallback={purpose === 'product' && !aiPhotoAvailable}
                         autoActive={autoActive}
                         autoCaptureStatus={autoCaptureStatus}
                         autoCaptureProgress={autoCaptureProgress}
@@ -643,17 +662,15 @@ export default function ProductScanner({
                         }}
                         scanMode={scanMode}
                         barcodeError={barcodeError}
-                        barcodeLimitReached={barcodeLimitReached}
                         barcodeStatus={barcodeStatus}
                         photoStatus={photoStatus}
                         photoError={barcodeError || latestCameraCapture?.error || ''}
                         onToggleScanMode={() => {
                             setBarcodeError('');
-                            setBarcodeLimitReached(false);
                             setBarcodeStatus('scanning');
                             barcodeBusyRef.current = false;
                             setScanMode((mode) => {
-                                const nextMode = mode === 'photo' ? 'barcode' : 'photo';
+                                const nextMode = mode === 'photo' ? 'barcode' : aiPhotoAvailable ? 'photo' : 'barcode';
 
                                 return nextMode;
                             });
@@ -667,12 +684,4 @@ export default function ProductScanner({
             </DialogContent>
         </Dialog>
     );
-}
-
-function scannerErrorCode(error: unknown): string | null {
-    if (typeof error !== 'object' || error === null || !('code' in error)) {
-        return null;
-    }
-
-    return typeof error.code === 'string' ? error.code : null;
 }

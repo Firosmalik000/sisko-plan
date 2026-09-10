@@ -39,7 +39,7 @@ const categoryCopy: Record<OfferCategory, { title: string; label: string; descri
         description: 'Buka ruang untuk toko berikutnya dalam akun yang sama.',
     },
     staff_capacity: { title: 'Tambah kapasitas staf', label: 'Staf', description: 'Perluas akses tim tanpa mengganti paket utama.' },
-    scan_capacity: { title: 'Tambah kuota scan', label: 'Scan', description: 'Lanjutkan pemindaian ketika kuota bulan ini menipis.' },
+    scan_capacity: { title: 'Tambah kuota scan AI', label: 'Scan AI', description: 'Tambah pengenalan produk dari foto untuk bulan ini.' },
     product_capacity: {
         title: 'Tambah kapasitas produk',
         label: 'Produk',

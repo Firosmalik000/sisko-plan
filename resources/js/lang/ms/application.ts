@@ -771,4 +771,18 @@ export const malayOverrides: Record<string, string> = {
     'Foto tidak dapat ditampilkan.': 'Gambar tidak dapat dipaparkan.',
     'Gunakan foto': 'Gunakan gambar',
     Ulangi: 'Ambil semula',
+    'Kuota foto AI habis. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'Had imej pintar telah dicapai. Anda masih boleh melengkapkan butiran barangan sendiri menggunakan imej ini.',
+    'Kuota foto AI bulan ini habis. Barcode tetap bisa digunakan.':
+        'Had penggunaan imej pintar bagi tempoh semasa telah dicapai. Pengimbasan kod bar boleh diteruskan.',
+    'Tambah kuota AI untuk mengenali produk dari foto.': 'Naik taraf had AI bagi pengecaman barangan melalui imej.',
+    'Tambah kuota scan AI': 'Tambah kuota imbasan AI',
+    'Tambah pengenalan produk dari foto untuk bulan ini.': 'Tambah pengecaman barangan melalui imej bagi bulan ini.',
+    'Scan AI bulan ini': 'Imbasan AI bulan ini',
+    'Scan AI': 'Imbasan AI',
+    'scan AI / bulan': 'imbasan AI / bulan',
+    'Foto AI sedang tidak tersedia. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'Pengecaman imej AI tidak tersedia. Anda masih boleh menggunakan imej ini untuk melengkapkan butiran barangan sendiri.',
+    'Foto AI sedang tidak tersedia. Barcode tetap bisa digunakan.':
+        'Pengecaman imej AI tidak tersedia. Pengimbasan kod bar masih boleh digunakan.',
 };

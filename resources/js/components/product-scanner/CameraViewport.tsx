@@ -10,6 +10,9 @@ import type { ScannerCapture } from './types';
 
 export function CameraViewport({
     barcodeEnabled,
+    aiPhotoAvailable,
+    aiQuotaExhausted,
+    manualPhotoFallback,
     autoActive,
     autoCaptureStatus,
     autoCaptureProgress,
@@ -37,13 +40,15 @@ export function CameraViewport({
     manualActionLabel,
     scanMode,
     barcodeError,
-    barcodeLimitReached,
     barcodeStatus,
     photoStatus,
     photoError,
     onToggleScanMode,
 }: {
     barcodeEnabled: boolean;
+    aiPhotoAvailable: boolean;
+    aiQuotaExhausted: boolean;
+    manualPhotoFallback: boolean;
     autoActive: boolean;
     autoCaptureStatus: AutoCaptureStatus;
     autoCaptureProgress: number;
@@ -71,7 +76,6 @@ export function CameraViewport({
     manualActionLabel?: string;
     scanMode: 'photo' | 'barcode';
     barcodeError: string;
-    barcodeLimitReached: boolean;
     barcodeStatus: BarcodeScanStatus;
     photoStatus: 'idle' | 'reading' | 'success' | 'not_found' | 'failed';
     photoError: string;
@@ -305,12 +309,13 @@ export function CameraViewport({
                         <div className="flex min-w-0 flex-1 rounded-full bg-[#14201d]/80 p-1 backdrop-blur-sm">
                             <button
                                 type="button"
+                                disabled={!aiPhotoAvailable}
                                 onClick={() => {
                                     if (scanMode !== 'photo') {
                                         onToggleScanMode();
                                     }
                                 }}
-                                className={`min-h-12 min-w-0 flex-1 rounded-full px-2 text-xs font-black transition ${scanMode === 'photo' ? 'bg-white !text-[#14201d]' : 'text-white/70'}`}
+                                className={`min-h-12 min-w-0 flex-1 rounded-full px-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${scanMode === 'photo' ? 'bg-white !text-[#14201d]' : 'text-white/70'}`}
                                 aria-pressed={scanMode === 'photo'}
                             >
                                 {translate('Foto barang')}
@@ -341,17 +346,35 @@ export function CameraViewport({
                         </button>
                     )}
                 </div>
+                {!aiPhotoAvailable && (
+                    <div role="status" className="mx-5 mb-3 rounded-xl bg-[#fff0d9] px-3 py-2 text-center text-xs font-bold text-[#694016]">
+                        <p>
+                            {translate(
+                                manualPhotoFallback
+                                    ? aiQuotaExhausted
+                                        ? 'Kuota foto AI habis. Foto ini tetap bisa dipakai untuk isi produk manual.'
+                                        : 'Foto AI sedang tidak tersedia. Foto ini tetap bisa dipakai untuk isi produk manual.'
+                                    : aiQuotaExhausted
+                                      ? 'Kuota foto AI bulan ini habis. Barcode tetap bisa digunakan.'
+                                      : 'Foto AI sedang tidak tersedia. Barcode tetap bisa digunakan.',
+                            )}
+                        </p>
+                        {!manualPhotoFallback && aiQuotaExhausted && (
+                            <>
+                                <p className="mt-1 font-medium">{translate('Tambah kuota AI untuk mengenali produk dari foto.')}</p>
+                                <Link
+                                    href="/pricing?category=scan_capacity#category-scan_capacity"
+                                    className="mt-2 inline-flex min-h-10 items-center justify-center rounded-lg bg-[#14201d] px-4 font-black text-white"
+                                >
+                                    {translate('Tambah kuota scan AI')}
+                                </Link>
+                            </>
+                        )}
+                    </div>
+                )}
                 {barcodeError && (
                     <div role="alert" className="mx-5 mb-3 rounded-xl bg-red-950/75 px-3 py-2 text-center text-xs font-bold text-red-100">
                         <p>{translate(barcodeError)}</p>
-                        {barcodeLimitReached && (
-                            <Link
-                                href="/pricing?category=scan_capacity#category-scan_capacity"
-                                className="mt-2 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-[#14201d] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-red-950 focus-visible:outline-none"
-                            >
-                                {translate('Tambah kuota scan')}
-                            </Link>
-                        )}
                     </div>
                 )}
                 {scanMode === 'photo' && photoStatus === 'failed' && (

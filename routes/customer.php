@@ -46,7 +46,6 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 
         Route::post('scanner/catalog-item-lookups', [ProductScannerController::class, 'lookup'])->name('scanner.catalog-items.lookup');
-        Route::post('scanner/usages', [ProductScannerController::class, 'consume'])->name('scanner.usages.store');
         Route::post('scanner/catalog-item-recognitions', [ProductScannerController::class, 'recognize'])->name('scanner.catalog-items.recognize');
         Route::post('scanner/catalog-item-discoveries', [ProductScannerController::class, 'discover'])->name('scanner.catalog-items.discover');
 

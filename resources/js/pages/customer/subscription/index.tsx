@@ -177,7 +177,7 @@ export default function StoreSubscriptionPage({
                         />
                         <UsageCard
                             icon={ScanLine}
-                            title="Scan bulan ini"
+                            title="Scan AI bulan ini"
                             used={usage.scans_used}
                             limit={usage.max_scans}
                             percentage={scanPercentage}

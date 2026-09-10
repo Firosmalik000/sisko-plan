@@ -12,6 +12,7 @@ use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\Intelligence\CatalogIntelligenceClient;
+use App\Services\Subscriptions\ScanQuota;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
@@ -175,11 +176,12 @@ class ProductScannerEndpointTest extends TestCase
             ])->assertForbidden();
     }
 
-    public function test_scanner_quota_is_account_scoped_and_resets_each_month(): void
+    public function test_barcode_lookup_does_not_consume_ai_scan_quota(): void
     {
         $this->travelTo('2026-09-07 10:00:00');
         [$user, $store] = $this->ownerAndStore();
-        $store->subscription()->sole()->plan()->update(['max_scans' => 2]);
+        $store->subscription()->sole()->plan()->update(['max_scans' => 1]);
+        app(ScanQuota::class)->consume($store, 'existing-ai-scan', 'recognize');
         $payload = [
             'purpose' => 'sale',
             'type' => 'barcode',
@@ -190,28 +192,15 @@ class ProductScannerEndpointTest extends TestCase
             ->postJson(route('scanner.catalog-items.lookup'), $payload)->assertOk();
         $this->actingAs($user)->withSession(['active_store_id' => $store->id])
             ->postJson(route('scanner.catalog-items.lookup'), $payload)->assertOk();
-        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
-            ->postJson(route('scanner.catalog-items.lookup'), $payload)
-            ->assertTooManyRequests()
-            ->assertJsonPath('code', 'SCAN_LIMIT_REACHED')
-            ->assertJsonPath('used', 2)
-            ->assertJsonPath('limit', 2);
         $this->assertDatabaseHas('subscription_scan_usages', [
             'user_id' => $user->id,
             'period_start' => '2026-09-01',
-            'used' => 2,
-        ]);
-        $this->assertDatabaseCount('subscription_scan_events', 2);
-
-        // 17:01 UTC is already the next calendar month in Asia/Jakarta.
-        $this->travelTo('2026-09-30 17:01:00');
-        $this->actingAs($user)->withSession(['active_store_id' => $store->id])
-            ->postJson(route('scanner.usages.store'), ['purpose' => 'product'])->assertOk();
-        $this->assertDatabaseHas('subscription_scan_usages', [
-            'user_id' => $user->id,
-            'period_start' => '2026-10-01',
             'used' => 1,
         ]);
+        $this->assertDatabaseCount('subscription_scan_events', 1);
+        $this->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
+            ->where('scanner.ai_scan_available', false)
+            ->where('scanner.ai_scans_remaining', 0));
     }
 
     public function test_product_discovery_forwards_up_to_three_images_without_writing_products(): void
@@ -264,7 +253,11 @@ class ProductScannerEndpointTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('scanner.max_images_per_request', 3)
                 ->where('scanner.auto_capture_enabled', true)
-                ->where('scanner.visual_recognition_enabled', true));
+                ->where('scanner.visual_recognition_enabled', true)
+                ->where('scanner.ai_scan_available', true)
+                ->where('scanner.ai_scan_unlimited', false)
+                ->where('scanner.ai_scans_used', 0)
+                ->where('scanner.ai_scans_remaining', 100));
     }
 
     public function test_catalog_sync_uses_only_exact_variant_photos_when_multiple_variants_exist(): void

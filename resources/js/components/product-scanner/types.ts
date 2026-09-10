@@ -74,6 +74,11 @@ export type ScannerConfig = {
     max_images_per_request: number;
     auto_capture_enabled: boolean;
     visual_recognition_enabled: boolean;
+    ai_scan_limit: number;
+    ai_scans_used: number;
+    ai_scans_remaining: number | null;
+    ai_scan_unlimited: boolean;
+    ai_scan_available: boolean;
 };
 
 export type ScannerApplyResult = {

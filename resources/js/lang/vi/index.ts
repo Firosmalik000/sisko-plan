@@ -679,4 +679,16 @@ export const vietnameseCatalog: Record<string, string> = {
     'Foto tidak dapat ditampilkan.': 'Không thể hiển thị ảnh.',
     'Gunakan foto': 'Dùng ảnh',
     Ulangi: 'Chụp lại',
+    'Kuota foto AI habis. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'Đã hết hạn mức ảnh AI. Bạn vẫn có thể dùng ảnh này để nhập sản phẩm thủ công.',
+    'Kuota foto AI bulan ini habis. Barcode tetap bisa digunakan.': 'Đã hết hạn mức ảnh AI tháng này. Bạn vẫn có thể quét mã vạch.',
+    'Tambah kuota AI untuk mengenali produk dari foto.': 'Tăng hạn mức AI để nhận diện sản phẩm từ ảnh.',
+    'Tambah kuota scan AI': 'Tăng hạn mức quét AI',
+    'Tambah pengenalan produk dari foto untuk bulan ini.': 'Tăng lượt nhận diện sản phẩm từ ảnh trong tháng này.',
+    'Scan AI bulan ini': 'Lượt quét AI tháng này',
+    'Scan AI': 'Lượt quét AI',
+    'scan AI / bulan': 'lượt quét AI / tháng',
+    'Foto AI sedang tidak tersedia. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'Nhận diện ảnh AI hiện không khả dụng. Bạn vẫn có thể dùng ảnh này để nhập sản phẩm thủ công.',
+    'Foto AI sedang tidak tersedia. Barcode tetap bisa digunakan.': 'Nhận diện ảnh AI hiện không khả dụng. Bạn vẫn có thể quét mã vạch.',
 };

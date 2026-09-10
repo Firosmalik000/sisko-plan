@@ -135,6 +135,14 @@ class HandleInertiaRequests extends Middleware
                 'visual_recognition_enabled' => (bool) config('services.catalog_intelligence.enabled')
                     && filled(config('services.catalog_intelligence.url'))
                     && filled(config('services.catalog_intelligence.token')),
+                'ai_scan_limit' => (int) ($subscription['max_scans'] ?? 0),
+                'ai_scans_used' => (int) ($subscription['scans_used'] ?? 0),
+                'ai_scans_remaining' => ($subscription['max_scans'] ?? 0) === 0
+                    ? null
+                    : max(0, (int) $subscription['max_scans'] - (int) ($subscription['scans_used'] ?? 0)),
+                'ai_scan_unlimited' => ($subscription['max_scans'] ?? 0) === 0,
+                'ai_scan_available' => ($subscription['max_scans'] ?? 0) === 0
+                    || (int) ($subscription['scans_used'] ?? 0) < (int) $subscription['max_scans'],
             ],
             'storeCreation' => $storeCreation,
             'stockAlerts' => $stockAlerts,

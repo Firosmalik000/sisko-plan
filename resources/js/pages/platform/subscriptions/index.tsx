@@ -132,7 +132,7 @@ type OfferCategory = 'store_capacity' | 'staff_capacity' | 'scan_capacity' | 'pr
 const offerCategoryLabels: Record<OfferCategory, string> = {
     store_capacity: 'Kapasitas toko',
     staff_capacity: 'Kapasitas staf',
-    scan_capacity: 'Kuota scan',
+    scan_capacity: 'Kuota scan AI',
     product_capacity: 'Kapasitas produk',
     general: 'Paket gabungan',
 };
@@ -486,7 +486,9 @@ function PlanRow({ plan, canManage, compact = false }: { plan: Plan; canManage: 
                     {(plan.kind === 'base' || plan.max_stores > 0) && <span>{localizedCapacity(plan, plan.max_stores, 'toko')}</span>}
                     {(plan.kind === 'base' || plan.max_products > 0) && <span>{localizedCapacity(plan, plan.max_products, 'produk')}</span>}
                     {(plan.kind === 'base' || plan.max_members > 0) && <span>{localizedCapacity(plan, plan.max_members, 'staf')}</span>}
-                    {(plan.kind === 'base' || plan.max_scans > 0) && <span>{localizedCapacity(plan, plan.max_scans, 'scan / bulan')}</span>}
+                    {(plan.kind === 'base' || plan.max_scans > 0) && (
+                        <span>{localizedCapacity(plan, plan.max_scans, 'scan AI / bulan')}</span>
+                    )}
                 </div>
             </div>
             {canManage && (

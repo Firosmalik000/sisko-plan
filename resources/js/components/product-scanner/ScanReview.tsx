@@ -185,7 +185,7 @@ export function ScanReview({
                                             href="/pricing?category=scan_capacity#category-scan_capacity"
                                             className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none"
                                         >
-                                            Tambah kuota scan
+                                            {translate('Tambah kuota scan AI')}
                                         </Link>
                                     )}
                                     {capture.retryable && (

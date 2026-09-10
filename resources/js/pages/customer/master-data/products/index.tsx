@@ -21,6 +21,7 @@ import InputError from '@/components/input-error';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import BarcodeScannerDialog from '@/components/product-scanner/BarcodeScannerDialog';
+import type { ScannerConfig } from '@/components/product-scanner/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -623,9 +624,11 @@ export default function ProductsIndex({
     status: string;
     canManage: boolean;
 }) {
-    const { subscriptionState } = usePage<{
+    const { subscriptionState, scanner: scannerConfig } = usePage<{
         subscriptionState: SubscriptionState | null;
+        scanner: ScannerConfig;
     }>().props;
+    const aiDiscoveryAvailable = scannerConfig.visual_recognition_enabled && scannerConfig.ai_scan_available;
     const productLimitReached = Boolean(
         subscriptionState?.can_write &&
         subscriptionState.max_products > 0 &&
@@ -952,6 +955,18 @@ export default function ProductsIndex({
     };
     const handleProductCapture = (photo: File) => {
         if (scannerFlow === 'create') {
+            if (!aiDiscoveryAvailable) {
+                setActiveDraftId(null);
+                setDiscoveryPrefill(false);
+                setEditing(null);
+                form.setData({ ...blankForm(), photo });
+                form.clearErrors();
+                setScannerOpen(false);
+                setFormOpen(true);
+
+                return;
+            }
+
             productDrafts.addPhoto(photo);
 
             return;
@@ -2315,7 +2330,7 @@ export default function ProductsIndex({
                     productDraftCount={scannerFlow === 'create' ? productDrafts.drafts.length : 0}
                     productCanCapture={scannerFlow !== 'create' || productDrafts.pendingPhotos < 10}
                     onRemoveProductPhoto={removeDraft}
-                    singleCapture={scannerFlow !== 'create'}
+                    singleCapture={scannerFlow !== 'create' || !aiDiscoveryAvailable}
                     manualActionLabel={scannerFlow !== 'create' ? 'Lanjut tanpa ganti foto' : undefined}
                     onManualSearch={() => {
                         setScannerOpen(false);

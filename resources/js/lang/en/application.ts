@@ -726,4 +726,18 @@ export const englishOverrides: Record<string, string> = {
     'Foto tidak dapat ditampilkan.': 'Photo could not be displayed.',
     'Gunakan foto': 'Use photo',
     Ulangi: 'Retake',
+    'Kuota foto AI habis. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'Your AI photo allowance is used up. You can still use this photo to enter the product manually.',
+    'Kuota foto AI bulan ini habis. Barcode tetap bisa digunakan.':
+        'Your AI photo allowance is used up for this month. Barcode scanning is still available.',
+    'Tambah kuota AI untuk mengenali produk dari foto.': 'Add AI allowance to recognize products from photos.',
+    'Tambah kuota scan AI': 'Increase AI scan allowance',
+    'Tambah pengenalan produk dari foto untuk bulan ini.': 'Add more photo product recognition for this month.',
+    'Scan AI bulan ini': 'AI scans this month',
+    'Scan AI': 'AI scans',
+    'scan AI / bulan': 'AI scans / month',
+    'Foto AI sedang tidak tersedia. Foto ini tetap bisa dipakai untuk isi produk manual.':
+        'AI photo recognition is unavailable. You can still use this photo to enter the product manually.',
+    'Foto AI sedang tidak tersedia. Barcode tetap bisa digunakan.':
+        'AI photo recognition is unavailable. Barcode scanning is still available.',
 };

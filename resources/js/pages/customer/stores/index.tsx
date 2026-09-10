@@ -90,7 +90,7 @@ export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; us
                             />
                             <CapacityItem
                                 icon={ScanLine}
-                                title="Scan bulan ini"
+                                title="Scan AI bulan ini"
                                 used={usage.scans_used}
                                 limit={usage.max_scans}
                                 href="/pricing?category=scan_capacity#category-scan_capacity"

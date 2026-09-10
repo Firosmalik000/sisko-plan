@@ -671,7 +671,7 @@ function scannerFailure(code: string | null | undefined): {
             return { error: 'Batas layanan tercapai. Coba lagi nanti atau hubungi administrator.', errorCode: code, retryable: false };
         case 'SCAN_LIMIT_REACHED':
             return {
-                error: 'Kuota scan bulan ini sudah habis. Tambahkan kapasitas untuk melanjutkan.',
+                error: 'Kuota foto AI bulan ini habis. Barcode tetap bisa digunakan.',
                 errorCode: code,
                 retryable: false,
             };

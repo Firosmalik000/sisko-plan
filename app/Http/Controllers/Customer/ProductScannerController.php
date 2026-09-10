@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Customer;
 use App\Actions\Intelligence\RecognizeCatalogItems;
 use App\Exceptions\ScanQuotaExceeded;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Scanner\ConsumeScannerUsageRequest;
 use App\Http\Requests\Scanner\DiscoverCatalogItemRequest;
 use App\Http\Requests\Scanner\LookupCatalogItemRequest;
 use App\Http\Requests\Scanner\RecognizeCatalogItemsRequest;
@@ -17,30 +16,12 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
 use Throwable;
 
 class ProductScannerController extends Controller
 {
-    public function consume(ConsumeScannerUsageRequest $request, CurrentStore $currentStore, ScanQuota $quota): JsonResponse
+    public function lookup(LookupCatalogItemRequest $request, CurrentStore $currentStore, RecognizeCatalogItems $recognizer): JsonResponse
     {
-        try {
-            $quota->consume($currentStore->get(), $this->scanRequestKey(), 'barcode');
-        } catch (ScanQuotaExceeded $exception) {
-            return $this->quotaExceeded($request, $exception);
-        }
-
-        return response()->json(['status' => 'success']);
-    }
-
-    public function lookup(LookupCatalogItemRequest $request, CurrentStore $currentStore, RecognizeCatalogItems $recognizer, ScanQuota $quota): JsonResponse
-    {
-        try {
-            $quota->consume($currentStore->get(), $this->scanRequestKey(), 'lookup');
-        } catch (ScanQuotaExceeded $exception) {
-            return $this->quotaExceeded($request, $exception);
-        }
-
         $type = $request->validated('type');
         $unit = ProductUnit::query()
             ->where('store_id', $currentStore->id())
@@ -169,7 +150,7 @@ class ProductScannerController extends Controller
             'status' => 'error',
             'code' => 'SCAN_LIMIT_REACHED',
             'retryable' => false,
-            'message' => __('Kuota :limit scan bulan ini sudah habis. Tambahkan kapasitas scan untuk melanjutkan.', [
+            'message' => __('Kuota :limit scan foto AI bulan ini sudah habis. Barcode tetap bisa digunakan.', [
                 'limit' => $exception->limit,
             ]),
             'used' => $exception->used,
@@ -192,11 +173,6 @@ class ProductScannerController extends Controller
             $request->input('currency'),
             array_map(fn (UploadedFile $image): string => hash('sha256', $image->getContent()), $images),
         ], JSON_THROW_ON_ERROR));
-    }
-
-    private function scanRequestKey(): string
-    {
-        return (string) Str::ulid();
     }
 
     private function requestId(Request $request): string
