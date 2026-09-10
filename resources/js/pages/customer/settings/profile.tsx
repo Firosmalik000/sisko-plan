@@ -548,7 +548,7 @@ function SettingsCard({
                     <Icon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
-                    <h2 className="truncate text-lg font-black tracking-[-0.025em]">{title}</h2>
+                    <h2 className="truncate text-lg font-black tracking-[-0.025em]">{translate(title)}</h2>
                 </div>
                 {badge && <Badge variant="secondary">{badge}</Badge>}
             </header>
@@ -571,7 +571,7 @@ function Field({
         <div className={className}>
             <Label className="mb-2 flex items-center gap-1.5">
                 {Icon && <Icon className="size-3.5 text-muted-foreground" />}
-                {label}
+                {translate(label)}
             </Label>
             {children}
         </div>
@@ -599,7 +599,7 @@ function CheckSetting({
                 disabled={disabled}
                 className="size-4 accent-[var(--app-primary)]"
             />
-            {label}
+            {translate(label)}
         </label>
     );
 }
@@ -656,7 +656,7 @@ function UsageRow({ label, used, limit }: { label: string; used: number; limit: 
     return (
         <div>
             <div className="mb-1.5 flex justify-between text-sm">
-                <span className="font-semibold">{label}</span>
+                <span className="font-semibold">{translate(label)}</span>
                 <span className="text-muted-foreground">
                     {used} / {limit === 0 ? '∞' : limit}
                 </span>

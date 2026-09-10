@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
+import { SubscriptionLimitContactDialog } from '@/components/subscription-limit-contact-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { translate } from '@/lib/i18n';
 import { barcodeStatusResetDelay } from './barcode-scanner-feedback';
@@ -124,7 +125,9 @@ export default function ProductScanner({
 
     const [scanMode, setScanMode] = useState<ScanMode>('photo');
     const [barcodeError, setBarcodeError] = useState('');
-    const [barcodeStatus, setBarcodeStatus] = useState<BarcodeScanStatus>('scanning');
+    const [barcodeLimitReached, setBarcodeLimitReached] = useState(false);
+    const [scanLimitOpen, setScanLimitOpen] = useState(false);
+    const [barcodeStatus, setBarcodeStatus] = useState<'idle' | 'reading' | 'success' | 'not_found'>('idle');
     const barcodeBusyRef = useRef(false);
     const captureBusyRef = useRef(false);
     useEffect(() => {
@@ -165,10 +168,32 @@ export default function ProductScanner({
             }
 
             barcodeBusyRef.current = true;
+            playScannerSuccessTone();
             setBarcodeError('');
             setBarcodeStatus('reading');
 
-            void lookupBarcode(value, barcodeTarget?.captureId, barcodeTarget?.itemIndex)
+            if (purpose === 'product' && onBarcodeDetected) {
+                void consumeBarcode()
+                    .then(() => {
+                        onBarcodeDetected(value);
+                        setBarcodeStatus('success');
+                        scanner.reset();
+                        setCameraCaptureStart(0);
+                        onOpenChange(false);
+                    })
+                    .catch((error: unknown) => {
+                        setBarcodeStatus('not_found');
+                        setBarcodeLimitReached(scannerErrorCode(error) === 'SCAN_LIMIT_REACHED');
+                        setBarcodeError(error instanceof Error ? error.message : 'Pencatatan scan gagal. Coba lagi.');
+                    })
+                    .finally(() => {
+                        barcodeBusyRef.current = false;
+                    });
+
+                return;
+            }
+
+            void lookupBarcode(value)
                 .then((found) => {
                     setBarcodeStatus(found ? 'success' : 'not_found');
 
@@ -183,12 +208,7 @@ export default function ProductScanner({
                     }
 
                     if (found) {
-                        playScannerSuccessTone();
-
-                        if (barcodeTarget) {
-                            setBarcodeTarget(null);
-                            scanner.setReviewing(true);
-                        }
+                        scanner.setReviewing(true);
                     }
                 })
                 .catch((error: unknown) => {
@@ -391,6 +411,10 @@ export default function ProductScanner({
         scanner.reset();
         dismiss();
     };
+    const openScanLimitContact = () => {
+        dismiss();
+        setScanLimitOpen(true);
+    };
 
     const startScanningAgain = () => {
         setRetakeCaptureId(null);
@@ -501,187 +525,104 @@ export default function ProductScanner({
     };
 
     return (
-        <Dialog open={open} onOpenChange={(next) => !next && dismiss()}>
-            <DialogContent
-                aria-describedby={undefined}
-                className="!inset-0 z-[70] block !h-[100dvh] !w-auto !max-w-none !translate-x-0 !translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[var(--app-ink)] p-0 shadow-none duration-300 [&>button]:hidden"
-            >
-                <DialogTitle className="sr-only">{translate(title)}</DialogTitle>
-                {pendingPhoto ? (
-                    <div className="flex h-full flex-col bg-black p-4 text-white">
-                        <img ref={attachPhotoPreview} alt={translate(title)} className="min-h-0 flex-1 object-contain" />
-                        {barcodeError && (
-                            <p role="alert" className="py-2 text-center text-white">
-                                {translate(barcodeError)}
-                            </p>
-                        )}
-                        <div className="flex flex-wrap justify-center gap-3 pt-4 pb-[env(safe-area-inset-bottom)]">
-                            <button
-                                type="button"
-                                disabled={savingPhoto}
-                                onClick={dismiss}
-                                className="min-h-11 rounded-xl border border-white px-5 text-white"
-                            >
-                                {translate('Batal')}
-                            </button>
-                            <button
-                                type="button"
-                                disabled={savingPhoto}
-                                onClick={() => {
-                                    setPendingPhoto(null);
-                                    setBarcodeError('');
-                                }}
-                                className="min-h-11 rounded-xl border border-white px-5 text-white"
-                            >
-                                {translate('Ulangi')}
-                            </button>
-                            <button
-                                type="button"
-                                disabled={savingPhoto}
-                                className="min-h-11 rounded-xl bg-white px-5 font-semibold text-black disabled:opacity-60"
-                                onClick={async () => {
-                                    if (applyingRef.current) {
-                                        return;
-                                    }
+        <>
+            <Dialog open={open} onOpenChange={(next) => !next && dismiss()}>
+                <DialogContent
+                    aria-describedby={undefined}
+                    className="!inset-0 z-[70] block !h-[100dvh] !w-auto !max-w-none !translate-x-0 !translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[var(--app-ink)] p-0 shadow-none duration-300 [&>button]:hidden"
+                >
+                    <DialogTitle className="sr-only">{title}</DialogTitle>
+                    {scanner.reviewing ? (
+                        <ScanReview
+                            captures={scanner.captures}
+                            selections={scanner.selections}
+                            purpose={purpose}
+                            onBack={startScanningAgain}
+                            onScanAgain={startScanningAgain}
+                            onRemove={scanner.removeCapture}
+                            onRemoveResult={scanner.removeResult}
+                            onRetry={scanner.retry}
+                            onRetake={(captureId) => {
+                                setRetakeCaptureId(captureId);
+                                scanner.setReviewing(false);
+                            }}
+                            onSelectProduct={scanner.selectProductCandidate}
+                            onSelectOption={scanner.selectSaleOption}
+                            onClearProduct={scanner.clearProductSelection}
+                            onSetSkipped={scanner.setResultSkipped}
+                            onQuantityChange={scanner.setResultQuantity}
+                            manualProducts={manualProducts}
+                            onScanLimitContact={openScanLimitContact}
+                            onConfirm={(selections) => {
+                                onConfirm(selections);
+                                complete();
+                            }}
+                        />
+                    ) : (
+                        <CameraViewport
+                            videoRef={camera.videoRef}
+                            captures={cameraCaptures}
+                            ready={camera.ready}
+                            error={camera.error}
+                            autoPaused={autoPaused}
+                            torchAvailable={camera.torchAvailable}
+                            torchOn={camera.torchOn}
+                            onClose={closeCamera}
+                            onCapture={() => void takePhoto()}
+                            onGallery={gallery}
+                            onRemove={cancelCameraCapture}
+                            onFinish={() => {
+                                setRetakeCaptureId(null);
 
-                                    applyingRef.current = true;
-                                    setSavingPhoto(true);
-                                    setBarcodeError('');
-
-                                    try {
-                                        await onProductCapture?.(pendingPhoto);
-                                        setPendingPhoto(null);
-                                        onOpenChange(false);
-                                    } catch {
-                                        setBarcodeError('Foto gagal disiapkan. Coba lagi.');
-                                    } finally {
-                                        applyingRef.current = false;
-                                        setSavingPhoto(false);
-                                    }
-                                }}
-                            >
-                                {translate(savingPhoto ? 'Memproses foto…' : 'Gunakan foto')}
-                            </button>
-                        </div>
-                    </div>
-                ) : scanner.reviewing ? (
-                    <ScanReview
-                        captures={scanner.captures}
-                        applyErrors={applyErrors}
-                        onScanBarcode={(captureId, itemIndex) => {
-                            setBarcodeTarget({ captureId, itemIndex });
-                            setScanMode('barcode');
-                            scanner.setReviewing(false);
-                        }}
-                        selections={scanner.selections}
-                        purpose={purpose}
-                        onBack={dismiss}
-                        onScanAgain={startScanningAgain}
-                        onRemove={scanner.removeCapture}
-                        onRemoveResult={scanner.removeResult}
-                        onRetry={scanner.retry}
-                        onRetake={(captureId) => {
-                            setRetakeCaptureId(captureId);
-                            scanner.setReviewing(false);
-                        }}
-                        onSelectProduct={scanner.selectProductCandidate}
-                        onSelectOption={scanner.selectSaleOption}
-                        onClearProduct={scanner.clearProductSelection}
-                        onSetSkipped={scanner.setResultSkipped}
-                        onQuantityChange={scanner.setResultQuantity}
-                        manualProducts={manualProducts}
-                        onConfirm={(selections) => {
-                            if (applyingRef.current) {
-                                return;
-                            }
-
-                            applyingRef.current = true;
-
-                            try {
-                                const outcome = onConfirm?.(selections) ?? { applied: [], failures: [] };
-                                setApplyErrors(outcome.failures);
-
-                                if (!outcome.failures.length) {
+                                if (purpose === 'product' && onProductCaptures) {
+                                    const captures = scanner.captures
+                                        .filter((capture) => capture.blob.size > 0)
+                                        .slice(singleCapture ? -1 : 0);
+                                    onProductCaptures(
+                                        captures.map(
+                                            (capture, index) => new File([capture.blob], `produk-${index + 1}.jpg`, { type: 'image/jpeg' }),
+                                        ),
+                                    );
                                     complete();
-                                } else {
-                                    outcome.applied.forEach((item) => scanner.removeResult(item.captureId, item.itemIndex));
+
+                                    return;
                                 }
-                            } finally {
-                                applyingRef.current = false;
-                            }
-                        }}
-                    />
-                ) : (
-                    <CameraViewport
-                        barcodeEnabled={purpose !== 'product'}
-                        aiPhotoAvailable={aiPhotoAvailable}
-                        aiQuotaExhausted={config.visual_recognition_enabled && !config.ai_scan_available}
-                        manualPhotoFallback={purpose === 'product' && !aiPhotoAvailable}
-                        autoActive={autoActive}
-                        autoCaptureStatus={autoCaptureStatus}
-                        autoCaptureProgress={autoCaptureProgress}
-                        onToggleAuto={() => {
-                            setAutoActive((value) => !value);
-                            setAutoCaptureStatus(autoActive ? 'idle' : 'positioning');
-                            setAutoCaptureProgress(0);
-                        }}
-                        onReviewPhoto={(id) => {
-                            onReviewProducts?.(id);
-                            onOpenChange(false);
-                        }}
-                        videoRef={camera.videoRef}
-                        captures={cameraCaptures}
-                        canCapture={
-                            scanMode === 'barcode' ||
-                            !!retakeCaptureId ||
-                            (purpose === 'product' ? productCanCapture : scanner.pendingCount < 10)
-                        }
-                        pendingCount={purpose === 'product' ? productPendingPhotos : scanner.pendingCount}
-                        productPhotos={productPhotos}
-                        productDraftCount={productDraftCount}
-                        onRemoveProductPhoto={onRemoveProductPhoto}
-                        ready={camera.ready}
-                        error={camera.error}
-                        torchAvailable={camera.torchAvailable}
-                        torchOn={camera.torchOn}
-                        onClose={closeCamera}
-                        onCapture={() => void takePhoto()}
-                        onGallery={gallery}
-                        onRemove={cancelCameraCapture}
-                        onFinish={() => {
-                            setRetakeCaptureId(null);
 
-                            if (purpose === 'product') {
-                                onReviewProducts?.();
-                                onOpenChange(false);
+                                scanner.setReviewing(true);
+                            }}
+                            onToggleAuto={() => setAutoPaused((value) => !value)}
+                            scanMode={scanMode}
+                            barcodeError={barcodeError}
+                            barcodeLimitReached={barcodeLimitReached}
+                            barcodeStatus={barcodeStatus}
+                            photoStatus={photoStatus}
+                            photoError={latestCameraCapture?.error ?? ''}
+                            onToggleScanMode={() => {
+                                setBarcodeError('');
+                                setBarcodeLimitReached(false);
+                                setBarcodeStatus('idle');
+                                barcodeBusyRef.current = false;
+                                stableRef.current.pixels = new Uint8ClampedArray();
+                                stableRef.current.lastMotionAt = Date.now();
+                                stableRef.current.armed = true;
+                                stableRef.current.motionFrames = 0;
+                                setScanMode((mode) => {
+                                    const nextMode = mode === 'photo' ? 'barcode' : 'photo';
+                                    setAutoPaused(nextMode === 'barcode' || !config.auto_capture_enabled);
 
-                                return;
-                            }
-
-                            scanner.setReviewing(true);
-                        }}
-                        scanMode={scanMode}
-                        barcodeError={barcodeError}
-                        barcodeStatus={barcodeStatus}
-                        photoStatus={photoStatus}
-                        photoError={barcodeError || latestCameraCapture?.error || ''}
-                        onToggleScanMode={() => {
-                            setBarcodeError('');
-                            setBarcodeStatus('scanning');
-                            barcodeBusyRef.current = false;
-                            setScanMode((mode) => {
-                                const nextMode = mode === 'photo' ? 'barcode' : aiPhotoAvailable ? 'photo' : 'barcode';
-
-                                return nextMode;
-                            });
-                        }}
-                        onToggleTorch={() => void camera.toggleTorch()}
-                        onRetry={camera.retry}
-                        onManualSearch={scanner.captures.length === 0 ? onManualSearch : undefined}
-                        manualActionLabel={manualActionLabel ?? (purpose === 'product' ? 'Isi tanpa foto' : 'Cari manual')}
-                    />
-                )}
-            </DialogContent>
-        </Dialog>
+                                    return nextMode;
+                                });
+                            }}
+                            onToggleTorch={() => void camera.toggleTorch()}
+                            onRetry={camera.retry}
+                            onManualSearch={scanner.captures.length === 0 ? onManualSearch : undefined}
+                            manualActionLabel={manualActionLabel ?? (purpose === 'product' ? 'Isi tanpa foto' : 'Cari manual')}
+                            onScanLimitContact={openScanLimitContact}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+            <SubscriptionLimitContactDialog kind="scan" open={scanLimitOpen} onOpenChange={setScanLimitOpen} />
+        </>
     );
 }

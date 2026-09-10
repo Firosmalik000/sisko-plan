@@ -272,6 +272,19 @@ class SaveProduct
                 $variant?->id,
             );
         }
+        if (Decimal::compare($target, '0', Decimal::QUANTITY_SCALE) > 0) {
+            $this->stock->revalue(
+                $store->id,
+                $product->id,
+                $incomingCost,
+                'product_cost_update',
+                $product,
+                now(),
+                $actor,
+                null,
+                $variant?->id,
+            );
+        }
         $balance->update(['minimum_quantity' => $minimum]);
     }
 }

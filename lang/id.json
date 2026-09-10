@@ -1,7 +1,6 @@
 {
-    "Menyiapkan aplikasi…": "Menyiapkan aplikasi…",
-    "Koneksi bermasalah": "Koneksi bermasalah",
-    "Coba lagi": "Coba lagi",
+    "Alamat toko harus berupa teks.": "Alamat toko harus berupa teks.",
+    "Alamat toko tidak boleh lebih dari 500 karakter.": "Alamat toko tidak boleh lebih dari 500 karakter.",
     "Category added successfully.": "Kategori berhasil ditambahkan.",
     "Category updated successfully.": "Kategori berhasil diperbarui.",
     "Expense category added successfully.": "Kategori biaya berhasil ditambahkan.",

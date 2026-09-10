@@ -1,4 +1,3 @@
-import { Link } from '@inertiajs/react';
 import {
     AlertCircle,
     Check,
@@ -53,6 +52,7 @@ export function ScanReview({
     onQuantityChange,
     onConfirm,
     manualProducts = [],
+    onScanLimitContact,
 }: {
     applyErrors: ScannerApplyResult['failures'];
     onScanBarcode: (captureId: string, itemIndex: number) => void;
@@ -72,6 +72,7 @@ export function ScanReview({
     onQuantityChange: (captureId: string, itemIndex: number, quantity: number) => void;
     onConfirm: (selections: ScannerSelection[]) => void;
     manualProducts?: ScannerProductCandidate[];
+    onScanLimitContact: () => void;
 }) {
     const [manualTarget, setManualTarget] = useState<{
         captureId: string;
@@ -181,12 +182,13 @@ export function ScanReview({
                                 </div>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {capture.errorCode === 'SCAN_LIMIT_REACHED' && (
-                                        <Link
-                                            href="/pricing?category=scan_capacity#category-scan_capacity"
+                                        <button
+                                            type="button"
+                                            onClick={onScanLimitContact}
                                             className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none"
                                         >
-                                            {translate('Tambah kuota scan AI')}
-                                        </Link>
+                                            Hubungi admin
+                                        </button>
                                     )}
                                     {capture.retryable && (
                                         <button
@@ -320,7 +322,7 @@ export function ScanReview({
                           ? `${unresolved} ${translate('produk perlu dipilih')}`
                           : confirmed.length === 0
                             ? 'Selesai'
-                            : actionLabels[purpose]}
+                            : translate(actionLabels[purpose])}
                     {canConfirm && confirmed.length > 0 ? ` · ${confirmed.length}` : ''}
                 </button>
             </footer>

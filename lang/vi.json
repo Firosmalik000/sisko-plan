@@ -1,11 +1,6 @@
 {
-    "Menyiapkan aplikasi…": "Đang chuẩn bị ứng dụng…",
-    "Koneksi bermasalah": "Kết nối gặp sự cố",
-    "Coba lagi": "Thử lại",
-    "Analisis untuk pasar toko ini belum tersedia. Isi data produk secara manual.": "Chưa hỗ trợ phân tích cho thị trường của cửa hàng này. Vui lòng nhập thông tin sản phẩm thủ công.",
-    "Pilih satuan dari kelompok ecer.": "Chọn đơn vị bán lẻ.",
-    "Pilih satuan dari kelompok besar.": "Chọn đơn vị lớn.",
-    "Kode ini sudah digunakan produk lain di toko ini.": "Mã này đã được sản phẩm khác trong cửa hàng sử dụng.",
+    "Alamat toko harus berupa teks.": "Địa chỉ cửa hàng phải là văn bản.",
+    "Alamat toko tidak boleh lebih dari 500 karakter.": "Địa chỉ cửa hàng không được vượt quá 500 ký tự.",
     "The name field is required.": "Trường tên là bắt buộc.",
     "The email field is required.": "Trường email là bắt buộc.",
     "The password field is required.": "Trường mật khẩu là bắt buộc.",
@@ -24,5 +19,16 @@
     "Selected currency is unavailable.": "Tiền tệ đã chọn không khả dụng.",
     "Nama pelanggan dan nomor telepon harus diisi bersama.": "Tên và số điện thoại khách hàng phải được nhập cùng nhau.",
     "Nomor telepon pelanggan tidak valid.": "Số điện thoại khách hàng không hợp lệ.",
-    "Fixed quantity products require whole quantities.": "Sản phẩm có số lượng cố định phải được bán theo số lượng nguyên."
+    "Ingat saya": "Ghi nhớ tôi",
+    "Daftar dengan Google": "Đăng ký bằng Google",
+    "Tambahan kapasitas satu toko selama satu bulan.": "Thêm dung lượng cho một cửa hàng trong một tháng.",
+    "Tambahan kapasitas satu staf selama satu bulan.": "Thêm dung lượng cho một nhân viên trong một tháng.",
+    "Tambahan kuota 100 scan selama satu bulan.": "Thêm hạn mức 100 lượt quét trong một tháng.",
+    "Email pelanggan tidak valid.": "Email khách hàng không hợp lệ.",
+    "Marketplace tidak tersedia untuk negara toko ini.": "Sàn này không khả dụng tại quốc gia của cửa hàng.",
+    "Transaksi marketplace harus masuk ke saldo marketplace.": "Giao dịch sàn phải được ghi vào số dư sàn.",
+    "Metode bayar tidak sesuai dengan akun penerimaan.": "Phương thức thanh toán không khớp với tài khoản nhận.",
+    "Bukti pembayaran hanya dapat ditambahkan untuk pembayaran non-tunai langsung.": "Chỉ có thể thêm chứng từ cho thanh toán không tiền mặt trực tiếp.",
+    "Akun penampung transaksi marketplace.": "Tài khoản trung gian cho giao dịch sàn.",
+    "Saldo :marketplace": "Số dư :marketplace"
 }

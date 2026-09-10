@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['store_id', 'name', 'phone', 'phone_normalized'])]
+/** @property string|null $email */
+#[Fillable(['store_id', 'name', 'phone', 'phone_normalized', 'email'])]
 class Customer extends Model
 {
     use HasPublicId;

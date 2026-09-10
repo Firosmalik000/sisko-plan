@@ -1,4 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
+import { translate } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 const links = [
@@ -27,7 +28,7 @@ export function MasterDataNav({ links: visibleLinks = links }: { links?: MasterD
                             : 'border-stone-200 bg-white/70 text-stone-600 hover:border-emerald-700 hover:text-emerald-800',
                     )}
                 >
-                    {link.label}
+                    {translate(link.label)}
                 </Link>
             ))}
         </nav>

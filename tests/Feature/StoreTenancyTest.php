@@ -24,6 +24,7 @@ class StoreTenancyTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('stores.store'), [
             'name' => 'Toko Maju Jaya',
+            'address' => 'Jl. Merdeka No. 10, Jakarta',
         ]);
 
         $store = Store::query()->sole();
@@ -36,7 +37,10 @@ class StoreTenancyTest extends TestCase
             'role' => MembershipRole::Owner->value,
             'status' => MembershipStatus::Active->value,
         ]);
-        $this->assertDatabaseHas('store_settings', ['store_id' => $store->id]);
+        $this->assertDatabaseHas('store_settings', [
+            'store_id' => $store->id,
+            'address' => 'Jl. Merdeka No. 10, Jakarta',
+        ]);
         $this->assertSame(8, $store->categories()->count());
         $this->assertSame(19, $store->units()->count());
         $this->assertSame(10, $store->units()->where('unit_type', UnitType::Large)->count());

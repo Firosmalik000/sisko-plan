@@ -17,6 +17,7 @@ const translatedProps = new Set([
 ]);
 
 const technicalValues = /^(?:[a-z0-9]*[_.:/-][a-z0-9_.:/-]*|#[0-9a-f]{3,8}|\d+(?:\.\d+)?|[A-Z0-9_]+)$/;
+const uiContainerNames = /(?:copy|description|empty|error|heading|label|labels|message|placeholder|subtitle|text|title)$/i;
 
 module.exports = function translateUiLiterals({ types: t }) {
     let programPath;
@@ -57,6 +58,24 @@ module.exports = function translateUiLiterals({ types: t }) {
         }
 
         return current.parentPath === container;
+    };
+
+    const enclosingNamedContainer = (path) => {
+        const owner = path.findParent(
+            (candidate) =>
+                candidate.isVariableDeclarator() ||
+                candidate.isFunctionDeclaration() ||
+                candidate.isFunctionExpression() ||
+                candidate.isArrowFunctionExpression(),
+        );
+
+        if (!owner) return '';
+        if (owner.isVariableDeclarator() && t.isIdentifier(owner.node.id)) return owner.node.id.name;
+        if (owner.isFunctionDeclaration() && owner.node.id) return owner.node.id.name;
+
+        const declaration = owner.parentPath;
+
+        return declaration?.isVariableDeclarator() && t.isIdentifier(declaration.node.id) ? declaration.node.id.name : '';
     };
 
     return {
@@ -119,9 +138,11 @@ module.exports = function translateUiLiterals({ types: t }) {
                       ? path.node.key.value
                       : null;
 
+                const translatedContainer = uiContainerNames.test(enclosingNamedContainer(path));
+
                 if (
                     name !== null &&
-                    translatedProps.has(name) &&
+                    (translatedProps.has(name) || translatedContainer) &&
                     t.isStringLiteral(path.node.value) &&
                     isHumanText(path.node.value.value)
                 ) {
@@ -144,6 +165,7 @@ module.exports = function translateUiLiterals({ types: t }) {
             },
             StringLiteral(path) {
                 if (
+                    path.findParent((parent) => parent.isTSType()) ||
                     !isHumanText(path.node.value) ||
                     path.findParent(
                         (parent) =>
@@ -176,6 +198,12 @@ module.exports = function translateUiLiterals({ types: t }) {
                 );
 
                 if (isRenderedExpression) {
+                    path.replaceWith(translationCall(path.node.value));
+
+                    return;
+                }
+
+                if (uiContainerNames.test(enclosingNamedContainer(path))) {
                     path.replaceWith(translationCall(path.node.value));
                 }
             },

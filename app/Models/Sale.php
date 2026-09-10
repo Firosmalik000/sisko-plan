@@ -12,8 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $store_id
  * @property string $total_amount
  * @property string $paid_amount
+ * @property string|null $customer_email
+ * @property string $sales_channel
+ * @property string|null $marketplace_code
+ * @property string|null $external_order_number
  */
-#[Fillable(['store_id', 'customer_id', 'document_number', 'customer_name', 'customer_phone', 'subtotal', 'item_discount_amount', 'transaction_discount_amount', 'total_amount', 'paid_amount', 'change_amount', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_user_id', 'posted_at'])]
+#[Fillable(['store_id', 'customer_id', 'document_number', 'customer_name', 'customer_phone', 'customer_email', 'sales_channel', 'marketplace_code', 'external_order_number', 'subtotal', 'item_discount_amount', 'transaction_discount_amount', 'total_amount', 'paid_amount', 'change_amount', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_user_id', 'posted_at'])]
 class Sale extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;

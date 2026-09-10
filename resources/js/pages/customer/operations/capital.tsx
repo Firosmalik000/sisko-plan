@@ -16,6 +16,7 @@ import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { currencySymbol, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 type CapitalType = 'cash_contribution' | 'cash_withdrawal' | 'inventory_contribution' | 'inventory_withdrawal';
 
@@ -309,7 +310,7 @@ export default function CapitalPage({
                                             onClick={() => setType(option.value)}
                                         >
                                             {option.icon}
-                                            {option.label}
+                                            {translate(option.label)}
                                         </button>
                                     ))}
                                 </div>
@@ -499,7 +500,7 @@ function HeroMetric({ icon, label, value }: { icon: ReactNode; label: string; va
         <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3 last:border-b-0 sm:border-r sm:border-b-0 sm:px-6 sm:last:border-r-0">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-amber-300">{icon}</span>
             <div className="min-w-0">
-                <p className="truncate text-[11px] font-bold text-white/60">{label}</p>
+                <p className="truncate text-[11px] font-bold text-white/60">{translate(label)}</p>
                 <p className="truncate text-sm font-black">{value}</p>
             </div>
         </div>
@@ -539,7 +540,7 @@ function TypeBadge({ type }: { type: CapitalType }) {
                 withdrawal ? 'bg-rose-50 text-rose-700' : 'bg-teal-50 text-teal-700'
             }`}
         >
-            {labels[type]}
+            {translate(labels[type])}
         </span>
     );
 }
@@ -547,7 +548,7 @@ function TypeBadge({ type }: { type: CapitalType }) {
 function Field({ label, children }: { label: string; children: ReactNode }) {
     return (
         <label className="space-y-1 text-sm font-bold text-stone-700">
-            {label}
+            {translate(label)}
             {children}
         </label>
     );
@@ -556,7 +557,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function Calculation({ label, value, danger = false }: { label: string; value: string; danger?: boolean }) {
     return (
         <div className="min-w-0 px-3 text-center">
-            <p className="truncate text-[11px] font-bold text-stone-500">{label}</p>
+            <p className="truncate text-[11px] font-bold text-stone-500">{translate(label)}</p>
             <p className={`mt-0.5 truncate text-sm font-black ${danger ? 'text-rose-700' : ''}`}>{value}</p>
         </div>
     );

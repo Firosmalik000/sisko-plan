@@ -107,7 +107,9 @@ migration verifies the row count and does not rebuild or truncate membership dat
 - sale_returns
 - sale_return_items
 
-`customers` is store-scoped and uniquely identifies a reusable customer by `(store_id, phone_normalized)`. `sales.customer_id` supports future loyalty aggregation, while `sales.customer_name` and `sales.customer_phone` preserve the customer details shown when the immutable sale was posted.
+`customers` is store-scoped and uniquely identifies a reusable customer by `(store_id, phone_normalized)`. `sales.customer_id` supports future loyalty aggregation, while `sales.customer_name`, `sales.customer_phone`, and `sales.customer_email` preserve the customer details shown when the immutable sale was posted.
+
+`sales.sales_channel` separates direct-store and marketplace sales. Marketplace/provider identity and an optional external order number remain on the immutable sale, while `sale_payments.payment_method` records the actual payment rail. Provider clearing accounts are identified by `(store_id, marketplace_code)`; country-specific direct payment accounts may use `(store_id, payment_code)`.
 
 ### Finance
 

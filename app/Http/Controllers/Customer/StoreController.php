@@ -46,6 +46,7 @@ class StoreController extends Controller
             'country_code' => $store->country?->code,
             'currency_code' => $store->settings->currency ?? $store->country->currency_code,
             'currency_symbol' => $currencies->get($store->settings?->currency)?->symbol,
+            'address' => $store->settings?->address,
         ]);
 
         $ownedStore = $storeModels->first(fn (Store $store): bool => $store->owner_user_id === $user->id);
@@ -92,6 +93,7 @@ class StoreController extends Controller
             $request->validated('name'),
             $request->ip(),
             $request->validated('country'),
+            $request->validated('address'),
         );
         $request->session()->put('active_store_id', $store->id);
 
@@ -130,6 +132,7 @@ class StoreController extends Controller
                 'country_name' => $store->country?->localizedName(),
                 'currency_code' => $store->settings->currency ?? $store->country->currency_code,
                 'currency_symbol' => $storeCurrency?->symbol,
+                'address' => $store->settings?->address,
                 'can_manage' => AuthenticatedUser::get(request())->can('update', $store),
                 'can_archive' => AuthenticatedUser::get(request())->can('archive', $store),
                 'can_restore' => AuthenticatedUser::get(request())->can('restore', $store),
@@ -157,21 +160,36 @@ class StoreController extends Controller
             $lockedStore = Store::query()->lockForUpdate()->findOrFail($store->id);
             abort_unless($lockedStore->status === StoreStatus::Active, 403);
             $subscriptionAccess->assertCanWrite($lockedStore);
-            $before = $lockedStore->only(['name', 'country_id']);
+            $lockedStore->loadMissing(['country', 'settings']);
+            $before = [
+                ...$lockedStore->only(['name', 'country_id']),
+                'address' => $lockedStore->settings?->address,
+            ];
             $lockedStore->name = $request->validated('name');
+
+            $settings = [];
+            if ($request->has('address')) {
+                $settings['address'] = $request->validated('address');
+            }
 
             $countryCode = $request->validated('country');
             if ($countryCode !== null && $countryCode !== $lockedStore->country?->code) {
                 $countryChange->assertAllowed($lockedStore);
                 $country = Country::query()->with('currency')->where('code', $countryCode)->where('is_active', true)->sharedLock()->firstOrFail();
-                $lockedStore->country()->associate($country);
-                $lockedStore->settings()->updateOrCreate([], ['currency' => $country->currency_code]);
+                $lockedStore->country_id = $country->id;
+                $settings['currency'] = $country->currency_code;
             }
 
             $lockedStore->save();
+            $storeSettings = $settings === []
+                ? $lockedStore->settings
+                : $lockedStore->settings()->updateOrCreate([], $settings);
             $audit->handle(AuthenticatedUser::get($request), 'store.updated', $lockedStore, $lockedStore, $request->ip(), [
                 'before' => $before,
-                'after' => $lockedStore->only(['name', 'country_id']),
+                'after' => [
+                    ...$lockedStore->only(['name', 'country_id']),
+                    'address' => $storeSettings?->address,
+                ],
             ]);
         });
 

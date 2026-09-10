@@ -39,7 +39,9 @@
 - Multi-row workflows must be atomic.
 - Duplicate submission must be prevented where the action is not safe to repeat.
 - Posted records are immutable unless the workflow explicitly supports reversal or cancellation.
-- Customer details on a sale are optional. When supplied, name and phone are required together, the reusable customer identity is scoped to the store by normalized phone number, and the posted sale keeps immutable name and phone snapshots.
+- Saving a product's current HPP is an explicit inventory revaluation: existing stock quantity remains unchanged, while average cost and inventory value are updated through a traceable zero-quantity stock movement.
+- Customer details on a sale are optional. When supplied, name and phone are required together, email is optional, the reusable customer identity is scoped to the store by normalized phone number, and the posted sale keeps immutable name, phone, and email snapshots.
+- A marketplace is a sales channel, not a payment method. Marketplace sales settle into a store-scoped provider clearing account; later payouts use account transfers and platform fees are recorded separately as expenses.
 
 ## Data rules
 

@@ -8,6 +8,7 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { translate } from '@/lib/i18n';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[] }) {
@@ -23,10 +24,10 @@ export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[]
                                 <Fragment key={index}>
                                     <BreadcrumbItem>
                                         {isLast ? (
-                                            <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                            <BreadcrumbPage>{translate(item.title)}</BreadcrumbPage>
                                         ) : (
                                             <BreadcrumbLink asChild>
-                                                <Link href={item.href}>{item.title}</Link>
+                                                <Link href={item.href}>{translate(item.title)}</Link>
                                             </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>

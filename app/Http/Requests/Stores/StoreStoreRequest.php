@@ -26,11 +26,21 @@ class StoreStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:120'],
+            'address' => ['nullable', 'string', 'max:500'],
             'country' => [
                 'required',
                 'string',
                 Rule::exists('countries', 'code')->where(fn ($query) => $query->where('is_active', true)),
             ],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'address.string' => __('Alamat toko harus berupa teks.'),
+            'address.max' => __('Alamat toko tidak boleh lebih dari 500 karakter.'),
         ];
     }
 }

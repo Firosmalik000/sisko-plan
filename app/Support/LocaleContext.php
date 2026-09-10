@@ -18,9 +18,7 @@ final class LocaleContext
     /** @return list<string> */
     public static function allowedLocales(Request $request, ?bool $customerPortal = null): array
     {
-        return ($customerPortal ?? self::isCustomerPortal($request))
-            ? [self::market($request), self::ENGLISH]
-            : [self::INDONESIA, self::MALAYSIA, self::VIETNAM];
+        return [self::INDONESIA, self::ENGLISH, self::MALAYSIA, self::VIETNAM];
     }
 
     public static function locale(Request $request): string
@@ -29,7 +27,20 @@ final class LocaleContext
 
         return is_string($locale) && in_array($locale, self::allowedLocales($request), true)
             ? $locale
-            : self::market($request);
+            : self::localeFromCountry($request);
+    }
+
+    public static function localeFromCountry(Request $request): string
+    {
+        $header = (string) config('localization.country_header', 'CF-IPCountry');
+        $country = strtoupper(trim((string) $request->header($header)));
+
+        return match ($country) {
+            'ID' => self::INDONESIA,
+            'MY' => self::MALAYSIA,
+            'VN' => self::VIETNAM,
+            default => self::ENGLISH,
+        };
     }
 
     public static function market(Request $request): string
@@ -51,28 +62,12 @@ final class LocaleContext
     /** @return list<array{code:string,label:string}> */
     public static function options(Request $request): array
     {
-        if (! self::isCustomerPortal($request)) {
-            return [
-                ['code' => self::INDONESIA, 'label' => 'Indonesia'],
-                ['code' => self::MALAYSIA, 'label' => 'Melayu'],
-                ['code' => self::VIETNAM, 'label' => 'Tiếng Việt'],
-            ];
-        }
-
-        return match (self::market($request)) {
-            self::MALAYSIA => [
-                ['code' => self::MALAYSIA, 'label' => 'Bahasa Melayu'],
-                ['code' => self::ENGLISH, 'label' => 'English'],
-            ],
-            self::VIETNAM => [
-                ['code' => self::VIETNAM, 'label' => 'Tiếng Việt'],
-                ['code' => self::ENGLISH, 'label' => 'English'],
-            ],
-            default => [
-                ['code' => self::INDONESIA, 'label' => 'Bahasa Indonesia'],
-                ['code' => self::ENGLISH, 'label' => 'English'],
-            ],
-        };
+        return [
+            ['code' => self::INDONESIA, 'label' => 'Indonesia'],
+            ['code' => self::ENGLISH, 'label' => 'English'],
+            ['code' => self::MALAYSIA, 'label' => 'Melayu'],
+            ['code' => self::VIETNAM, 'label' => 'Tiếng Việt'],
+        ];
     }
 
     public static function isCustomerPortal(Request $request): bool

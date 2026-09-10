@@ -90,4 +90,47 @@ class ApplyStockMovement
             'occurred_at' => $occurredAt, 'notes' => $notes, 'created_by_user_id' => $actor->id,
         ]);
     }
+
+    public function revalue(int $storeId, int $productId, string $unitCost, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes = null, ?int $productVariantId = null): ?StockMovement
+    {
+        if (Decimal::compare($unitCost, '0', Decimal::MONEY_SCALE) < 0) {
+            throw ValidationException::withMessages(['items' => 'Biaya per unit tidak boleh negatif.']);
+        }
+        if ($productVariantId !== null) {
+            ProductVariant::query()->where([
+                'id' => $productVariantId,
+                'store_id' => $storeId,
+                'product_id' => $productId,
+            ])->firstOrFail();
+        }
+
+        $stockKey = $productVariantId === null ? "product:{$productId}" : "variant:{$productVariantId}";
+        $balance = InventoryBalance::query()->where(['store_id' => $storeId, 'stock_key' => $stockKey])->lockForUpdate()->firstOrFail();
+        if (Decimal::compare($balance->quantity, '0', Decimal::QUANTITY_SCALE) === 0
+            || Decimal::compare($balance->average_cost, $unitCost, Decimal::MONEY_SCALE) === 0) {
+            return null;
+        }
+
+        $latestMovement = StockMovement::query()->where(['store_id' => $storeId, 'product_id' => $productId])
+            ->where('product_variant_id', $productVariantId)
+            ->latest('occurred_at')->latest('id')->lockForUpdate()->first(['occurred_at']);
+        if ($latestMovement !== null && $occurredAt->lt(CarbonImmutable::parse((string) $latestMovement->occurred_at))) {
+            throw ValidationException::withMessages(['occurred_at' => 'Waktu revaluasi tidak boleh mendahului pergerakan stok terakhir produk.']);
+        }
+
+        $newValue = Decimal::multiply($balance->quantity, $unitCost);
+        if (Decimal::compare($newValue, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0) {
+            throw ValidationException::withMessages(['items' => 'Nilai persediaan melebihi kapasitas yang didukung.']);
+        }
+        $valueChange = Decimal::subtract($newValue, $balance->inventory_value, Decimal::MONEY_SCALE);
+        $balance->update(['average_cost' => $unitCost, 'inventory_value' => $newValue]);
+
+        return StockMovement::create([
+            'store_id' => $storeId, 'product_id' => $productId, 'product_variant_id' => $productVariantId, 'reason' => $reason,
+            'quantity_change' => '0.000000', 'unit_cost' => $unitCost, 'value_change' => $valueChange,
+            'quantity_after' => $balance->quantity, 'average_cost_after' => $unitCost, 'inventory_value_after' => $newValue,
+            'reference_type' => $reference->getMorphClass(), 'reference_id' => $reference->getKey(),
+            'occurred_at' => $occurredAt, 'notes' => $notes, 'created_by_user_id' => $actor->id,
+        ]);
+    }
 }

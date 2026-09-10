@@ -4,6 +4,7 @@ import { MoreHorizontal } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { translate } from '@/lib/i18n';
 
 export type PlatformRowAction = {
     label: string;
@@ -47,7 +48,7 @@ export function PlatformTableLeadCell({
                             <button
                                 type="button"
                                 className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#0b292f] transition hover:border-[#0b292f]/25 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a681e]"
-                                aria-label={`Buka tindakan untuk ${label}`}
+                                aria-label={`${translate('Buka tindakan untuk')} ${label}`}
                             >
                                 <MoreHorizontal className="size-4" />
                             </button>
@@ -70,7 +71,7 @@ export function PlatformTableLeadCell({
                                             className="w-full cursor-pointer"
                                         >
                                             <Icon className="size-4" />
-                                            {action.label}
+                                            {translate(action.label)}
                                         </Link>
                                     </DropdownMenuItem>
                                 ) : (
@@ -80,7 +81,7 @@ export function PlatformTableLeadCell({
                                         onSelect={action.onSelect}
                                     >
                                         <Icon className="size-4" />
-                                        {action.label}
+                                        {translate(action.label)}
                                     </DropdownMenuItem>
                                 );
                             })}

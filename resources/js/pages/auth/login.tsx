@@ -37,10 +37,10 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                 </>
             )}
 
-            <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-6">
+            <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-5">
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
+                        <div className="grid gap-5">
                             <div className="grid gap-2">
                                 <Label htmlFor="email">{t('Alamat email')}</Label>
                                 <Input
@@ -52,6 +52,7 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
+                                    className="h-12 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-4 shadow-none focus:border-[#ee4d2d] focus:ring-[#ee4d2d]/20"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -72,6 +73,7 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder={t('Kata sandi')}
+                                    className="h-12 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-4 shadow-none focus:border-[#ee4d2d] focus:ring-[#ee4d2d]/20"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -81,7 +83,13 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                 <Label htmlFor="remember">{t('Ingat saya')}</Label>
                             </div>
 
-                            <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing} data-test="login-button">
+                            <Button
+                                type="submit"
+                                className="mt-2 h-12 w-full rounded-xl bg-[#ee4d2d] font-bold text-white shadow-[0_14px_24px_-14px_rgba(238,77,45,0.85)] hover:bg-[#d83f22]"
+                                tabIndex={4}
+                                disabled={processing}
+                                data-test="login-button"
+                            >
                                 {processing && <Spinner />}
                                 {t('Masuk')}
                             </Button>

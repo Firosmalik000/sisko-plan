@@ -1,4 +1,15 @@
 export const landingMalayOverrides: Record<string, string> = {
+    'Gratis Selamanya': 'Percuma selamanya',
+    'Mulai dari gratis.': 'Mulakan secara percuma.',
+    'Biar urusan toko lebih ringan.': 'Supaya urusan kedai terasa lebih mudah.',
+    'Buka toko gratis': 'Buka kedai secara percuma',
+    'Lihat paket': 'Lihat pelan',
+    'Gratis tanpa batas waktu': 'Percuma tanpa had masa',
+    'Tambah kapasitas kapan saja': 'Tambah kapasiti bila-bila masa',
+    'Mulai gratis. Biar urusan toko lebih ringan.': 'Mulakan secara percuma. Jadikan urusan kedai lebih mudah.',
+    'Mulai sesuai kebutuhan': 'Mulakan mengikut keperluan',
+    'Pakai yang gratis dulu. Tambah kapasitas saat toko membutuhkannya.':
+        'Mulakan dengan pelan percuma. Tambah kapasiti apabila kedai memerlukannya.',
     'Scan Barang, Kelola Toko Lebih Cepat': 'Imbas Barang, Urus Kedai Dengan Lebih Pantas',
     'Scan barang, catat transaksi, perbarui stok, dan pantau laporan toko dalam satu alur.':
         'Imbas barang, rekod transaksi, kemas kini stok dan pantau laporan kedai dalam satu aliran.',

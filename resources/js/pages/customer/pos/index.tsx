@@ -1,11 +1,12 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     Barcode,
-    Banknote,
     Camera,
     ChevronDown,
+    CreditCard,
     FileCheck2,
     Keyboard,
+    Mail,
     Minus,
     PackageOpen,
     Plus,
@@ -14,7 +15,8 @@ import {
     RotateCcw,
     Search,
     ShoppingCart,
-    QrCode,
+    ShoppingBag,
+    Store,
     Trash2,
     Upload,
     UserRound,
@@ -22,8 +24,10 @@ import {
 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { CommerceBrandMark } from '@/components/commerce-brand-mark';
 import { currentDateTime, money, postingToken, quantity } from '@/components/operations-shell';
-import type { ScannerApplyResult, ScannerProductCandidate, ScannerSelection } from '@/components/product-scanner/types';
+import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
+import type { ScannerProductCandidate, ScannerSelection } from '@/components/product-scanner/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cashTenderSuggestions, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
@@ -55,9 +59,14 @@ type CatalogProduct = {
     options: ProductOption[];
 };
 type PaymentMethod = {
-    method: 'cash' | 'qris';
+    method: 'cash' | 'qris' | 'qr_payment' | 'bank_transfer' | 'e_wallet';
     label: string;
     account_id: string;
+    brand: string | null;
+};
+type Marketplace = {
+    code: string;
+    label: string;
 };
 type CartItem = ProductOption & {
     quantity: string;
@@ -70,6 +79,11 @@ type SaleForm = {
     payment_proof: File | null;
     customer_name: string;
     customer_phone: string;
+    customer_email: string;
+    sales_channel: 'in_store' | 'marketplace';
+    payment_method: PaymentMethod['method'] | 'marketplace';
+    marketplace_code: string;
+    external_order_number: string;
     occurred_at: string;
     notes: string;
     idempotency_key: string;
@@ -85,10 +99,12 @@ const fieldClass =
 export default function PosPage({
     products,
     paymentMethods,
+    marketplaces,
     timezone,
 }: {
     products: ProductOption[];
     paymentMethods: PaymentMethod[];
+    marketplaces: Marketplace[];
     timezone: string;
 }) {
     const [entryMode, setEntryMode] = useState<EntryMode>('input');
@@ -103,17 +119,24 @@ export default function PosPage({
     const [scannerView, setScannerView] = useState<'camera' | 'review'>('camera');
     const [scannerResetKey, setScannerResetKey] = useState(0);
     const [customerOpen, setCustomerOpen] = useState(false);
+    const [otherPaymentsOpen, setOtherPaymentsOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
     const searchRef = useRef<HTMLInputElement>(null);
     const scanRef = useRef<HTMLInputElement>(null);
+    const defaultPaymentMethod = paymentMethods.find((method) => method.method === 'cash') ?? paymentMethods[0];
     const sale = useForm<SaleForm>({
-        account_id: paymentMethods[0]?.account_id ?? '',
+        account_id: defaultPaymentMethod?.account_id ?? '',
         transaction_discount_amount: '0',
         paid_amount: '',
         payment_proof: null,
         customer_name: '',
         customer_phone: '',
-        occurred_at: currentDateTime(timezone),
+        customer_email: '',
+        sales_channel: 'in_store',
+        payment_method: defaultPaymentMethod?.method ?? 'cash',
+        marketplace_code: '',
+        external_order_number: '',
+        occurred_at: currentDateTime(timezone, true),
         notes: '',
         idempotency_key: postingToken(),
         items: [],
@@ -187,12 +210,21 @@ export default function PosPage({
     const subtotal = sale.data.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.selling_price), 0);
     const itemDiscount = sale.data.items.reduce((sum, item) => sum + Number(item.discount_amount || 0), 0);
     const total = Math.max(0, subtotal - itemDiscount - Number(sale.data.transaction_discount_amount || 0));
-    const selectedMethod = paymentMethods.find((method) => method.account_id === sale.data.account_id) ?? paymentMethods[0];
+    const selectedMethod = paymentMethods.find((method) => method.account_id === sale.data.account_id);
+    const primaryPaymentMethods = paymentMethods.filter(
+        (method) => method.method === 'cash' || method.method === 'qris' || method.method === 'qr_payment',
+    );
+    const otherPaymentMethods = paymentMethods.filter((method) => method.method === 'bank_transfer' || method.method === 'e_wallet');
+    const isMarketplace = sale.data.sales_channel === 'marketplace';
     const change = Math.max(0, Number(sale.data.paid_amount || 0) - total);
     const cashSuggestions = cashTenderSuggestions(total);
 
     useEffect(() => {
-        const fallback = paymentMethods[0];
+        if (isMarketplace) {
+            return;
+        }
+
+        const fallback = defaultPaymentMethod;
 
         if (!fallback || paymentMethods.some((method) => method.account_id === sale.data.account_id)) {
             return;
@@ -201,10 +233,11 @@ export default function PosPage({
         sale.setData((data) => ({
             ...data,
             account_id: fallback.account_id,
-            paid_amount: fallback.method === 'qris' ? String(total) : '',
-            payment_proof: fallback.method === 'qris' ? data.payment_proof : null,
+            payment_method: fallback.method,
+            paid_amount: fallback.method === 'cash' ? '' : String(total),
+            payment_proof: fallback.method === 'cash' ? null : data.payment_proof,
         }));
-    }, [paymentMethods, sale, total]);
+    }, [defaultPaymentMethod, isMarketplace, paymentMethods, sale, total]);
 
     useEffect(() => {
         const url = new URL(window.location.href);
@@ -285,7 +318,9 @@ export default function PosPage({
 
         sale.setData('items', items);
         setScannerSummary(
-            `${result.applied.length} produk ditambahkan ke keranjang.${result.failures.length ? ' Periksa hasil yang belum ditambahkan.' : ''}`,
+            skipped > 0
+                ? `${added} ${translate('produk ditambahkan')}, ${skipped} ${translate('dilewati karena tidak tersedia atau stok habis.')}`
+                : `${added} ${translate('produk ditambahkan ke keranjang.')}`,
         );
 
         return result;
@@ -355,31 +390,83 @@ export default function PosPage({
         focusEntry(mode);
     };
     const selectPaymentMethod = (method: PaymentMethod) => {
+        sale.clearErrors('account_id', 'payment_method', 'paid_amount', 'payment_proof');
         sale.setData((data) => ({
             ...data,
             account_id: method.account_id,
-            paid_amount: method.method === 'qris' ? String(total) : '',
-            payment_proof: method.method === 'qris' ? data.payment_proof : null,
+            payment_method: method.method,
+            paid_amount: method.method === 'cash' ? '' : String(total),
+            payment_proof: method.method === 'cash' ? null : data.payment_proof,
         }));
     };
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
+    const selectSalesChannel = (channel: SaleForm['sales_channel']) => {
+        sale.clearErrors(
+            'sales_channel',
+            'account_id',
+            'payment_method',
+            'paid_amount',
+            'payment_proof',
+            'marketplace_code',
+            'external_order_number',
+        );
 
-        if (scannerSession.count || scannerSession.pending) {
-            setScannerView('review');
-            setScannerOpen(true);
+        if (channel === 'marketplace') {
+            sale.setData((data) => ({
+                ...data,
+                sales_channel: channel,
+                payment_method: 'marketplace',
+                account_id: '',
+                paid_amount: String(total),
+                payment_proof: null,
+                marketplace_code: data.marketplace_code || marketplaces[0]?.code || '',
+            }));
 
             return;
         }
 
+        sale.setData((data) => ({
+            ...data,
+            sales_channel: channel,
+            payment_method: defaultPaymentMethod?.method ?? 'cash',
+            account_id: defaultPaymentMethod?.account_id ?? '',
+            paid_amount: defaultPaymentMethod?.method === 'cash' ? '' : String(total),
+            marketplace_code: '',
+            external_order_number: '',
+        }));
+    };
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        sale.clearErrors();
         sale.transform((data) => ({
             ...data,
-            paid_amount: selectedMethod?.method === 'qris' ? String(total) : data.paid_amount,
-            payment_proof: selectedMethod?.method === 'qris' ? data.payment_proof : null,
+            occurred_at: currentDateTime(timezone, true),
+            paid_amount: isMarketplace || selectedMethod?.method !== 'cash' ? String(total) : data.paid_amount,
+            payment_proof: isMarketplace || selectedMethod?.method === 'cash' ? null : data.payment_proof,
+            marketplace_code: isMarketplace ? data.marketplace_code || marketplaces[0]?.code || '' : '',
+            external_order_number: isMarketplace ? data.external_order_number : '',
         }));
-        sale.post('/pos/sales', { preserveScroll: true });
+        sale.post('/pos/sales', {
+            preserveScroll: true,
+            onError: (errors) => {
+                if (errors.customer_name || errors.customer_phone || errors.customer_email) {
+                    setCustomerOpen(true);
+                }
+
+                if (
+                    (errors.account_id || errors.payment_method) &&
+                    (!selectedMethod || otherPaymentMethods.some((method) => method.account_id === selectedMethod.account_id))
+                ) {
+                    setOtherPaymentsOpen(true);
+                }
+            },
+        });
     };
-    const customerExpanded = customerOpen || Boolean(sale.errors.customer_name || sale.errors.customer_phone);
+    const customerExpanded = customerOpen || Boolean(sale.errors.customer_name || sale.errors.customer_phone || sale.errors.customer_email);
+    const otherPaymentsExpanded =
+        otherPaymentsOpen ||
+        Boolean(selectedMethod && otherPaymentMethods.some((method) => method.account_id === selectedMethod.account_id));
+    const paymentReady = isMarketplace ? sale.data.marketplace_code !== '' : selectedMethod !== undefined;
+    const checkoutError = Object.values(sale.errors)[0];
 
     return (
         <>
@@ -394,7 +481,7 @@ export default function PosPage({
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setScannerView('camera');
+                                            prepareScannerTone();
                                             setScannerOpen(true);
                                         }}
                                         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-2 text-center text-xs font-black text-[var(--app-primary-foreground)] hover:bg-[var(--workspace-700)] sm:px-3"
@@ -604,6 +691,7 @@ export default function PosPage({
 
                     <form
                         onSubmit={submit}
+                        noValidate
                         className="h-fit min-w-0 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/8 sm:p-5 xl:sticky xl:top-5"
                     >
                         <div className="flex items-center justify-between gap-3">
@@ -805,12 +893,37 @@ export default function PosPage({
                                                 </span>
                                             )}
                                         </label>
-                                        {(sale.data.customer_name || sale.data.customer_phone) && (
+                                        <label className="grid gap-1.5 text-sm font-semibold text-slate-700 sm:col-span-2">
+                                            Email
+                                            <span className="relative">
+                                                <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
+                                                <input
+                                                    className={`${fieldClass} pl-10`}
+                                                    type="email"
+                                                    inputMode="email"
+                                                    autoComplete="email"
+                                                    value={sale.data.customer_email}
+                                                    onChange={(event) => sale.setData('customer_email', event.target.value)}
+                                                    maxLength={254}
+                                                />
+                                            </span>
+                                            {sale.errors.customer_email && (
+                                                <span role="alert" className="text-xs font-semibold text-red-700">
+                                                    {sale.errors.customer_email}
+                                                </span>
+                                            )}
+                                        </label>
+                                        {(sale.data.customer_name || sale.data.customer_phone || sale.data.customer_email) && (
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    sale.setData((data) => ({ ...data, customer_name: '', customer_phone: '' }));
-                                                    sale.clearErrors('customer_name', 'customer_phone');
+                                                    sale.setData((data) => ({
+                                                        ...data,
+                                                        customer_name: '',
+                                                        customer_phone: '',
+                                                        customer_email: '',
+                                                    }));
+                                                    sale.clearErrors('customer_name', 'customer_phone', 'customer_email');
                                                 }}
                                                 className="min-h-10 justify-self-start text-sm font-bold text-[#34765f] underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none sm:col-span-2"
                                             >
@@ -852,141 +965,284 @@ export default function PosPage({
                             </div>
 
                             <fieldset>
-                                <legend className="mb-2 text-sm font-semibold text-slate-700">Metode bayar</legend>
+                                <legend className="mb-2 text-sm font-semibold text-slate-700">{translate('Kanal penjualan')}</legend>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {paymentMethods.map((method) => {
-                                        const active = method.account_id === sale.data.account_id;
-                                        const pillClass = active
-                                            ? 'border-[var(--app-ink)] bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-sm'
-                                            : 'border-slate-300 bg-white text-teal-900 hover:border-teal-500 hover:bg-teal-50';
+                                    {[
+                                        { channel: 'in_store' as const, label: translate('Di toko'), icon: Store },
+                                        { channel: 'marketplace' as const, label: 'Marketplace', icon: ShoppingBag },
+                                    ].map(({ channel, label, icon: Icon }) => {
+                                        const active = sale.data.sales_channel === channel;
 
                                         return (
                                             <button
-                                                key={method.account_id}
+                                                key={channel}
                                                 type="button"
                                                 aria-pressed={active}
-                                                onClick={() => selectPaymentMethod(method)}
-                                                className={`flex min-h-12 items-center justify-center rounded-xl border px-4 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none ${pillClass}`}
+                                                onClick={() => selectSalesChannel(channel)}
+                                                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none ${
+                                                    active
+                                                        ? 'border-[var(--app-ink)] bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-sm'
+                                                        : 'border-slate-300 bg-white text-teal-900 hover:border-teal-500 hover:bg-teal-50'
+                                                }`}
                                             >
-                                                <span className="mr-2 inline-flex">
-                                                    {method.method === 'cash' ? (
-                                                        <Banknote className="size-4" />
-                                                    ) : (
-                                                        <QrCode className="size-4" />
-                                                    )}
-                                                </span>
-                                                {method.label}
+                                                <Icon className="size-4" />
+                                                {label}
                                             </button>
                                         );
                                     })}
                                 </div>
                             </fieldset>
 
-                            {selectedMethod?.method === 'cash' ? (
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-slate-700">
-                                        Uang diterima
+                            {isMarketplace ? (
+                                <div className="grid gap-3 rounded-2xl border border-[#b8d8cd] bg-[#f1f8f5] p-3.5 sm:grid-cols-2">
+                                    <fieldset className="sm:col-span-2">
+                                        <legend className="mb-1.5 text-sm font-semibold text-[#245c4f]">Marketplace</legend>
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                            {marketplaces.map((marketplace) => {
+                                                const active = sale.data.marketplace_code === marketplace.code;
+
+                                                return (
+                                                    <button
+                                                        key={marketplace.code}
+                                                        type="button"
+                                                        aria-pressed={active}
+                                                        onClick={() => sale.setData('marketplace_code', marketplace.code)}
+                                                        className={`flex min-h-12 min-w-0 items-center gap-2 rounded-xl border px-2.5 text-left text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none ${
+                                                            active
+                                                                ? 'border-[#34765f] bg-white text-[#173c35] shadow-sm'
+                                                                : 'border-[#cfe3dc] bg-[#f8fcfa] text-[#58756c] hover:border-[#76a898]'
+                                                        }`}
+                                                    >
+                                                        <CommerceBrandMark code={marketplace.code} />
+                                                        <span className="min-w-0 leading-tight">{translate(marketplace.label)}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </fieldset>
+                                    <label className="grid gap-1.5 text-sm font-semibold text-[#245c4f] sm:col-span-2">
+                                        {translate('Nomor pesanan')}
                                         <input
-                                            className={`${fieldClass} mt-1 text-lg font-bold`}
-                                            type="number"
-                                            min={total}
-                                            step="0.0001"
-                                            inputMode="decimal"
-                                            value={sale.data.paid_amount}
-                                            onChange={(event) => sale.setData('paid_amount', event.target.value)}
-                                            required
+                                            className={fieldClass}
+                                            value={sale.data.external_order_number}
+                                            onChange={(event) => sale.setData('external_order_number', event.target.value)}
+                                            maxLength={100}
                                         />
                                     </label>
-                                    {cashSuggestions.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {cashSuggestions.map((amount) => (
-                                                <button
-                                                    type="button"
-                                                    key={amount}
-                                                    onClick={() => sale.setData('paid_amount', String(amount))}
-                                                    className="min-h-10 flex-1 rounded-xl border border-slate-300 bg-white px-2 text-xs font-bold text-teal-900 transition hover:border-teal-500 hover:bg-teal-50"
-                                                >
-                                                    {money(amount)}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between text-sm font-bold text-teal-800">
-                                        <span>Kembalian</span>
-                                        <span>{money(change)}</span>
-                                    </div>
-                                </div>
-                            ) : selectedMethod?.method === 'qris' ? (
-                                <div className="space-y-3 rounded-2xl border border-[#b8d8cd] bg-[#f1f8f5] p-3.5">
-                                    <div className="flex items-center justify-between gap-3 text-sm">
-                                        <span className="font-semibold text-[#245c4f]">Nominal QRIS</span>
+                                    <div className="flex items-center justify-between gap-3 border-t border-[#cfe3dc] pt-3 text-sm sm:col-span-2">
+                                        <span className="font-semibold text-[#245c4f]">{translate('Masuk ke saldo marketplace')}</span>
                                         <strong className="text-base text-[#173c35]">{money(total)}</strong>
                                     </div>
-                                    <div className="border-t border-[#cfe3dc] pt-3">
-                                        {sale.data.payment_proof ? (
-                                            <div className="flex min-w-0 items-center gap-3 rounded-xl bg-white p-3 ring-1 ring-[#b8d8cd]">
-                                                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#e3f3ed] text-[#176b57]">
-                                                    <FileCheck2 className="size-5" />
-                                                </span>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-sm font-bold text-[#173c35]">
-                                                        {sale.data.payment_proof.name}
-                                                    </p>
-                                                    <p className="text-xs text-[#58756c]">
-                                                        {(sale.data.payment_proof.size / 1024 / 1024).toFixed(1)} MB
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        sale.setData('payment_proof', null);
-                                                        sale.clearErrors('payment_proof');
-                                                    }}
-                                                    aria-label="Hapus bukti pembayaran"
-                                                    className="grid size-10 shrink-0 place-items-center rounded-lg text-[#6f817b] transition hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
-                                                >
-                                                    <X className="size-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#76a898] bg-white px-3 text-sm font-bold text-[#245c4f] transition focus-within:ring-2 focus-within:ring-[#34765f] hover:border-[#34765f] hover:bg-[#f9fcfb]">
-                                                <Upload className="size-4" />
-                                                Tambah bukti pembayaran
-                                                <input
-                                                    type="file"
-                                                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                                                    className="sr-only"
-                                                    onChange={(event) => {
-                                                        const file = event.target.files?.[0] ?? null;
-
-                                                        if (file && file.size > 5 * 1024 * 1024) {
-                                                            sale.setData('payment_proof', null);
-                                                            sale.setError(
-                                                                'payment_proof',
-                                                                translate('Ukuran bukti pembayaran maksimal 5 MB.'),
-                                                            );
-                                                            event.target.value = '';
-
-                                                            return;
-                                                        }
-
-                                                        sale.setData('payment_proof', file);
-                                                        sale.clearErrors('payment_proof');
-                                                        event.target.value = '';
-                                                    }}
-                                                />
-                                            </label>
-                                        )}
-                                        <p className="mt-2 text-xs text-[#58756c]">JPG, PNG, WebP, atau PDF · maksimal 5 MB</p>
-                                        {sale.errors.payment_proof && (
-                                            <p role="alert" className="mt-2 text-xs font-bold text-red-700">
-                                                {sale.errors.payment_proof}
-                                            </p>
-                                        )}
-                                    </div>
+                                    {(sale.errors.marketplace_code || sale.errors.external_order_number || sale.errors.sales_channel) && (
+                                        <p role="alert" className="text-xs font-bold text-red-700 sm:col-span-2">
+                                            {sale.errors.marketplace_code || sale.errors.external_order_number || sale.errors.sales_channel}
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
-                                <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">Metode bayar belum tersedia.</p>
+                                <>
+                                    <fieldset>
+                                        <legend className="mb-2 text-sm font-semibold text-slate-700">Metode bayar</legend>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {primaryPaymentMethods.map((method) => {
+                                                const active = method.account_id === sale.data.account_id;
+                                                const pillClass = active
+                                                    ? 'border-[var(--app-ink)] bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-sm'
+                                                    : 'border-slate-300 bg-white text-teal-900 hover:border-teal-500 hover:bg-teal-50';
+
+                                                return (
+                                                    <button
+                                                        key={method.account_id}
+                                                        type="button"
+                                                        aria-pressed={active}
+                                                        onClick={() => selectPaymentMethod(method)}
+                                                        className={`flex min-h-12 items-center justify-center rounded-xl border px-4 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none ${pillClass}`}
+                                                    >
+                                                        <CommerceBrandMark code={method.brand} className="mr-2 size-6 rounded-md" />
+                                                        {translate(method.label)}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </fieldset>
+
+                                    {otherPaymentMethods.length > 0 && (
+                                        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                            <button
+                                                type="button"
+                                                aria-expanded={otherPaymentsExpanded}
+                                                aria-controls="pos-other-payments"
+                                                onClick={() => setOtherPaymentsOpen(!otherPaymentsExpanded)}
+                                                className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm font-bold text-teal-900 transition hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none focus-visible:ring-inset"
+                                            >
+                                                <CreditCard className="size-4" />
+                                                <span className="flex-1">{translate('Pembayaran lainnya')}</span>
+                                                <ChevronDown
+                                                    className={`size-4 transition-transform ${otherPaymentsExpanded ? 'rotate-180' : ''}`}
+                                                />
+                                            </button>
+                                            {otherPaymentsExpanded && (
+                                                <div id="pos-other-payments" className="border-t border-slate-200 p-3">
+                                                    <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
+                                                        {translate('Akun penerimaan')}
+                                                        <select
+                                                            className={fieldClass}
+                                                            value={
+                                                                selectedMethod &&
+                                                                otherPaymentMethods.some(
+                                                                    (method) => method.account_id === selectedMethod.account_id,
+                                                                )
+                                                                    ? selectedMethod.account_id
+                                                                    : ''
+                                                            }
+                                                            onChange={(event) => {
+                                                                const method = otherPaymentMethods.find(
+                                                                    (option) => option.account_id === event.target.value,
+                                                                );
+
+                                                                if (method) {
+                                                                    selectPaymentMethod(method);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <option value="">{translate('Pilih akun')}</option>
+                                                            {otherPaymentMethods.map((method) => (
+                                                                <option key={method.account_id} value={method.account_id}>
+                                                                    {translate(
+                                                                        method.method === 'bank_transfer' ? 'Transfer bank' : 'E-wallet',
+                                                                    )}{' '}
+                                                                    · {method.label}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        {selectedMethod &&
+                                                            otherPaymentMethods.some(
+                                                                (method) => method.account_id === selectedMethod.account_id,
+                                                            ) && (
+                                                                <span className="mt-1 inline-flex items-center gap-2 text-xs font-bold text-[#245c4f]">
+                                                                    <CommerceBrandMark code={selectedMethod.brand} />
+                                                                    {selectedMethod.label}
+                                                                </span>
+                                                            )}
+                                                    </label>
+                                                </div>
+                                            )}
+                                        </section>
+                                    )}
+
+                                    {selectedMethod?.method === 'cash' ? (
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-semibold text-slate-700">
+                                                Uang diterima
+                                                <input
+                                                    className={`${fieldClass} mt-1 text-lg font-bold`}
+                                                    type="number"
+                                                    min={total}
+                                                    step="0.0001"
+                                                    inputMode="decimal"
+                                                    value={sale.data.paid_amount}
+                                                    onChange={(event) => sale.setData('paid_amount', event.target.value)}
+                                                    required
+                                                />
+                                            </label>
+                                            {cashSuggestions.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {cashSuggestions.map((amount) => (
+                                                        <button
+                                                            type="button"
+                                                            key={amount}
+                                                            onClick={() => sale.setData('paid_amount', String(amount))}
+                                                            className="min-h-10 flex-1 rounded-xl border border-slate-300 bg-white px-2 text-xs font-bold text-teal-900 transition hover:border-teal-500 hover:bg-teal-50"
+                                                        >
+                                                            {money(amount)}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between text-sm font-bold text-teal-800">
+                                                <span>Kembalian</span>
+                                                <span>{money(change)}</span>
+                                            </div>
+                                        </div>
+                                    ) : selectedMethod ? (
+                                        <div className="space-y-3 rounded-2xl border border-[#b8d8cd] bg-[#f1f8f5] p-3.5">
+                                            <div className="flex items-center justify-between gap-3 text-sm">
+                                                <span className="font-semibold text-[#245c4f]">
+                                                    {selectedMethod.method === 'qris' || selectedMethod.method === 'qr_payment'
+                                                        ? selectedMethod.label
+                                                        : translate(
+                                                              selectedMethod.method === 'bank_transfer' ? 'Transfer bank' : 'E-wallet',
+                                                          )}
+                                                </span>
+                                                <strong className="text-base text-[#173c35]">{money(total)}</strong>
+                                            </div>
+                                            <div className="border-t border-[#cfe3dc] pt-3">
+                                                {sale.data.payment_proof ? (
+                                                    <div className="flex min-w-0 items-center gap-3 rounded-xl bg-white p-3 ring-1 ring-[#b8d8cd]">
+                                                        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#e3f3ed] text-[#176b57]">
+                                                            <FileCheck2 className="size-5" />
+                                                        </span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="truncate text-sm font-bold text-[#173c35]">
+                                                                {sale.data.payment_proof.name}
+                                                            </p>
+                                                            <p className="text-xs text-[#58756c]">
+                                                                {(sale.data.payment_proof.size / 1024 / 1024).toFixed(1)} MB
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                sale.setData('payment_proof', null);
+                                                                sale.clearErrors('payment_proof');
+                                                            }}
+                                                            aria-label="Hapus bukti pembayaran"
+                                                            className="grid size-10 shrink-0 place-items-center rounded-lg text-[#6f817b] transition hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none"
+                                                        >
+                                                            <X className="size-4" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#76a898] bg-white px-3 text-sm font-bold text-[#245c4f] transition focus-within:ring-2 focus-within:ring-[#34765f] hover:border-[#34765f] hover:bg-[#f9fcfb]">
+                                                        <Upload className="size-4" />
+                                                        Tambah bukti pembayaran
+                                                        <input
+                                                            type="file"
+                                                            accept="image/jpeg,image/png,image/webp,application/pdf"
+                                                            className="sr-only"
+                                                            onChange={(event) => {
+                                                                const file = event.target.files?.[0] ?? null;
+
+                                                                if (file && file.size > 5 * 1024 * 1024) {
+                                                                    sale.setData('payment_proof', null);
+                                                                    sale.setError(
+                                                                        'payment_proof',
+                                                                        translate('Ukuran bukti pembayaran maksimal 5 MB.'),
+                                                                    );
+                                                                    event.target.value = '';
+
+                                                                    return;
+                                                                }
+
+                                                                sale.setData('payment_proof', file);
+                                                                sale.clearErrors('payment_proof');
+                                                                event.target.value = '';
+                                                            }}
+                                                        />
+                                                    </label>
+                                                )}
+                                                <p className="mt-2 text-xs text-[#58756c]">JPG, PNG, WebP, atau PDF · maksimal 5 MB</p>
+                                                {sale.errors.payment_proof && (
+                                                    <p role="alert" className="mt-2 text-xs font-bold text-red-700">
+                                                        {sale.errors.payment_proof}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">Metode bayar belum tersedia.</p>
+                                    )}
+                                </>
                             )}
 
                             <input
@@ -997,20 +1253,16 @@ export default function PosPage({
                                 onChange={(event) => sale.setData('notes', event.target.value)}
                                 maxLength={500}
                             />
-                            {Object.keys(sale.errors).length > 0 && (
-                                <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                                    Checkout gagal. Periksa data pelanggan, stok, diskon, dan pembayaran.
+                            {checkoutError && (
+                                <p
+                                    role="alert"
+                                    className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700"
+                                >
+                                    {checkoutError}
                                 </p>
                             )}
                             <button
-                                disabled={
-                                    scannerSession.count > 0 ||
-                                    scannerSession.pending > 0 ||
-                                    sale.processing ||
-                                    sale.data.items.length === 0 ||
-                                    !selectedMethod ||
-                                    sale.data.paid_amount === ''
-                                }
+                                disabled={sale.processing || sale.data.items.length === 0 || !paymentReady || sale.data.paid_amount === ''}
                                 className="h-14 w-full rounded-2xl bg-orange-600 text-base font-black text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {sale.processing ? 'Memproses...' : `Bayar ${money(total)}`}
@@ -1091,7 +1343,9 @@ export default function PosPage({
                                     <div className="min-w-0">
                                         <p className="font-black text-slate-900">{option.variant_name || option.unit_name}</p>
                                         <p className={`mt-1 text-xs font-bold ${stock > 0 ? 'text-[var(--app-primary)]' : 'text-red-600'}`}>
-                                            {stock > 0 ? `Stok ${quantity(stock)} ${option.unit_symbol}` : 'Stok habis'}
+                                            {stock > 0
+                                                ? `${translate('Stok')} ${quantity(stock)} ${option.unit_symbol}`
+                                                : translate('Stok habis')}
                                         </p>
                                     </div>
                                     <div className="flex shrink-0 items-center gap-2">

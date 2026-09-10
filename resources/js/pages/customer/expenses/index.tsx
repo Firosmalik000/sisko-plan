@@ -7,6 +7,7 @@ import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { currencySymbol, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 type Category = {
     public_id: string;
@@ -485,7 +486,7 @@ function MetricCard({
     return (
         <article className="min-w-0 rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
             <div className={`inline-flex rounded-lg p-1.5 ${tones[tone]}`}>{icon}</div>
-            <p className="mt-2 text-[10px] font-black tracking-wide text-stone-500 uppercase">{label}</p>
+            <p className="mt-2 text-[10px] font-black tracking-wide text-stone-500 uppercase">{translate(label)}</p>
             <p className="mt-0.5 truncate text-sm font-black tracking-[-0.025em] text-stone-900 sm:text-lg" title={value}>
                 {value}
             </p>
@@ -497,7 +498,7 @@ function MetricCard({
 function Field({ label, children }: { label: string; children: ReactNode }) {
     return (
         <label className="space-y-1 text-sm font-bold text-stone-700">
-            {label}
+            {translate(label)}
             {children}
         </label>
     );
@@ -506,7 +507,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function Calculation({ label, value, danger = false }: { label: string; value: string; danger?: boolean }) {
     return (
         <div className="flex min-w-0 items-center justify-between px-3 py-2 min-[375px]:block min-[375px]:px-2 min-[375px]:py-0 min-[375px]:text-center">
-            <p className="text-[10px] font-bold tracking-wide text-stone-500 uppercase">{label}</p>
+            <p className="text-[10px] font-bold tracking-wide text-stone-500 uppercase">{translate(label)}</p>
             <p
                 className={`truncate text-xs font-black min-[375px]:mt-1 sm:text-sm ${danger ? 'text-rose-600' : 'text-[var(--app-ink)]'}`}
                 title={value}

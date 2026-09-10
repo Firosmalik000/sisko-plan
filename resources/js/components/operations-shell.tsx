@@ -1,12 +1,13 @@
 import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { formatMoney, formatQuantity, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 export const money = formatMoney;
 
 export const quantity = formatQuantity;
 
-export const currentDateTime = (timezone: string) => {
+export const currentDateTime = (timezone: string, withSeconds = false) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone: timezone,
         year: 'numeric',
@@ -14,6 +15,7 @@ export const currentDateTime = (timezone: string) => {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
+        second: withSeconds ? '2-digit' : undefined,
         hourCycle: 'h23',
     })
         .formatToParts(new Date())
@@ -23,7 +25,7 @@ export const currentDateTime = (timezone: string) => {
             return values;
         }, {});
 
-    return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+    return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}${withSeconds ? `:${parts.second}` : ''}`;
 };
 
 export const ledgerDateTime = (value: string, timezone: string) =>
@@ -64,7 +66,7 @@ export function OperationsShell({
             <div className="mx-auto max-w-7xl space-y-4">
                 <header className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">{title}</h1>
+                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">{translate(title)}</h1>
                         <nav className="flex max-w-full gap-1.5 overflow-x-auto pb-0.5">
                             {tabs.map((tab) => (
                                 <Link
@@ -76,7 +78,7 @@ export function OperationsShell({
                                             : 'bg-[var(--app-soft)] text-[var(--muted-foreground)] hover:bg-[var(--app-soft-strong)]'
                                     }`}
                                 >
-                                    {tab.label}
+                                    {translate(tab.label)}
                                 </Link>
                             ))}
                         </nav>
@@ -91,7 +93,7 @@ export function OperationsShell({
 export function LedgerCard({ title, children }: { title: string; description?: string; children: ReactNode }) {
     return (
         <section className="rounded-[1.35rem] border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="text-lg font-black tracking-[-0.025em] text-stone-900">{title}</h2>
+            <h2 className="text-lg font-black tracking-[-0.025em] text-stone-900">{translate(title)}</h2>
             <div className="mt-4">{children}</div>
         </section>
     );

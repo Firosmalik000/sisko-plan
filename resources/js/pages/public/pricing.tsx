@@ -171,7 +171,9 @@ export default function Pricing({
                         <div>
                             <span className="scan-kicker">Pilihan paket</span>
                             <h2 id="offers-title">
-                                {focusedCopy ? `Pilihan untuk ${focusedCopy.label.toLowerCase()}` : 'Sesuai cara toko Anda berkembang.'}
+                                {focusedCopy
+                                    ? `${translate('Pilihan untuk')} ${focusedCopy.label.toLowerCase()}`
+                                    : translate('Sesuai cara toko Anda berkembang.')}
                             </h2>
                         </div>
                         <span>
@@ -205,8 +207,8 @@ export default function Pricing({
                             >
                                 <header className="pricing-offer-group-head">
                                     <div>
-                                        <h3 id={`category-${group.key}-title`}>{group.title}</h3>
-                                        <p>{group.description}</p>
+                                        <h3 id={`category-${group.key}-title`}>{translate(group.title)}</h3>
+                                        <p>{translate(group.description)}</p>
                                     </div>
                                     <span>
                                         {group.plans.length} {translate('pilihan')}
@@ -239,7 +241,7 @@ export default function Pricing({
                                                     )}
                                                 </div>
                                                 <h3>{translate(plan.name)}</h3>
-                                                {plan.description && <p>{plan.description}</p>}
+                                                {plan.description && <p>{translate(plan.description)}</p>}
                                             </div>
                                             <div className="pricing-card-price">
                                                 <strong>{priceLabel(plan)}</strong>
@@ -304,8 +306,8 @@ export default function Pricing({
             <section className="pricing-close">
                 <m.div className="ledger-container" initial="hidden" whileInView="visible" viewport={publicViewport} variants={revealClip}>
                     <div>
-                        <span className="scan-kicker">Mulai lebih rapi</span>
-                        <h2>Pilih paketnya. Jalankan toko tanpa catatan yang tercecer.</h2>
+                        <span className="scan-kicker">Mulai sesuai kebutuhan</span>
+                        <h2>Pakai yang gratis dulu. Tambah kapasitas saat toko membutuhkannya.</h2>
                     </div>
                     {account.can_access_dashboard ? (
                         <Link className="ledger-button ledger-button-orange" href={dashboard()}>
@@ -332,10 +334,10 @@ export default function Pricing({
                         <DialogTitle className="text-xl font-black tracking-[-0.03em] text-[#2d2928]">Konfirmasi berlangganan</DialogTitle>
                         <DialogDescription className="text-[#5e6964]">
                             {selectedScheduled && account.next_period_start
-                                ? `${selectedPlan?.name} akan dimulai ${date(account.next_period_start)} setelah periode sebelumnya selesai.`
+                                ? `${selectedPlan?.name} ${translate('akan dimulai')} ${date(account.next_period_start)} ${translate('setelah periode sebelumnya selesai.')}`
                                 : selectedPlan?.kind === 'addon'
-                                  ? `${selectedPlan?.name} akan menambah kapasitas akun mulai sekarang.`
-                                  : `${selectedPlan?.name} akan aktif mulai sekarang.`}
+                                  ? `${selectedPlan?.name} ${translate('akan menambah kapasitas akun mulai sekarang.')}`
+                                  : `${selectedPlan?.name} ${translate('akan aktif mulai sekarang.')}`}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submit}>

@@ -13,12 +13,14 @@ use App\Models\SaleReturn;
 use App\Models\User;
 use App\Support\CurrentStore;
 use App\Support\Decimal;
+use App\Support\MarketplaceCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use LogicException;
@@ -36,7 +38,9 @@ class SalesController extends Controller
             'period' => ['nullable', 'in:today,week,month,all,custom'],
             'start_date' => ['nullable', 'date_format:Y-m-d'],
             'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
-            'payment_method' => ['nullable', 'in:cash,qris'],
+            'payment_method' => ['nullable', 'in:cash,qris,qr_payment,bank_transfer,e_wallet,marketplace'],
+            'sales_channel' => ['nullable', 'in:in_store,marketplace'],
+            'marketplace_code' => ['nullable', Rule::in(MarketplaceCatalog::codesForCountry($store->country?->code))],
             'customer' => ['nullable', 'in:identified,guest'],
             'view' => ['nullable', 'in:history,returns'],
             'from' => ['nullable', 'in:pos'],
@@ -46,6 +50,8 @@ class SalesController extends Controller
         $startDate = (string) ($validated['start_date'] ?? '');
         $endDate = (string) ($validated['end_date'] ?? '');
         $paymentMethod = (string) ($validated['payment_method'] ?? '');
+        $salesChannel = (string) ($validated['sales_channel'] ?? '');
+        $marketplaceCode = (string) ($validated['marketplace_code'] ?? '');
         $customer = (string) ($validated['customer'] ?? '');
         $from = ($validated['from'] ?? null) === 'pos' ? 'pos' : null;
         $today = CarbonImmutable::now($timezone);
@@ -86,13 +92,17 @@ class SalesController extends Controller
                     $nested->where('sales.document_number', 'like', "%{$search}%")
                         ->orWhere('sales.customer_name', 'like', "%{$search}%")
                         ->orWhere('sales.customer_phone', 'like', "%{$search}%")
+                        ->orWhere('sales.customer_email', 'like', "%{$search}%")
+                        ->orWhere('sales.external_order_number', 'like', "%{$search}%")
                         ->when($phoneSearch !== null, fn ($phoneQuery) => $phoneQuery->orWhere('customers.phone_normalized', 'like', "%{$phoneSearch}%"));
                 });
             })
             ->when($paymentMethod !== '', fn ($query) => $query->where('sale_payments.payment_method', $paymentMethod))
+            ->when($salesChannel !== '', fn ($query) => $query->where('sales.sales_channel', $salesChannel))
+            ->when($marketplaceCode !== '', fn ($query) => $query->where('sales.marketplace_code', $marketplaceCode))
             ->when($customer === 'identified', fn ($query) => $query->whereNotNull('sales.customer_id'))
             ->when($customer === 'guest', fn ($query) => $query->whereNull('sales.customer_id'))
-            ->select(['sales.public_id', 'sales.document_number', 'sales.customer_name', 'sales.customer_phone', 'sales.total_amount', 'sales.paid_amount', 'sales.change_amount', 'sales.occurred_at', 'sale_payments.payment_method', 'financial_accounts.name as account_name'])
+            ->select(['sales.public_id', 'sales.document_number', 'sales.customer_name', 'sales.customer_phone', 'sales.customer_email', 'sales.sales_channel', 'sales.marketplace_code', 'sales.external_order_number', 'sales.total_amount', 'sales.paid_amount', 'sales.change_amount', 'sales.occurred_at', 'sale_payments.payment_method', 'financial_accounts.name as account_name'])
             ->selectRaw('COALESCE(item_totals.cogs_amount, 0) as cogs_amount, COALESCE(item_totals.gross_profit, 0) as gross_profit')
             ->selectRaw('COALESCE(return_totals.refund_amount, 0) as refund_amount, COALESCE(return_totals.cogs_reversed, 0) as cogs_reversed, COALESCE(return_totals.gross_profit_reversed, 0) as gross_profit_reversed')
             ->latest('sales.id')->paginate(25)->withQueryString();
@@ -100,7 +110,7 @@ class SalesController extends Controller
         $sales->through(function (Sale $sale) use ($canViewProfit): array {
             $refund = (string) ($sale->refund_amount ?? '0');
             $result = [
-                ...$sale->only(['public_id', 'document_number', 'customer_name', 'customer_phone', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'payment_method', 'account_name']),
+                ...$sale->only(['public_id', 'document_number', 'customer_name', 'customer_phone', 'customer_email', 'sales_channel', 'marketplace_code', 'external_order_number', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'payment_method', 'account_name']),
                 'refund_amount' => $refund,
                 'net_revenue' => Decimal::subtract($sale->total_amount, $refund, Decimal::MONEY_SCALE),
             ];
@@ -122,10 +132,13 @@ class SalesController extends Controller
                 'start_date' => $startDate,
                 'end_date' => $endDate,
                 'payment_method' => $paymentMethod,
+                'sales_channel' => $salesChannel,
+                'marketplace_code' => $marketplaceCode,
                 'customer' => $customer,
                 'view' => $view,
                 'from' => $from,
             ],
+            'marketplaces' => MarketplaceCatalog::forCountry($store->country?->code),
         ]);
     }
 
@@ -166,7 +179,7 @@ class SalesController extends Controller
 
         return Storage::disk('local')->response(
             $path,
-            "bukti-qris-{$sale->document_number}.{$extension}",
+            "bukti-pembayaran-{$sale->document_number}.{$extension}",
             ['Cache-Control' => 'private, no-store'],
         );
     }
@@ -229,7 +242,12 @@ class SalesController extends Controller
         }
 
         return [
-            'sale' => $sale->only(['public_id', 'document_number', 'customer_name', 'customer_phone', 'subtotal', 'item_discount_amount', 'transaction_discount_amount', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'notes', 'cashier_name']),
+            'sale' => [
+                ...$sale->only(['public_id', 'document_number', 'customer_name', 'customer_phone', 'customer_email', 'sales_channel', 'marketplace_code', 'external_order_number', 'subtotal', 'item_discount_amount', 'transaction_discount_amount', 'total_amount', 'paid_amount', 'change_amount', 'occurred_at', 'notes', 'cashier_name']),
+                'marketplace_label' => $sale->marketplace_code === null
+                    ? null
+                    : MarketplaceCatalog::label($store->country?->code, $sale->marketplace_code),
+            ],
             'items' => $items->map(function (array $item) use ($canViewProfit): array {
                 if (! $canViewProfit) {
                     unset($item['cogs_amount'], $item['gross_profit']);

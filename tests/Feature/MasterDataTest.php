@@ -441,6 +441,50 @@ class MasterDataTest extends TestCase
         $this->assertSame('24.000000', InventoryBalance::query()->where('product_id', $parent->id)->whereNull('product_variant_id')->value('minimum_quantity'));
     }
 
+    public function test_editing_shared_variant_hpp_revalues_existing_stock_without_changing_quantity(): void
+    {
+        [$owner, $store] = $this->ownerAndStore();
+        $category = Category::factory()->for($store)->create();
+        $retail = Unit::factory()->for($store)->create(['unit_type' => UnitType::Retail]);
+        $large = Unit::factory()->for($store)->create(['unit_type' => UnitType::Large]);
+        $payload = $this->modernProductPayload($category, $retail, $large, 'shared');
+        $payload['current_stock'] = '120';
+        $payload['minimum_stock'] = '24';
+        $payload['variants'] = [
+            ['name' => 'Dus 24', 'purchase_price' => '72000', 'selling_price' => '96000', 'conversion_factor' => '24'],
+            ['name' => 'Pack 6', 'purchase_price' => '18000', 'selling_price' => '25000', 'conversion_factor' => '6'],
+        ];
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.store'), $payload)->assertRedirect()->assertSessionDoesntHaveErrors();
+
+        $product = Product::query()->sole();
+        $variantIds = ProductVariant::query()->where('product_id', $product->id)->pluck('public_id', 'name');
+        $payload['variants'][0]['public_id'] = $variantIds['Dus 24'];
+        $payload['variants'][1]['public_id'] = $variantIds['Pack 6'];
+        $payload['variants'][0]['purchase_price'] = '72';
+        $payload['variants'][0]['selling_price'] = '96';
+        $payload['variants'][1]['purchase_price'] = '18';
+        $payload['variants'][1]['selling_price'] = '25';
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->patch(route('master-data.products.update', $product->public_id), $payload)
+            ->assertRedirect()->assertSessionDoesntHaveErrors();
+
+        $balance = InventoryBalance::query()->where('product_id', $product->id)->whereNull('product_variant_id')->sole();
+        $this->assertSame('120.000000', $balance->quantity);
+        $this->assertSame('3.0000', $balance->average_cost);
+        $this->assertSame('360.0000', $balance->inventory_value);
+        $this->assertDatabaseHas('stock_movements', [
+            'store_id' => $store->id,
+            'product_id' => $product->id,
+            'product_variant_id' => null,
+            'reason' => 'product_cost_update',
+            'quantity_change' => '0.000000',
+            'unit_cost' => '3.0000',
+            'inventory_value_after' => '360.0000',
+        ]);
+    }
+
     public function test_product_edit_sets_stock_target_and_photo_is_tenant_protected(): void
     {
         Storage::fake('local');

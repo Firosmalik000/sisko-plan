@@ -1,10 +1,6 @@
 {
-    "Menyiapkan aplikasi…": "Preparing the app…",
-    "Koneksi bermasalah": "Connection problem",
-    "Coba lagi": "Try again",
-    "Analisis untuk pasar toko ini belum tersedia. Isi data produk secara manual.": "Analysis is not available for this store's market. Enter product details manually.",
-    "Pilih satuan dari kelompok ecer.": "Choose a retail unit.",
-    "Pilih satuan dari kelompok besar.": "Choose a bulk unit.",
+    "Alamat toko harus berupa teks.": "The store address must be text.",
+    "Alamat toko tidak boleh lebih dari 500 karakter.": "The store address must not exceed 500 characters.",
     "Opname harus selesai dihitung sebelum diposting.": "The stock count must be completed before it can be posted.",
     "Semua produk harus dihitung sebelum opname diposting.": "All products must be counted before the stock count can be posted.",
     "Belum ada produk persediaan aktif untuk dihitung.": "There are no active inventory products to count.",
@@ -192,5 +188,11 @@
     "Bukti pembayaran gagal disimpan. Coba unggah kembali.": "The payment proof could not be saved. Upload it again.",
     "Nama pelanggan dan nomor telepon harus diisi bersama.": "Customer name and phone number must be provided together.",
     "Nomor telepon pelanggan tidak valid.": "The customer phone number is invalid.",
-    "Fixed quantity products require whole quantities.": "Fixed quantity products require whole quantities."
+    "Email pelanggan tidak valid.": "The customer email address is invalid.",
+    "Marketplace tidak tersedia untuk negara toko ini.": "This marketplace is not available for the store country.",
+    "Transaksi marketplace harus masuk ke saldo marketplace.": "Marketplace sales must be posted to the marketplace balance.",
+    "Metode bayar tidak sesuai dengan akun penerimaan.": "The payment method does not match the receiving account.",
+    "Bukti pembayaran hanya dapat ditambahkan untuk pembayaran non-tunai langsung.": "Payment proof can only be added to direct non-cash payments.",
+    "Akun penampung transaksi marketplace.": "Marketplace transaction clearing account.",
+    "Saldo :marketplace": ":marketplace balance"
 }

@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
+import { useTranslation } from '@/lib/i18n';
 import { confirm } from '@/routes/two-factor';
 
 function GridScanIcon() {
@@ -187,6 +188,7 @@ export default function TwoFactorSetupModal({
     errors,
 }: Props) {
     const [showVerificationStep, setShowVerificationStep] = useState<boolean>(false);
+    const { t } = useTranslation();
 
     const modalConfig = useMemo<{
         title: string;
@@ -257,8 +259,8 @@ export default function TwoFactorSetupModal({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader className="flex items-center justify-center">
                     <GridScanIcon />
-                    <DialogTitle>{modalConfig.title}</DialogTitle>
-                    <DialogDescription className="text-center">{modalConfig.description}</DialogDescription>
+                    <DialogTitle>{t(modalConfig.title)}</DialogTitle>
+                    <DialogDescription className="text-center">{t(modalConfig.description)}</DialogDescription>
                 </DialogHeader>
 
                 <div className="flex flex-col items-center space-y-5">
@@ -268,7 +270,7 @@ export default function TwoFactorSetupModal({
                         <TwoFactorSetupStep
                             qrCodeSvg={qrCodeSvg}
                             manualSetupKey={manualSetupKey}
-                            buttonText={modalConfig.buttonText}
+                            buttonText={t(modalConfig.buttonText)}
                             onNextStep={handleModalNextStep}
                             errors={errors}
                         />

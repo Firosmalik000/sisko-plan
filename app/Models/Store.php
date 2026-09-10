@@ -26,6 +26,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $owner
+ * @property-read Country|null $country
  * @property-read Collection<int, User> $users
  * @property-read StoreSetting|null $settings
  * @property-read Subscription|null $subscription

@@ -25,6 +25,7 @@ use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use App\Support\Decimal;
+use App\Support\PaymentMethodCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -387,6 +388,505 @@ class SalesPosTest extends TestCase
         $this->assertDatabaseHas('financial_accounts', ['store_id' => $store->id, 'name' => 'QRIS', 'type' => FinancialAccountType::EWallet->value, 'is_active' => true]);
     }
 
+    public function test_malaysia_pos_uses_duitnow_qr_and_touch_n_go_instead_of_qris(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $store->update(['country_id' => Country::query()->where('code', 'MY')->valueOrFail('id')]);
+        $store->unsetRelation('country');
+        $this->openStock($store, $owner, $product, '5', '500');
+        $session = ['active_store_id' => $store->id];
+
+        $this->actingAs($owner)->withSession($session)->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('paymentMethods', 3)
+                ->where('paymentMethods.0.method', 'cash')
+                ->where('paymentMethods.1.method', 'qr_payment')
+                ->where('paymentMethods.1.label', 'DuitNow QR')
+                ->where('paymentMethods.1.brand', 'duitnow_qr')
+                ->where('paymentMethods.2.method', 'e_wallet')
+                ->where('paymentMethods.2.label', "Touch 'n Go eWallet")
+                ->where('paymentMethods.2.brand', 'touch_n_go'));
+
+        $touchNGo = FinancialAccount::query()->where([
+            'store_id' => $store->id,
+            'payment_code' => 'touch_n_go',
+        ])->sole();
+        $duitNow = FinancialAccount::query()->where([
+            'store_id' => $store->id,
+            'payment_code' => 'duitnow_qr',
+        ])->sole();
+        $duitNowPayload = [
+            'sales_channel' => 'in_store',
+            'payment_method' => 'qr_payment',
+            'account_id' => $duitNow->public_id,
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '1000',
+            'occurred_at' => '2026-08-07T15:55',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '1',
+                'discount_amount' => '0',
+            ]],
+        ];
+        $this->actingAs($owner)->withSession($session)
+            ->post(route('pos.sales.store'), $duitNowPayload)
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('sale_payments', [
+            'financial_account_id' => $duitNow->id,
+            'payment_method' => 'qr_payment',
+            'amount' => '1000.0000',
+        ]);
+
+        $invalidQrPayload = [
+            'sales_channel' => 'in_store',
+            'payment_method' => 'qr_payment',
+            'account_id' => $touchNGo->public_id,
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '1000',
+            'occurred_at' => '2026-08-07T16:00',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '1',
+                'discount_amount' => '0',
+            ]],
+        ];
+        $this->actingAs($owner)->withSession($session)
+            ->from(route('pos.index'))
+            ->post(route('pos.sales.store'), $invalidQrPayload)
+            ->assertRedirect(route('pos.index'))
+            ->assertSessionHasErrors('payment_method');
+
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), [
+            'sales_channel' => 'in_store',
+            'payment_method' => 'e_wallet',
+            'account_id' => $touchNGo->public_id,
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '1000',
+            'occurred_at' => '2026-08-07T16:00',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '1',
+                'discount_amount' => '0',
+            ]],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('sale_payments', [
+            'financial_account_id' => $touchNGo->id,
+            'payment_method' => 'e_wallet',
+            'amount' => '1000.0000',
+        ]);
+        $this->assertSame($cash->store_id, $touchNGo->store_id);
+    }
+
+    public function test_vietnam_pos_checkout_aligns_a_stale_page_timestamp_with_the_latest_ledger(): void
+    {
+        [$owner, $store, $product, , $qr] = $this->fixtures('15');
+        $store->update(['country_id' => Country::query()->where('code', 'VN')->valueOrFail('id')]);
+        $store->settings()->update(['timezone' => 'Asia/Ho_Chi_Minh', 'currency' => 'VND', 'locale' => 'vi']);
+        $qr->update(['name' => 'VietQR', 'payment_code' => 'vietqr']);
+        $this->openStock($store, $owner, $product, '99', '10');
+        app(PostStockAdjustment::class)->handle($store, $owner, 'increase', [[
+            'product_id' => $product->id,
+            'quantity' => '1',
+            'unit_cost' => '10',
+        ]], '2026-08-07T09:00:45Z', null, 'vietnam-stock-after-pos-opened');
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->post(route('pos.sales.store'), [
+            'sales_channel' => 'in_store',
+            'payment_method' => 'qr_payment',
+            'account_id' => $qr->public_id,
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '30',
+            'occurred_at' => '2026-08-07T16:00:00',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '2',
+                'discount_amount' => '0',
+            ]],
+        ])->assertRedirect()->assertSessionDoesntHaveErrors();
+
+        $sale = Sale::query()->sole();
+        $this->assertSame('2026-08-07 09:00:45', $sale->occurred_at->utc()->format('Y-m-d H:i:s'));
+        $this->assertSame('98.000000', InventoryBalance::query()->sole()->quantity);
+        $this->assertDatabaseHas('sale_payments', [
+            'sale_id' => $sale->id,
+            'financial_account_id' => $qr->id,
+            'payment_method' => 'qr_payment',
+            'amount' => '30.0000',
+        ]);
+    }
+
+    public function test_each_country_qr_method_posts_without_leaking_marketplace_payload(): void
+    {
+        $countries = [
+            'ID' => ['code' => 'qris', 'method' => 'qris', 'label' => 'QRIS', 'count' => 2],
+            'MY' => ['code' => 'duitnow_qr', 'method' => 'qr_payment', 'label' => 'DuitNow QR', 'count' => 3],
+            'TH' => ['code' => 'promptpay_qr', 'method' => 'qr_payment', 'label' => 'PromptPay QR', 'count' => 2],
+            'VN' => ['code' => 'vietqr', 'method' => 'qr_payment', 'label' => 'VietQR', 'count' => 2],
+        ];
+
+        foreach ($countries as $countryCode => $expected) {
+            [$owner, $store, $product] = $this->fixtures();
+            $store->update(['country_id' => Country::query()->where('code', $countryCode)->valueOrFail('id')]);
+            $store->unsetRelation('country');
+            $this->openStock($store, $owner, $product, '5', '500');
+            $session = ['active_store_id' => $store->id];
+
+            $this->actingAs($owner)->withSession($session)->get(route('pos.index'))
+                ->assertInertia(fn (Assert $page) => $page
+                    ->has('paymentMethods', $expected['count'])
+                    ->where('paymentMethods.1.method', $expected['method'])
+                    ->where('paymentMethods.1.label', $expected['label'])
+                    ->where('paymentMethods.1.brand', $expected['code']));
+
+            $qrAccount = FinancialAccount::query()->where([
+                'store_id' => $store->id,
+                'payment_code' => $expected['code'],
+            ])->sole();
+
+            $payload = [
+                'sales_channel' => 'in_store',
+                'payment_method' => $expected['method'],
+                'account_id' => $qrAccount->public_id,
+                'marketplace_code' => 'shopee',
+                'transaction_discount_amount' => '0',
+                'paid_amount' => '1000',
+                'occurred_at' => '2026-09-09T16:00',
+                'idempotency_key' => (string) Str::uuid(),
+                'items' => [[
+                    'product_id' => $product->public_id,
+                    'unit_id' => $product->baseUnit->public_id,
+                    'quantity' => '1',
+                    'discount_amount' => '0',
+                ]],
+            ];
+            $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)
+                ->assertSessionHasNoErrors();
+
+            $sale = Sale::query()->where('store_id', $store->id)->sole();
+            $this->assertSame('in_store', $sale->sales_channel);
+            $this->assertNull($sale->marketplace_code);
+            $this->assertDatabaseHas('sale_payments', [
+                'sale_id' => $sale->id,
+                'financial_account_id' => $qrAccount->id,
+                'payment_method' => $expected['method'],
+                'amount' => '1000.0000',
+            ]);
+
+            $payload['payment_method'] = $expected['method'] === 'qris' ? 'qr_payment' : 'qris';
+            $payload['idempotency_key'] = (string) Str::uuid();
+            $this->actingAs($owner)->withSession($session)
+                ->from(route('pos.index'))
+                ->post(route('pos.sales.store'), $payload)
+                ->assertRedirect(route('pos.index'))
+                ->assertSessionHasErrors('payment_method');
+            $this->assertSame(1, Sale::query()->where('store_id', $store->id)->count());
+        }
+    }
+
+    public function test_country_payment_compatibility_rejects_every_foreign_catalog_combination(): void
+    {
+        $countries = [
+            'ID' => ['code' => 'qris', 'method' => 'qris'],
+            'MY' => ['code' => 'duitnow_qr', 'method' => 'qr_payment'],
+            'TH' => ['code' => 'promptpay_qr', 'method' => 'qr_payment'],
+            'VN' => ['code' => 'vietqr', 'method' => 'qr_payment'],
+        ];
+        $methods = ['cash', 'qris', 'qr_payment', 'bank_transfer', 'e_wallet'];
+
+        foreach ($countries as $activeCountry => $activePayment) {
+            $this->assertSame($activePayment, array_intersect_key(
+                PaymentMethodCatalog::qrForCountry($activeCountry),
+                ['code' => true, 'method' => true],
+            ));
+
+            foreach ($countries as $accountCountry => $accountPayment) {
+                $account = new FinancialAccount;
+                $account->forceFill([
+                    'type' => FinancialAccountType::EWallet,
+                    'marketplace_code' => null,
+                    'payment_code' => $accountPayment['code'],
+                ]);
+
+                foreach ($methods as $method) {
+                    $expected = $accountCountry === $activeCountry && $method === $activePayment['method'];
+                    $this->assertSame(
+                        $expected,
+                        PaymentMethodCatalog::acceptsInStoreAccount($account, $method, $activeCountry),
+                        "{$accountPayment['code']} / {$method} must match only {$activeCountry}",
+                    );
+                }
+            }
+
+            $touchNGo = new FinancialAccount;
+            $touchNGo->forceFill([
+                'type' => FinancialAccountType::EWallet,
+                'marketplace_code' => null,
+                'payment_code' => 'touch_n_go',
+            ]);
+            foreach ($methods as $method) {
+                $this->assertSame(
+                    $activeCountry === 'MY' && $method === 'e_wallet',
+                    PaymentMethodCatalog::acceptsInStoreAccount($touchNGo, $method, $activeCountry),
+                    "Touch 'n Go / {$method} must match only Malaysia e-wallet",
+                );
+            }
+
+            $cash = new FinancialAccount;
+            $cash->forceFill([
+                'type' => FinancialAccountType::Cash,
+                'marketplace_code' => null,
+                'payment_code' => null,
+            ]);
+            foreach ($methods as $method) {
+                $this->assertSame(
+                    $method === 'cash',
+                    PaymentMethodCatalog::acceptsInStoreAccount($cash, $method, $activeCountry),
+                    "Cash / {$method} compatibility is invalid for {$activeCountry}",
+                );
+            }
+
+            $marketplace = new FinancialAccount;
+            $marketplace->forceFill([
+                'type' => FinancialAccountType::EWallet,
+                'marketplace_code' => 'shopee',
+                'payment_code' => null,
+            ]);
+            foreach ($methods as $method) {
+                $this->assertFalse(
+                    PaymentMethodCatalog::acceptsInStoreAccount($marketplace, $method, $activeCountry),
+                    "Marketplace account must never be accepted as {$method} in {$activeCountry}",
+                );
+            }
+        }
+    }
+
+    public function test_marketplace_providers_are_restricted_to_the_active_store_country(): void
+    {
+        $countries = [
+            'ID' => ['allowed' => 'tokopedia', 'foreign' => 'tiktok_shop'],
+            'MY' => ['allowed' => 'tiktok_shop', 'foreign' => 'tokopedia'],
+            'TH' => ['allowed' => 'tiktok_shop', 'foreign' => 'tokopedia'],
+            'VN' => ['allowed' => 'tiktok_shop', 'foreign' => 'tokopedia'],
+        ];
+
+        foreach ($countries as $countryCode => $providers) {
+            [$owner, $store, $product] = $this->fixtures();
+            $store->update(['country_id' => Country::query()->where('code', $countryCode)->valueOrFail('id')]);
+            $store->unsetRelation('country');
+            $this->openStock($store, $owner, $product, '5', '500');
+            $session = ['active_store_id' => $store->id];
+            $payload = [
+                'sales_channel' => 'marketplace',
+                'payment_method' => 'marketplace',
+                'marketplace_code' => $providers['foreign'],
+                'external_order_number' => "{$countryCode}-ORDER-1",
+                'transaction_discount_amount' => '0',
+                'paid_amount' => '1000',
+                'occurred_at' => '2026-09-09T16:00',
+                'idempotency_key' => (string) Str::uuid(),
+                'items' => [[
+                    'product_id' => $product->public_id,
+                    'unit_id' => $product->baseUnit->public_id,
+                    'quantity' => '1',
+                    'discount_amount' => '0',
+                ]],
+            ];
+
+            $this->actingAs($owner)->withSession($session)
+                ->from(route('pos.index'))
+                ->post(route('pos.sales.store'), $payload)
+                ->assertRedirect(route('pos.index'))
+                ->assertSessionHasErrors('marketplace_code');
+            $this->assertSame(0, Sale::query()->where('store_id', $store->id)->count());
+
+            $payload['marketplace_code'] = $providers['allowed'];
+            $payload['idempotency_key'] = (string) Str::uuid();
+            $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)
+                ->assertSessionHasNoErrors();
+
+            $sale = Sale::query()->where('store_id', $store->id)->sole();
+            $this->assertSame('marketplace', $sale->sales_channel);
+            $this->assertSame($providers['allowed'], $sale->marketplace_code);
+        }
+    }
+
+    public function test_payment_catalog_codes_are_unique_and_country_scoped(): void
+    {
+        $countryCodes = ['ID', 'MY', 'TH', 'VN'];
+        $qrCodes = [];
+        $walletCodes = [];
+
+        foreach ($countryCodes as $countryCode) {
+            $qr = PaymentMethodCatalog::qrForCountry($countryCode);
+            $this->assertContains($qr['method'], ['qris', 'qr_payment']);
+            $this->assertNotContains($qr['code'], $qrCodes, "Duplicate QR code: {$qr['code']}");
+            $qrCodes[] = $qr['code'];
+
+            foreach (PaymentMethodCatalog::walletCodesForCountry($countryCode) as $walletCode) {
+                $this->assertNotContains($walletCode, $walletCodes, "Duplicate wallet code: {$walletCode}");
+                $this->assertNotContains($walletCode, $qrCodes, "Wallet code collides with QR: {$walletCode}");
+                $walletCodes[] = $walletCode;
+            }
+        }
+
+        $defaultQrCode = PaymentMethodCatalog::qrForCountry('ZZ')['code'];
+        $this->assertNotContains($defaultQrCode, $qrCodes);
+        $this->assertSame([...$qrCodes, $defaultQrCode], PaymentMethodCatalog::qrCodes());
+        $this->assertSame($walletCodes, PaymentMethodCatalog::walletCodes());
+        $this->assertSame([], array_intersect($qrCodes, $walletCodes));
+    }
+
+    public function test_changing_country_before_transactions_reconciles_visible_pos_payment_methods(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+        $session = ['active_store_id' => $store->id];
+
+        $this->actingAs($owner)->withSession($session)->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('paymentMethods', 2)
+                ->where('paymentMethods.1.brand', 'qris'));
+
+        $this->actingAs($owner)->withSession($session)->patch(route('stores.update', $store), [
+            'name' => $store->name,
+            'country' => 'MY',
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($owner)->withSession($session)->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('paymentMethods', 3)
+                ->where('paymentMethods.1.brand', 'duitnow_qr')
+                ->where('paymentMethods.2.brand', 'touch_n_go'));
+
+        $this->actingAs($owner)->withSession($session)->patch(route('stores.update', $store), [
+            'name' => $store->name,
+            'country' => 'TH',
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($owner)->withSession($session)->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('paymentMethods', 2)
+                ->where('paymentMethods.0.method', 'cash')
+                ->where('paymentMethods.1.method', 'qr_payment')
+                ->where('paymentMethods.1.label', 'PromptPay QR')
+                ->where('paymentMethods.1.brand', 'promptpay_qr'));
+
+        $this->assertDatabaseHas('financial_accounts', [
+            'store_id' => $store->id,
+            'payment_code' => 'promptpay_qr',
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('financial_accounts', [
+            'store_id' => $store->id,
+            'payment_code' => 'touch_n_go',
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseMissing('financial_accounts', [
+            'store_id' => $store->id,
+            'payment_code' => 'qris',
+        ]);
+        $this->assertDatabaseMissing('financial_accounts', [
+            'store_id' => $store->id,
+            'payment_code' => 'duitnow_qr',
+        ]);
+    }
+
+    public function test_legacy_named_qr_accounts_are_backfilled_by_store_country(): void
+    {
+        $payments = [
+            'ID' => ['code' => 'qris', 'label' => 'QRIS'],
+            'MY' => ['code' => 'duitnow_qr', 'label' => 'DuitNow QR'],
+            'TH' => ['code' => 'promptpay_qr', 'label' => 'PromptPay QR'],
+            'VN' => ['code' => 'vietqr', 'label' => 'VietQR'],
+        ];
+
+        foreach ($payments as $countryCode => $payment) {
+            $store = Store::factory()->create([
+                'country_id' => Country::query()->where('code', $countryCode)->valueOrFail('id'),
+            ]);
+            FinancialAccount::factory()->for($store)->create([
+                'name' => $payment['label'],
+                'type' => FinancialAccountType::EWallet,
+                'payment_code' => null,
+            ]);
+            FinancialAccount::factory()->for($store)->create([
+                'name' => 'Dompet umum',
+                'type' => FinancialAccountType::EWallet,
+                'payment_code' => null,
+            ]);
+        }
+
+        $migration = require database_path('migrations/2026_09_13_020000_tag_legacy_country_qr_accounts.php');
+        $migration->up();
+
+        foreach ($payments as $countryCode => $payment) {
+            $storeId = Store::query()->whereHas('country', fn ($query) => $query->where('code', $countryCode))->valueOrFail('id');
+            $this->assertDatabaseHas('financial_accounts', [
+                'store_id' => $storeId,
+                'name' => $payment['label'],
+                'payment_code' => $payment['code'],
+            ]);
+            $this->assertDatabaseHas('financial_accounts', [
+                'store_id' => $storeId,
+                'name' => 'Dompet umum',
+                'payment_code' => null,
+            ]);
+        }
+    }
+
+    public function test_thailand_pos_hides_and_rejects_payment_methods_from_another_country(): void
+    {
+        [$owner, $store, $product] = $this->fixtures();
+        $store->update(['country_id' => Country::query()->where('code', 'TH')->valueOrFail('id')]);
+        $store->unsetRelation('country');
+        $this->openStock($store, $owner, $product, '5', '500');
+        $session = ['active_store_id' => $store->id];
+
+        $this->actingAs($owner)->withSession($session)->get(route('pos.index'))->assertOk();
+        $touchNGo = FinancialAccount::factory()->for($store)->create([
+            'name' => "Touch 'n Go eWallet",
+            'type' => FinancialAccountType::EWallet,
+            'payment_code' => 'touch_n_go',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($owner)->withSession($session)->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('paymentMethods', 2)
+                ->where('paymentMethods.1.label', 'PromptPay QR')
+                ->where('paymentMethods.1.brand', 'promptpay_qr'));
+
+        $this->actingAs($owner)->withSession($session)
+            ->from(route('pos.index'))
+            ->post(route('pos.sales.store'), [
+                'sales_channel' => 'in_store',
+                'payment_method' => 'e_wallet',
+                'account_id' => $touchNGo->public_id,
+                'transaction_discount_amount' => '0',
+                'paid_amount' => '1000',
+                'occurred_at' => '2026-09-09T16:00',
+                'idempotency_key' => (string) Str::uuid(),
+                'items' => [[
+                    'product_id' => $product->public_id,
+                    'unit_id' => $product->baseUnit->public_id,
+                    'quantity' => '1',
+                    'discount_amount' => '0',
+                ]],
+            ])
+            ->assertRedirect(route('pos.index'))
+            ->assertSessionHasErrors('payment_method');
+
+        $this->assertDatabaseCount('sales', 0);
+    }
+
     public function test_pos_payment_methods_remain_available_across_indonesian_and_malay_sessions(): void
     {
         $owner = User::factory()->create();
@@ -632,6 +1132,103 @@ class SalesPosTest extends TestCase
         $this->assertDatabaseHas('customers', ['store_id' => $otherStore->id, 'phone_normalized' => '+608123456789']);
     }
 
+    public function test_customer_email_updates_the_profile_and_sale_keeps_an_immutable_snapshot(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $session = ['active_store_id' => $store->id];
+        $payload = [
+            'sales_channel' => 'in_store',
+            'payment_method' => 'cash',
+            'account_id' => $cash->public_id,
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '1000',
+            'customer_name' => 'Ayu Putri',
+            'customer_phone' => '081234567890',
+            'customer_email' => ' AYU@EXAMPLE.COM ',
+            'occurred_at' => '2026-08-07T16:00',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '1',
+                'discount_amount' => '0',
+            ]],
+        ];
+
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)->assertRedirect();
+        $firstSale = Sale::query()->sole();
+
+        $payload['customer_email'] = 'ayu.baru@example.com';
+        $payload['idempotency_key'] = (string) Str::uuid();
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)->assertRedirect();
+
+        $customer = Customer::query()->sole();
+        $this->assertSame('ayu.baru@example.com', $customer->email);
+        $this->assertSame('ayu@example.com', $firstSale->customer_email);
+        $this->actingAs($owner)->withSession($session)->get(route('sales.show', $firstSale))
+            ->assertInertia(fn (Assert $page) => $page->where('sale.customer_email', 'ayu@example.com'));
+
+        $payload['customer_name'] = null;
+        $payload['customer_phone'] = null;
+        $payload['customer_email'] = 'email@example.com';
+        $payload['idempotency_key'] = (string) Str::uuid();
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)
+            ->assertSessionHasErrors(['customer_name', 'customer_phone']);
+    }
+
+    public function test_marketplace_sale_reuses_a_store_scoped_clearing_account_and_is_searchable(): void
+    {
+        [$owner, $store, $product] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $session = ['active_store_id' => $store->id];
+        $payload = [
+            'sales_channel' => 'marketplace',
+            'payment_method' => 'marketplace',
+            'marketplace_code' => 'shopee',
+            'external_order_number' => 'SPX-ORDER-1001',
+            'transaction_discount_amount' => '0',
+            'paid_amount' => '1000',
+            'occurred_at' => '2026-08-07T16:00',
+            'idempotency_key' => (string) Str::uuid(),
+            'items' => [[
+                'product_id' => $product->public_id,
+                'unit_id' => $product->baseUnit->public_id,
+                'quantity' => '1',
+                'discount_amount' => '0',
+            ]],
+        ];
+
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)->assertRedirect();
+        $payload['external_order_number'] = 'SPX-ORDER-1002';
+        $payload['idempotency_key'] = (string) Str::uuid();
+        $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)->assertRedirect();
+
+        $account = FinancialAccount::query()->where('store_id', $store->id)->where('marketplace_code', 'shopee')->sole();
+        $this->assertSame(FinancialAccountType::EWallet, $account->type);
+        $this->assertDatabaseCount('sales', 2);
+        $this->assertDatabaseCount('customers', 0);
+        $this->assertDatabaseHas('sale_payments', [
+            'financial_account_id' => $account->id,
+            'payment_method' => 'marketplace',
+        ]);
+        $this->assertDatabaseHas('financial_account_balances', [
+            'financial_account_id' => $account->id,
+            'balance' => '2000.0000',
+        ]);
+
+        $this->actingAs($owner)->withSession($session)->get(route('sales.index', [
+            'period' => 'all',
+            'search' => 'SPX-ORDER-1002',
+            'sales_channel' => 'marketplace',
+            'marketplace_code' => 'shopee',
+        ]))->assertInertia(fn (Assert $page) => $page
+            ->has('sales.data', 1)
+            ->where('sales.data.0.external_order_number', 'SPX-ORDER-1002')
+            ->where('sales.data.0.sales_channel', 'marketplace')
+            ->where('sales.data.0.payment_method', 'marketplace'));
+    }
+
     public function test_owner_http_sale_redirects_to_printable_receipt_and_can_return(): void
     {
         [$owner, $store, $product, $cash] = $this->fixtures();
@@ -776,6 +1373,87 @@ class SalesPosTest extends TestCase
             ->has('sales.data', 2));
     }
 
+    public function test_sales_history_can_find_a_receipt_by_customer_and_filter_payment_and_presence(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-08-10 18:00:00', 'Asia/Jakarta'));
+        [$owner, $store, $product, $cash, $bank] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '10', '500');
+        $customerSale = $this->postSale(
+            $store,
+            $owner,
+            $product,
+            $bank,
+            key: 'searchable-customer-sale',
+            occurredAt: '2026-08-07T09:00:00Z',
+            customerName: 'Ayu Putri',
+            customerPhone: '+62 812-3456-7890',
+        );
+        $this->postSale($store, $owner, $product, $cash, key: 'guest-sale', occurredAt: '2026-08-10T09:00:00Z');
+        $session = ['active_store_id' => $store->id];
+
+        $this->actingAs($owner)->withSession($session)->get(route('sales.index', [
+            'period' => 'all',
+            'search' => '081234567890',
+            'payment_method' => 'qris',
+            'customer' => 'identified',
+        ]))->assertInertia(fn (Assert $page) => $page
+            ->component('customer/sales/index')
+            ->where('filters.search', '081234567890')
+            ->where('filters.period', 'all')
+            ->where('filters.payment_method', 'qris')
+            ->where('filters.customer', 'identified')
+            ->has('sales.data', 1)
+            ->where('sales.data.0.public_id', $customerSale->public_id)
+            ->where('sales.data.0.customer_name', 'Ayu Putri')
+            ->where('sales.data.0.customer_phone', '+62 812-3456-7890')
+            ->where('sales.data.0.payment_method', 'qris'));
+
+        $this->actingAs($owner)->withSession($session)->get(route('sales.index', [
+            'period' => 'all',
+            'search' => $customerSale->document_number,
+        ]))->assertInertia(fn (Assert $page) => $page
+            ->has('sales.data', 1)
+            ->where('sales.data.0.public_id', $customerSale->public_id));
+    }
+
+    public function test_sales_history_supports_custom_store_dates_and_keeps_other_store_sales_private(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-08-10 18:00:00', 'Asia/Jakarta'));
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $this->postSale($store, $owner, $product, $cash, key: 'before-custom-range', occurredAt: '2026-08-07T09:00:00Z');
+        $saleInRange = $this->postSale($store, $owner, $product, $cash, key: 'inside-custom-range', occurredAt: '2026-08-10T09:00:00Z');
+
+        [$otherOwner, $otherStore, $otherProduct, $otherCash] = $this->fixtures();
+        $this->openStock($otherStore, $otherOwner, $otherProduct, '5', '500');
+        $this->postSale(
+            $otherStore,
+            $otherOwner,
+            $otherProduct,
+            $otherCash,
+            key: 'other-store-matching-sale',
+            occurredAt: '2026-08-10T09:00:00Z',
+            customerName: 'Ayu Putri',
+            customerPhone: '081234567890',
+        );
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('sales.index', [
+            'period' => 'custom',
+            'start_date' => '2026-08-10',
+            'end_date' => '2026-08-10',
+        ]))->assertInertia(fn (Assert $page) => $page
+            ->where('filters.period', 'custom')
+            ->where('filters.start_date', '2026-08-10')
+            ->where('filters.end_date', '2026-08-10')
+            ->has('sales.data', 1)
+            ->where('sales.data.0.public_id', $saleInRange->public_id));
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])->get(route('sales.index', [
+            'period' => 'all',
+            'search' => 'Ayu Putri',
+        ]))->assertInertia(fn (Assert $page) => $page->has('sales.data', 0));
+    }
+
     /** @return array{User, Store, Product, FinancialAccount, FinancialAccount} */
     private function fixtures(string $sellingPrice = '1000'): array
     {
@@ -784,7 +1462,11 @@ class SalesPosTest extends TestCase
         $product = Product::factory()->for($store)->create();
         $product->productUnits()->sole()->update(['selling_price' => $sellingPrice]);
         $cash = FinancialAccount::factory()->for($store)->create(['name' => 'Kas', 'type' => FinancialAccountType::Cash]);
-        $bank = FinancialAccount::factory()->for($store)->create(['name' => 'Bank', 'type' => FinancialAccountType::Bank]);
+        $bank = FinancialAccount::factory()->for($store)->create([
+            'name' => 'QRIS',
+            'type' => FinancialAccountType::EWallet,
+            'payment_code' => 'qris',
+        ]);
 
         return [$owner, $store, $product, $cash, $bank];
     }

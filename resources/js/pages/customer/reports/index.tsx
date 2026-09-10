@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { fieldClass, money, quantity } from '@/components/operations-shell';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 type Performance = {
     net_revenue: string;
@@ -118,7 +119,7 @@ export default function ReportsPage({
                         <PositionCard icon={CircleDollarSign} label="Kas & Bank" value={money(position.cash_balance)} />
                         <PositionCard icon={Boxes} label="Nilai Persediaan" value={money(position.inventory_value)} />
                         <PositionCard icon={HandCoins} label="Utang Supplier" value={money(position.supplier_payable)} />
-                        <PositionCard icon={LineChart} label="Stok Menipis" value={`${position.low_stock_count} produk`} />
+                        <PositionCard icon={LineChart} label="Stok Menipis" value={`${position.low_stock_count} ${translate('produk')}`} />
                     </section>
 
                     <TrendChart data={daily} period={selectedPeriod} />
@@ -148,9 +149,9 @@ function SummaryCard({
         >
             <p
                 className={`truncate text-[10px] font-black tracking-wide uppercase ${featured ? 'text-[var(--app-soft-strong)]' : 'text-[var(--muted-foreground)]'}`}
-                title={label}
+                title={translate(label)}
             >
-                {label}
+                {translate(label)}
             </p>
             <p
                 className={`mt-1.5 truncate text-base font-black tracking-[-0.035em] sm:text-xl ${!featured && (tone === 'expense' || negative) ? 'text-[#a5533b]' : ''}`}
@@ -169,7 +170,7 @@ function PositionCard({ icon: Icon, label, value }: { icon: typeof Boxes; label:
                 <Icon className="size-4" />
             </div>
             <div className="min-w-0">
-                <p className="truncate text-[10px] font-bold text-[var(--muted-foreground)] sm:text-xs">{label}</p>
+                <p className="truncate text-[10px] font-bold text-[var(--muted-foreground)] sm:text-xs">{translate(label)}</p>
                 <p className="truncate text-xs font-black text-[var(--app-ink)] sm:text-sm" title={value}>
                     {value}
                 </p>
@@ -273,7 +274,7 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                                         strokeWidth="2.5"
                                         vectorEffect="non-scaling-stroke"
                                     >
-                                        <title>{`${dateLabel(point.date)}: penjualan ${money(point.net_revenue)}, estimasi laba ${money(point.estimated_profit)}`}</title>
+                                        <title>{`${dateLabel(point.date)}: ${translate('penjualan')} ${money(point.net_revenue)}, ${translate('estimasi laba')} ${money(point.estimated_profit)}`}</title>
                                     </circle>
                                 ))}
                         </svg>
@@ -368,7 +369,7 @@ function ProductPerformance({ products }: { products: Product[] }) {
 function ProductStat({ label, value, danger = false }: { label: string; value: string; danger?: boolean }) {
     return (
         <div className="min-w-0 rounded-lg bg-[#fff3ef] px-2.5 py-2">
-            <p className="truncate text-[9px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase">{label}</p>
+            <p className="truncate text-[9px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase">{translate(label)}</p>
             <p className={`mt-0.5 truncate font-black ${danger ? 'text-[#a5533b]' : 'text-[var(--app-ink)]'}`} title={value}>
                 {value}
             </p>

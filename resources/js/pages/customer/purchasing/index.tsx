@@ -7,6 +7,7 @@ import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useTranslation } from '@/lib/i18n';
 
 type Supplier = {
     public_id: string;
@@ -88,7 +89,8 @@ export default function PurchasingPage({
     const [scannerOpen, setScannerOpen] = useState(
         () => canManage && typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('scan') === '1',
     );
-    const [scannerSummary, setScannerSummary] = useState('');
+    const { t } = useTranslation();
+    const [scannerSummary, setScannerSummary] = useState<{ added: number; skipped: number } | null>(null);
     const [purchaseOpen, setPurchaseOpen] = useState(false);
     const [paymentOpen, setPaymentOpen] = useState(false);
     const activeSuppliers = suppliers.filter((supplier) => supplier.is_active);
@@ -151,8 +153,9 @@ export default function PurchasingPage({
             result.applied.push(identity);
         }
 
-        purchase.setData('items', items);
-        setScannerSummary(`${result.applied.length} produk ditambahkan. Periksa jumlah dan harga sebelum simpan.`);
+            return { ...data, items };
+        });
+        setScannerSummary({ added, skipped });
         setPurchaseOpen(true);
 
         return result;
@@ -261,7 +264,10 @@ export default function PurchasingPage({
                     </header>
                     {scannerSummary && (
                         <p role="status" className="rounded-xl bg-[var(--app-soft)] px-4 py-3 text-sm font-bold text-[var(--app-primary)]">
-                            {scannerSummary}
+                            {scannerSummary.added} {t('produk ditambahkan')}.
+                            {scannerSummary.skipped > 0
+                                ? ` ${scannerSummary.skipped} ${t('tidak tersedia di daftar pembelian')}.`
+                                : ` ${t('Periksa jumlah dan harga sebelum simpan.')}`}
                         </p>
                     )}
 

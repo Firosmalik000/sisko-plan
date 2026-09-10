@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef } from 'react';
 import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { translate } from '@/lib/i18n';
 import { toUrl } from '@/lib/utils';
 import type { NavItem } from '@/types';
 
@@ -22,7 +23,7 @@ export function NavFooter({
                             >
                                 <a href={toUrl(item.href)} target="_blank" rel="noopener noreferrer">
                                     {item.icon && <item.icon className="h-5 w-5" />}
-                                    <span>{item.title}</span>
+                                    <span>{translate(item.title)}</span>
                                 </a>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

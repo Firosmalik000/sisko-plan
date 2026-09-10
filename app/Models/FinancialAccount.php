@@ -12,9 +12,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property FinancialAccountType $type
+ * @property string|null $marketplace_code
+ * @property string|null $payment_code
  * @property bool $is_active
  */
-#[Fillable(['store_id', 'name', 'type', 'account_number', 'notes', 'is_active'])]
+#[Fillable(['store_id', 'name', 'type', 'marketplace_code', 'payment_code', 'account_number', 'notes', 'is_active'])]
 class FinancialAccount extends Model
 {
     /** @use HasFactory<FinancialAccountFactory> */

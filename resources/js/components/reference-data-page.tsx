@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { translate } from '@/lib/i18n';
 
 type FormValue = string | boolean;
 type FieldOption = { value: string; label: string; disabled?: boolean };
@@ -124,12 +125,12 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
 
     return (
         <>
-            <Head title={title} />
+            <Head title={translate(title)} />
             <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto flex max-w-7xl flex-col gap-4">
                     <header className="flex flex-col gap-3 rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
                         <div className="flex items-center justify-between gap-3">
-                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">{title}</h1>
+                            <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">{translate(title)}</h1>
                             <div className="flex items-center gap-2">
                                 <div className="rounded-xl bg-[var(--app-soft)] px-3 py-2 text-xs text-emerald-950">
                                     <strong>{items.total}</strong> data
@@ -212,7 +213,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                                     {details.map((detail) =>
                                                         item[detail.key] ? (
                                                             <div key={detail.key} className="flex justify-between gap-4">
-                                                                <dt className="text-stone-500">{detail.label}</dt>
+                                                                <dt className="text-stone-500">{translate(detail.label)}</dt>
                                                                 <dd className="text-right text-stone-700">{String(item[detail.key])}</dd>
                                                             </div>
                                                         ) : null,
@@ -248,7 +249,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                             {fields.map((field) => (
                                                 <div key={field.name} className="space-y-2">
                                                     <Label htmlFor={field.name} className="font-bold text-stone-700">
-                                                        {field.label}
+                                                        {translate(field.label)}
                                                     </Label>
                                                     {field.type === 'textarea' ? (
                                                         <textarea
@@ -277,12 +278,9 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                                             }
                                                             className="h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-stone-900 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/15 focus:outline-none"
                                                         >
-                                                            {(typeof field.options === 'function'
-                                                                ? field.options(form.data)
-                                                                : field.options
-                                                            )?.map((option) => (
-                                                                <option key={option.value} value={option.value} disabled={option.disabled}>
-                                                                    {option.label}
+                                                            {field.options?.map((option) => (
+                                                                <option key={option.value} value={option.value}>
+                                                                    {translate(option.label)}
                                                                 </option>
                                                             ))}
                                                         </select>

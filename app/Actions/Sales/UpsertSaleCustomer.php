@@ -9,9 +9,9 @@ use Illuminate\Validation\ValidationException;
 
 class UpsertSaleCustomer
 {
-    public function handle(Store $store, ?string $name, ?string $phone): ?Customer
+    public function handle(Store $store, ?string $name, ?string $phone, ?string $email = null): ?Customer
     {
-        if ($name === null && $phone === null) {
+        if ($name === null && $phone === null && $email === null) {
             return null;
         }
 
@@ -23,6 +23,7 @@ class UpsertSaleCustomer
 
         $name = trim($name);
         $phone = trim($phone);
+        $email = $email === null || trim($email) === '' ? null : Str::lower(trim($email));
         $store->loadMissing('country');
         $normalizedPhone = self::normalizePhone($phone, $store->country?->code);
         $now = now();
@@ -33,9 +34,12 @@ class UpsertSaleCustomer
             'name' => $name,
             'phone' => $phone,
             'phone_normalized' => $normalizedPhone,
+            'email' => $email,
             'created_at' => $now,
             'updated_at' => $now,
-        ]], ['store_id', 'phone_normalized'], ['name', 'phone', 'updated_at']);
+        ]], ['store_id', 'phone_normalized'], array_values(array_filter([
+            'name', 'phone', $email === null ? null : 'email', 'updated_at',
+        ])));
 
         return Customer::query()
             ->where('store_id', $store->id)

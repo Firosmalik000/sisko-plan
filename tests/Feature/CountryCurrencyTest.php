@@ -187,12 +187,38 @@ class CountryCurrencyTest extends TestCase
         $this->actingAs($owner)->patch(route('stores.update', $store), [
             'name' => 'Toko Vietnam',
             'country' => 'VN',
+            'address' => '12 Nguyen Hue, Ho Chi Minh City',
         ])->assertSessionHasNoErrors();
 
         $store->refresh()->load(['country', 'settings']);
         $this->assertSame('VN', $store->country->code);
         $this->assertSame('VND', $store->settings->currency);
+        $this->assertSame('12 Nguyen Hue, Ho Chi Minh City', $store->settings->address);
         $this->assertDatabaseHas('audit_logs', ['store_id' => $store->id, 'action' => 'store.updated']);
+    }
+
+    public function test_store_address_is_exposed_and_limited_to_five_hundred_characters(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->for($owner, 'owner')->create();
+        $store->settings()->update(['address' => 'Jl. Melati No. 5']);
+
+        $this->actingAs($owner)
+            ->get(route('stores.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('stores.0.address', 'Jl. Melati No. 5'));
+
+        $this->actingAs($owner)
+            ->get(route('stores.show', $store))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('store.address', 'Jl. Melati No. 5'));
+
+        $this->actingAs($owner)->patch(route('stores.update', $store), [
+            'name' => $store->name,
+            'address' => str_repeat('a', 501),
+        ])->assertSessionHasErrors('address');
+
+        $this->assertSame('Jl. Melati No. 5', $store->fresh()->settings->address);
     }
 
     public function test_store_country_cannot_change_after_a_transaction_exists(): void

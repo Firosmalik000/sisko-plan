@@ -23,66 +23,63 @@ import {
 import { publicEase, publicViewport, revealClip, revealLeft, revealRight, staggerGroup, staggerItem } from '@/components/public/motion';
 import { formatMoney } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
-import { dashboard, register } from '@/routes';
+import { dashboard, pricing, register } from '@/routes';
 
 const features = [
+    ['01', 'Kasir cepat, tanpa banyak langkah', 'Scan atau cari barang, masukkan jumlah, lalu selesaikan pembayaran.', ScanLine],
+    ['02', 'Stok berubah saat transaksi selesai', 'Penjualan dan kulakan langsung memperbarui stok, termasuk tiap varian.', Boxes],
+    ['03', 'Uang toko lebih mudah diikuti', 'Kas, modal, biaya, dan utang supplier tersimpan dalam riwayat yang jelas.', WalletCards],
     [
-        '01',
-        'Kasir yang langsung paham barang',
-        'Scan barcode, masukkan jumlah, lalu selesaikan pembayaran tanpa berpindah layar.',
-        ScanLine,
+        '04',
+        'Lebih yakin saat mengambil keputusan',
+        'Lihat penjualan, laba kotor, barang terlaris, dan stok yang perlu ditambah.',
+        BarChart3,
     ],
-    ['02', 'Stok ikut bergerak otomatis', 'Setiap penjualan dan kulakan memperbarui persediaan hingga tingkat varian.', Boxes],
-    ['03', 'Uang toko tetap terbaca', 'Kas, modal, biaya, dan utang supplier tercatat dalam alur yang bisa ditelusuri.', WalletCards],
-    ['04', 'Keputusan tidak lagi pakai tebakan', 'Lihat penjualan bersih, laba kotor, produk terlaris, dan stok kritis.', BarChart3],
 ] as const;
 
 const faqs = [
     [
         'Apakah harus membeli alat scanner khusus?',
-        'Tidak. Barcode dapat dimasukkan dari perangkat yang Anda gunakan. Scanner eksternal tetap dapat dipakai untuk alur kasir yang lebih cepat.',
+        'Tidak perlu. Kamera ponsel sudah bisa dipakai untuk scan. Jika tersedia, scanner eksternal juga tetap bisa digunakan.',
     ],
-    [
-        'Apakah produk tanpa barcode tetap bisa dijual?',
-        'Bisa. Cari produk berdasarkan nama atau SKU, lalu tambahkan ke keranjang seperti biasa.',
-    ],
+    ['Apakah produk tanpa barcode tetap bisa dijual?', 'Bisa. Cari barang lewat nama atau SKU, lalu masukkan ke transaksi seperti biasa.'],
     [
         'Apakah satu akun bisa mengelola beberapa toko?',
-        'Bisa, sesuai kapasitas paket. Data, anggota, dan operasional setiap toko tetap terpisah.',
+        'Bisa. Anda dapat menambah kapasitas ketika membutuhkan toko atau anggota tambahan. Data setiap toko tetap terpisah.',
     ],
     [
         'Apa yang berubah setelah transaksi disimpan?',
-        'Penjualan, stok, kas, dan ringkasan laporan diperbarui dalam satu alur yang saling terhubung.',
+        'Stok, kas, dan laporan langsung ikut diperbarui. Anda tidak perlu mencatat hal yang sama dua kali.',
     ],
 ] as const;
 
 const dailyProblems = [
-    [BookOpen, 'Catatan mudah tercecer', 'Transaksi tersimpan di banyak tempat dan sulit diperiksa kembali.'],
-    [Warehouse, 'Stok baru dihitung saat terlambat', 'Barang laris habis tanpa tanda, barang lambat justru terus menumpuk.'],
-    [ClipboardList, 'Rekap menghabiskan waktu', 'Angka penjualan, pengeluaran, dan laba harus disatukan ulang secara manual.'],
+    [BookOpen, 'Catatan ada di mana-mana', 'Sebagian di buku, sebagian di chat, sisanya hanya mengandalkan ingatan.'],
+    [Warehouse, 'Stok habis tanpa sempat bersiap', 'Barang yang dicari pembeli habis, sementara barang lain terus menumpuk.'],
+    [ClipboardList, 'Rekap selalu menunggu di akhir hari', 'Penjualan, biaya, dan laba harus dihitung ulang saat tenaga sudah habis.'],
 ] as const;
 
 const comparison = [
-    ['Catat penjualan', 'Scan atau cari, lalu simpan', 'Tulis dan hitung satu per satu'],
-    ['Perbarui stok', 'Mengikuti transaksi', 'Hitung ulang secara manual'],
-    ['Pantau kas', 'Terhubung dengan operasional', 'Terpisah dari catatan penjualan'],
-    ['Baca laporan', 'Ringkasan siap dilihat', 'Rekap kembali di akhir periode'],
+    ['Catat penjualan', 'Scan atau cari, lalu selesai', 'Tulis dan hitung satu per satu'],
+    ['Perbarui stok', 'Berubah bersama transaksi', 'Hitung ulang secara manual'],
+    ['Pantau kas', 'Tersambung dengan kegiatan toko', 'Terpisah dari catatan penjualan'],
+    ['Lihat laporan', 'Ringkasan siap dilihat', 'Susun ulang di akhir periode'],
 ] as const;
 
 function XsistenHeroVisual() {
     return (
         <m.figure
             className="xsisten-hero-visual"
-            aria-label="Ilustrasi Xsisten untuk scan produk, transaksi, stok, kas, dan laporan"
+            aria-label={translate('Ilustrasi pemilik toko menggunakan Xsisten')}
             initial="hidden"
             animate="visible"
             variants={revealRight}
         >
-            <span className="scan-demo-label">Data contoh</span>
+            <span className="scan-demo-label">{translate('Data contoh')}</span>
             <m.img
                 className="xsisten-hero-art"
                 src="/assets/xsisten-hero.png"
-                alt="Pemilik toko menggunakan Xsisten untuk scan produk dan mencatat transaksi"
+                alt={translate('Pemilik toko menggunakan Xsisten untuk scan produk dan mencatat transaksi')}
                 draggable={false}
                 initial={{ opacity: 0, y: 18, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -96,7 +93,7 @@ function ProductGallery() {
     return (
         <m.div
             className="scan-gallery-grid"
-            aria-label="Contoh tampilan produk"
+            aria-label={translate('Contoh tampilan aplikasi')}
             initial="hidden"
             whileInView="visible"
             viewport={publicViewport}
@@ -104,11 +101,11 @@ function ProductGallery() {
         >
             <m.article className="scan-gallery-panel scan-gallery-pos" variants={revealLeft}>
                 <div className="scan-panel-head">
-                    <span>Kasir</span>
-                    <small>Data contoh</small>
+                    <span>{translate('Kasir')}</span>
+                    <small>{translate('Data contoh')}</small>
                 </div>
                 <div className="scan-pos-search">
-                    <ScanLine /> Scan barcode atau cari produk
+                    <ScanLine /> {translate('Scan barcode atau cari produk')}
                 </div>
                 {[
                     ['Beras Premium 5 kg', 72000],
@@ -117,7 +114,7 @@ function ProductGallery() {
                 ].map(([name, price], index) => (
                     <div className="scan-product-row" key={name}>
                         <span>{index + 1}</span>
-                        <p>{name}</p>
+                        <p>{translate(String(name))}</p>
                         <strong>{formatMoney(Number(price))}</strong>
                         <i>+</i>
                     </div>
@@ -125,31 +122,31 @@ function ProductGallery() {
             </m.article>
             <m.article className="scan-gallery-panel scan-gallery-stock" variants={staggerItem}>
                 <div className="scan-panel-head">
-                    <span>Stok kritis</span>
-                    <small>8 produk</small>
+                    <span>{translate('Stok kritis')}</span>
+                    <small>{translate('8 produk')}</small>
                 </div>
                 <strong className="scan-stock-big">2</strong>
-                <p>Minyak Goreng 2 L</p>
+                <p>{translate('Minyak Goreng 2 L')}</p>
                 <div className="scan-stock-meter">
                     <i />
                 </div>
                 <div className="scan-stock-meta">
                     <span>
-                        Batas minimum <strong>5</strong>
+                        {translate('Batas minimum')} <strong>5</strong>
                     </span>
                     <span>
-                        Perlu ditambah <strong>3</strong>
+                        {translate('Perlu ditambah')} <strong>3</strong>
                     </span>
                 </div>
             </m.article>
             <m.article className="scan-gallery-panel scan-gallery-report" variants={revealRight}>
                 <div className="scan-panel-head">
-                    <span>Ringkasan hari ini</span>
+                    <span>{translate('Ringkasan hari ini')}</span>
                     <small>10:00</small>
                 </div>
-                <span className="scan-report-label">Penjualan bersih</span>
+                <span className="scan-report-label">{translate('Penjualan bersih')}</span>
                 <strong className="scan-report-value">{formatMoney(682500)}</strong>
-                <span className="scan-report-growth">Naik 12% dari kemarin</span>
+                <span className="scan-report-growth">{translate('Naik 12% dari kemarin')}</span>
                 <div className="scan-mini-chart" aria-hidden="true">
                     {[36, 48, 43, 65, 57, 81, 72].map((height, index) => (
                         <i key={index} style={{ height: `${height}%` }} />
@@ -162,8 +159,9 @@ function ProductGallery() {
 
 export default function Welcome() {
     const { auth, branding } = usePage().props;
+    const offerBadge = translate('Gratis Selamanya');
     const primaryHref = auth.user ? dashboard() : register();
-    const primaryLabel = translate(auth.user ? 'Buka dashboard' : 'Mulai kelola toko');
+    const primaryLabel = translate(auth.user ? 'Buka dashboard' : 'Buka toko gratis');
 
     return (
         <>
@@ -173,30 +171,31 @@ export default function Welcome() {
                 <div className="ledger-container scan-hero-grid">
                     <m.div className="scan-hero-copy" initial="hidden" animate="visible" variants={staggerGroup}>
                         <m.span className="scan-eyebrow" variants={staggerItem}>
-                            <Zap /> Kasir cepat, operasional rapi
+                            <Zap /> {offerBadge}
                         </m.span>
                         <m.h1 variants={revealClip}>
-                            Scan barangnya.
-                            <span>Sisanya langsung tercatat.</span>
+                            {translate('Mulai dari gratis.')}
+                            <span>{translate('Biar urusan toko lebih ringan.')}</span>
                         </m.h1>
                         <m.p variants={staggerItem}>
-                            Dari transaksi ke stok, kas, dan laporan. {branding.brand_name} menyatukan semuanya agar toko bergerak lebih
-                            cepat tanpa catatan yang tercecer.
+                            {translate(
+                                'Catat penjualan, pantau stok, dan cek kondisi toko tanpa pindah-pindah catatan. Saat usaha berkembang, kapasitasnya bisa ikut ditambah.',
+                            )}
                         </m.p>
                         <m.div className="scan-hero-actions" variants={staggerItem}>
                             <Link className="ledger-button ledger-button-orange" href={primaryHref}>
                                 {primaryLabel} <ArrowRight />
                             </Link>
-                            <a className="scan-demo-link" href="#cara-kerja">
-                                Lihat cara kerjanya <ChevronRight />
-                            </a>
+                            <Link className="scan-demo-link" href={pricing()}>
+                                {translate('Lihat paket')} <ChevronRight />
+                            </Link>
                         </m.div>
                         <m.div className="scan-trust-row" variants={staggerItem}>
                             <span>
-                                <Check /> Bisa tanpa scanner khusus
+                                <Check /> {translate('Gratis tanpa batas waktu')}
                             </span>
                             <span>
-                                <ShieldCheck /> Akses tim terkontrol
+                                <ShieldCheck /> {translate('Tambah kapasitas kapan saja')}
                             </span>
                         </m.div>
                     </m.div>
@@ -232,8 +231,8 @@ export default function Welcome() {
             <section className="scan-promise" id="tentang">
                 <div className="ledger-container scan-promise-grid">
                     <m.div initial="hidden" whileInView="visible" viewport={publicViewport} variants={revealLeft}>
-                        <span className="scan-kicker">Lebih ringan setiap hari</span>
-                        <h2>Toko sibuk tidak butuh aplikasi yang ikut merepotkan.</h2>
+                        <span className="scan-kicker">{translate('Dibuat untuk keseharian toko')}</span>
+                        <h2>{translate('Tokonya boleh ramai. Catatannya tetap rapi.')}</h2>
                     </m.div>
                     <m.div
                         className="scan-promise-copy"
@@ -243,18 +242,19 @@ export default function Welcome() {
                         variants={revealRight}
                     >
                         <p>
-                            {branding.brand_name} dibuat untuk pemilik toko yang ingin bekerja cepat sekaligus tetap memahami kondisi
-                            usahanya.
+                            {translate(
+                                'Semua pekerjaan harian tersambung, jadi Anda bisa melayani pembeli sambil tetap tahu kondisi usaha.',
+                            )}
                         </p>
                         <div>
                             <span>
-                                <Check /> Satu alur, bukan banyak catatan
+                                <Check /> {translate('Satu alur, tidak perlu catat berulang')}
                             </span>
                             <span>
-                                <Check /> Istilah yang mudah dipahami
+                                <Check /> {translate('Bahasanya mudah dipahami')}
                             </span>
                             <span>
-                                <Check /> Nyaman dipakai dari ponsel
+                                <Check /> {translate('Nyaman dipakai dari ponsel')}
                             </span>
                         </div>
                     </m.div>
@@ -270,9 +270,9 @@ export default function Welcome() {
                         viewport={publicViewport}
                         variants={revealClip}
                     >
-                        <span className="scan-kicker">Yang sering terjadi</span>
-                        <h2 id="problems-title">Jualannya jalan. Catatannya tertinggal.</h2>
-                        <p>Masalah kecil yang berulang bisa membuat kondisi toko sulit dibaca.</p>
+                        <span className="scan-kicker">{translate('Sering kejadian di toko')}</span>
+                        <h2 id="problems-title">{translate('Jualan jalan terus, catatan malah tertinggal.')}</h2>
+                        <p>{translate('Kelihatannya sepele, sampai stok dan uang toko mulai sulit dilacak.')}</p>
                     </m.div>
                     <m.div
                         className="scan-problem-list"
@@ -302,9 +302,9 @@ export default function Welcome() {
                         viewport={publicViewport}
                         variants={revealLeft}
                     >
-                        <span className="scan-kicker">Cara kerja</span>
-                        <h2>Tiga gerakan. Satu catatan yang utuh.</h2>
-                        <p>Barang masuk, transaksi selesai, kondisi toko langsung terbaca.</p>
+                        <span className="scan-kicker">{translate('Cara kerja')}</span>
+                        <h2>{translate('Tiga langkah, lalu semua ikut tercatat.')}</h2>
+                        <p>{translate('Tidak perlu belajar lama. Mulai dari pekerjaan yang sudah biasa Anda lakukan.')}</p>
                     </m.div>
                     <m.ol
                         className="scan-how-steps"
@@ -317,24 +317,24 @@ export default function Welcome() {
                             <span>01</span>
                             <Camera />
                             <div>
-                                <h3>Scan atau cari barang</h3>
-                                <p>Gunakan barcode, nama produk, atau SKU.</p>
+                                <h3>{translate('Scan atau cari barang')}</h3>
+                                <p>{translate('Pakai barcode, nama produk, atau SKU.')}</p>
                             </div>
                         </m.li>
                         <m.li variants={staggerItem}>
                             <span>02</span>
                             <ShoppingBasket />
                             <div>
-                                <h3>Selesaikan transaksi</h3>
-                                <p>Atur jumlah, pembayaran, dan kembalian.</p>
+                                <h3>{translate('Selesaikan transaksi')}</h3>
+                                <p>{translate('Masukkan jumlah, terima pembayaran, selesai.')}</p>
                             </div>
                         </m.li>
                         <m.li variants={staggerItem}>
                             <span>03</span>
                             <BarChart3 />
                             <div>
-                                <h3>Pantau hasilnya</h3>
-                                <p>Stok, kas, dan laporan ikut diperbarui.</p>
+                                <h3>{translate('Lihat hasilnya')}</h3>
+                                <p>{translate('Stok, kas, dan laporan ikut diperbarui.')}</p>
                             </div>
                         </m.li>
                     </m.ol>
@@ -350,8 +350,8 @@ export default function Welcome() {
                         viewport={publicViewport}
                         variants={revealClip}
                     >
-                        <span className="scan-kicker">Satu sistem toko</span>
-                        <h2>Bukan cuma kasir. Semua pekerjaan penting ikut rapi.</h2>
+                        <span className="scan-kicker">{translate('Satu aplikasi untuk toko')}</span>
+                        <h2>{translate('Bukan cuma kasir. Pekerjaan lain ikut beres.')}</h2>
                     </m.div>
                     <m.div
                         className="scan-feature-list"
@@ -383,10 +383,10 @@ export default function Welcome() {
                         variants={revealClip}
                     >
                         <div>
-                            <span className="scan-kicker">Satu pandangan</span>
-                            <h2>Dari meja kasir sampai keputusan pemilik.</h2>
+                            <span className="scan-kicker">{translate('Cukup satu pandangan')}</span>
+                            <h2>{translate('Dari meja kasir sampai keputusan pemilik.')}</h2>
                         </div>
-                        <p>Informasi penting muncul saat dibutuhkan, tanpa layar yang penuh dan membingungkan.</p>
+                        <p>{translate('Angka penting langsung terlihat, tanpa tampilan yang membuat pusing.')}</p>
                     </m.div>
                     <ProductGallery />
                 </div>
@@ -401,8 +401,8 @@ export default function Welcome() {
                         viewport={publicViewport}
                         variants={revealLeft}
                     >
-                        <span className="scan-kicker">Operasional menyeluruh</span>
-                        <h2>Satu toko, banyak pekerjaan. Tetap satu alur.</h2>
+                        <span className="scan-kicker">{translate('Semua saling terhubung')}</span>
+                        <h2>{translate('Banyak pekerjaan, tetap terasa satu alur.')}</h2>
                     </m.div>
                     <m.div
                         className="scan-coverage-list"
@@ -436,8 +436,8 @@ export default function Welcome() {
                         viewport={publicViewport}
                         variants={revealClip}
                     >
-                        <span className="scan-kicker">Cara kerja yang berbeda</span>
-                        <h2 id="comparison-title">Lebih sedikit mencatat ulang. Lebih banyak waktu untuk melayani.</h2>
+                        <span className="scan-kicker">{translate('Lebih praktis')}</span>
+                        <h2 id="comparison-title">{translate('Kurangi catat ulang. Punya lebih banyak waktu untuk pembeli.')}</h2>
                     </m.div>
                     <m.div
                         className="scan-comparison-table"
@@ -449,12 +449,12 @@ export default function Welcome() {
                         variants={staggerGroup}
                     >
                         <m.div className="scan-comparison-row scan-comparison-head" role="row" variants={staggerItem}>
-                            <span role="columnheader">Pekerjaan</span>
+                            <span role="columnheader">{translate('Pekerjaan')}</span>
                             <strong role="columnheader">
                                 <ScanLine /> {branding.brand_name}
                             </strong>
                             <strong role="columnheader">
-                                <BookOpen /> Cara manual
+                                <BookOpen /> {translate('Cara manual')}
                             </strong>
                         </m.div>
                         {comparison.map(([task, sisko, manual]) => (
@@ -473,8 +473,8 @@ export default function Welcome() {
             <section className="scan-faq" id="faq">
                 <div className="ledger-container scan-faq-layout">
                     <m.div initial="hidden" whileInView="visible" viewport={publicViewport} variants={revealLeft}>
-                        <span className="scan-kicker">Pertanyaan umum</span>
-                        <h2>Sebelum mulai, pastikan semuanya jelas.</h2>
+                        <span className="scan-kicker">{translate('Yang sering ditanyakan')}</span>
+                        <h2>{translate('Masih ada yang ingin dipastikan?')}</h2>
                     </m.div>
                     <m.div
                         className="scan-faq-list"
@@ -505,15 +505,15 @@ export default function Welcome() {
                     variants={revealClip}
                 >
                     <div>
-                        <span className="scan-kicker">Mulai lebih rapi</span>
-                        <h2>Scan penjualannya. Pegang kendali tokonya.</h2>
+                        <span className="scan-kicker">{offerBadge}</span>
+                        <h2>{translate('Mulai gratis. Rapikan toko sedikit demi sedikit.')}</h2>
                     </div>
                     <div>
                         <Link className="ledger-button ledger-button-orange" href={primaryHref}>
                             {primaryLabel} <ArrowRight />
                         </Link>
                         <span>
-                            <ShieldCheck /> Data setiap toko tetap terpisah
+                            <ShieldCheck /> {translate('Data setiap toko tetap terpisah')}
                         </span>
                     </div>
                 </m.div>

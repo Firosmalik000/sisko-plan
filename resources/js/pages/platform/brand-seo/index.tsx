@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { ImageUp, ExternalLink, Globe2, Link2, Mail, Plus, Search, Share2, Trash2 } from 'lucide-react';
+import { ImageUp, ExternalLink, Globe2, Link2, Mail, MessageCircle, Plus, Search, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import BrandMark from '@/components/brand-mark';
@@ -278,9 +278,11 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                     disabled={!can_manage}
                                 />
                             </Field>
-                            <Field label="Nomor dukungan" error={errors.support_phone} className="sm:col-span-2">
+                            <Field label="WhatsApp dukungan" error={errors.support_phone} className="sm:col-span-2">
                                 <Input
                                     type="tel"
+                                    inputMode="tel"
+                                    autoComplete="tel"
                                     value={form.data.support_phone}
                                     onChange={(event) => form.setData('support_phone', event.target.value)}
                                     placeholder="+62 812 3456 7890"
@@ -481,6 +483,12 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                 <p className="flex items-center gap-2 truncate">
                                     <Mail className="size-3.5 shrink-0" />
                                     {form.data.support_email}
+                                </p>
+                            )}
+                            {form.data.support_phone && (
+                                <p className="flex items-center gap-2 truncate">
+                                    <MessageCircle className="size-3.5 shrink-0" />
+                                    {form.data.support_phone}
                                 </p>
                             )}
                             <p className="flex items-center gap-2">

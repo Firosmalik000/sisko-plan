@@ -5,7 +5,7 @@ import { fieldClass, LedgerCard, ledgerDateTime, money, OperationsShell, quantit
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
-import { useTranslation } from '@/lib/i18n';
+import { translate, useTranslation } from '@/lib/i18n';
 
 type Product = {
     public_id: string;
@@ -290,7 +290,7 @@ function InventoryMetric({
             </span>
             <div className="min-w-0 text-center sm:text-left">
                 <p className="truncate text-[9px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">
-                    {label}
+                    {translate(label)}
                 </p>
                 <p
                     className={`mt-1 truncate text-sm font-black tabular-nums sm:text-lg ${danger ? 'text-[#9c4f34]' : 'text-[var(--app-ink)]'}`}

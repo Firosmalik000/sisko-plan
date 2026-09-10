@@ -1,7 +1,8 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
-import { Archive, ArrowLeft, Coins, Mail, MapPin, RotateCcw, Shield, Trash2, UserPlus, Users } from 'lucide-react';
+import { Archive, ArrowLeft, Coins, Globe2, Mail, MapPin, RotateCcw, Shield, Trash2, UserPlus, Users } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
+import { SubscriptionLimitContactDialog } from '@/components/subscription-limit-contact-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +31,7 @@ type StoreDetail = {
     country_name: string | null;
     currency_code: string | null;
     currency_symbol: string | null;
+    address: string | null;
     members: Member[];
 };
 type CountryOption = {
@@ -50,6 +52,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
     const [archiveOpen, setArchiveOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [memberOpen, setMemberOpen] = useState(false);
+    const [staffLimitOpen, setStaffLimitOpen] = useState(false);
     const [memberMode, setMemberMode] = useState<'create' | 'link'>('create');
     const { subscriptionState } = usePage<{
         subscriptionState: SubscriptionState | null;
@@ -86,8 +89,15 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
 
                 <Card className="rounded-[1.25rem] border-[var(--app-ink)]/8 py-4 shadow-sm">
                     <CardContent className="grid gap-3 min-[375px]:grid-cols-2">
-                        <div className="flex items-center gap-3 rounded-xl bg-muted/35 p-3">
+                        <div className="flex items-start gap-3 rounded-xl bg-muted/35 p-3 min-[375px]:col-span-2">
                             <MapPin className="size-5 shrink-0 text-emerald-700" />
+                            <div className="min-w-0">
+                                <p className="text-xs font-bold text-muted-foreground">Alamat toko</p>
+                                <p className="font-bold break-words">{store.address ?? '-'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 rounded-xl bg-muted/35 p-3">
+                            <Globe2 className="size-5 shrink-0 text-emerald-700" />
                             <div className="min-w-0">
                                 <p className="text-xs font-bold text-muted-foreground">Negara</p>
                                 <p className="truncate font-bold">{store.country_name ?? store.country_code ?? '-'}</p>
@@ -114,11 +124,9 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                     Ubah identitas
                                 </Button>
                                 {memberLimitReached ? (
-                                    <Button asChild variant="outline">
-                                        <Link href="/pricing?category=staff_capacity#category-staff_capacity">
-                                            <UserPlus className="mr-2 size-4" />
-                                            Tambah kapasitas staf
-                                        </Link>
+                                    <Button type="button" variant="outline" onClick={() => setStaffLimitOpen(true)}>
+                                        <UserPlus className="mr-2 size-4" />
+                                        Tambah kapasitas staf
                                     </Button>
                                 ) : (
                                     <Button
@@ -260,6 +268,19 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                             className="h-11"
                                         />
                                         <InputError message={errors.name} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="store-address">Alamat toko</Label>
+                                        <textarea
+                                            id="store-address"
+                                            name="address"
+                                            defaultValue={store.address ?? ''}
+                                            rows={3}
+                                            maxLength={500}
+                                            placeholder="Contoh: Jalan Utama No. 10"
+                                            className="w-full resize-y rounded-md border border-input bg-white px-3 py-2 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm"
+                                        />
+                                        <InputError message={errors.address} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="store-country">Negara toko</Label>
@@ -471,6 +492,8 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                     </Form>
                 </DialogContent>
             </Dialog>
+
+            <SubscriptionLimitContactDialog kind="staff" open={staffLimitOpen} onOpenChange={setStaffLimitOpen} />
         </>
     );
 }

@@ -137,7 +137,12 @@ export default function StoreSubscriptionPage({
                             }
                             accent="stone"
                         />
-                        <InfoCard icon={CreditCard} label="Pembayaran tercatat" value={`${payments.total} pembayaran`} accent="stone" />
+                        <InfoCard
+                            icon={CreditCard}
+                            label="Pembayaran tercatat"
+                            value={`${payments.total} ${translate('pembayaran')}`}
+                            accent="stone"
+                        />
                     </section>
 
                     {!usage.can_write && (
@@ -236,7 +241,9 @@ export default function StoreSubscriptionPage({
                                             <PeriodStatus status={period.status} />
                                         </div>
                                         <p className="mt-1 text-sm font-semibold text-slate-500">
-                                            {period.is_trial ? '30 hari trial' : `${period.duration_months} bulan`}
+                                            {period.is_trial
+                                                ? `30 ${translate('hari trial')}`
+                                                : `${period.duration_months} ${translate('bulan')}`}
                                         </p>
                                     </div>
                                     <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700">
@@ -342,7 +349,7 @@ function InfoCard({
             <div className={`w-fit rounded-xl p-3 ${colors[accent]}`}>
                 <Icon className="size-5" />
             </div>
-            <p className="mt-5 text-xs font-bold tracking-wide text-slate-500 uppercase">{label}</p>
+            <p className="mt-5 text-xs font-bold tracking-wide text-slate-500 uppercase">{translate(label)}</p>
             <p className="mt-1 font-serif text-2xl">{value}</p>
         </div>
     );
@@ -368,9 +375,9 @@ function UsageCard({
                     <Icon className="size-5" />
                 </span>
                 <div>
-                    <h2 className="font-serif text-2xl">{title}</h2>
+                    <h2 className="font-serif text-2xl">{translate(title)}</h2>
                     <p className="text-sm text-slate-500">
-                        {used} dari {limit === 0 ? 'tak terbatas' : limit}
+                        {used} {translate('dari')} {limit === 0 ? translate('tak terbatas') : limit}
                     </p>
                 </div>
             </div>
@@ -403,10 +410,10 @@ function statusLabel(status: string) {
 
 function addonCapacity(addon: SubscriptionAddon) {
     return [
-        addon.stores > 0 ? `+${addon.stores} toko` : null,
-        addon.products > 0 ? `+${addon.products} produk` : null,
-        addon.members > 0 ? `+${addon.members} staf` : null,
-        addon.scans > 0 ? `+${addon.scans} scan/bulan` : null,
+        addon.stores > 0 ? `+${addon.stores} ${translate('toko')}` : null,
+        addon.products > 0 ? `+${addon.products} ${translate('produk')}` : null,
+        addon.members > 0 ? `+${addon.members} ${translate('staf')}` : null,
+        addon.scans > 0 ? `+${addon.scans} ${translate('scan/bulan')}` : null,
     ]
         .filter(Boolean)
         .join(' · ');

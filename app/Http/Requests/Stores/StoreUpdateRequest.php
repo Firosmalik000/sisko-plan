@@ -23,6 +23,7 @@ class StoreUpdateRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:120'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:500'],
             'country' => [
                 'sometimes',
                 'required',
@@ -31,6 +32,15 @@ class StoreUpdateRequest extends FormRequest
                     ->where('is_active', true)
                     ->when($store, fn ($query) => $query->orWhere('id', $store->country_id))),
             ],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'address.string' => __('Alamat toko harus berupa teks.'),
+            'address.max' => __('Alamat toko tidak boleh lebih dari 500 karakter.'),
         ];
     }
 }

@@ -160,8 +160,8 @@ export default function StockOpnameShow({
         setDirty(nextDirty);
         setScannerMessage(
             missing
-                ? `${changed} hitungan diperbarui. ${missing} produk tidak ada dalam sesi opname ini.`
-                : `${changed} hitungan diperbarui. Periksa lalu simpan saat siap.`,
+                ? `${changed} ${translate('hitungan diperbarui.')} ${missing} ${translate('produk tidak ada dalam sesi opname ini.')}`
+                : `${changed} ${translate('hitungan diperbarui.')} ${translate('Periksa lalu simpan saat siap.')}`,
         );
 
         return result;
@@ -227,7 +227,7 @@ export default function StockOpnameShow({
                             </p>
                         </div>
                         <span className="shrink-0 rounded-lg bg-[var(--app-soft)] px-2 py-1.5 text-[10px] font-black text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/15 sm:text-xs">
-                            {statusLabels[stockCount.status]}
+                            {translate(statusLabels[stockCount.status])}
                         </span>
                     </div>
 

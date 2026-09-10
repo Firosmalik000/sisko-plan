@@ -1,6 +1,4 @@
-import { Link } from '@inertiajs/react';
-import { AlertCircle, Camera, Check, Images, LoaderCircle, Pause, Play, ScanBarcode, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { Camera, Images, Pause, Play, ScanLine, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
 import type { ChangeEvent, RefObject } from 'react';
 import { translate } from '@/lib/i18n';
 import { autoCaptureFeedback, barcodeScannerFeedback } from './barcode-scanner-feedback';
@@ -44,6 +42,7 @@ export function CameraViewport({
     photoStatus,
     photoError,
     onToggleScanMode,
+    onScanLimitContact,
 }: {
     barcodeEnabled: boolean;
     aiPhotoAvailable: boolean;
@@ -80,6 +79,7 @@ export function CameraViewport({
     photoStatus: 'idle' | 'reading' | 'success' | 'not_found' | 'failed';
     photoError: string;
     onToggleScanMode: () => void;
+    onScanLimitContact: () => void;
 }) {
     const tray = useRef<HTMLDivElement>(null);
     const barcodeFeedback = barcodeScannerFeedback(barcodeStatus);
@@ -375,6 +375,15 @@ export function CameraViewport({
                 {barcodeError && (
                     <div role="alert" className="mx-5 mb-3 rounded-xl bg-red-950/75 px-3 py-2 text-center text-xs font-bold text-red-100">
                         <p>{translate(barcodeError)}</p>
+                        {barcodeLimitReached && (
+                            <button
+                                type="button"
+                                onClick={onScanLimitContact}
+                                className="mt-2 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-[var(--app-ink)] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-red-950 focus-visible:outline-none"
+                            >
+                                Hubungi admin
+                            </button>
+                        )}
                     </div>
                 )}
                 {scanMode === 'photo' && photoStatus === 'failed' && (

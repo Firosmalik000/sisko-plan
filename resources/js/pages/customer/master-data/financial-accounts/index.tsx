@@ -1,6 +1,7 @@
 import type { PaginationLink } from '@/components/pagination';
 import { ReferenceDataPage } from '@/components/reference-data-page';
 import type { ReferenceRecord } from '@/components/reference-data-page';
+import { translate } from '@/lib/i18n';
 
 type Account = ReferenceRecord & {
     type: string;
@@ -29,7 +30,7 @@ export default function FinancialAccountsIndex({
         ...accounts,
         data: accounts.data.map((account) => ({
             ...account,
-            type_label: labels[account.type] ?? account.type,
+            type_label: translate(labels[account.type] ?? account.type),
         })),
     };
 

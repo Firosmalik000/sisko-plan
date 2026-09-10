@@ -17,7 +17,10 @@ import { setActiveLocale, useTranslation } from '@/lib/i18n';
 
 let appName = (typeof document !== 'undefined' && document.documentElement.dataset.appName) || import.meta.env.VITE_APP_NAME || 'XSISTEN';
 let localeListenerRegistered = false;
-const pages = import.meta.glob<{ default: ComponentType }>('./pages/**/*.tsx');
+type InertiaPage = ComponentType<Record<string, unknown>>;
+
+const pages = import.meta.glob<{ default: InertiaPage }>('./pages/**/*.tsx');
+const localizedPages = new Map<string, InertiaPage>();
 const normalizeLocale = (locale: unknown): AppLocale => (locale === 'en' || locale === 'ms' || locale === 'vi' ? locale : 'id');
 const normalizeMarket = (market: unknown, locale: AppLocale, locales: unknown): MarketCode => {
     if (market === 'id' || market === 'ms' || market === 'vi') {
@@ -53,47 +56,32 @@ function LocaleBoundary({ children }: { children: ReactNode }) {
     return <Fragment>{children}</Fragment>;
 }
 
-const bootScreen = typeof document === 'undefined' ? null : document.getElementById('app-boot');
-const bootRetry = typeof document === 'undefined' ? null : document.getElementById('app-boot-retry');
-const bootSlowTimer =
-    bootScreen === null
-        ? null
-        : window.setTimeout(() => {
-              bootScreen.dataset.state = 'slow';
-          }, 700);
-const bootFailureTimer =
-    bootScreen === null
-        ? null
-        : window.setTimeout(() => {
-              bootScreen.dataset.state = 'failed';
-          }, 8_000);
+function localizedPage(name: string, Page: InertiaPage): InertiaPage {
+    const cachedPage = localizedPages.get(name);
 
-bootRetry?.addEventListener('click', () => window.location.reload());
-
-function dismissBootScreen(): void {
-    if (bootScreen === null) {
-        return;
+    if (cachedPage) {
+        return cachedPage;
     }
 
-    if (bootSlowTimer !== null) {
-        window.clearTimeout(bootSlowTimer);
+    function LocalizedPage(props: Record<string, unknown>) {
+        useTranslation();
+
+        return <Page {...props} />;
     }
 
-    if (bootFailureTimer !== null) {
-        window.clearTimeout(bootFailureTimer);
-    }
+    LocalizedPage.displayName = `LocalizedPage(${Page.displayName ?? Page.name ?? name})`;
+    localizedPages.set(name, LocalizedPage);
 
-    window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-            bootScreen.dataset.state = 'ready';
-            window.setTimeout(() => bootScreen.remove(), 180);
-        });
-    });
+    return LocalizedPage;
 }
 
-void createInertiaApp({
+createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: async (name) => (await resolvePageComponent(`./pages/${name}.tsx`, pages)).default,
+    resolve: async (name) => {
+        const Page = (await resolvePageComponent(`./pages/${name}.tsx`, pages)).default;
+
+        return localizedPage(name, Page);
+    },
     layout: (name) => {
         switch (true) {
             case name.startsWith('system/errors/'):
@@ -145,12 +133,12 @@ void createInertiaApp({
         }
 
         return (
-            <LocaleBoundary>
-                <TooltipProvider delayDuration={0}>
+            <TooltipProvider delayDuration={0}>
+                <LocaleBoundary>
                     {app}
-                    <Toaster />
-                </TooltipProvider>
-            </LocaleBoundary>
+                </LocaleBoundary>
+                <Toaster />
+            </TooltipProvider>
         );
     },
     progress: {

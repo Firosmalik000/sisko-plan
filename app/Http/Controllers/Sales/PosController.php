@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Actions\Sales\PostSale;
+use App\Actions\Sales\ResolveMarketplaceAccount;
 use App\Enums\FinancialAccountType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreSaleRequest;
 use App\Models\FinancialAccount;
 use App\Models\ProductUnit;
+use App\Models\Store;
 use App\Models\User;
 use App\Support\CurrentStore;
+use App\Support\MarketplaceCatalog;
+use App\Support\PaymentMethodCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +28,8 @@ class PosController extends Controller
     {
         $store = $currentStore->get();
         Gate::authorize('manageSales', $store);
-        $this->ensurePaymentMethods($store->id);
+        $store->loadMissing('country');
+        $this->ensurePaymentMethods($store);
 
         $products = ProductUnit::query()->where('product_units.store_id', $store->id)
             ->where('product_units.is_active', true)->where('products.is_active', true)->where('units.is_active', true)
@@ -63,28 +68,43 @@ class PosController extends Controller
                         : null,
                 ];
             });
-        $activeAccounts = FinancialAccount::query()->where(['store_id' => $store->id, 'is_active' => true]);
-        $cash = (clone $activeAccounts)->where('type', FinancialAccountType::Cash->value)->orderBy('name')->first(['public_id', 'name']);
-        $qris = (clone $activeAccounts)
-            ->whereIn('type', [FinancialAccountType::EWallet->value, FinancialAccountType::Bank->value])
-            ->orderByRaw("CASE WHEN LOWER(name) LIKE '%qris%' THEN 0 WHEN type = ? THEN 1 ELSE 2 END", [FinancialAccountType::EWallet->value])
-            ->orderBy('name')->first(['public_id', 'name']);
+        $activeAccounts = FinancialAccount::query()->where(['store_id' => $store->id, 'is_active' => true])->whereNull('marketplace_code');
+        $cash = (clone $activeAccounts)->where('type', FinancialAccountType::Cash->value)->orderBy('name')->first(['id', 'public_id', 'name']);
+        $qrPayment = PaymentMethodCatalog::qrForCountry($store->country?->code);
+        $qrAccount = (clone $activeAccounts)->where('payment_code', $qrPayment['code'])
+            ->first(['id', 'public_id', 'name', 'payment_code']);
+        $primaryIds = array_filter([$cash?->id, $qrAccount?->id]);
+        $countryWalletCodes = PaymentMethodCatalog::walletCodesForCountry($store->country?->code);
+        $otherMethods = (clone $activeAccounts)->whereIn('type', [FinancialAccountType::Bank->value, FinancialAccountType::EWallet->value])
+            ->where(fn ($query) => $query->whereNull('payment_code')->orWhereIn('payment_code', $countryWalletCodes))
+            ->when($primaryIds !== [], fn ($query) => $query->whereNotIn('id', $primaryIds))
+            ->orderBy('type')->orderBy('name')->get(['public_id', 'name', 'type', 'payment_code'])
+            ->map(fn (FinancialAccount $account): array => [
+                'method' => $account->type === FinancialAccountType::Bank ? 'bank_transfer' : 'e_wallet',
+                'label' => $account->name,
+                'account_id' => $account->public_id,
+                'brand' => $account->payment_code,
+            ]);
         $paymentMethods = collect([
-            $cash ? ['method' => 'cash', 'label' => __('Cash'), 'account_id' => $cash->public_id] : null,
-            $qris ? ['method' => 'qris', 'label' => 'QRIS', 'account_id' => $qris->public_id] : null,
-        ])->filter()->values();
+            $cash ? ['method' => 'cash', 'label' => __('Cash'), 'account_id' => $cash->public_id, 'brand' => 'cash'] : null,
+            $qrAccount ? ['method' => $qrPayment['method'], 'label' => $qrPayment['label'], 'account_id' => $qrAccount->public_id, 'brand' => $qrPayment['code']] : null,
+        ])->filter()->concat($otherMethods)->values();
 
         return Inertia::render('customer/pos/index', [
             'products' => $products, 'paymentMethods' => $paymentMethods,
+            'marketplaces' => MarketplaceCatalog::forCountry($store->country?->code),
             'timezone' => $store->settings()->value('timezone') ?? 'Asia/Jakarta',
         ]);
     }
 
-    public function store(StoreSaleRequest $request, CurrentStore $currentStore, PostSale $action): RedirectResponse
+    public function store(StoreSaleRequest $request, CurrentStore $currentStore, PostSale $action, ResolveMarketplaceAccount $marketplaceAccounts): RedirectResponse
     {
         $data = $request->validated();
         $storeId = $currentStore->id();
-        $accountId = FinancialAccount::query()->where(['store_id' => $storeId, 'public_id' => $data['account_id']])->valueOrFail('id');
+        $store = $currentStore->get();
+        $accountId = $data['sales_channel'] === 'marketplace'
+            ? $marketplaceAccounts->handle($store, $data['marketplace_code'])->id
+            : FinancialAccount::query()->where(['store_id' => $storeId, 'public_id' => $data['account_id']])->valueOrFail('id');
         $items = [];
         foreach ($data['items'] as $item) {
             $productUnitId = ProductUnit::query()->where('product_units.store_id', $storeId)
@@ -100,18 +120,22 @@ class PosController extends Controller
             $items[] = ['product_unit_id' => $productUnitId, 'quantity' => $item['quantity'], 'item_discount' => $item['discount_amount']];
         }
         $sale = $action->handle(
-            $currentStore->get(), $this->actor($request), $accountId, $items,
+            $store, $this->actor($request), $accountId, $items,
             $data['transaction_discount_amount'], $data['paid_amount'], $data['occurred_at'],
             $data['notes'] ?? null, $data['idempotency_key'], $request->ip(), $request->file('payment_proof'),
             $data['customer_name'] ?? null, $data['customer_phone'] ?? null,
+            $data['customer_email'] ?? null, $data['sales_channel'], $data['payment_method'],
+            $data['marketplace_code'] ?? null, $data['external_order_number'] ?? null,
+            true,
         );
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Sale posted successfully.')]);
 
         return to_route('sales.show', ['sale' => $sale, 'print' => 1]);
     }
 
-    private function ensurePaymentMethods(int $storeId): void
+    private function ensurePaymentMethods(Store $store): void
     {
+        $storeId = $store->id;
         $cash = FinancialAccount::query()
             ->where('store_id', $storeId)
             ->where('type', FinancialAccountType::Cash->value)
@@ -132,25 +156,52 @@ class PosController extends Controller
             ]);
         }
 
-        $qris = FinancialAccount::query()
+        $qrPayment = PaymentMethodCatalog::qrForCountry($store->country?->code);
+        $qrAccount = FinancialAccount::query()
+            ->where('store_id', $storeId)
+            ->where('payment_code', $qrPayment['code'])
+            ->first();
+        $qrAccount ??= FinancialAccount::query()
             ->where('store_id', $storeId)
             ->whereIn('type', [FinancialAccountType::EWallet->value, FinancialAccountType::Bank->value])
-            ->orderByRaw("CASE WHEN LOWER(name) LIKE '%qris%' THEN 0 WHEN type = ? THEN 1 ELSE 2 END", [FinancialAccountType::EWallet->value])
+            ->whereNull('marketplace_code')
+            ->where(fn ($query) => $query->whereNull('payment_code')->orWhereIn('payment_code', PaymentMethodCatalog::qrCodes()))
+            ->orderByRaw('CASE WHEN LOWER(name) LIKE ? THEN 0 WHEN type = ? THEN 1 ELSE 2 END', ['%'.strtolower($qrPayment['label']).'%', FinancialAccountType::EWallet->value])
             ->orderByDesc('is_active')
             ->orderBy('id')
             ->first();
 
-        if ($qris) {
-            if (! $qris->is_active) {
-                $qris->forceFill(['is_active' => true])->save();
-            }
+        if ($qrAccount) {
+            $qrAccount->forceFill([
+                'name' => in_array($qrAccount->name, ['QRIS', 'DuitNow QR', 'PromptPay QR', 'VietQR'], true)
+                    ? $qrPayment['label']
+                    : $qrAccount->name,
+                'payment_code' => $qrPayment['code'],
+                'is_active' => true,
+            ])->save();
         } else {
             FinancialAccount::query()->create([
                 'store_id' => $storeId,
-                'name' => 'QRIS',
+                'name' => $qrPayment['label'],
                 'type' => FinancialAccountType::EWallet->value,
+                'payment_code' => $qrPayment['code'],
                 'is_active' => true,
             ]);
+        }
+
+        foreach (PaymentMethodCatalog::walletsForCountry($store->country?->code) as $wallet) {
+            $walletAccount = FinancialAccount::query()->firstOrCreate(
+                ['store_id' => $storeId, 'payment_code' => $wallet['code']],
+                [
+                    'name' => $wallet['label'],
+                    'type' => FinancialAccountType::EWallet->value,
+                    'is_active' => true,
+                ],
+            );
+
+            if (! $walletAccount->is_active) {
+                $walletAccount->forceFill(['is_active' => true])->save();
+            }
         }
     }
 

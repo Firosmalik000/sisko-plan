@@ -4,6 +4,7 @@ import type { PropsWithChildren } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { useTranslation } from '@/lib/i18n';
 import { cn, toUrl } from '@/lib/utils';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
@@ -24,6 +25,7 @@ const sidebarNavItems: NavItem[] = [
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { t } = useTranslation();
 
     return (
         <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 lg:px-8">
@@ -47,7 +49,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                             >
                                 <Link href={item.href}>
                                     {item.icon && <item.icon className="h-4 w-4" />}
-                                    {item.title}
+                                    {t(item.title)}
                                 </Link>
                             </Button>
                         ))}

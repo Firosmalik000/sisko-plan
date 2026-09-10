@@ -95,7 +95,7 @@ export default function PublicSiteLayout({ children }: { children: React.ReactNo
                         <div className="ledger-container">
                             <div className="ledger-footer-brand">
                                 <Brand name={name} logoUrl={branding.logo_url} />
-                                <p>{t(branding.tagline || 'Scan barangnya. Sisanya langsung tercatat.')}</p>
+                                <p>{t('Mulai gratis. Biar urusan toko lebih ringan.')}</p>
                             </div>
                             <nav aria-label="Navigasi footer" className="flex-wrap">
                                 <a href="/#fitur">{t('Fitur')}</a>

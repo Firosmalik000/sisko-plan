@@ -1,15 +1,20 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeft, FileCheck2, Printer, RotateCcw } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { currentDateTime, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
-import { readReceiptPrintPreferences, receiptPrintStyles } from '@/lib/receipt-printing';
+import { translate } from '@/lib/i18n';
 
 type Sale = {
     public_id: string;
     document_number: string;
     customer_name: string | null;
     customer_phone: string | null;
+    customer_email: string | null;
+    sales_channel: 'in_store' | 'marketplace';
+    marketplace_code: string | null;
+    marketplace_label: string | null;
+    external_order_number: string | null;
     subtotal: string;
     item_discount_amount: string;
     transaction_discount_amount: string;
@@ -40,7 +45,7 @@ type Payment = {
     amount: string;
     tendered_amount: string;
     change_amount: string;
-    payment_method: 'cash' | 'qris';
+    payment_method: 'cash' | 'qris' | 'qr_payment' | 'bank_transfer' | 'e_wallet' | 'marketplace';
     account_name: string;
     proof_url: string | null;
 };
@@ -99,6 +104,9 @@ export default function SaleShow({
     showReturnForm?: boolean;
     openPrintDialog?: boolean;
 }) {
+    const pageUrl = usePage().url;
+    const query = pageUrl.includes('?') ? pageUrl.slice(pageUrl.indexOf('?')) : '';
+    const salesIndexUrl = `/sales${query}`;
     const returnableItems = items.filter((item) => Number(item.returnable_quantity) > 0);
     const returnForm = useForm<ReturnForm>({
         account_id: accounts[0]?.public_id ?? '',
@@ -145,7 +153,7 @@ export default function SaleShow({
                 <div className="mx-auto grid max-w-6xl gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
                     <div className="space-y-5">
                         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-                            <Link href="/sales" className="inline-flex items-center gap-2 text-sm font-bold text-slate-700">
+                            <Link href={salesIndexUrl} className="inline-flex items-center gap-2 text-sm font-bold text-slate-700">
                                 <ArrowLeft className="size-4" />
                                 Daftar transaksi
                             </Link>
@@ -173,10 +181,19 @@ export default function SaleShow({
                                     {ledgerDateTime(sale.occurred_at, timezone)}
                                     {receipt.show_cashier && ` · Kasir ${sale.cashier_name}`}
                                 </p>
-                                {sale.customer_name && sale.customer_phone && (
-                                    <p className="mt-1 text-xs font-semibold text-slate-600">
-                                        Pelanggan {sale.customer_name} · {sale.customer_phone}
+                                {sale.sales_channel === 'marketplace' && (
+                                    <p className="mt-1 text-xs font-bold text-orange-700">
+                                        {sale.marketplace_label ?? 'Marketplace'}
+                                        {sale.external_order_number && ` · ${translate('Pesanan')} ${sale.external_order_number}`}
                                     </p>
+                                )}
+                                {sale.customer_name && sale.customer_phone && (
+                                    <div className="mt-1 text-xs font-semibold text-slate-600">
+                                        <p>
+                                            Pelanggan {sale.customer_name} · {sale.customer_phone}
+                                        </p>
+                                        {sale.customer_email && <p>{sale.customer_email}</p>}
+                                    </div>
                                 )}
                             </header>
                             <div className="divide-y divide-slate-100">
@@ -228,7 +245,7 @@ export default function SaleShow({
                                     className="mt-4 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#b8d8cd] bg-[#f1f8f5] px-4 text-sm font-bold text-[#245c4f] transition hover:bg-[#e3f3ed] focus-visible:ring-2 focus-visible:ring-[#34765f] focus-visible:outline-none print:hidden"
                                 >
                                     <FileCheck2 className="size-4" />
-                                    Lihat bukti QRIS
+                                    {translate('Lihat bukti pembayaran')}
                                 </a>
                             )}
                             <p className="mt-7 text-center text-xs text-slate-400">{receipt.footer}</p>

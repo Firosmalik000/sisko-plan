@@ -2657,6 +2657,10 @@ html:has(.ledger-landing) {
     margin-inline: auto;
 }
 
+.ledger-landing {
+    overflow-x: clip;
+}
+
 .ledger-header {
     position: fixed;
     top: 0;

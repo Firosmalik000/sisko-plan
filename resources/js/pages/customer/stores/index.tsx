@@ -1,5 +1,8 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowRight, Building2, Coins, LockKeyhole, MapPin, Plus, ScanLine, ShieldCheck, Users } from 'lucide-react';
+import { useState } from 'react';
+import { SubscriptionLimitContactDialog } from '@/components/subscription-limit-contact-dialog';
+import type { SubscriptionLimitKind } from '@/components/subscription-limit-contact-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +19,7 @@ type StoreItem = {
     country_code: string | null;
     currency_code: string | null;
     currency_symbol: string | null;
+    address: string | null;
 };
 
 type AccountUsage = {
@@ -29,6 +33,7 @@ type AccountUsage = {
 };
 
 export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; usage: AccountUsage | null }) {
+    const [limitContact, setLimitContact] = useState<SubscriptionLimitKind | null>(null);
     const { storeCreation } = usePage<{
         storeCreation: StoreCreationState;
     }>().props;
@@ -46,10 +51,8 @@ export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; us
                             </Link>
                         </Button>
                     ) : (
-                        <Button asChild variant="outline" className="h-11 w-full sm:w-auto">
-                            <Link href="/pricing?category=store_capacity#category-store_capacity">
-                                <LockKeyhole /> Tambah kapasitas toko
-                            </Link>
+                        <Button type="button" variant="outline" className="h-11 w-full sm:w-auto" onClick={() => setLimitContact('store')}>
+                            <LockKeyhole /> Tambah kapasitas toko
                         </Button>
                     )}
                 </div>
@@ -80,6 +83,7 @@ export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; us
                                 used={usage.stores_used}
                                 limit={usage.max_stores}
                                 href="/pricing?category=store_capacity#category-store_capacity"
+                                onLimitReached={() => setLimitContact('store')}
                             />
                             <CapacityItem
                                 icon={Users}
@@ -87,6 +91,7 @@ export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; us
                                 used={usage.members_used}
                                 limit={usage.max_members}
                                 href="/pricing?category=staff_capacity#category-staff_capacity"
+                                onLimitReached={() => setLimitContact('staff')}
                             />
                             <CapacityItem
                                 icon={ScanLine}
@@ -94,6 +99,7 @@ export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; us
                                 used={usage.scans_used}
                                 limit={usage.max_scans}
                                 href="/pricing?category=scan_capacity#category-scan_capacity"
+                                onLimitReached={() => setLimitContact('scan')}
                             />
                         </div>
                     </section>
@@ -112,8 +118,8 @@ export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; us
                             </Button>
                         )}
                         {!storeCreation.can_create && (
-                            <Button asChild className="mt-6">
-                                <Link href="/pricing?category=store_capacity#category-store_capacity">Lihat add-on toko</Link>
+                            <Button type="button" className="mt-6" onClick={() => setLimitContact('store')}>
+                                Hubungi admin
                             </Button>
                         )}
                     </div>
@@ -154,8 +160,12 @@ export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; us
                                         <Users className="size-4" />
                                         Akses anggota
                                     </div>
+                                    <div className="col-span-2 flex min-w-0 items-start gap-2 text-muted-foreground">
+                                        <MapPin className="mt-0.5 size-4 shrink-0" />
+                                        <span className="line-clamp-2 break-words">{store.address ?? '-'}</span>
+                                    </div>
                                     <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
-                                        <MapPin className="size-4 shrink-0" />
+                                        <Building2 className="size-4 shrink-0" />
                                         <span className="truncate">{store.country ?? store.country_code ?? '-'}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-muted-foreground">
@@ -197,6 +207,11 @@ export default function StoresIndex({ stores, usage }: { stores: StoreItem[]; us
                     </div>
                 )}
             </div>
+            <SubscriptionLimitContactDialog
+                kind={limitContact ?? 'store'}
+                open={limitContact !== null}
+                onOpenChange={(open) => !open && setLimitContact(null)}
+            />
         </>
     );
 }
@@ -211,12 +226,14 @@ function CapacityItem({
     used,
     limit,
     href,
+    onLimitReached,
 }: {
     icon: typeof Building2;
     title: string;
     used: number;
     limit: number;
     href: string;
+    onLimitReached: () => void;
 }) {
     const unlimited = limit === 0;
     const remaining = unlimited ? null : Math.max(0, limit - used);
@@ -226,27 +243,23 @@ function CapacityItem({
     const status = unlimited ? 'Tanpa batas' : depleted ? 'Habis' : low ? 'Menipis' : 'Tersedia';
     const statusClass = depleted ? 'bg-red-100 text-red-800' : low ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800';
 
-    return (
-        <Link
-            href={href}
-            aria-label={`Tambah kapasitas ${title}`}
-            className="group block min-w-0 p-4 transition-colors hover:bg-emerald-50/60 focus-visible:bg-emerald-50/60 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:outline-none focus-visible:ring-inset sm:p-5"
-        >
+    const content = (
+        <>
             <div className="flex items-start justify-between gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white">
                     <Icon className="size-5" />
                 </span>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusClass}`}>{status}</span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusClass}`}>{translate(status)}</span>
             </div>
-            <p className="mt-4 text-sm font-bold text-muted-foreground">{title}</p>
+            <p className="mt-4 text-sm font-bold text-muted-foreground">{translate(title)}</p>
             <div className="mt-1 flex items-end justify-between gap-3">
                 <p className="text-2xl font-black tracking-[-0.03em] text-[var(--app-ink)] tabular-nums">
-                    {unlimited ? '∞' : `Sisa ${remaining}`}
+                    {unlimited ? '∞' : `${translate('Sisa')} ${remaining}`}
                 </p>
                 <ArrowRight className="mb-1 size-4 shrink-0 text-emerald-800 transition-transform group-hover:translate-x-1" />
             </div>
             <p className="mt-1 text-xs font-semibold text-muted-foreground tabular-nums">
-                {unlimited ? `${used} terpakai` : `${used} dari ${limit} terpakai`}
+                {unlimited ? `${used} ${translate('terpakai')}` : `${used} ${translate('dari')} ${limit} ${translate('terpakai')}`}
             </p>
             {!unlimited && (
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
@@ -256,6 +269,27 @@ function CapacityItem({
                     />
                 </div>
             )}
+        </>
+    );
+    const className =
+        'group block min-w-0 p-4 text-left transition-colors hover:bg-emerald-50/60 focus-visible:bg-emerald-50/60 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:outline-none focus-visible:ring-inset sm:p-5';
+
+    if (depleted) {
+        return (
+            <button
+                type="button"
+                onClick={onLimitReached}
+                aria-label={`${translate('Hubungi admin untuk menambah kapasitas')} ${translate(title)}`}
+                className={className}
+            >
+                {content}
+            </button>
+        );
+    }
+
+    return (
+        <Link href={href} aria-label={`${translate('Tambah kapasitas')} ${translate(title)}`} className={className}>
+            {content}
         </Link>
     );
 }

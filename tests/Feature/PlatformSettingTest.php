@@ -73,6 +73,7 @@ class PlatformSettingTest extends TestCase
                 ->component('public/welcome')
                 ->where('name', 'Toko Maju')
                 ->where('branding.brand_name', 'Toko Maju')
+                ->where('branding.support_phone', '+62 812 3456 7890')
                 ->where('branding.robots_index', false));
     }
 

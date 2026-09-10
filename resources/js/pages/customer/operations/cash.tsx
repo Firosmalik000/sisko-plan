@@ -12,6 +12,7 @@ import {
 } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import { translate } from '@/lib/i18n';
 
 type Account = {
     public_id: string;
@@ -251,7 +252,7 @@ export default function CashPage({
                                 {transactions.data.map((item) => (
                                     <tr key={item.public_id} className="border-b border-stone-100">
                                         <td className="py-3 font-semibold">{item.account_name}</td>
-                                        <td>{reasonLabels[item.reason] ?? item.reason}</td>
+                                        <td>{translate(reasonLabels[item.reason] ?? item.reason)}</td>
                                         <td className={item.direction === 'in' ? 'font-bold text-teal-700' : 'font-bold text-red-700'}>
                                             {item.direction === 'in' ? 'Arus masuk' : 'Arus keluar'}
                                         </td>

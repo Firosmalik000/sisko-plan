@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import LanguageSwitcher from '@/components/language-switcher';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { translate } from '@/lib/i18n';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemType[] }) {
@@ -34,7 +35,7 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                     type="button"
                     onClick={() => setOpen((value) => !value)}
                     aria-expanded={open}
-                    aria-label={count > 0 ? `${count} stok kritis` : 'Notifikasi'}
+                    aria-label={count > 0 ? `${count} ${translate('stok kritis')}` : translate('Notifikasi')}
                     className="relative grid size-10 place-items-center rounded-xl text-sidebar-foreground transition hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none"
                 >
                     <Bell className="size-5" />

@@ -1,4 +1,7 @@
 export const vietnamesePlatformCatalog: Record<string, string> = {
+    'Deskripsi halaman akan tampil di sini.': 'Mô tả trang sẽ hiển thị tại đây.',
+    'Tautan resmi yang tampil di footer publik.': 'Liên kết chính thức hiển thị ở chân trang công khai.',
+    'kanal sosial': 'kênh mạng xã hội',
     Ringkasan: 'Tóm tắt',
     Komersial: 'Thương mại',
     Platform: 'Nền tảng',
@@ -156,4 +159,8 @@ export const vietnamesePlatformCatalog: Record<string, string> = {
     'belum aktif': 'chưa hoạt động',
     'scan / bulan': 'lượt quét / tháng',
     toko: 'cửa hàng',
+    'Nilai terfilter': 'Giá trị đã lọc',
+    Pemilik: 'Chủ sở hữu',
+    'Tanpa tagline': 'Không có khẩu hiệu',
+    terjadwal: 'đã lên lịch',
 };

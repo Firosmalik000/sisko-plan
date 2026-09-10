@@ -27,10 +27,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatMoney } from '@/lib/currency';
+import { formatMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
-import { resolveUnit, resolveCategory, referenceLabel } from '@/lib/unit-references';
-import type { UnitReference, CategoryReference } from '@/lib/unit-references';
 import { cn } from '@/lib/utils';
 import { useProductDrafts } from './use-product-drafts';
 import type { DiscoverySuggestion, ProductDraft } from './use-product-drafts';
@@ -204,8 +202,8 @@ const formatFormDecimal = (value: string | number | null | undefined) => {
 const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
 function Field({ label, error, children, className }: { label: string; error?: string; children: React.ReactNode; className?: string }) {
     return (
-        <div className={cn('min-w-0', className)}>
-            <Label className="mb-2 block text-xs font-bold tracking-wide text-slate-700 uppercase">{label}</Label>
+        <div className={className}>
+            <Label className="mb-2 block text-xs font-bold tracking-wide text-slate-700 uppercase">{translate(label)}</Label>
             {children}
             <InputError message={error} className="mt-1.5" />
         </div>
@@ -230,19 +228,9 @@ function BarcodeField({
             <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)]/15">
                 <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
                     <ScanBarcode className="size-4 shrink-0 text-[var(--app-primary)]" />
-                    <input
-                        aria-label="Barcode / QR"
-                        type="text"
-                        value={value}
-                        placeholder="Ketik atau scan barcode"
-                        className="w-0 min-w-0 flex-1 bg-transparent text-base outline-none"
-                        onChange={(event) => onChange(event.target.value)}
-                        onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                                event.preventDefault();
-                            }
-                        }}
-                    />
+                    <span className={cn('truncate text-sm', value ? 'font-bold text-slate-800' : 'text-slate-400')}>
+                        {value || translate('Belum dipindai')}
+                    </span>
                 </div>
                 {value && (
                     <button
@@ -250,7 +238,7 @@ function BarcodeField({
                         onClick={onClear}
                         className="min-h-9 shrink-0 rounded-md px-2 text-xs font-bold text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:outline-none"
                     >
-                        Hapus
+                        {translate('Hapus')}
                     </button>
                 )}
                 <Button
@@ -266,7 +254,7 @@ function BarcodeField({
                     )}
                 >
                     <ScanBarcode className="size-4" />
-                    {value ? 'Scan ulang' : 'Scan'}
+                    {translate(value ? 'Scan ulang' : 'Scan')}
                 </Button>
             </div>
         </Field>
@@ -302,27 +290,32 @@ function ProductPhotoInput({
     const hasPhoto = Boolean(photo || photoUrl);
 
     return (
-        <div className="grid min-w-0 grid-cols-[3rem_minmax(0,1fr)] items-center gap-2 rounded-xl border border-[var(--app-soft-strong)] bg-white p-2">
-            {photo ? (
-                <img ref={attachPhoto} alt={`Foto ${variantName || 'varian'}`} className="size-12 rounded-lg object-cover" />
-            ) : (
-                <ProductPhoto
-                    src={photoUrl}
-                    alt={`Foto ${variantName || 'varian'}`}
-                    className="size-12 rounded-lg object-cover"
-                    fallbackClassName="grid size-12 place-items-center rounded-lg bg-[var(--app-soft)] text-[var(--app-primary)]"
-                />
-            )}
-            <div className="flex min-w-0 items-center gap-1">
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onCamera}
-                    className="min-h-11 min-w-0 flex-1 gap-1 px-2 text-xs text-[var(--app-primary)]"
-                >
-                    <Camera className="size-4" /> Ambil foto
-                </Button>
-                {hasPhoto && (
+        <div className="flex min-h-16 items-center gap-3 rounded-xl border border-slate-200 bg-white p-2">
+            <ProductPhoto
+                src={previewUrl}
+                alt={translate(`Foto ${variantName || 'varian'}`)}
+                className="size-14 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
+                fallbackClassName="grid size-14 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-400"
+            />
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 text-xs font-bold text-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)] hover:bg-[var(--app-soft)]">
+                    <Camera className="size-4" />
+                    {translate(previewUrl ? 'Ganti foto' : 'Pilih foto')}
+                    <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = '';
+
+                            if (file) {
+                                onChange(file);
+                            }
+                        }}
+                    />
+                </label>
+                {previewUrl && (
                     <button
                         type="button"
                         onClick={onRemove}
@@ -331,7 +324,7 @@ function ProductPhotoInput({
                         title={translate('Hapus foto')}
                         className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
                     >
-                        <Trash2 className="size-4" />
+                        <Trash2 className="size-4" /> {translate('Hapus')}
                     </button>
                 )}
             </div>
@@ -357,7 +350,7 @@ function Section({
                     <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--app-primary)] text-xs font-black text-[var(--app-primary-foreground)]">
                         {number}
                     </span>
-                    <h3 className="font-serif text-lg font-bold text-slate-900">{title}</h3>
+                    <h3 className="font-serif text-lg font-bold text-slate-900">{translate(title)}</h3>
                 </div>
                 {action}
             </div>
@@ -1246,7 +1239,8 @@ export default function ProductsIndex({
         });
     };
     const applyFilters = () => router.get('/master-data/products', { search, status }, { preserveState: true, replace: true });
-    const modeLabel = (mode: VariantMode) => (mode === 'none' ? 'Tanpa varian' : mode === 'separate' ? 'Stok terpisah' : 'Stok gabungan');
+    const modeLabel = (mode: VariantMode) =>
+        translate(mode === 'none' ? 'Tanpa varian' : mode === 'separate' ? 'Stok terpisah' : 'Stok gabungan');
 
     return (
         <>
@@ -1364,7 +1358,7 @@ export default function ProductsIndex({
                                                                 {product.name}
                                                             </p>
                                                             <p className="truncate text-sm text-slate-500">
-                                                                {product.category?.name ?? 'Tanpa kategori'}
+                                                                {translate(product.category?.name ?? 'Tanpa kategori')}
                                                             </p>
                                                         </div>
                                                         <div className="flex shrink-0 flex-wrap justify-end gap-1">
@@ -1387,7 +1381,7 @@ export default function ProductsIndex({
                                                         </span>
                                                         {product.variants.length > 0 && (
                                                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                                                                {product.variants.length} varian
+                                                                {product.variants.length} {translate('varian')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -1397,7 +1391,7 @@ export default function ProductsIndex({
                                                 <span className="text-sm font-bold text-slate-700">
                                                     {product.variant_mode === 'none'
                                                         ? formatMoney(product.selling_price)
-                                                        : `${product.variants.length} harga`}
+                                                        : `${product.variants.length} ${translate('harga')}`}
                                                 </span>
                                                 {canManage && (
                                                     <div className="flex items-center gap-1">
@@ -1667,7 +1661,7 @@ export default function ProductsIndex({
                                                             value={category.public_id}
                                                             disabled={!category.is_active}
                                                         >
-                                                            {referenceLabel(category, 'categories', translate)}
+                                                            {translate(category.name)}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -1717,7 +1711,7 @@ export default function ProductsIndex({
                                             </option>
                                             {largeUnits.map((unit) => (
                                                 <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
-                                                    {referenceLabel(unit, 'units', translate)} ({unit.symbol})
+                                                    {translate(unit.name)} ({unit.symbol})
                                                 </option>
                                             ))}
                                         </select>
@@ -1731,7 +1725,7 @@ export default function ProductsIndex({
                                             <option value="">Pilih satuan ecer</option>
                                             {retailUnits.map((unit) => (
                                                 <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
-                                                    {referenceLabel(unit, 'units', translate)} ({unit.symbol})
+                                                    {translate(unit.name)} ({unit.symbol})
                                                 </option>
                                             ))}
                                         </select>
@@ -2282,7 +2276,7 @@ export default function ProductsIndex({
             {barcodeTarget && (
                 <BarcodeScannerDialog
                     open
-                    title={`Scan barcode ${barcodeTarget.label}`}
+                    title={`${translate('Scan barcode')} ${translate(barcodeTarget.label)}`}
                     onOpenChange={(open) => {
                         if (!open) {
                             setBarcodeTarget(null);
@@ -2306,11 +2300,9 @@ export default function ProductsIndex({
                 <ProductScanner
                     purpose="product"
                     title={
-                        scannerFlow === 'create'
-                            ? 'Foto produk baru'
-                            : scannerFlow === 'variant-photo'
-                              ? `Foto ${form.data.variants[variantPhotoIndex ?? -1]?.name || 'varian'}`
-                              : `Foto ${form.data.name || 'produk'}`
+                        scannerFlow === 'form-photo'
+                            ? `${translate('Foto')} ${form.data.name || translate('produk')}`
+                            : translate('Foto produk baru')
                     }
                     open={scannerOpen}
                     onOpenChange={handleScannerOpenChange}

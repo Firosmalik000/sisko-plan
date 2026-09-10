@@ -22,9 +22,14 @@ class CreateStore
         private SeedStoreStarterData $starterData,
     ) {}
 
-    public function handle(User $owner, string $name, ?string $ipAddress = null, ?string $countryCode = null): Store
-    {
-        return DB::transaction(function () use ($owner, $name, $ipAddress, $countryCode): Store {
+    public function handle(
+        User $owner,
+        string $name,
+        ?string $ipAddress = null,
+        ?string $countryCode = null,
+        ?string $address = null,
+    ): Store {
+        return DB::transaction(function () use ($owner, $name, $ipAddress, $countryCode, $address): Store {
             $this->subscriptionAccess->assertStoreCapacity($owner);
             $country = Country::query()
                 ->with('currency')
@@ -48,7 +53,10 @@ class CreateStore
                 'role' => MembershipRole::Owner->value,
                 'status' => MembershipStatus::Active->value,
             ]);
-            $store->settings()->create(['currency' => $country->currency_code]);
+            $store->settings()->create([
+                'currency' => $country->currency_code,
+                'address' => $address,
+            ]);
             $this->starterData->handle($store);
             $this->subscriptions->handle($store);
             $this->recordAudit->handle($owner, 'store.created', $store, $store, $ipAddress, [

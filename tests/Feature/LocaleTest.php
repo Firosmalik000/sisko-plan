@@ -14,6 +14,42 @@ class LocaleTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_first_visit_locale_follows_the_ip_country_header(): void
+    {
+        foreach ([
+            'ID' => 'id',
+            'MY' => 'ms',
+            'VN' => 'vi',
+            'SG' => 'en',
+            'XX' => 'en',
+        ] as $country => $locale) {
+            $this->withHeader('CF-IPCountry', $country)
+                ->get(route('login'))
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('auth/login')
+                    ->where('locale', $locale))
+                ->assertSessionMissing('locale');
+        }
+    }
+
+    public function test_missing_ip_country_header_defaults_to_english(): void
+    {
+        $this->get(route('login'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('auth/login')
+                ->where('locale', 'en'));
+    }
+
+    public function test_explicit_locale_selection_overrides_the_ip_country(): void
+    {
+        $this->withSession(['locale' => 'ms'])
+            ->withHeader('CF-IPCountry', 'ID')
+            ->get(route('login'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('auth/login')
+                ->where('locale', 'ms'));
+    }
+
     public function test_every_server_translation_has_the_required_market_outputs(): void
     {
         $indonesian = json_decode(file_get_contents(lang_path('id.json')), true, flags: JSON_THROW_ON_ERROR);
@@ -88,25 +124,25 @@ class LocaleTest extends TestCase
                 ->where('plans.0.disabled_reason', 'Akaun pentadbir platform tidak menggunakan pelan kedai.'));
     }
 
-    public function test_guest_can_select_the_malaysia_market(): void
+    public function test_guest_can_select_malay_without_changing_market(): void
     {
         $this->from(route('login'))
             ->post(route('locale.update'), ['locale' => 'ms'])
             ->assertRedirect(route('login'))
-            ->assertSessionHas('market', 'ms')
+            ->assertSessionMissing('market')
             ->assertSessionHas('locale', 'ms');
     }
 
-    public function test_guest_can_select_the_vietnam_market(): void
+    public function test_guest_can_select_vietnamese_without_changing_market(): void
     {
         $this->from(route('login'))
             ->post(route('locale.update'), ['locale' => 'vi'])
             ->assertRedirect(route('login'))
-            ->assertSessionHas('market', 'vi')
+            ->assertSessionMissing('market')
             ->assertSessionHas('locale', 'vi');
     }
 
-    public function test_public_pages_only_offer_indonesia_and_malaysia(): void
+    public function test_public_pages_offer_all_supported_languages(): void
     {
         $user = User::factory()->create();
 
@@ -116,17 +152,19 @@ class LocaleTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('public/welcome')
                 ->where('market', 'ms')
-                ->where('locale', 'ms')
+                ->where('locale', 'en')
                 ->where('locales.0.code', 'id')
-                ->where('locales.1.code', 'ms'));
+                ->where('locales.1.code', 'en')
+                ->where('locales.2.code', 'ms')
+                ->where('locales.3.code', 'vi'));
 
         $this->from(route('login'))
             ->post(route('locale.update'), ['locale' => 'en'])
             ->assertRedirect(route('login'))
-            ->assertSessionHasErrors('locale');
+            ->assertSessionHas('locale', 'en');
     }
 
-    public function test_indonesia_customer_can_switch_between_indonesian_and_english_without_changing_market(): void
+    public function test_customer_portal_offers_all_supported_languages_without_changing_market(): void
     {
         $user = User::factory()->create();
 
@@ -137,18 +175,20 @@ class LocaleTest extends TestCase
                 ->where('market', 'id')
                 ->where('locale', 'id')
                 ->where('locales.0.code', 'id')
-                ->where('locales.1.code', 'en'));
+                ->where('locales.1.code', 'en')
+                ->where('locales.2.code', 'ms')
+                ->where('locales.3.code', 'vi'));
 
         $this->actingAs($user)
             ->withSession(['market' => 'id', 'locale' => 'id'])
             ->from(route('stores.index'))
-            ->post(route('locale.update'), ['locale' => 'en', 'context' => 'customer'])
+            ->post(route('locale.update'), ['locale' => 'vi'])
             ->assertRedirect(route('stores.index'))
             ->assertSessionHas('market', 'id')
-            ->assertSessionHas('locale', 'en');
+            ->assertSessionHas('locale', 'vi');
     }
 
-    public function test_malaysia_customer_can_switch_between_malay_and_english_without_changing_market(): void
+    public function test_malaysia_customer_can_select_indonesian_without_changing_market(): void
     {
         $user = User::factory()->create();
 
@@ -158,20 +198,21 @@ class LocaleTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('market', 'ms')
                 ->where('locale', 'en')
-                ->where('locales.0.code', 'ms')
-                ->where('locales.1.code', 'en'));
+                ->where('locales.0.code', 'id')
+                ->where('locales.1.code', 'en')
+                ->where('locales.2.code', 'ms')
+                ->where('locales.3.code', 'vi'));
 
         $this->actingAs($user)
             ->withSession(['market' => 'ms', 'locale' => 'en'])
             ->from(route('stores.index'))
-            ->post(route('locale.update'), ['locale' => 'id', 'context' => 'customer'])
+            ->post(route('locale.update'), ['locale' => 'id'])
             ->assertRedirect(route('stores.index'))
-            ->assertSessionHasErrors('locale')
             ->assertSessionHas('market', 'ms')
-            ->assertSessionHas('locale', 'en');
+            ->assertSessionHas('locale', 'id');
     }
 
-    public function test_platform_admin_uses_the_public_market_switcher(): void
+    public function test_platform_admin_offers_all_supported_languages(): void
     {
         $admin = User::factory()->superAdmin()->create();
 
@@ -182,7 +223,9 @@ class LocaleTest extends TestCase
                 ->where('market', 'id')
                 ->where('locale', 'id')
                 ->where('locales.0.code', 'id')
-                ->where('locales.1.code', 'ms'));
+                ->where('locales.1.code', 'en')
+                ->where('locales.2.code', 'ms')
+                ->where('locales.3.code', 'vi'));
     }
 
     public function test_customer_validation_messages_use_english(): void
