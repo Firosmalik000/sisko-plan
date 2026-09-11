@@ -77,7 +77,11 @@ class GoogleAuthenticationTest extends TestCase
 
         $user = User::query()->where('email', 'owner@example.com')->sole();
         $this->assertAuthenticatedAs($user);
-        $this->assertSame('google-user-1', $user->google_id);
+        $this->assertDatabaseHas('user_social_identities', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_subject' => 'google-user-1',
+        ]);
         $this->assertNotNull($user->email_verified_at);
         $this->assertNotNull($user->last_login_at);
         $this->assertNull($user->platform_role);
@@ -91,8 +95,12 @@ class GoogleAuthenticationTest extends TestCase
         $this->get(route('auth.google.callback'))->assertRedirect(route('dashboard'));
 
         $this->assertSame(1, User::query()->where('email', 'owner@example.com')->count());
-        $this->assertSame('google-user-1', $existing->refresh()->google_id);
-        $this->assertNotNull($existing->email_verified_at);
+        $this->assertDatabaseHas('user_social_identities', [
+            'user_id' => $existing->id,
+            'provider' => 'google',
+            'provider_subject' => 'google-user-1',
+        ]);
+        $this->assertNotNull($existing->refresh()->email_verified_at);
         $this->assertAuthenticatedAs($existing);
     }
 
@@ -146,7 +154,10 @@ class GoogleAuthenticationTest extends TestCase
             ->assertSessionHas('oauth_error', 'Your account is currently deactivated.');
 
         $this->assertGuest();
-        $this->assertNull($user->refresh()->google_id);
+        $this->assertDatabaseMissing('user_social_identities', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+        ]);
     }
 
     public function test_platform_admin_is_not_linked_or_authenticated_through_google(): void
@@ -159,7 +170,10 @@ class GoogleAuthenticationTest extends TestCase
             ->assertSessionHas('oauth_error', 'Platform administrators must sign in using the primary method.');
 
         $this->assertGuest();
-        $this->assertNull($admin->refresh()->google_id);
+        $this->assertDatabaseMissing('user_social_identities', [
+            'user_id' => $admin->id,
+            'provider' => 'google',
+        ]);
     }
 
     /** @param array<string, mixed> $attributes */

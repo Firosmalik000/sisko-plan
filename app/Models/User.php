@@ -18,16 +18,18 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property string $email
- * @property string|null $google_id
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -46,15 +48,22 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Subscription|null $subscription
  */
 #[Fillable(['name', 'email', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at'])]
-#[Hidden(['avatar_path', 'google_id', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Hidden(['avatar_path', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     protected string $guard_name = 'web';
 
     protected $appends = ['avatar'];
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            $user->public_id ??= (string) Str::ulid();
+        });
+    }
 
     /** @return Attribute<covariant string|null, never> */
     protected function avatar(): Attribute
@@ -74,6 +83,12 @@ class User extends Authenticatable implements PasskeyUser
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class);
+    }
+
+    /** @return HasMany<UserSocialIdentity, $this> */
+    public function socialIdentities(): HasMany
+    {
+        return $this->hasMany(UserSocialIdentity::class);
     }
 
     /** @return HasMany<AdminAuditLog, $this> */

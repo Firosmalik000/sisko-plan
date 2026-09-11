@@ -6,6 +6,7 @@ use App\Actions\Subscriptions\StartDefaultSubscription;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserSocialIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -85,9 +86,15 @@ class GoogleAuthenticationController extends Controller
         }
 
         return DB::transaction(function () use ($googleUser, $googleId, $email): User {
-            $linkedUser = User::query()->where('google_id', $googleId)->lockForUpdate()->first();
-            if ($linkedUser !== null) {
-                return $linkedUser;
+            // Sumber kebenaran identitas: user_social_identities (provider, provider_subject).
+            $identity = UserSocialIdentity::query()
+                ->where('provider', 'google')
+                ->where('provider_subject', $googleId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($identity !== null) {
+                return $identity->user()->lockForUpdate()->firstOrFail();
             }
 
             $user = User::query()->firstOrCreate(
@@ -109,14 +116,26 @@ class GoogleAuthenticationController extends Controller
                 throw new GoogleAuthenticationException(__('Admin platform harus masuk menggunakan metode utama.'));
             }
 
-            if ($user->google_id !== null && $user->google_id !== $googleId) {
+            // Cegah tautan ganda: email sudah tertaut ke subject Google lain.
+            $conflicting = UserSocialIdentity::query()
+                ->where('provider', 'google')
+                ->where('user_id', $user->id)
+                ->where('provider_subject', '!=', $googleId)
+                ->exists();
+
+            if ($conflicting) {
                 throw new GoogleAuthenticationException(__('Email ini sudah terhubung ke akun Google lain.'));
             }
 
-            $user->forceFill([
-                'google_id' => $googleId,
-                'email_verified_at' => $user->email_verified_at ?? now(),
-            ])->save();
+            UserSocialIdentity::query()->firstOrCreate(
+                ['provider' => 'google', 'provider_subject' => $googleId],
+                ['user_id' => $user->id, 'email' => $email],
+            );
+
+            if ($user->email_verified_at === null) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
+
             $this->subscriptions->handle($user);
 
             return $user;

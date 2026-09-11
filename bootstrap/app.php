@@ -3,6 +3,7 @@
 use App\Http\Controllers\ReadinessController;
 use App\Http\Middleware\AddRequestId;
 use App\Http\Middleware\EnsurePlatformAdminHasTwoFactor;
+use App\Http\Middleware\EnsureStoreMembership;
 use App\Http\Middleware\EnsureSubscriptionAllowsWrites;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsPlatformAdmin;
@@ -12,6 +13,7 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetActiveStore;
 use App\Http\Middleware\SetApplicationLocale;
 use App\Http\Middleware\TranslateValidationExceptions;
+use App\Http\Responses\ApiExceptionMapper;
 use App\Models\User;
 use App\Support\PlatformPermission;
 use Illuminate\Foundation\Application;
@@ -26,6 +28,8 @@ use Symfony\Component\HttpFoundation\Response;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        apiPrefix: 'api/v1',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function (): void {
@@ -63,6 +67,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform-admin' => EnsureUserIsPlatformAdmin::class,
             'platform-admin.2fa' => EnsurePlatformAdminHasTwoFactor::class,
             'subscription.access' => EnsureSubscriptionAllowsWrites::class,
+            'store.membership' => EnsureStoreMembership::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -71,6 +76,14 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request): Response {
             $status = $response->getStatusCode();
+
+            if ($request->is('api/*')) {
+                return SecurityHeaders::apply(
+                    $request,
+                    ApiExceptionMapper::toEnvelope($exception, $response),
+                );
+            }
+
             $shouldRenderErrorPage = ! $request->expectsJson()
                 && ! $request->is('api/*')
                 && $status >= 400

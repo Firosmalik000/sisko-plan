@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Enums\PlatformAdminRole;
 use App\Models\User;
+use App\Services\Auth\DefaultSocialTokenVerifier;
+use App\Services\Auth\SocialTokenVerifier;
 use App\Support\CurrentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -23,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(SocialTokenVerifier::class, DefaultSocialTokenVerifier::class);
+
         $this->app->scoped(CurrentStore::class);
     }
 

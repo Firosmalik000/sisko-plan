@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'apple' => [
+        'enabled' => (bool) env('APPLE_AUTH_ENABLED', true),
+        'client_ids' => array_values(array_filter(array_map('trim', explode(',', (string) env('APPLE_CLIENT_IDS', 'com.xsisten.app'))))),
+    ],
+
     'google' => [
         'enabled' => (bool) env('GOOGLE_AUTH_ENABLED', true),
         'client_id' => env('GOOGLE_CLIENT_ID'),
