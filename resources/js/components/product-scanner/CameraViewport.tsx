@@ -1,4 +1,3 @@
-import { Link } from '@inertiajs/react';
 import { AlertCircle, Camera, Check, Images, LoaderCircle, Pause, Play, ScanBarcode, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { ChangeEvent, RefObject } from 'react';
@@ -366,12 +365,13 @@ export function CameraViewport({
                         {!manualPhotoFallback && aiQuotaExhausted && (
                             <>
                                 <p className="mt-1 font-medium">{translate('Tambah kuota AI untuk mengenali produk dari foto.')}</p>
-                                <Link
-                                    href="/pricing?category=scan_capacity#category-scan_capacity"
+                                <button
+                                    type="button"
+                                    onClick={onScanLimitContact}
                                     className="mt-2 inline-flex min-h-10 items-center justify-center rounded-lg bg-[#14201d] px-4 font-black text-white"
                                 >
                                     {translate('Tambah kuota scan AI')}
-                                </Link>
+                                </button>
                             </>
                         )}
                     </div>
