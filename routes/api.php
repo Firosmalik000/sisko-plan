@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\V1\Account\MeController;
 use App\Http\Controllers\Api\V1\Auth\SocialTokenController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\Stores\BootstrapController;
+use App\Http\Controllers\Api\V1\Stores\ProductIndexController;
+use App\Http\Controllers\Api\V1\Stores\ProductMutationController;
 use App\Http\Controllers\Api\V1\Stores\StoreIndexController;
 use App\Http\Controllers\Api\V1\Stores\SyncPullController;
 use App\Http\Controllers\Api\V1\Stores\SyncPushController;
@@ -55,4 +57,9 @@ Route::middleware(['auth:sanctum', 'store.membership'])
         Route::get('bootstrap', BootstrapController::class);
         Route::get('sync/pull', SyncPullController::class);
         Route::post('sync/push', SyncPushController::class);
+
+        // Produk: read/search (ability store.read) + mutasi (ability product.write).
+        Route::get('products', ProductIndexController::class);
+        Route::post('products', [ProductMutationController::class, 'store']);
+        Route::patch('products/{product}', [ProductMutationController::class, 'update']);
     });
