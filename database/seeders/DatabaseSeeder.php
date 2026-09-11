@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(PlanSeeder::class);
+        $this->call(DistributionXsistenSeeder::class);
 
         if (app()->environment('production')) {
             $this->command->warn('Paket sistem diperbarui. Akun demo tidak dibuat di production; gunakan platform-admin:create untuk Platform Admin awal.');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Auth;
 use App\Enums\UserStatus;
 use App\Http\Requests\Api\V1\Auth\IssueTokenRequest;
 use App\Http\Responses\ApiResponse;
+use App\Models\Device;
 use App\Models\User;
 use App\Support\Authentication\IssuesDeviceTokens;
 use Illuminate\Http\JsonResponse;
@@ -63,12 +64,24 @@ class TokenController
     /**
      * DELETE /auth/tokens/current — logout: cabut token perangkat saat ini (Req 2.4).
      *
-     * TODO(task 9.1): saat tabel `devices` tersedia, cabut juga registrasi push
-     * (FCM/APNs) milik perangkat ini. Untuk sekarang hanya menghapus token aktif.
+     * Mencabut juga registrasi push (FCM/APNs) milik perangkat ini bila
+     * `device_id` token dikenal, agar perangkat yang logout berhenti menerima
+     * push (design §10, Req 2.4/15.6).
      */
     public function destroyCurrent(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $token = $user->currentAccessToken();
+
+        $deviceId = $token->device_id ?? null;
+        if (is_string($deviceId) && $deviceId !== '') {
+            Device::query()
+                ->where('user_id', $user->id)
+                ->where('device_id', $deviceId)
+                ->delete();
+        }
+
+        $token->delete();
 
         return ApiResponse::success([
             'revoked' => true,

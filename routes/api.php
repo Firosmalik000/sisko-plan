@@ -3,6 +3,10 @@
 use App\Http\Controllers\Api\V1\Account\MeController;
 use App\Http\Controllers\Api\V1\Auth\SocialTokenController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
+use App\Http\Controllers\Api\V1\Devices\DeviceController;
+use App\Http\Controllers\Api\V1\Distribution\CatalogIndexController;
+use App\Http\Controllers\Api\V1\Distribution\CatalogShowController;
+use App\Http\Controllers\Api\V1\Notifications\NotificationIndexController;
 use App\Http\Controllers\Api\V1\Sales\SaleIndexController;
 use App\Http\Controllers\Api\V1\Sales\SaleShowController;
 use App\Http\Controllers\Api\V1\Sales\SaleStoreController;
@@ -48,6 +52,15 @@ Route::post('auth/social/apple', [SocialTokenController::class, 'apple']);
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('me', MeController::class);
     Route::get('stores', StoreIndexController::class);
+
+    // Registrasi push per-perangkat (Req 15.1/15.6) — bukan store-scoped.
+    Route::post('devices', [DeviceController::class, 'store']);
+    Route::delete('devices/{device}', [DeviceController::class, 'destroy']);
+
+    // Katalog distribusi READ-ONLY market-aware (Req 20.1/20.2/20.9) — bukan
+    // store-scoped; market context dari query/header/negara toko aktif.
+    Route::get('distribution/catalog', CatalogIndexController::class);
+    Route::get('distribution/catalog/{item}', CatalogShowController::class);
 });
 
 /*
@@ -78,4 +91,7 @@ Route::middleware(['auth:sanctum', 'store.membership'])
         Route::get('scanner/quota', QuotaController::class);
         Route::post('scanner/recognitions', RecognitionsController::class);
         Route::post('scanner/discoveries', DiscoveriesController::class);
+
+        // Notification center store-scoped (ability store.read, Req 15.2).
+        Route::get('notifications', NotificationIndexController::class);
     });
