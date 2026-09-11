@@ -632,6 +632,7 @@ const sharedTechnicalWords = new Set([
     'super',
     'url',
     'usb',
+    'unit',
     'vi',
     'verification',
     'valid',
@@ -771,6 +772,8 @@ for (const [value, files] of coveredValues) {
         'button',
         'btl',
         'cancelled',
+        'captured',
+        'categories',
         'checkbox',
         'counted',
         'country',
@@ -802,8 +805,11 @@ for (const [value, files] of coveredValues) {
         'polite',
         'post',
         'posted',
+        'processing',
         'purchase',
+        'purchases',
         'qris',
+        'queued',
         'reading',
         'ready',
         'recognized',
@@ -811,6 +817,7 @@ for (const [value, files] of coveredValues) {
         'retail',
         'round',
         'sale',
+        'scanning',
         'secondary',
         'separate',
         'shared',
@@ -818,11 +825,13 @@ for (const [value, files] of coveredValues) {
         'status',
         'success',
         'symbol',
+        'system',
         'tabpanel',
         'tel',
         'true',
         'uncertain',
         'url(#sales-area)',
+        'units',
         'waiting',
         'Kopi Susu × 2',
         'Roti Bakar × 1',
@@ -830,10 +839,12 @@ for (const [value, files] of coveredValues) {
     const looksLikeCss =
         value.includes('var(--') ||
         value.includes('!important') ||
+        value.startsWith('calc(') ||
+        value.startsWith('transition-') ||
         value.startsWith('@page') ||
         value.startsWith('; max-width:') ||
         value.startsWith('auto; margin:') ||
-        /^(?:absolute|block|border-|flex|font-|grid|h-|inline-flex|max-w-|mb-|min-h-|min-w-|mt-|mx-|relative|rounded-|shrink-|size-|space-|text-|truncate|w-)\b/u.test(
+        /^(?:absolute|block|border-|flex|font-|grid|h-|inline-flex|max-w-|mb-|min-h-|min-w-|mt-|mx-|relative|rounded-|shrink-|size-|space-|text-|transition-|truncate|w-)\b/u.test(
             value,
         );
     const requiresExplicitVietnamese =

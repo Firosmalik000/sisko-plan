@@ -1,5 +1,18 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Camera, CircleDollarSign, PackagePlus, Plus, Trash2 } from 'lucide-react';
+import {
+    ArrowDownLeft,
+    ArrowUpRight,
+    Building2,
+    Camera,
+    CheckCircle2,
+    CircleDollarSign,
+    Clock3,
+    PackagePlus,
+    Plus,
+    ReceiptText,
+    Trash2,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { buttonClass, currentDateTime, fieldClass, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
@@ -69,6 +82,20 @@ const defaultItem = (product?: ProductOption) => ({
 });
 const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
 
+type PurchasingView = 'purchases' | 'payables';
+
+const linksForView = (links: PaginationLink[], view: PurchasingView): PaginationLink[] =>
+    links.map((link) => {
+        if (!link.url) {
+            return link;
+        }
+
+        const url = new URL(link.url, 'https://pagination.local');
+        url.searchParams.set('view', view);
+
+        return { ...link, url: `${url.pathname}${url.search}${url.hash}` };
+    });
+
 export default function PurchasingPage({
     purchases,
     suppliers,
@@ -95,6 +122,15 @@ export default function PurchasingPage({
     const [scannerSummary, setScannerSummary] = useState<{ added: number; skipped: number } | null>(null);
     const [purchaseOpen, setPurchaseOpen] = useState(false);
     const [paymentOpen, setPaymentOpen] = useState(false);
+    const [activeView, setActiveView] = useState<PurchasingView>(() => {
+        if (typeof window === 'undefined') {
+            return 'purchases';
+        }
+
+        const params = new URL(window.location.href).searchParams;
+
+        return params.get('view') === 'payables' || params.has('payables_page') ? 'payables' : 'purchases';
+    });
     const activeSuppliers = suppliers.filter((supplier) => supplier.is_active);
     const purchase = useForm({
         supplier_id: activeSuppliers[0]?.public_id ?? '',
@@ -223,9 +259,12 @@ export default function PurchasingPage({
             <Head title="Pembelian dan utang supplier" />
             <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
                 <div className="mx-auto max-w-7xl space-y-4">
-                    <header className="flex flex-wrap items-center justify-between gap-4 rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white px-4 py-4 shadow-sm sm:px-5">
-                        <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Pembelian</h1>
-                        <div className="flex flex-wrap items-center justify-end gap-2">
+                    <header className="flex flex-col gap-3 rounded-2xl bg-white px-4 py-4 shadow-[0_14px_40px_-32px_rgba(63,31,22,0.55)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                        <div>
+                            <h1 className="text-2xl font-black tracking-[-0.03em] text-[var(--app-ink)]">Pembelian</h1>
+                            <p className="mt-0.5 text-sm text-stone-500">Catat barang masuk dan selesaikan utang supplier.</p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
                             {canManage && (
                                 <>
                                     <button
@@ -234,36 +273,28 @@ export default function PurchasingPage({
                                             prepareScannerTone();
                                             setScannerOpen(true);
                                         }}
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--app-ink)]/15 bg-white px-3 text-sm font-black text-[var(--app-ink)] transition hover:border-[var(--app-ink)]/30 hover:bg-[#fffaf7] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none"
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 text-xs font-bold text-[var(--app-ink)] transition hover:border-orange-200 hover:bg-orange-50 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none sm:text-sm"
                                     >
-                                        <Camera className="size-4" /> Scan produk
+                                        <Camera className="size-4 text-[var(--app-primary)]" /> Scan
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPaymentOpen(true)}
                                         disabled={unpaidPurchases.length === 0}
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--app-ink)]/15 bg-white px-3 text-sm font-black text-[var(--app-ink)] transition hover:border-[var(--app-ink)]/30 hover:bg-[#fffaf7] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45"
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 text-xs font-bold text-[var(--app-ink)] transition hover:border-orange-200 hover:bg-orange-50 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45 sm:text-sm"
                                     >
-                                        <CircleDollarSign className="size-4" />
-                                        Bayar utang
+                                        <CircleDollarSign className="size-4 text-emerald-600" />
+                                        Bayar
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPurchaseOpen(true)}
-                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)] transition hover:bg-[var(--app-ink)] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none"
+                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] shadow-[0_10px_20px_-12px_var(--app-primary)] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none sm:text-sm"
                                     >
-                                        <Plus className="size-4" /> Tambah pembelian
+                                        <Plus className="size-4" /> Tambah
                                     </button>
                                 </>
                             )}
-                            <div className="rounded-xl bg-[var(--app-soft)] px-3 py-2">
-                                <p className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Total utang supplier</p>
-                                <p className="mt-0.5 text-sm font-black text-[var(--app-ink)]">{money(totalPayable)}</p>
-                            </div>
-                            <div className="rounded-xl bg-[var(--app-soft)] px-3 py-2">
-                                <p className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Dokumen pembelian</p>
-                                <p className="mt-0.5 text-sm font-black text-[var(--app-ink)]">{purchases.total}</p>
-                            </div>
                         </div>
                     </header>
                     {scannerSummary && (
@@ -509,27 +540,57 @@ export default function PurchasingPage({
 
                     <div className="grid gap-6">
                         <section className={cardClass}>
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <h2 className="font-serif text-2xl text-stone-900">Posisi utang supplier</h2>
-                                <Link
-                                    href="/master-data/suppliers"
-                                    className="inline-flex min-h-10 items-center rounded-xl border border-stone-200 px-3 text-sm font-bold text-stone-700 transition hover:border-teal-700 hover:text-teal-800 focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 focus-visible:outline-none"
-                                >
-                                    Kelola supplier
-                                </Link>
+                            <div className="flex items-center justify-between gap-3 border-b border-stone-100 px-4 py-4 sm:px-5">
+                                <div className="flex min-w-0 items-center gap-3">
+                                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-[var(--app-primary)]">
+                                        <Building2 className="size-5" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h2 className="truncate text-base font-black text-[var(--app-ink)]">Posisi utang supplier</h2>
+                                        <p className="text-xs text-stone-500">{suppliers.length} supplier terdaftar</p>
+                                    </div>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    <div className="hidden text-right sm:block">
+                                        <p className="text-[10px] font-bold tracking-wide text-stone-400 uppercase">Total utang</p>
+                                        <p className="text-sm font-black text-[var(--app-ink)] tabular-nums">{money(totalPayable)}</p>
+                                    </div>
+                                    <Link
+                                        href="/master-data/suppliers"
+                                        className="inline-flex min-h-10 shrink-0 items-center rounded-xl border border-stone-200 px-3 text-xs font-bold text-stone-700 transition hover:border-orange-200 hover:bg-orange-50 hover:text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none sm:text-sm"
+                                    >
+                                        Kelola supplier
+                                    </Link>
+                                </div>
                             </div>
-                            <div className="mt-5 divide-y divide-stone-100">
+                            <div className="grid grid-cols-2 divide-x divide-stone-100 border-b border-stone-100 sm:grid-cols-3">
+                                <div className="px-4 py-3 sm:px-5">
+                                    <p className="text-xs font-medium text-stone-500">Total utang</p>
+                                    <p className="mt-1 truncate text-lg font-black text-[var(--app-ink)] tabular-nums">
+                                        {money(totalPayable)}
+                                    </p>
+                                </div>
+                                <div className="px-4 py-3 sm:px-5">
+                                    <p className="text-xs font-medium text-stone-500">Belum lunas</p>
+                                    <p className="mt-1 text-lg font-black text-amber-700 tabular-nums">{unpaidPurchases.length}</p>
+                                </div>
+                                <div className="col-span-2 border-t border-stone-100 px-4 py-3 sm:col-span-1 sm:border-t-0 sm:px-5">
+                                    <p className="text-xs font-medium text-stone-500">Dokumen pembelian</p>
+                                    <p className="mt-1 text-lg font-black text-[var(--app-ink)] tabular-nums">{purchases.total}</p>
+                                </div>
+                            </div>
+                            <div className="max-h-56 divide-y divide-stone-100 overflow-y-auto px-4 sm:px-5">
                                 {suppliers.map((supplier) => (
-                                    <div key={supplier.public_id} className="flex items-center justify-between gap-4 py-3">
-                                        <div>
-                                            <p className="font-semibold text-stone-800">{supplier.name}</p>
+                                    <div key={supplier.public_id} className="flex items-center justify-between gap-4 py-2.5">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-stone-800">{supplier.name}</p>
                                             <p className="text-xs text-stone-500">{supplier.is_active ? 'Aktif' : 'Nonaktif'}</p>
                                         </div>
                                         <p
                                             className={
                                                 Number(supplier.payable_balance) > 0
-                                                    ? 'font-bold text-amber-700'
-                                                    : 'font-semibold text-stone-400'
+                                                    ? 'shrink-0 text-sm font-black text-amber-700 tabular-nums'
+                                                    : 'shrink-0 text-sm font-semibold text-stone-400 tabular-nums'
                                             }
                                         >
                                             {money(supplier.payable_balance)}
@@ -538,7 +599,7 @@ export default function PurchasingPage({
                                 ))}
                             </div>
                             {suppliers.length === 0 && (
-                                <div className="mt-5 rounded-2xl border border-dashed border-stone-300 px-4 py-8 text-center">
+                                <div className="px-4 py-8 text-center">
                                     <p className="text-sm font-semibold text-stone-600">Belum ada supplier.</p>
                                     {canManage && (
                                         <Link
@@ -667,83 +728,27 @@ export default function PurchasingPage({
                     </div>
 
                     <section className={cardClass}>
-                        <h2 className="font-serif text-2xl text-stone-900">Riwayat pembelian</h2>
-                        <div className="mt-5 space-y-4">
-                            {purchases.data.map((entry) => (
-                                <article key={entry.public_id} className="rounded-2xl border border-stone-200 p-4">
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div>
-                                            <p className="font-bold text-stone-900">
-                                                {entry.document_number} · {entry.supplier_name}
-                                            </p>
-                                            <p className="text-xs text-stone-500">
-                                                {ledgerDateTime(entry.occurred_at, timezone)}
-                                                {entry.supplier_invoice_number ? ` · Invoice ${entry.supplier_invoice_number}` : ''}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-stone-900">{money(entry.total_amount)}</p>
-                                            <p
-                                                className={`text-xs font-semibold ${Number(entry.outstanding_amount) > 0 ? 'text-amber-700' : 'text-teal-700'}`}
-                                            >
-                                                {Number(entry.outstanding_amount) > 0 ? `Sisa ${money(entry.outstanding_amount)}` : 'Lunas'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 grid gap-2 md:grid-cols-2">
-                                        {entry.items.map((item, index) => (
-                                            <div key={`${entry.public_id}-${index}`} className="rounded-xl bg-stone-50 px-3 py-2 text-sm">
-                                                <span className="font-semibold">{item.product_name}</span>
-                                                <span className="text-stone-500">
-                                                    {' '}
-                                                    · {quantity(item.quantity)} {item.unit_symbol} · landed {money(item.landed_total)}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </article>
-                            ))}
+                        <div className="flex gap-1 border-b border-stone-100 p-1.5" role="tablist" aria-label="Data pembelian">
+                            <DataTab
+                                active={activeView === 'purchases'}
+                                icon={ReceiptText}
+                                label="Riwayat pembelian"
+                                count={purchases.total}
+                                onClick={() => setActiveView('purchases')}
+                            />
+                            <DataTab
+                                active={activeView === 'payables'}
+                                icon={Clock3}
+                                label="Buku utang"
+                                count={payableTransactions.total}
+                                onClick={() => setActiveView('payables')}
+                            />
                         </div>
-                        {purchases.data.length === 0 && <p className="mt-5 text-sm text-stone-500">Belum ada pembelian.</p>}
-                        <div className="mt-5">
-                            <Pagination links={purchases.links} />
-                        </div>
-                    </section>
-
-                    <section className={cardClass}>
-                        <h2 className="font-serif text-2xl text-stone-900">Buku utang supplier</h2>
-                        <div className="mt-5 overflow-x-auto">
-                            <table className="w-full min-w-[720px] text-left text-sm">
-                                <thead className="border-b border-stone-200 text-xs tracking-wider text-stone-500 uppercase">
-                                    <tr>
-                                        <th className="py-3">Waktu</th>
-                                        <th>Supplier</th>
-                                        <th>Jenis</th>
-                                        <th className="text-right">Nilai</th>
-                                        <th className="text-right">Saldo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {payableTransactions.data.map((entry) => (
-                                        <tr key={entry.public_id} className="border-b border-stone-100">
-                                            <td className="py-3 text-stone-500">{ledgerDateTime(entry.occurred_at, timezone)}</td>
-                                            <td className="font-semibold">{entry.supplier_name}</td>
-                                            <td>{entry.reason === 'purchase' ? 'Pembelian' : 'Pembayaran'}</td>
-                                            <td
-                                                className={`text-right font-semibold ${entry.direction === 'increase' ? 'text-amber-700' : 'text-teal-700'}`}
-                                            >
-                                                {entry.direction === 'increase' ? '+' : '-'}
-                                                {money(entry.amount)}
-                                            </td>
-                                            <td className="text-right font-bold">{money(entry.balance_after)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="mt-5">
-                            <Pagination links={payableTransactions.links} />
-                        </div>
+                        {activeView === 'purchases' ? (
+                            <PurchaseHistory purchases={purchases} timezone={timezone} />
+                        ) : (
+                            <PayableLedger transactions={payableTransactions} timezone={timezone} />
+                        )}
                     </section>
                 </div>
             </div>
@@ -764,5 +769,162 @@ export default function PurchasingPage({
                 />
             </Suspense>
         </>
+    );
+}
+
+function DataTab({
+    active,
+    icon: Icon,
+    label,
+    count,
+    onClick,
+}: {
+    active: boolean;
+    icon: LucideIcon;
+    label: string;
+    count: number;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={onClick}
+            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-2 text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none sm:px-3 sm:text-sm ${
+                active
+                    ? 'bg-[var(--app-primary)] text-white shadow-[0_8px_20px_-14px_var(--app-primary)]'
+                    : 'text-stone-500 hover:bg-orange-50 hover:text-[var(--app-primary)]'
+            }`}
+        >
+            <Icon className="size-4 shrink-0" />
+            <span className="truncate">{label}</span>
+            <span className={`rounded-md px-1.5 py-0.5 text-[10px] tabular-nums ${active ? 'bg-white/20' : 'bg-stone-100'}`}>{count}</span>
+        </button>
+    );
+}
+
+function PurchaseHistory({ purchases, timezone }: { purchases: Page<Purchase>; timezone: string }) {
+    return (
+        <div role="tabpanel">
+            <div className="divide-y divide-stone-100">
+                {purchases.data.map((entry) => {
+                    const hasDebt = Number(entry.outstanding_amount) > 0;
+
+                    return (
+                        <article key={entry.public_id} className="px-4 py-4 sm:px-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className="truncate text-sm font-black text-[var(--app-ink)]">{entry.document_number}</p>
+                                        <span
+                                            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${
+                                                hasDebt ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                                            }`}
+                                        >
+                                            {hasDebt ? <Clock3 className="size-3" /> : <CheckCircle2 className="size-3" />}
+                                            {hasDebt ? 'Belum lunas' : 'Lunas'}
+                                        </span>
+                                    </div>
+                                    <p className="mt-1 truncate text-sm font-medium text-stone-700">{entry.supplier_name}</p>
+                                    <p className="mt-0.5 text-xs text-stone-500">
+                                        {ledgerDateTime(entry.occurred_at, timezone)}
+                                        {entry.supplier_invoice_number ? ` · Invoice ${entry.supplier_invoice_number}` : ''}
+                                    </p>
+                                </div>
+                                <div className="shrink-0 text-right">
+                                    <p className="text-sm font-black text-[var(--app-ink)] tabular-nums">{money(entry.total_amount)}</p>
+                                    {hasDebt && (
+                                        <p className="mt-1 text-xs font-bold text-amber-700 tabular-nums">
+                                            Sisa {money(entry.outstanding_amount)}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                                {entry.items.map((item, index) => (
+                                    <div
+                                        key={`${entry.public_id}-${index}`}
+                                        className="max-w-sm min-w-[13rem] rounded-xl bg-stone-50 px-3 py-2.5"
+                                    >
+                                        <p className="truncate text-xs font-bold text-stone-800">{item.product_name}</p>
+                                        <p className="mt-1 text-xs text-stone-500 tabular-nums">
+                                            {quantity(item.quantity)} {item.unit_symbol} · {money(item.landed_total)}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </article>
+                    );
+                })}
+            </div>
+            {purchases.data.length === 0 && <EmptyState icon={ReceiptText} text="Belum ada pembelian." />}
+            <div className="border-t border-stone-100 px-4 py-4">
+                <Pagination links={linksForView(purchases.links, 'purchases')} />
+            </div>
+        </div>
+    );
+}
+
+function PayableLedger({ transactions, timezone }: { transactions: Page<PayableTransaction>; timezone: string }) {
+    return (
+        <div role="tabpanel">
+            <div className="divide-y divide-stone-100">
+                {transactions.data.map((entry) => {
+                    const increase = entry.direction === 'increase';
+                    const Icon = increase ? ArrowUpRight : ArrowDownLeft;
+
+                    return (
+                        <article
+                            key={entry.public_id}
+                            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 sm:grid-cols-[auto_minmax(12rem,1fr)_minmax(10rem,auto)_minmax(9rem,auto)] sm:px-5"
+                        >
+                            <div
+                                className={`grid size-9 place-items-center rounded-xl ${
+                                    increase ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                                }`}
+                            >
+                                <Icon className="size-4" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-[var(--app-ink)]">{entry.supplier_name}</p>
+                                <p className="mt-0.5 truncate text-xs text-stone-500">{ledgerDateTime(entry.occurred_at, timezone)}</p>
+                            </div>
+                            <div className="hidden sm:block">
+                                <span
+                                    className={`rounded-md px-2 py-1 text-xs font-bold ${
+                                        increase ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                                    }`}
+                                >
+                                    {entry.reason === 'purchase' ? 'Pembelian' : 'Pembayaran'}
+                                </span>
+                            </div>
+                            <div className="text-right">
+                                <p className={`text-sm font-black tabular-nums ${increase ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                    {increase ? '+' : '-'}
+                                    {money(entry.amount)}
+                                </p>
+                                <p className="mt-0.5 text-[11px] text-stone-500 tabular-nums">Saldo {money(entry.balance_after)}</p>
+                            </div>
+                        </article>
+                    );
+                })}
+            </div>
+            {transactions.data.length === 0 && <EmptyState icon={Clock3} text="Belum ada pergerakan utang." />}
+            <div className="border-t border-stone-100 px-4 py-4">
+                <Pagination links={linksForView(transactions.links, 'payables')} />
+            </div>
+        </div>
+    );
+}
+
+function EmptyState({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
+    return (
+        <div className="grid place-items-center px-4 py-12 text-center">
+            <div className="grid size-11 place-items-center rounded-xl bg-orange-50 text-[var(--app-primary)]">
+                <Icon className="size-5" />
+            </div>
+            <p className="mt-3 text-sm font-semibold text-stone-500">{text}</p>
+        </div>
     );
 }

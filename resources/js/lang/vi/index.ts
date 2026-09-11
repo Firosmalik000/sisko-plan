@@ -3,6 +3,7 @@ import { vietnameseDynamicCatalog } from './dynamic';
 import { vietnameseExtendedCatalog } from './extended';
 import { vietnamesePlatformCatalog } from './platform';
 import { vietnameseProductCatalog } from './product';
+import { vietnamesePublicCatalog } from './public';
 import { vietnameseSharedCatalog } from './shared';
 
 export const vietnameseCatalog: Record<string, string> = {
@@ -593,7 +594,7 @@ export const vietnameseCatalog: Record<string, string> = {
     'Periode transaksi': 'Kỳ giao dịch',
     'Mulai transaksi pertama': 'Bắt đầu giao dịch đầu tiên',
     'Pendapatan neto': 'Doanh thu thuần',
-    'HPP / laba kotor neto': 'Giá vốn / lợi nhuận gộp thuần',
+    'HPP / laba kotor neto': 'Giá vốn hàng bán / lợi nhuận gộp thuần',
     Invoice: 'Hóa đơn',
     Retur: 'Trả hàng',
     Pilih: 'Chọn',
@@ -641,6 +642,7 @@ export const vietnameseCatalog: Record<string, string> = {
     ...vietnamesePlatformCatalog,
     ...vietnameseSharedCatalog,
     ...vietnameseProductCatalog,
+    ...vietnamesePublicCatalog,
     ...vietnameseDynamicCatalog,
     'Filter transaksi': 'Bộ lọc giao dịch',
     'Reset filter': 'Đặt lại bộ lọc',

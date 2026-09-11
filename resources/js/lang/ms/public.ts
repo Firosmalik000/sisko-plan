@@ -135,4 +135,6 @@ export const landingMalayOverrides: Record<string, string> = {
     'Scan penjualannya. Pegang kendali tokonya.': 'Imbas jualan. Kawal kedai dengan yakin.',
     'Mulai kelola toko': 'Mula mengurus kedai',
     'Data setiap toko tetap terpisah': 'Data setiap kedai kekal berasingan',
+    'Minyak Goreng 2 L': 'Minyak Masak 2 L',
+    'Gula Pasir 1 kg': 'Gula Putih 1 kg',
 };

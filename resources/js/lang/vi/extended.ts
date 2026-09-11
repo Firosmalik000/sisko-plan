@@ -85,7 +85,7 @@ export const vietnameseExtendedCatalog: Record<string, string> = {
     'Estimasi total beli': 'Tổng tiền mua ước tính',
     'Estimasi total': 'Tổng ước tính',
     'Forgot password': 'Quên mật khẩu',
-    'HPP rata-rata/unit': 'Giá vốn trung bình/đơn vị',
+    'HPP rata-rata/unit': 'Giá vốn bình quân/đơn vị',
     'HPP varian': 'Giá vốn biến thể',
     'Halaman terlalu lama terbuka. Muat ulang untuk mendapatkan sesi yang baru.': 'Trang đã mở quá lâu. Hãy tải lại để bắt đầu phiên mới.',
     'Hasil terbaca langsung diperiksa': 'Kết quả quét được kiểm tra ngay',
