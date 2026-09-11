@@ -75,7 +75,6 @@ function XsistenHeroVisual() {
             animate="visible"
             variants={revealRight}
         >
-            <span className="scan-demo-label">{translate('Data contoh')}</span>
             <m.img
                 className="xsisten-hero-art"
                 src="/assets/xsisten-hero.png"
