@@ -3,7 +3,6 @@
 namespace App\Support\Authentication;
 
 use App\Models\User;
-use Illuminate\Support\Carbon;
 
 /**
  * Penerbitan Sanctum token per-perangkat dengan envelope respons konsisten
@@ -31,10 +30,6 @@ trait IssuesDeviceTokens
             'device_id' => $deviceId,
         ])->save();
 
-        $grantedAt = Carbon::now();
-        $ttlSeconds = (int) config('mobile.offline_lease_seconds');
-        $expiresAt = $grantedAt->copy()->addSeconds($ttlSeconds);
-
         return [
             'token' => $newToken->plainTextToken,
             'device_id' => $deviceId,
@@ -44,11 +39,7 @@ trait IssuesDeviceTokens
                 'name' => $user->name,
                 'email' => $user->email,
             ],
-            'offline_lease' => [
-                'granted_at' => $grantedAt->toIso8601ZuluString(),
-                'expires_at' => $expiresAt->toIso8601ZuluString(),
-                'ttl_seconds' => $ttlSeconds,
-            ],
+            'offline_lease' => OfflineLease::issue(),
         ];
     }
 }
