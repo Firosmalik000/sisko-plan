@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\Sales\SaleIndexController;
 use App\Http\Controllers\Api\V1\Sales\SaleShowController;
 use App\Http\Controllers\Api\V1\Sales\SaleStoreController;
+use App\Http\Controllers\Api\V1\Scanner\DiscoveriesController;
+use App\Http\Controllers\Api\V1\Scanner\QuotaController;
+use App\Http\Controllers\Api\V1\Scanner\RecognitionsController;
 use App\Http\Controllers\Api\V1\Stores\BootstrapController;
 use App\Http\Controllers\Api\V1\Stores\ProductIndexController;
 use App\Http\Controllers\Api\V1\Stores\ProductMutationController;
@@ -70,4 +73,9 @@ Route::middleware(['auth:sanctum', 'store.membership'])
         Route::post('sales', SaleStoreController::class);
         Route::get('sales', SaleIndexController::class);
         Route::get('sales/{sale}', SaleShowController::class);
+
+        // Scanner AI: kuota (store.read) + proxy recognition/discovery (scan.use).
+        Route::get('scanner/quota', QuotaController::class);
+        Route::post('scanner/recognitions', RecognitionsController::class);
+        Route::post('scanner/discoveries', DiscoveriesController::class);
     });
