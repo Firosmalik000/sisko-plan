@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const source = readFileSync(new URL('../../resources/js/pages/customer/master-data/products/index.tsx', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../../resources/js/features/customer/products/products-page.tsx', import.meta.url), 'utf8');
 
 test('product barcode supports manual entry alongside camera scanning', () => {
     assert.match(source, /aria-label="Barcode \/ QR"/);

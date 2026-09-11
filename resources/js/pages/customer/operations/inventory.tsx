@@ -1,10 +1,10 @@
-import { Head } from '@inertiajs/react';
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, Boxes, Layers3, Search, Warehouse } from 'lucide-react';
 import { useState } from 'react';
-import { fieldClass, LedgerCard, ledgerDateTime, money, OperationsShell, quantity } from '@/components/operations-shell';
+import { fieldClass, LedgerCard, OperationsShell } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
-import { formatCompactMoney, localeTag } from '@/lib/currency';
+import { formatCompactMoney, formatMoney as money, formatQuantity as quantity, localeTag } from '@/lib/currency';
+import { ledgerDateTime } from '@/lib/date-time';
 import { translate, useTranslation } from '@/lib/i18n';
 
 type Product = {
@@ -92,7 +92,6 @@ export default function InventoryPage({
 
     return (
         <>
-            <Head title="Persediaan" />
             <OperationsShell active="/operations/inventory" eyebrow="Barang" title="Persediaan" description="">
                 <section className="grid grid-cols-3 divide-x divide-[var(--app-ink)]/8 rounded-[1.25rem] border border-[var(--app-ink)]/8 bg-white px-1 py-3 shadow-sm sm:px-3">
                     <InventoryMetric icon={Boxes} label="Item stok" value={String(products.length)} />

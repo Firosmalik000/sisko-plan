@@ -126,6 +126,17 @@ if (
     throw new Error('Dynamic label maps and computed labels must be translated when they are resolved.');
 }
 
+const dynamicTemplateProbe = babel.transformSync('const button = <button>{`Bayar ${money(total)}`}</button>;', {
+    configFile: false,
+    babelrc: false,
+    parserOpts: { plugins: ['jsx'] },
+    plugins: [translateUiLiterals],
+})?.code;
+
+if (!dynamicTemplateProbe?.includes('__translateUi("Bayar ")') || dynamicTemplateProbe.includes('__translateUi(`Bayar ${money(total)}`)')) {
+    throw new Error('Rendered template strings must translate their human fragments before inserting dynamic values.');
+}
+
 const catalogRoot = path.join(sourceRoot, 'lang');
 const translatedProps = new Set([
     'aria-label',

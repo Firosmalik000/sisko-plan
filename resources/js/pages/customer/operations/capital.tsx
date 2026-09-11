@@ -1,22 +1,15 @@
-import { Head, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { ArrowDownLeft, ArrowUpRight, Boxes, CircleDollarSign, Plus, ReceiptText, WalletCards } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import {
-    buttonClass,
-    currentDateTime,
-    fieldClass,
-    ledgerDateTime,
-    money,
-    OperationsShell,
-    postingToken,
-    quantity,
-} from '@/components/operations-shell';
+import { buttonClass, fieldClass, OperationsShell } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { currencySymbol, localeTag } from '@/lib/currency';
+import { currencySymbol, formatMoney as money, formatQuantity as quantity, localeTag } from '@/lib/currency';
+import { currentDateTime, ledgerDateTime } from '@/lib/date-time';
 import { translate } from '@/lib/i18n';
+import { postingToken } from '@/lib/posting-token';
 
 type CapitalType = 'cash_contribution' | 'cash_withdrawal' | 'inventory_contribution' | 'inventory_withdrawal';
 
@@ -168,7 +161,6 @@ export default function CapitalPage({
 
     return (
         <>
-            <Head title="Modal Pemilik" />
             <OperationsShell active="/operations/capital" eyebrow="Operasional" title="Modal Pemilik" description="">
                 <section className="overflow-hidden rounded-[1.35rem] bg-[var(--app-ink)] text-white shadow-[0_12px_32px_rgba(18,61,54,0.13)]">
                     <div className="relative px-4 py-5 sm:px-6">

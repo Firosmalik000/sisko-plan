@@ -2,8 +2,8 @@ import { Head, router } from '@inertiajs/react';
 import { Boxes, CalendarDays, CircleDollarSign, HandCoins, LineChart, PackageSearch } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { fieldClass, money, quantity } from '@/components/operations-shell';
-import { formatCompactMoney, localeTag } from '@/lib/currency';
+import { fieldClass } from '@/components/operations-shell';
+import { formatCompactMoney, formatMoney as money, formatQuantity as quantity, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
 
 type Performance = {

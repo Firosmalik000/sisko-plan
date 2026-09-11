@@ -1,6 +1,6 @@
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/components/reference-data-page';
-import type { ReferenceRecord } from '@/components/reference-data-page';
+import { ReferenceDataPage } from '@/features/customer/master-data/reference-data-page';
+import type { ReferenceRecord } from '@/features/customer/master-data/reference-data-page';
 import { translate } from '@/lib/i18n';
 import { referenceLabel } from '@/lib/unit-references';
 import type { CategoryReference } from '@/lib/unit-references';
@@ -77,10 +77,3 @@ export default function CategoriesIndex({
         />
     );
 }
-
-CategoriesIndex.layout = {
-    breadcrumbs: [
-        { title: 'Master Data', href: '/master-data/products' },
-        { title: 'Kategori', href: '/master-data/categories' },
-    ],
-};
