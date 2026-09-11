@@ -1,0 +1,541 @@
+openapi: 3.1.0
+info:
+  title: XSISTEN POS Mobile API
+  version: "1.0.0"
+  description: >
+    Kontrak API mobile `/api/v1` untuk XSISTEN POS (backend Laravel `sisko-plan`).
+    Semua respons memakai envelope standar `{ data, meta }` untuk sukses dan
+    `{ error, meta }` untuk gagal. Nilai uang selalu string decimal scale 4 dan
+    quantity string decimal scale 6 (tanpa float). Identifier eksternal memakai
+    ULID (`public_id`); integer internal tidak diekspos. Waktu disimpan UTC dan
+    diekspos ISO 8601 Zulu. Server bersifat otoritatif.
+
+    Strategi migrasi & kompatibilitas dijelaskan di `docs/api/README.md`.
+
+servers:
+  - url: https://{host}/api/v1
+    variables:
+      host:
+        default: app.xsisten.test
+
+tags:
+  - name: Auth
+  - name: Account
+  - name: Stores
+  - name: Sync
+  - name: Products
+  - name: Sales
+  - name: Scanner
+  - name: Devices
+  - name: Notifications
+  - name: Distribution
+
+security:
+  - sanctumToken: []
+
+paths:
+  /auth/tokens:
+    post:
+      tags: [Auth]
+      summary: Terbitkan token per-perangkat (login email/password)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, device_id]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                device_id: { type: string, maxLength: 255 }
+                device_name: { type: string, nullable: true }
+      responses:
+        "200": { $ref: "#/components/responses/TokenIssued" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/tokens/current:
+    delete:
+      tags: [Auth]
+      summary: Cabut token perangkat saat ini (logout)
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /auth/social/google:
+    post:
+      tags: [Auth]
+      summary: Login sosial Google (verifikasi ID token server-side)
+      security: []
+      requestBody: { $ref: "#/components/requestBodies/SocialToken" }
+      responses:
+        "200": { $ref: "#/components/responses/TokenIssued" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /auth/social/apple:
+    post:
+      tags: [Auth]
+      summary: Login sosial Apple (verifikasi identity token server-side)
+      security: []
+      requestBody: { $ref: "#/components/requestBodies/SocialToken" }
+      responses:
+        "200": { $ref: "#/components/responses/TokenIssued" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /me:
+    get:
+      tags: [Account]
+      summary: Identitas pengguna + capability ringkas
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /me/profile:
+    patch:
+      tags: [Account]
+      summary: Perbarui profil (nama/email, mendukung Unicode)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 160 }
+                email: { type: string, format: email, maxLength: 254 }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /stores:
+    get:
+      tags: [Stores]
+      summary: Daftar toko dengan membership aktif
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /stores/{store}/bootstrap:
+    get:
+      tags: [Stores]
+      summary: Snapshot bootstrap toko + cursor awal + offline lease
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /stores/{store}/settings:
+    patch:
+      tags: [Stores]
+      summary: Perbarui identitas toko + pengaturan struk (owner)
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 160 }
+                phone: { type: string, nullable: true, maxLength: 30 }
+                email: { type: string, format: email, nullable: true }
+                address: { type: string, nullable: true, maxLength: 500 }
+                timezone: { type: string, maxLength: 50 }
+                currency: { type: string, minLength: 3, maxLength: 3 }
+                locale: { type: string, maxLength: 10 }
+                receipt_header: { type: string, nullable: true, maxLength: 120 }
+                receipt_footer: { type: string, nullable: true, maxLength: 240 }
+                receipt_paper_size: { type: string, enum: ["58mm", "80mm"] }
+                receipt_show_address: { type: boolean }
+                receipt_show_cashier: { type: boolean }
+                theme_color: { type: string, pattern: "^#[0-9A-Fa-f]{6}$" }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /stores/{store}/sync/pull:
+    get:
+      tags: [Sync]
+      summary: Tarik delta perubahan (changes, tombstones, next_cursor)
+      parameters:
+        - { $ref: "#/components/parameters/StorePublicId" }
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /stores/{store}/sync/push:
+    post:
+      tags: [Sync]
+      summary: Kirim batch operasi offline (registry tertutup, idempotent)
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operations]
+              properties:
+                batch_id: { type: string }
+                operations:
+                  type: array
+                  items:
+                    type: object
+                    required: [client_operation_id, operation_type, payload]
+                    properties:
+                      client_operation_id: { type: string, maxLength: 64 }
+                      operation_type: { type: string, example: "sale.create" }
+                      payload: { type: object, additionalProperties: true }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /stores/{store}/products:
+    get:
+      tags: [Products]
+      summary: Daftar produk + ringkasan stok (cursor pagination)
+      parameters:
+        - { $ref: "#/components/parameters/StorePublicId" }
+        - name: query
+          in: query
+          schema: { type: string }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Products]
+      summary: Buat produk (ability product.write)
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      responses:
+        "201": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /stores/{store}/products/{product}:
+    patch:
+      tags: [Products]
+      summary: Perbarui produk (ability product.write)
+      parameters:
+        - { $ref: "#/components/parameters/StorePublicId" }
+        - name: product
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /stores/{store}/sales:
+    get:
+      tags: [Sales]
+      summary: Riwayat penjualan (cursor pagination)
+      parameters:
+        - { $ref: "#/components/parameters/StorePublicId" }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Sales]
+      summary: Posting penjualan online (ability sale.create, idempotent)
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaleCreate" }
+      responses:
+        "201": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /stores/{store}/sales/{sale}:
+    get:
+      tags: [Sales]
+      summary: Detail penjualan untuk reprint
+      parameters:
+        - { $ref: "#/components/parameters/StorePublicId" }
+        - { $ref: "#/components/parameters/SalePublicId" }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /stores/{store}/sales/{sale}/reconcile:
+    post:
+      tags: [Sales]
+      summary: Rekonsiliasi sale needs_attention (owner, ability sale.reconcile)
+      description: >
+        Menyelesaikan sale bertanda konflik tanpa mengubah jumlah dibayar secara
+        diam-diam dan tanpa membuat produk/stok bayangan. `accept-snapshot`
+        menerima harga otoritatif server (audit only); `reversal` memposting
+        reversal penuh via Action retur yang sama.
+      parameters:
+        - { $ref: "#/components/parameters/StorePublicId" }
+        - { $ref: "#/components/parameters/SalePublicId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, reason, client_recorded_at, client_operation_id]
+              properties:
+                action: { type: string, enum: ["accept-snapshot", "reversal"] }
+                reason: { type: string, maxLength: 500 }
+                client_recorded_at: { type: string, format: date-time }
+                client_operation_id: { type: string, maxLength: 64 }
+                local_price_snapshot: { type: string, description: "Decimal scale 4" }
+                catalog_revision: { type: integer }
+                account_public_id: { type: string, description: "Wajib untuk reversal" }
+                occurred_at: { type: string, format: date-time, description: "Wajib untuk reversal" }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "201": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /stores/{store}/scanner/quota:
+    get:
+      tags: [Scanner]
+      summary: Kuota AI scanner (used/limit/remaining/reset)
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /stores/{store}/scanner/recognitions:
+    post:
+      tags: [Scanner]
+      summary: Proxy recognition AI (ability scan.use, kuota idempotent)
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /stores/{store}/scanner/discoveries:
+    post:
+      tags: [Scanner]
+      summary: Proxy discovery AI (ability scan.use)
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /stores/{store}/notifications:
+    get:
+      tags: [Notifications]
+      summary: Notification center store-scoped
+      parameters: [{ $ref: "#/components/parameters/StorePublicId" }]
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /devices:
+    post:
+      tags: [Devices]
+      summary: Registrasi/update token push (FCM/APNs)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_id, platform, push_token]
+              properties:
+                device_id: { type: string, maxLength: 255 }
+                platform: { type: string, enum: ["android", "ios"] }
+                push_token: { type: string, maxLength: 4096 }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+
+  /devices/{device}:
+    delete:
+      tags: [Devices]
+      summary: Cabut registrasi push perangkat
+      parameters:
+        - name: device
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /distribution/catalog:
+    get:
+      tags: [Distribution]
+      summary: Katalog distribusi market-aware (read-only)
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /distribution/catalog/{item}:
+    get:
+      tags: [Distribution]
+      summary: Detail item katalog distribusi
+      parameters:
+        - name: item
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Success" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    sanctumToken:
+      type: http
+      scheme: bearer
+      description: Sanctum personal access token per-perangkat dengan abilities.
+
+  parameters:
+    StorePublicId:
+      name: store
+      in: path
+      required: true
+      description: ULID toko (public_id)
+      schema: { type: string }
+    SalePublicId:
+      name: sale
+      in: path
+      required: true
+      description: ULID penjualan (public_id)
+      schema: { type: string }
+
+  requestBodies:
+    SocialToken:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [identity_token, device_id]
+            properties:
+              identity_token: { type: string }
+              device_id: { type: string, maxLength: 255 }
+              device_name: { type: string, nullable: true }
+
+  schemas:
+    Meta:
+      type: object
+      required: [request_id]
+      properties:
+        request_id: { type: string, description: "ULID korelasi" }
+    Error:
+      type: object
+      required: [code, message, fields, retryable]
+      properties:
+        code:
+          type: string
+          enum: [VALIDATION_ERROR, UNAUTHENTICATED, FORBIDDEN, NOT_FOUND, RATE_LIMITED, IDEMPOTENCY_CONFLICT, UNSUPPORTED_OPERATION, INTERNAL]
+        message: { type: string }
+        fields: { type: object, additionalProperties: true }
+        retryable: { type: boolean }
+    SuccessEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data: {}
+        meta: { $ref: "#/components/schemas/Meta" }
+    ErrorEnvelope:
+      type: object
+      required: [error, meta]
+      properties:
+        error: { $ref: "#/components/schemas/Error" }
+        meta: { $ref: "#/components/schemas/Meta" }
+    SaleCreate:
+      type: object
+      required: [client_operation_id, occurred_at, sales_channel, payment_method, transaction_discount, paid_amount, items]
+      properties:
+        client_operation_id: { type: string, maxLength: 64 }
+        occurred_at: { type: string, format: date-time }
+        sales_channel: { type: string, enum: ["in_store", "marketplace"] }
+        payment_method:
+          type: string
+          enum: ["cash", "qris", "qr_payment", "bank_transfer", "e_wallet", "marketplace"]
+        account_public_id: { type: string, nullable: true }
+        transaction_discount: { type: string, description: "Decimal scale 4" }
+        paid_amount: { type: string, description: "Decimal scale 4" }
+        customer_name: { type: string, nullable: true, maxLength: 160 }
+        customer_phone: { type: string, nullable: true, maxLength: 30 }
+        customer_email: { type: string, format: email, nullable: true }
+        marketplace_code: { type: string, nullable: true }
+        external_order_number: { type: string, nullable: true }
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [product_unit_id, quantity, item_discount]
+            properties:
+              product_unit_id: { type: string }
+              quantity: { type: string, description: "Decimal scale 6" }
+              item_discount: { type: string, description: "Decimal scale 4" }
+
+  responses:
+    Success:
+      description: Sukses
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/SuccessEnvelope" }
+    TokenIssued:
+      description: Token diterbitkan
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/SuccessEnvelope" }
+    ValidationError:
+      description: Payload tidak valid (retryable=false)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Unauthenticated:
+      description: Token hilang/invalid/revoked (retryable=false)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Forbidden:
+      description: Ability/policy tidak mencukupi (retryable=false)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    NotFound:
+      description: Resource tidak ditemukan / lintas-tenant (retryable=false)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    Conflict:
+      description: Konflik idempotency (retryable=false)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    RateLimited:
+      description: Melebihi rate limit (retryable=true)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }

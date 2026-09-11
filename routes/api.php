@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Distribution\CatalogIndexController;
 use App\Http\Controllers\Api\V1\Distribution\CatalogShowController;
 use App\Http\Controllers\Api\V1\Notifications\NotificationIndexController;
 use App\Http\Controllers\Api\V1\Sales\SaleIndexController;
+use App\Http\Controllers\Api\V1\Sales\SaleReconcileController;
 use App\Http\Controllers\Api\V1\Sales\SaleShowController;
 use App\Http\Controllers\Api\V1\Sales\SaleStoreController;
 use App\Http\Controllers\Api\V1\Scanner\DiscoveriesController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\Api\V1\Stores\BootstrapController;
 use App\Http\Controllers\Api\V1\Stores\ProductIndexController;
 use App\Http\Controllers\Api\V1\Stores\ProductMutationController;
 use App\Http\Controllers\Api\V1\Stores\StoreIndexController;
+use App\Http\Controllers\Api\V1\Stores\StoreSettingsController;
 use App\Http\Controllers\Api\V1\Stores\SyncPullController;
 use App\Http\Controllers\Api\V1\Stores\SyncPushController;
 use Illuminate\Http\Request;
@@ -32,25 +34,29 @@ Route::get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 | Prefix `api/v1` didaftarkan di bootstrap/app.php; hanya path relatif di sini.
 */
-Route::post('auth/tokens', [TokenController::class, 'store']);
+Route::post('auth/tokens', [TokenController::class, 'store'])
+    ->middleware('throttle:api-auth');
 Route::delete('auth/tokens/current', [TokenController::class, 'destroyCurrent'])
-    ->middleware('auth:sanctum');
+    ->middleware(['auth:sanctum', 'throttle:api-auth']);
 
 /*
 |--------------------------------------------------------------------------
 | Login sosial mobile (Req 3, design §3.2) — verifikasi credential server-side
 |--------------------------------------------------------------------------
 */
-Route::post('auth/social/google', [SocialTokenController::class, 'google']);
-Route::post('auth/social/apple', [SocialTokenController::class, 'apple']);
+Route::post('auth/social/google', [SocialTokenController::class, 'google'])
+    ->middleware('throttle:api-auth');
+Route::post('auth/social/apple', [SocialTokenController::class, 'apple'])
+    ->middleware('throttle:api-auth');
 
 /*
 |--------------------------------------------------------------------------
 | Identitas & akses toko (Req 4, design §3.2)
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth:sanctum')->group(function (): void {
+Route::middleware(['auth:sanctum', 'throttle:api-read'])->group(function (): void {
     Route::get('me', MeController::class);
+    Route::patch('me/profile', [MeController::class, 'update']);
     Route::get('stores', StoreIndexController::class);
 
     // Registrasi push per-perangkat (Req 15.1/15.6) — bukan store-scoped.
@@ -73,25 +79,34 @@ Route::middleware('auth:sanctum')->group(function (): void {
 Route::middleware(['auth:sanctum', 'store.membership'])
     ->prefix('stores/{store}')
     ->group(function (): void {
-        Route::get('bootstrap', BootstrapController::class);
-        Route::get('sync/pull', SyncPullController::class);
-        Route::post('sync/push', SyncPushController::class);
+        // Read/bootstrap — limiter longgar `api-read`.
+        Route::middleware('throttle:api-read')->group(function (): void {
+            Route::get('bootstrap', BootstrapController::class);
+            Route::get('products', ProductIndexController::class);
+            Route::get('sales', SaleIndexController::class);
+            Route::get('sales/{sale}', SaleShowController::class);
+            Route::get('scanner/quota', QuotaController::class);
+            Route::post('scanner/recognitions', RecognitionsController::class);
+            Route::post('scanner/discoveries', DiscoveriesController::class);
+            Route::get('notifications', NotificationIndexController::class);
 
-        // Produk: read/search (ability store.read) + mutasi (ability product.write).
-        Route::get('products', ProductIndexController::class);
-        Route::post('products', [ProductMutationController::class, 'store']);
-        Route::patch('products/{product}', [ProductMutationController::class, 'update']);
+            // Mutasi produk (ability product.write) — bagian read/tooling toko.
+            Route::post('products', [ProductMutationController::class, 'store']);
+            Route::patch('products/{product}', [ProductMutationController::class, 'update']);
 
-        // Penjualan: online sale (ability sale.create) + riwayat/detail (store.read).
-        Route::post('sales', SaleStoreController::class);
-        Route::get('sales', SaleIndexController::class);
-        Route::get('sales/{sale}', SaleShowController::class);
+            // Pengaturan toko + struk (ability store.settings/owner, Req 21.2).
+            Route::patch('settings', StoreSettingsController::class);
+        });
 
-        // Scanner AI: kuota (store.read) + proxy recognition/discovery (scan.use).
-        Route::get('scanner/quota', QuotaController::class);
-        Route::post('scanner/recognitions', RecognitionsController::class);
-        Route::post('scanner/discoveries', DiscoveriesController::class);
+        // Sinkronisasi (pull/push) — limiter sedang `api-sync`.
+        Route::middleware('throttle:api-sync')->group(function (): void {
+            Route::get('sync/pull', SyncPullController::class);
+            Route::post('sync/push', SyncPushController::class);
+        });
 
-        // Notification center store-scoped (ability store.read, Req 15.2).
-        Route::get('notifications', NotificationIndexController::class);
+        // Penjualan online + rekonsiliasi konflik — limiter sedang `api-sales`.
+        Route::middleware('throttle:api-sales')->group(function (): void {
+            Route::post('sales', SaleStoreController::class);
+            Route::post('sales/{sale}/reconcile', SaleReconcileController::class);
+        });
     });

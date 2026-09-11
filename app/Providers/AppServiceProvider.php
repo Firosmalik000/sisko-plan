@@ -6,6 +6,7 @@ use App\Enums\PlatformAdminRole;
 use App\Models\User;
 use App\Services\Auth\DefaultSocialTokenVerifier;
 use App\Services\Auth\SocialTokenVerifier;
+use App\Support\Api\ApiRateLimiters;
 use App\Support\CurrentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -73,6 +74,9 @@ class AppServiceProvider extends ServiceProvider
                 ($request->user()?->getAuthIdentifier() ?? $request->ip()).'|platform',
             );
         });
+
+        // Named limiter API mobile /api/v1 (Req 23.4, design §16).
+        ApiRateLimiters::register();
 
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
