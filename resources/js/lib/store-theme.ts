@@ -29,16 +29,19 @@ function contrastColor(hex: string) {
     return luminance > 0.64 ? '#2d2928' : '#ffffff';
 }
 
-export function storeThemeVariables(color = '#ee4d2d'): CSSProperties {
+export function storeThemeVariables(color = '#ee4d2d', appearance: 'light' | 'dark' = 'light'): CSSProperties {
     const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#ee4d2d';
-    const foreground = '#2d2928';
-    const surface = '#fffaf7';
-    const soft = mix(safeColor, '#ffffff', 0.9);
-    const softStrong = mix(safeColor, '#ffffff', 0.8);
-    const border = mix(safeColor, '#ffffff', 0.76);
+    const dark = appearance === 'dark';
+    const foreground = dark ? '#f5efec' : '#2d2928';
+    const surface = dark ? '#201c1b' : '#fffaf7';
+    const soft = dark ? mix(safeColor, '#201c1b', 0.86) : mix(safeColor, '#ffffff', 0.9);
+    const softStrong = dark ? mix(safeColor, '#201c1b', 0.72) : mix(safeColor, '#ffffff', 0.8);
+    const border = dark ? '#51443f' : mix(safeColor, '#ffffff', 0.76);
     const primaryForeground = contrastColor(safeColor);
 
     return {
+        colorScheme: appearance,
+        fontFamily: '"Inter", ui-sans-serif, system-ui, sans-serif',
         '--app-primary': safeColor,
         '--app-primary-foreground': primaryForeground,
         '--app-shadow': `${safeColor}38`,
@@ -47,20 +50,20 @@ export function storeThemeVariables(color = '#ee4d2d'): CSSProperties {
         '--app-soft-strong': softStrong,
         '--background': surface,
         '--foreground': foreground,
-        '--card': '#ffffff',
+        '--card': dark ? '#2b2523' : '#ffffff',
         '--card-foreground': foreground,
-        '--popover': '#ffffff',
+        '--popover': dark ? '#2b2523' : '#ffffff',
         '--popover-foreground': foreground,
         '--primary': safeColor,
         '--primary-foreground': primaryForeground,
         '--secondary': soft,
         '--secondary-foreground': foreground,
-        '--muted': '#f8ede9',
-        '--muted-foreground': '#756d6a',
+        '--muted': dark ? '#352e2b' : '#f8ede9',
+        '--muted-foreground': dark ? '#c1b3ad' : '#756d6a',
         '--accent': softStrong,
         '--accent-foreground': foreground,
         '--border': border,
-        '--input': mix(safeColor, '#ffffff', 0.68),
+        '--input': dark ? '#6a5951' : mix(safeColor, '#ffffff', 0.68),
         '--ring': safeColor,
         '--sidebar': surface,
         '--sidebar-foreground': foreground,
@@ -91,6 +94,14 @@ export function previewStoreTheme(color: string) {
         return;
     }
 
-    const variables = storeThemeVariables(color) as Record<string, string>;
-    Object.entries(variables).forEach(([name, value]) => workspace.style.setProperty(name, value));
+    const variables = storeThemeVariables(color, document.documentElement.classList.contains('dark') ? 'dark' : 'light') as Record<
+        string,
+        string
+    >;
+    Object.entries(variables).forEach(([name, value]) =>
+        workspace.style.setProperty(
+            name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
+            value,
+        ),
+    );
 }

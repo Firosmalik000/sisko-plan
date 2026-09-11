@@ -5,7 +5,6 @@ import {
     ArrowUpRight,
     BarChart3,
     Boxes,
-    Building2,
     CircleDollarSign,
     Clock3,
     CreditCard,
@@ -14,6 +13,8 @@ import {
 } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import { money, quantity } from '@/components/operations-shell';
+import { PageHeader } from '@/components/page-header';
+import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
@@ -105,19 +106,9 @@ export default function Dashboard(props: DashboardProps) {
     return (
         <>
             <Head title="Beranda" />
-            <main className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 text-[var(--app-ink)] sm:px-5 sm:py-5 lg:px-8">
-                <div className="mx-auto max-w-7xl space-y-4">
-                    <header className="flex flex-wrap items-end justify-between gap-3 px-1">
-                        <div>
-                            <h1 className="text-2xl font-black tracking-[-0.045em] text-[var(--app-ink)]">Ringkasan Bisnis</h1>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="hidden items-center gap-2 rounded-full border border-[var(--app-ink)]/8 bg-white px-3 py-2 text-xs font-bold shadow-sm sm:flex">
-                                <Building2 className="size-3.5 text-[var(--app-primary)]" />
-                                {activeStore.name}
-                            </div>
-                        </div>
-                    </header>
+            <main className="min-h-full px-4 py-6 text-foreground sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6">
+                    <PageHeader title={translate('Ringkasan Bisnis')} />
 
                     <CashflowHighlight period={period} performance={performance} transactions={transactions} change={revenueChange} />
 
@@ -164,8 +155,8 @@ function CashflowHighlight({
     ];
 
     return (
-        <section className="overflow-hidden rounded-[1.4rem] border border-[var(--app-ink)]/10 bg-white p-4 shadow-sm sm:p-5 lg:grid lg:grid-cols-[1.15fr_.85fr] lg:items-stretch lg:gap-5">
-            <div className="relative overflow-hidden rounded-[1.1rem] bg-[linear-gradient(135deg,var(--app-soft-strong),#fff3ef)] p-4 text-[var(--app-ink)] sm:p-5">
+        <section className="overflow-hidden rounded-2xl bg-secondary lg:grid lg:grid-cols-[1.15fr_.85fr] lg:items-stretch">
+            <div className="relative overflow-hidden bg-accent p-4 text-[var(--app-ink)] sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">Uang Masuk</p>
@@ -186,7 +177,7 @@ function CashflowHighlight({
                                 )
                             }
                         >
-                            <SelectTrigger className="h-9 w-[9.5rem] rounded-xl border-[var(--app-ink)]/10 bg-white px-3 text-xs font-bold text-[var(--app-ink)] shadow-none focus:ring-[var(--app-primary)]/20">
+                            <SelectTrigger className="h-9 w-[9.5rem] rounded-xl border-[var(--app-ink)]/10 bg-card px-3 text-xs font-bold text-[var(--app-ink)] shadow-none focus:ring-[var(--app-primary)]/20">
                                 <SelectValue placeholder="Pilih periode" />
                             </SelectTrigger>
                             <SelectContent>
@@ -199,19 +190,19 @@ function CashflowHighlight({
                         </Select>
                     </div>
                 </div>
-                <p className="mt-5 text-3xl font-black tracking-[-0.055em] sm:text-4xl">{money(performance.net_revenue)}</p>
+                <p className="mt-5 text-3xl font-semibold tracking-[-0.055em] sm:text-4xl">{money(performance.net_revenue)}</p>
                 <div className="mt-2 flex items-center gap-2 text-[11px] font-bold text-[var(--muted-foreground)]">
                     <CircleDollarSign className="size-4" />
                     Penjualan bersih
                 </div>
             </div>
-            <div className="mt-3 grid grid-cols-3 divide-x divide-[var(--app-ink)]/10 rounded-[1.1rem] bg-[#fff3ef] px-1 py-3 text-[var(--app-ink)] lg:mt-0 lg:items-center lg:px-2">
+            <div className="mt-3 grid grid-cols-3 divide-x divide-[var(--app-ink)]/10 rounded-[1.1rem] bg-secondary px-1 py-3 text-[var(--app-ink)] lg:mt-0 lg:items-center lg:px-2">
                 {cards.map((card) => (
                     <div key={card.label} className="min-w-0 px-2 text-center sm:px-4 lg:text-left">
                         <p className="truncate text-[9px] font-bold tracking-wide text-[var(--muted-foreground)] uppercase sm:text-[10px]">
                             {translate(card.label)}
                         </p>
-                        <p className="mt-1.5 truncate text-sm font-black tracking-[-0.035em] sm:text-lg">{card.value}</p>
+                        <p className="mt-1.5 truncate text-sm font-semibold tracking-[-0.035em] sm:text-lg">{card.value}</p>
                     </div>
                 ))}
             </div>
@@ -225,7 +216,7 @@ function ChangeBadge({ change }: { change: { direction: 'up' | 'down' | 'flat'; 
 
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-black ${change.direction === 'down' ? 'bg-[#f6e4da] text-[#9b5535]' : 'bg-white text-[var(--app-primary)]'}`}
+            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold ${change.direction === 'down' ? 'bg-[#f6e4da] text-[#9b5535]' : 'bg-card text-[var(--app-primary)]'}`}
         >
             <Icon className="size-3" /> {translate(label)} {change.percentage}%
         </span>
@@ -250,14 +241,14 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
     const totalTransactions = data.reduce((sum, item) => sum + item.transactions, 0);
 
     return (
-        <article className="overflow-hidden rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
+        <Card className="gap-0 overflow-hidden rounded-2xl border-0 p-4 shadow-none sm:p-6">
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">{translate(label)}</p>
-                    <h2 className="mt-1 text-lg font-black tracking-[-0.03em] sm:text-xl">Tren Penjualan</h2>
+                    <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em] sm:text-xl">Tren Penjualan</h2>
                 </div>
                 <div className="text-right">
-                    <p className="text-base font-black text-[var(--app-primary)] sm:text-lg">{compactMoney(total)}</p>
+                    <p className="text-base font-semibold text-[var(--app-primary)] sm:text-lg">{compactMoney(total)}</p>
                     <p className="text-[11px] font-semibold text-[var(--muted-foreground)]">{totalTransactions} transaksi</p>
                 </div>
             </div>
@@ -298,7 +289,7 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
                                 cx={point.x}
                                 cy={point.y}
                                 r="4"
-                                fill="#fff"
+                                fill="var(--card)"
                                 stroke="var(--app-primary)"
                                 strokeWidth="3"
                                 vectorEffect="non-scaling-stroke"
@@ -313,17 +304,17 @@ function SalesChart({ data, label }: { data: SalesTrend[]; label: string }) {
                 <span>{data.length ? dateLabel(data[Math.floor(data.length / 2)].date) : '-'}</span>
                 <span>{data.at(-1) ? dateLabel(data.at(-1)!.date) : '-'}</span>
             </div>
-        </article>
+        </Card>
     );
 }
 
 function BusinessPosition({ position }: { position: Position }) {
     return (
-        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
+        <Card className="gap-0 rounded-2xl border-0 p-4 shadow-none sm:p-6">
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">Operasional Terkini</p>
-                    <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">Posisi Usaha</h2>
+                    <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em]">Posisi Usaha</h2>
                 </div>
                 <BarChart3 className="size-5 text-[var(--app-primary)]" />
             </div>
@@ -335,7 +326,7 @@ function BusinessPosition({ position }: { position: Position }) {
             <div className="mt-4 rounded-2xl bg-[var(--app-soft)] p-4">
                 <div className="flex items-center justify-between gap-4">
                     <span className="text-xs font-bold text-[var(--muted-foreground)]">Stok kritis</span>
-                    <span className="text-lg font-black tracking-[-0.04em] text-[var(--app-ink)]">
+                    <span className="text-lg font-semibold tracking-[-0.04em] text-[var(--app-ink)]">
                         {position.low_stock_count} {translate('produk')}
                     </span>
                 </div>
@@ -346,7 +337,7 @@ function BusinessPosition({ position }: { position: Position }) {
             >
                 Laporan lengkap <ArrowUpRight className="size-3.5" />
             </Link>
-        </article>
+        </Card>
     );
 }
 
@@ -354,7 +345,7 @@ function PositionRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex items-center justify-between gap-4 border-b border-[var(--app-ink)]/6 py-2.5 text-xs">
             <span className="font-semibold text-[var(--muted-foreground)]">{translate(label)}</span>
-            <span className="font-black text-[var(--app-ink)]">{money(value)}</span>
+            <span className="font-semibold text-[var(--app-ink)]">{money(value)}</span>
         </div>
     );
 }
@@ -379,10 +370,10 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
     const background = total > 0 ? `conic-gradient(${stops.join(',')})` : 'var(--app-soft)';
 
     return (
-        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
+        <Card className="gap-0 rounded-2xl border-0 p-4 shadow-none sm:p-6">
             <div>
                 <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">Penjualan per Kategori</p>
-                <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">Komposisi Kategori</h2>
+                <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em]">Komposisi Kategori</h2>
             </div>
             <div className="mt-5 grid gap-6 sm:grid-cols-[11rem_minmax(0,1fr)] sm:items-center">
                 <div
@@ -391,16 +382,16 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
                     role="img"
                     aria-label="Diagram penjualan per kategori"
                 >
-                    <div className="absolute inset-[1.15rem] flex flex-col items-center justify-center rounded-full bg-white text-center shadow-inner">
+                    <div className="absolute inset-[1.15rem] flex flex-col items-center justify-center rounded-full bg-card text-center shadow-inner">
                         <span className="text-[10px] font-bold text-[var(--muted-foreground)] uppercase">Total</span>
-                        <span className="mt-1 text-lg font-black tracking-[-0.04em]">{compactMoney(total)}</span>
+                        <span className="mt-1 text-lg font-semibold tracking-[-0.04em]">{compactMoney(total)}</span>
                     </div>
                 </div>
                 <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
                     {categories.map((category, index) => (
                         <div
                             key={category.category_name}
-                            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-[#fff3ef] px-3 py-2.5"
+                            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-xl bg-secondary px-3 py-2.5"
                         >
                             <span
                                 className="size-2.5 rounded-full"
@@ -409,13 +400,13 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
                                 }}
                             />
                             <div className="min-w-0">
-                                <p className="truncate text-xs font-black">{category.category_name}</p>
+                                <p className="truncate text-xs font-semibold">{category.category_name}</p>
                                 <p className="text-[10px] font-semibold text-[var(--muted-foreground)]">
                                     {quantity(category.quantity_sold)} item
                                 </p>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs font-black">{compactMoney(category.net_revenue)}</p>
+                                <p className="text-xs font-semibold">{compactMoney(category.net_revenue)}</p>
                                 <p className="text-[10px] font-bold text-[var(--muted-foreground)]">
                                     {total > 0 ? Math.round((Number(category.net_revenue) / total) * 100) : 0}%
                                 </p>
@@ -425,17 +416,17 @@ function CategoryChart({ categories }: { categories: CategorySale[] }) {
                     {categories.length === 0 && <EmptyState icon={BarChart3} label="Belum ada penjualan kategori" />}
                 </div>
             </div>
-        </article>
+        </Card>
     );
 }
 
 function TopProducts({ products }: { products: TopProduct[] }) {
     return (
-        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
+        <Card className="gap-0 rounded-2xl border-0 p-4 shadow-none sm:p-6">
             <div className="flex items-center justify-between gap-3">
                 <div>
                     <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">Produk Terlaris</p>
-                    <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">Top 3 Produk</h2>
+                    <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em]">Top 3 Produk</h2>
                 </div>
                 <Boxes className="size-5 text-[var(--app-primary)]" />
             </div>
@@ -446,18 +437,18 @@ function TopProducts({ products }: { products: TopProduct[] }) {
                         className="grid grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-[var(--app-ink)]/6 p-3"
                     >
                         <span
-                            className={`flex size-9 items-center justify-center rounded-xl text-sm font-black ${index === 0 ? 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)]' : 'bg-[var(--app-soft)] text-[var(--app-primary)]'}`}
+                            className={`flex size-9 items-center justify-center rounded-xl text-sm font-semibold ${index === 0 ? 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)]' : 'bg-[var(--app-soft)] text-[var(--app-primary)]'}`}
                         >
                             {index + 1}
                         </span>
                         <div className="min-w-0">
-                            <p className="truncate text-sm font-black">{product.product_name}</p>
+                            <p className="truncate text-sm font-semibold">{product.product_name}</p>
                             <p className="mt-0.5 truncate text-[10px] font-semibold text-[var(--muted-foreground)]">
                                 {quantity(Number(product.quantity_sold) - Number(product.quantity_returned))} terjual
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-xs font-black">{compactMoney(product.net_revenue)}</p>
+                            <p className="text-xs font-semibold">{compactMoney(product.net_revenue)}</p>
                             <p className="mt-0.5 text-[10px] font-bold text-[var(--app-primary)]">
                                 {compactMoney(product.gross_profit)} laba
                             </p>
@@ -466,33 +457,33 @@ function TopProducts({ products }: { products: TopProduct[] }) {
                 ))}
                 {products.length === 0 && <EmptyState icon={Boxes} label="Belum ada produk terjual" />}
             </div>
-        </article>
+        </Card>
     );
 }
 
 function LowStockPanel({ items }: { items: LowStock[] }) {
     return (
-        <article className="rounded-[1.5rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-6">
+        <Card className="gap-0 rounded-2xl border-0 p-4 shadow-none sm:p-6">
             <div className="flex items-center justify-between gap-3">
                 <div>
                     <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--muted-foreground)] uppercase">Persediaan</p>
-                    <h2 className="mt-1 text-lg font-black tracking-[-0.03em]">Stok Kritis</h2>
+                    <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em]">Stok Kritis</h2>
                 </div>
                 <AlertTriangle className="size-5 text-[#c56d3e]" />
             </div>
             <div className="mt-4 space-y-2">
                 {items.map((item, index) => (
-                    <div key={`${item.product_name}-${index}`} className="flex items-center gap-3 rounded-2xl bg-[#fff3ef] p-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#a75d39] shadow-sm">
+                    <div key={`${item.product_name}-${index}`} className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-card text-[#a75d39] shadow-sm">
                             <Boxes className="size-4" />
                         </span>
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-black">{item.product_name}</p>
+                            <p className="truncate text-xs font-semibold">{item.product_name}</p>
                             <p className="mt-0.5 truncate text-[10px] font-semibold text-[var(--muted-foreground)]">
                                 Min. {quantity(item.minimum_quantity)} {item.unit_symbol}
                             </p>
                         </div>
-                        <span className="rounded-lg bg-[#f7e8de] px-2 py-1 text-xs font-black text-[#9b5535]">
+                        <span className="rounded-lg bg-[#f7e8de] px-2 py-1 text-xs font-semibold text-[#9b5535]">
                             {quantity(item.quantity)}
                         </span>
                     </div>
@@ -505,7 +496,7 @@ function LowStockPanel({ items }: { items: LowStock[] }) {
             >
                 Kelola stok <ArrowUpRight className="size-3.5" />
             </Link>
-        </article>
+        </Card>
     );
 }
 
@@ -520,33 +511,30 @@ function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
     return (
         <>
             <Head title="Beranda" />
-            <main className="min-h-full bg-[linear-gradient(180deg,#fffaf7,#fff3ef)] px-4 py-5 text-[var(--app-ink)] sm:px-6 lg:px-8">
-                <div className="mx-auto max-w-5xl space-y-4">
-                    <section className="overflow-hidden rounded-[1.7rem] bg-[var(--app-primary)] p-6 text-[var(--app-primary-foreground)] shadow-[var(--app-ink)]/10 shadow-xl sm:p-8">
-                        <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--app-primary-foreground)]/70 uppercase">
-                            Toko Aktif
-                        </p>
-                        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-                            <h1 className="text-3xl font-black tracking-[-0.045em] sm:text-4xl">{activeStore.name}</h1>
+            <main className="min-h-full px-4 py-6 text-foreground sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-6">
+                    <PageHeader
+                        title={activeStore.name}
+                        actions={
                             <Link
                                 href="/pos"
-                                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-[var(--app-ink)]"
+                                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
                             >
-                                Transaksi baru <ArrowUpRight className="size-4" />
+                                {translate('Transaksi baru')} <ArrowUpRight className="size-4" />
                             </Link>
-                        </div>
-                    </section>
+                        }
+                    />
                     <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {shortcuts.map((item) => (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className="rounded-[1.3rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm transition hover:-translate-y-0.5"
+                                className="rounded-2xl bg-card p-4 transition hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
                             >
                                 <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--app-soft-strong)] text-[var(--app-primary)]">
                                     <item.icon className="size-4" />
                                 </span>
-                                <p className="mt-5 text-sm font-black">{translate(item.label)}</p>
+                                <p className="mt-5 text-sm font-semibold">{translate(item.label)}</p>
                             </Link>
                         ))}
                     </section>
