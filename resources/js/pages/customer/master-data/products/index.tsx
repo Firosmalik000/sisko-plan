@@ -213,15 +213,32 @@ function Field({ label, error, children, className }: { label: string; error?: s
     );
 }
 
-function BarcodeField({ value, error, onScan, onClear }: { value: string; error?: string; onScan: () => void; onClear: () => void }) {
+function BarcodeField({
+    value,
+    error,
+    onScan,
+    onClear,
+    onChange,
+}: {
+    value: string;
+    error?: string;
+    onScan: () => void;
+    onClear: () => void;
+    onChange: (value: string) => void;
+}) {
     return (
         <Field label="Barcode / QR" error={error}>
             <div className="flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-[var(--app-primary)] focus-within:ring-2 focus-within:ring-[var(--app-primary)]/15">
                 <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
                     <ScanBarcode className="size-4 shrink-0 text-[var(--app-primary)]" />
-                    <span className={cn('truncate text-sm', value ? 'font-bold text-slate-800' : 'text-slate-400')}>
-                        {value || translate('Belum dipindai')}
-                    </span>
+                    <input
+                        aria-label="Barcode / QR"
+                        type="text"
+                        value={value}
+                        placeholder="Ketik atau scan barcode"
+                        className="w-0 min-w-0 flex-1 bg-transparent text-base outline-none"
+                        onChange={(event) => onChange(event.target.value)}
+                    />
                 </div>
                 {value && (
                     <button
@@ -1634,6 +1651,7 @@ export default function ProductsIndex({
                                                         });
                                                     }}
                                                     onClear={() => form.setData('barcode', '')}
+                                                    onChange={(value) => form.setData('barcode', value)}
                                                 />
                                             </div>
                                         )}
@@ -1948,6 +1966,7 @@ export default function ProductsIndex({
                                                                 });
                                                             }}
                                                             onClear={() => updateVariant(index, 'barcode', '')}
+                                                            onChange={(value) => updateVariant(index, 'barcode', value)}
                                                         />
                                                         <Field
                                                             label="Foto varian"
