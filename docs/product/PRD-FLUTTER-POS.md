@@ -141,7 +141,7 @@ Android menggunakan Material 3 `NavigationBar`/`NavigationRail` sesuai lebar. iO
 ### 8.1 First launch dan login
 
 1. Aplikasi memilih locale dari perangkat dan menyediakan penggantian bahasa.
-2. Pengguna login saat online menggunakan email/password; social login hanya jika backend API mendukungnya dengan aman.
+2. Pengguna login saat online menggunakan email/password atau Google. iOS juga menyediakan Sign in with Apple sebagai opsi setara agar sesuai kebijakan App Store untuk aplikasi yang menawarkan third-party login.
 3. Server menerbitkan token per perangkat, device ID, kemampuan user, daftar toko, dan offline authorization expiry.
 4. Jika user memiliki satu toko, aplikasi memilihnya otomatis. Jika lebih dari satu, tampilkan store picker.
 5. Bootstrap pertama mengunduh data minimum dan menunjukkan progress yang spesifik.
@@ -269,6 +269,8 @@ Envelope gagal:
 | Method | Endpoint | Tujuan |
 |---|---|---|
 | POST | `/auth/tokens` | Login dan token perangkat |
+| POST | `/auth/social/google` | Verifikasi credential Google dan terbitkan token perangkat |
+| POST | `/auth/social/apple` | Verifikasi credential Apple dan terbitkan token perangkat |
 | DELETE | `/auth/tokens/current` | Logout/revoke perangkat |
 | GET | `/me` | User dan capability ringkas |
 | GET | `/stores` | Membership dan toko yang dapat diakses |
@@ -298,7 +300,10 @@ Envelope gagal:
 - Jangan membuat business logic Flutter-specific yang berbeda dari web.
 - Gunakan Laravel API Resource untuk serialization dan Form Request untuk validation.
 - Semua query store-scoped dan diuji terhadap cross-tenant access.
-- Authentication mobile menggunakan token first-party per device; pilihan paket autentikasi dikunci setelah review dokumentasi versi Laravel yang terpasang. Jangan membuat token table/crypto custom bila paket resmi memenuhi kebutuhan.
+- Authentication mobile menggunakan token first-party per device; pilihan paket token dikunci setelah review dokumentasi versi Laravel yang terpasang. Jangan membuat token table/crypto custom bila paket resmi memenuhi kebutuhan.
+- Social credential diverifikasi oleh `sisko-plan`; Flutter tidak mempercayai email/nama dari client sebagai bukti identitas.
+- Gunakan satu representasi `user_social_identities` dengan unique `(provider, provider_subject)` untuk Google dan Apple. Migrasikan pemakaian aktif `users.google_id`, lalu hapus kolom lama setelah semua caller berpindah; jangan mempertahankan dua representasi paralel.
+- Account linking harus eksplisit dan mencegah takeover: provider subject adalah kunci, email wajib terverifikasi, dan collision meminta user login ke akun yang sudah ada.
 
 ## 11. Katalog distributor dan promosi
 
@@ -339,6 +344,19 @@ Katalog tidak di-hardcode di Flutter. Minimum model server:
 
 Perusahaan XSISTEN dibuat melalui seeder/admin platform sebagai partner pertama. Nilai produk, harga, dan kampanye berada di database/object storage, bukan constant atau asset release Flutter.
 
+Boundary backend berada pada:
+
+```text
+app/Http/Controllers/Api/V1/Distribution/
+app/Http/Resources/Api/V1/Distribution/
+app/Actions/Distribution/        # hanya ketika ada perilaku, bukan CRUD pass-through
+app/Models/DistributionPartner.php
+app/Models/DistributionCatalogItem.php
+app/Models/PromotionCampaign.php
+```
+
+Jangan menaruhnya di `Controllers/Customer` atau `Actions/Sales`. Merchant membaca katalog distributor, tetapi katalog tersebut bukan milik satu store.
+
 Belum membuat `orders`, `commissions`, atau `settlements`. Ketika checkout dibangun, order wajib menyimpan merchant store, distributor, item/price snapshots, currency, fulfillment state, payment state, dan immutable commission ledger. Ini extension direction, bukan schema kosong pada rilis ini.
 
 ## 12. Arsitektur Flutter
@@ -353,7 +371,17 @@ Gunakan feature-first MVVM pragmatis:
 - Service: HTTP, database, secure storage, camera, notification, printer.
 - Domain/use-case hanya untuk aturan lintas repository atau operasi kompleks; jangan membuat satu use-case untuk setiap getter/setter.
 
-### 12.2 Struktur folder
+### 12.2 Nama dan batas repository aplikasi
+
+Repository Flutter sebaiknya bernama produk, misalnya `xsisten-app`, bukan `xsisten-pos`. Rilis pertama memang berpusat pada POS, tetapi root aplikasi mewakili XSISTEN dan dapat menampung workspace merchant/distributor di masa depan.
+
+- Sekarang: merchant shell dengan feature `pos`, `products`, `scanner`, dan `distribution_catalog`.
+- Nanti: tambahkan `distributor_workspace` hanya ketika workflow menerima order benar-benar dibangun.
+- Satu user dapat memilih workspace berdasarkan membership/capability dari server; jangan menentukan role dari nama route atau hardcode aplikasi.
+- Jangan membuat folder distributor kosong sekarang.
+- Jika kelak distributor memerlukan binary, branding, dan release lifecycle berbeda, barulah ekstrak package bersama berdasarkan duplikasi nyata. Jangan memulai monorepo multi-app spekulatif.
+
+### 12.3 Struktur folder
 
 ```text
 lib/
@@ -414,7 +442,19 @@ integration_test/
 
 Tidak semua feature wajib memiliki semua folder. `shared` hanya menampung primitive/design token atau komponen yang benar-benar dipakai lintas feature. Hindari `BaseRepository`, `BaseService`, service locator global, barrel file besar, dan wrapper yang hanya meneruskan method.
 
-### 12.3 Dependency rules
+Future placement ketika distributor workspace aktif:
+
+```text
+lib/features/
+  distributor_workspace/
+    orders/
+    catalog_management/
+    fulfillment/
+```
+
+Folder tersebut bukan bagian rilis pertama dan tidak dibuat sebagai placeholder.
+
+### 12.4 Dependency rules
 
 - Presentation boleh bergantung pada domain/data contract feature-nya.
 - Repository menjadi satu-satunya jalur mutasi data aplikasi.
@@ -434,6 +474,8 @@ Versi berikut adalah baseline yang diverifikasi 11 September 2026; Kiro harus me
 | HTTP | `dio` | Interceptor, multipart, timeout, cancellation; jangan pakai package `flutter_dio` |
 | Serialization | `json_annotation` + `json_serializable` | Contract eksplisit dan generated parsing |
 | Secure secrets | `flutter_secure_storage` | Token saja; bukan database aplikasi |
+| Google login | official `google_sign_in` | Credential diteruskan ke backend untuk diverifikasi |
+| Apple login | `sign_in_with_apple` | Wajib di iOS bersama Google login, mengikuti App Store Guideline 4.8 |
 | Barcode | `mobile_scanner` | CameraX/ML Kit Android, AVFoundation/Vision iOS |
 | AI photos | official `camera` | Capture dan lifecycle dikelola aplikasi |
 | Background opportunity | `workmanager` | Optimization, bukan jaminan correctness |
@@ -443,7 +485,7 @@ Versi berikut adalah baseline yang diverifikasi 11 September 2026; Kiro harus me
 | Connectivity hint | `connectivity_plus` | Hint untuk trigger sync, bukan bukti internet |
 | Device/app metadata | `device_info_plus`, `package_info_plus` | Device registration dan diagnostics |
 
-Dependency printer tidak dikunci sebelum hardware compatibility spike. Receipt formatting/ESC-POS encoding dan transport harus terpisah. LAN raw socket dapat memakai Dart IO. Android Bluetooth Classic/USB memakai plugin yang lolos maintenance/security review atau platform channel kecil. iOS menggunakan AirPrint, BLE/MFi, atau vendor SDK sesuai printer yang benar-benar ditargetkan. Jangan menjanjikan semua printer Bluetooth Android otomatis bekerja di iOS.
+Koneksi dan pemilihan printer adalah requirement rilis pertama. Yang belum dikunci hanyalah package/vendor SDK final karena pilihan itu harus dibuktikan pada hardware nyata. Receipt formatting/ESC-POS encoding dan transport harus terpisah. LAN raw socket dapat memakai Dart IO. Android Bluetooth Classic/USB memakai plugin yang lolos maintenance/security review atau platform channel kecil. iOS menggunakan AirPrint, BLE/MFi, atau vendor SDK sesuai printer yang benar-benar ditargetkan. Jangan menjanjikan semua printer Bluetooth Android otomatis bekerja di iOS.
 
 Package baru wajib memiliki active maintenance, compatible license, platform support, release health, dan alasan konkret. Tidak menambahkan analytics/crash SDK ganda.
 
@@ -478,12 +520,17 @@ Server memastikan event penggunaan idempotent. Push hanya menjadi signal; saat d
 ### 16.1 Printer manager
 
 - Discover/pair melalui flow platform yang diizinkan.
-- Simpan printer default per toko/perangkat.
+- Tampilkan daftar printer tersimpan dan perangkat yang ditemukan, lalu izinkan user memilih, test print, mengganti, melupakan, dan memilih kembali printer.
+- Simpan konfigurasi secara lokal per pasangan `store_public_id + device_id`; printer Toko A tidak otomatis menjadi printer Toko B pada HP yang sama.
+- Satu perangkat dapat menyimpan beberapa `PrinterProfile`, tetapi rilis pertama memiliki tepat satu printer default untuk purpose `receipt` pada setiap toko.
+- `PrinterProfile` menyimpan nama tampilan, transport, hardware identifier lokal, paper width, encoding, capabilities, auto-print, copies, dan last successful connection. Hardware identifier tidak dikirim ke server secara default.
+- Jika user login dari HP lain, printer dikonfigurasi ulang karena pairing dan permission adalah state perangkat.
 - Test print.
 - Status: unavailable, connecting, ready, printing, failed.
 - Retry tidak boleh menduplikasi sale; print job terpisah dari transaksi.
 - Print queue lokal memiliki bounded retry dan tombol retry manual.
 - Capability profile: paper width 58/80 mm, encoding/code page, image/raster, cut, cash drawer.
+- Gunakan boundary `PrinterTransport` karena Bluetooth Classic, BLE, USB, LAN, AirPrint, dan vendor SDK adalah external dependency yang benar-benar berbeda. Boundary ini tidak boleh berubah menjadi generic plugin framework.
 
 ### 16.2 Receipt
 
@@ -648,8 +695,10 @@ Rilis dapat dianggap siap hanya jika:
 13. Katalog distributor perusahaan dapat diubah server-side dan cache offline diperbarui melalui delta/expiry.
 14. Semua promosi memiliki disclosure yang terlihat dan accessible.
 15. Kamera berhenti saat background/keluar dan permission denial memiliki recovery path.
-16. Build release Android/iOS menggunakan signing, app icon, splash, privacy manifest/disclosure, dan store metadata yang benar.
-17. Test, lint, static analysis, migration review, API contract tests, dan final diff review lulus.
+16. Google login berhasil pada Android/iOS; Sign in with Apple berhasil pada iOS; linking tidak membuat akun ganda atau account takeover.
+17. Setiap toko pada perangkat yang sama dapat memilih/mengganti printer default sendiri dan test print sebelum digunakan.
+18. Build release Android/iOS menggunakan signing, app icon, splash, privacy manifest/disclosure, dan store metadata yang benar.
+19. Test, lint, static analysis, migration review, API contract tests, dan final diff review lulus.
 
 ## 23. Urutan implementasi yang direkomendasikan
 
@@ -684,10 +733,9 @@ Setiap langkah harus menghasilkan vertical slice yang dites. Jangan membuat selu
 
 ## 25. Keputusan yang sengaja ditunda
 
-- Model printer dan vendor SDK final, setelah hardware spike.
+- Package/vendor SDK printer final dipilih pada hardware spike pertama. Kemampuan memilih, mengganti, menyimpan, test print, dan mencetak tetap wajib pada rilis pertama.
 - Batas toleransi atau auto-approval harga offline lama. Rilis pertama tetap menggunakan owner reconciliation setiap kali revision harga berbeda.
 - Provider crash/analytics tunggal.
-- Social login pada mobile.
 - Detail checkout, komisi, pembayaran, fulfillment, dan settlement distributor.
 - Marketplace konsumen.
 
