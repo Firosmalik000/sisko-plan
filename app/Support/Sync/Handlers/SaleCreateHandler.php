@@ -35,6 +35,8 @@ class SaleCreateHandler
             $accountId = $this->resolveAccountId($store, $payload);
             $items = $this->resolveItems($store, $payload);
 
+            $salesChannel = $this->stringValue($payload, 'sales_channel', 'in_store');
+
             $sale = $this->postSale->handle(
                 store: $store,
                 actor: $actor,
@@ -46,6 +48,13 @@ class SaleCreateHandler
                 notes: $this->nullableString($payload, 'notes'),
                 idempotencyKey: $clientOperationId,
                 ipAddress: $ipAddress,
+                customerName: $this->nullableString($payload, 'customer_name'),
+                customerPhone: $this->nullableString($payload, 'customer_phone'),
+                customerEmail: $this->nullableString($payload, 'customer_email'),
+                salesChannel: $salesChannel,
+                paymentMethod: $this->nullableString($payload, 'payment_method'),
+                marketplaceCode: $this->nullableString($payload, 'marketplace_code'),
+                externalOrderNumber: $this->nullableString($payload, 'external_order_number'),
             );
 
             return SyncCommandResult::synced($clientOperationId, $this->summarize($sale));
@@ -94,10 +103,18 @@ class SaleCreateHandler
     }
 
     /**
+     * Channel marketplace: akun penerimaan diresolve dari `marketplace_code`
+     * (akun EWallet marketplace), bukan `account_public_id`. Channel in_store:
+     * pakai `account_public_id`. Validasi kombinasi otoritatif tetap di PostSale.
+     *
      * @param  array<string, mixed>  $payload
      */
     private function resolveAccountId(Store $store, array $payload): int
     {
+        if ($this->stringValue($payload, 'sales_channel', 'in_store') === 'marketplace') {
+            return $this->resolveMarketplaceAccountId($store, $payload);
+        }
+
         $accountPublicId = $this->nullableString($payload, 'account_public_id');
 
         if ($accountPublicId === null) {
@@ -114,6 +131,34 @@ class SaleCreateHandler
         if ($account === null) {
             throw ValidationException::withMessages([
                 'account_public_id' => __('Akun penerimaan tidak ditemukan.'),
+            ]);
+        }
+
+        return $account->id;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function resolveMarketplaceAccountId(Store $store, array $payload): int
+    {
+        $marketplaceCode = $this->nullableString($payload, 'marketplace_code');
+
+        if ($marketplaceCode === null) {
+            throw ValidationException::withMessages([
+                'marketplace_code' => __('Marketplace wajib diisi untuk penjualan marketplace.'),
+            ]);
+        }
+
+        $account = FinancialAccount::query()
+            ->where('store_id', $store->id)
+            ->where('is_active', true)
+            ->where('marketplace_code', $marketplaceCode)
+            ->first();
+
+        if ($account === null) {
+            throw ValidationException::withMessages([
+                'marketplace_code' => __('Akun marketplace tidak ditemukan.'),
             ]);
         }
 

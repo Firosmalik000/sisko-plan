@@ -7,6 +7,7 @@ use App\Models\Concerns\ImmutableLedgerRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $store_id
@@ -28,6 +29,18 @@ class Sale extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /** @return HasMany<SaleItem, $this> */
+    public function items(): HasMany
+    {
+        return $this->hasMany(SaleItem::class);
+    }
+
+    /** @return HasMany<SalePayment, $this> */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SalePayment::class);
     }
 
     protected function casts(): array

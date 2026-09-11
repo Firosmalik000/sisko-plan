@@ -3,6 +3,9 @@
 use App\Http\Controllers\Api\V1\Account\MeController;
 use App\Http\Controllers\Api\V1\Auth\SocialTokenController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
+use App\Http\Controllers\Api\V1\Sales\SaleIndexController;
+use App\Http\Controllers\Api\V1\Sales\SaleShowController;
+use App\Http\Controllers\Api\V1\Sales\SaleStoreController;
 use App\Http\Controllers\Api\V1\Stores\BootstrapController;
 use App\Http\Controllers\Api\V1\Stores\ProductIndexController;
 use App\Http\Controllers\Api\V1\Stores\ProductMutationController;
@@ -62,4 +65,9 @@ Route::middleware(['auth:sanctum', 'store.membership'])
         Route::get('products', ProductIndexController::class);
         Route::post('products', [ProductMutationController::class, 'store']);
         Route::patch('products/{product}', [ProductMutationController::class, 'update']);
+
+        // Penjualan: online sale (ability sale.create) + riwayat/detail (store.read).
+        Route::post('sales', SaleStoreController::class);
+        Route::get('sales', SaleIndexController::class);
+        Route::get('sales/{sale}', SaleShowController::class);
     });

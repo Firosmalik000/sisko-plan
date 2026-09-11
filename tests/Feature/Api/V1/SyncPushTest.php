@@ -220,6 +220,82 @@ class SyncPushTest extends TestCase
         }
     }
 
+    /**
+     * Payload lengkap (customer + channel + payment_method) diteruskan handler
+     * ke PostSale dan tersimpan benar (design §3.5/§3.6, Req 12.6, 26, 27).
+     */
+    public function test_sale_create_command_forwards_customer_and_channel_payload(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        Sanctum::actingAs($owner, ['sale.create']);
+
+        $command = $this->saleCommand($store, $product, $cash, 'op-full', [
+            'payment_method' => 'cash',
+            'sales_channel' => 'in_store',
+            'customer_name' => 'Budi',
+            'customer_phone' => '081298765432',
+            'customer_email' => 'budi@example.com',
+        ]);
+
+        $this->postJson("/api/v1/stores/{$store->public_id}/sync/push", [
+            'batch_id' => 'batch-full',
+            'commands' => [$command],
+        ])->assertOk()->assertJsonPath('data.results.0.status', 'synced');
+
+        $this->assertDatabaseHas('sales', [
+            'store_id' => $store->id,
+            'customer_name' => 'Budi',
+            'customer_email' => 'budi@example.com',
+            'sales_channel' => 'in_store',
+        ]);
+        $this->assertDatabaseHas('sale_payments', [
+            'financial_account_id' => $cash->id,
+            'payment_method' => 'cash',
+        ]);
+    }
+
+    /**
+     * Channel marketplace: handler meresolve akun dari `marketplace_code`
+     * (bukan `account_public_id`) lalu meneruskan ke PostSale (Req 27).
+     */
+    public function test_sale_create_command_supports_marketplace_channel(): void
+    {
+        [$owner, $store, $product] = $this->fixtures();
+        $marketplace = FinancialAccount::factory()->for($store)->create([
+            'name' => 'Saldo Shopee',
+            'type' => FinancialAccountType::EWallet,
+            'marketplace_code' => 'shopee',
+            'payment_code' => null,
+        ]);
+        Sanctum::actingAs($owner, ['sale.create']);
+
+        $command = $this->saleCommand($store, $product, $marketplace, 'op-mp', [
+            'payment_method' => 'marketplace',
+            'sales_channel' => 'marketplace',
+            'marketplace_code' => 'shopee',
+            'external_order_number' => 'SPX-9001',
+            'paid_amount' => '2000',
+        ]);
+        unset($command['payload']['account_public_id']);
+        $command['payload_hash'] = 'sha256:'.hash('sha256', json_encode($command['payload']));
+
+        $this->postJson("/api/v1/stores/{$store->public_id}/sync/push", [
+            'batch_id' => 'batch-mp',
+            'commands' => [$command],
+        ])->assertOk()->assertJsonPath('data.results.0.status', 'synced');
+
+        $this->assertDatabaseHas('sales', [
+            'store_id' => $store->id,
+            'sales_channel' => 'marketplace',
+            'marketplace_code' => 'shopee',
+            'external_order_number' => 'SPX-9001',
+        ]);
+        $this->assertDatabaseHas('sale_payments', [
+            'financial_account_id' => $marketplace->id,
+            'payment_method' => 'marketplace',
+        ]);
+    }
+
     public function test_precondition_failure_maps_to_per_command_error_without_side_effect(): void
     {
         [$owner, $store, $product, $cash] = $this->fixtures();
