@@ -97,6 +97,37 @@ export function formatCurrencyNumber(value: string | number, locale = currentLoc
     }).format(numeric);
 }
 
+export function formatCurrencyInput(value: string, locale = currentLocale(), market = currentMarket()): string {
+    if (value === '') {
+        return '';
+    }
+
+    const decimals = currencyDecimalPlaces();
+
+    if (decimals === 0) {
+        const numeric = Number(value);
+
+        return Number.isFinite(numeric)
+            ? new Intl.NumberFormat(localeTag(locale, market), { maximumFractionDigits: 0 }).format(numeric)
+            : value;
+    }
+
+    const [whole = '0', fraction] = value.split('.');
+    const integer = Number(whole || '0');
+    const formattedWhole = Number.isFinite(integer)
+        ? new Intl.NumberFormat(localeTag(locale, market), { maximumFractionDigits: 0 }).format(integer)
+        : whole;
+
+    if (fraction === undefined) {
+        return formattedWhole;
+    }
+
+    const decimal =
+        new Intl.NumberFormat(localeTag(locale, market)).formatToParts(1.1).find((part) => part.type === 'decimal')?.value ?? '.';
+
+    return `${formattedWhole}${decimal}${fraction.slice(0, decimals)}`;
+}
+
 export function parseCurrencyInput(value: string, locale = currentLocale(), market = currentMarket()): string {
     const parts = new Intl.NumberFormat(localeTag(locale, market)).formatToParts(12345.6);
     const group = parts.find((part) => part.type === 'group')?.value ?? ',';

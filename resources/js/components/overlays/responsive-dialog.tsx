@@ -40,7 +40,7 @@ export function ResponsiveDialog({
             <DialogContent
                 style={contentStyle}
                 className={cn(
-                    'flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden border-border bg-card p-0 text-card-foreground shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl',
+                    'flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden border-border bg-card p-0 text-card-foreground shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl dark:shadow-none',
                     mobile === 'sheet' &&
                         'max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-[18px] max-sm:rounded-b-none',
                     mobile === 'fullscreen' &&

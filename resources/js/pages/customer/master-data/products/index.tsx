@@ -1,16 +1,15 @@
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
+    Barcode,
     Boxes,
     Camera,
     ChevronRight,
     LoaderCircle,
-    Package,
     PackagePlus,
     Plus,
     RefreshCw,
     RotateCcw,
-    ScanBarcode,
     Search,
     Settings2,
     Trash2,
@@ -18,7 +17,7 @@ import {
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import AlertError from '@/components/alert-error';
-import { FormCurrencyInput, FormInput, FormSelect, FormTextarea } from '@/components/forms';
+import { FormBarcodeInput, FormCurrencyInput, FormField, FormInput, FormSelect, FormTextarea } from '@/components/forms';
 import InputError from '@/components/input-error';
 import { MasterDataMenu } from '@/components/navigation/master-data-menu';
 import { ResponsiveDialog } from '@/components/overlays';
@@ -28,6 +27,7 @@ import { EmptyState } from '@/components/page/empty-state';
 import { RecordList, RecordListHeader } from '@/components/page/record-list';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import { SubscriptionLimitContactDialog } from '@/components/subscription-limit-contact-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,7 +41,6 @@ import { apiClient } from '@/lib/api-client';
 import { translate } from '@/lib/i18n';
 import { resolveCategory, resolveUnit } from '@/lib/unit-references';
 import { cn } from '@/lib/utils';
-import { pricing } from '@/routes';
 import { index as categoriesIndex } from '@/routes/master-data/categories';
 import {
     deactivate as deactivateProductRoute,
@@ -52,7 +51,14 @@ import {
 } from '@/routes/master-data/products';
 import { index as unitsIndex } from '@/routes/master-data/units';
 import { lookup as lookupCatalogItem } from '@/routes/scanner/catalog-items';
-import { createBlankProductForm, createBlankVariant, formatProductDecimal, mapProductToForm } from './product-model';
+import {
+    createBlankProductForm,
+    createBlankVariant,
+    formatProductDecimal,
+    generateInternalBarcode,
+    generateProductSku,
+    mapProductToForm,
+} from './product-model';
 import type { Product, ProductForm, ProductOption, ProductVariant, SubscriptionState, UnitOption, VariantMode } from './product-model';
 import { ProductPhoto, ProductRow } from './product-presentation';
 
@@ -70,57 +76,47 @@ function Field({ label, error, children, className }: { label: string; error?: s
     );
 }
 
-function BarcodeField({
+function SkuField({
+    id,
+    name,
     value,
+    productName,
     error,
-    onScan,
-    onClear,
     onChange,
 }: {
+    id: string;
+    name: string;
     value: string;
+    productName: string;
     error?: string;
-    onScan: () => void;
-    onClear: () => void;
     onChange: (value: string) => void;
 }) {
     return (
-        <Field label="Barcode / QR" error={error}>
-            <div className="flex min-h-11 items-center gap-2 rounded-lg border border-input bg-card p-1.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20">
-                <div className="flex min-w-0 flex-1 items-center gap-2 px-2">
-                    <ScanBarcode className="size-4 shrink-0 text-primary" />
-                    <input
-                        aria-label={translate('Barcode / QR')}
-                        type="text"
-                        value={value}
-                        placeholder={translate('Ketik atau scan barcode')}
-                        className="w-0 min-w-0 flex-1 bg-transparent text-base outline-none"
-                        onChange={(event) => onChange(event.target.value)}
-                    />
-                </div>
-                {value && (
-                    <button
-                        type="button"
-                        onClick={onClear}
-                        className="min-h-9 shrink-0 rounded-md px-2 text-xs font-bold text-destructive hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:outline-none"
-                    >
-                        {translate('Hapus')}
-                    </button>
-                )}
+        <FormField id={id} label={translate('SKU')} error={error}>
+            <div className="flex h-11 min-w-0 overflow-hidden rounded-xl border border-input bg-background transition focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 has-[input[aria-invalid=true]]:border-destructive has-[input[aria-invalid=true]]:ring-2 has-[input[aria-invalid=true]]:ring-destructive/20">
+                <Input
+                    id={id}
+                    name={name}
+                    value={value}
+                    placeholder={translate('Contoh: KOPI-250')}
+                    onChange={(event) => onChange(event.target.value)}
+                    aria-invalid={Boolean(error)}
+                    className="h-full rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0"
+                />
                 <Button
                     type="button"
-                    size="sm"
-                    variant={value ? 'outline' : 'default'}
-                    onClick={onScan}
-                    className={cn(
-                        'h-9 shrink-0 px-3',
-                        value ? 'border-input text-primary' : 'bg-primary text-primary-foreground hover:bg-primary/90',
-                    )}
+                    variant="ghost"
+                    disabled={!productName.trim()}
+                    onClick={() => onChange(generateProductSku(productName))}
+                    aria-label={translate('Buat SKU otomatis')}
+                    title={translate('Buat SKU otomatis')}
+                    className="h-full shrink-0 rounded-none border-l px-3"
                 >
-                    <ScanBarcode className="size-4" />
-                    {translate(value ? 'Scan ulang' : 'Scan')}
+                    <RefreshCw className="size-4" />
+                    <span>{translate('Buat otomatis')}</span>
                 </Button>
             </div>
-        </Field>
+        </FormField>
     );
 }
 
@@ -239,6 +235,7 @@ export default function ProductsIndex({
     const [deleting, setDeleting] = useState<Product | null>(null);
     const [deleteProcessing, setDeleteProcessing] = useState(false);
     const [deleteError, setDeleteError] = useState('');
+    const [productLimitOpen, setProductLimitOpen] = useState(false);
     const [formOpen, setFormOpen] = useState(false);
     const [search, setSearch] = useState(initialSearch);
     const [status, setStatus] = useState(initialStatus);
@@ -831,7 +828,7 @@ export default function ProductsIndex({
         <>
             <AppPage
                 title={translate('Produk')}
-                icon={Package}
+                icon={Barcode}
                 headerSurface
                 description={
                     <>
@@ -849,10 +846,8 @@ export default function ProductsIndex({
                             </Button>
                         </>
                     ) : canManage && productLimitReached ? (
-                        <Button asChild variant="outline" className="min-h-10">
-                            <Link href={`${pricing.url({ query: { category: 'product_capacity' } })}#category-product_capacity`}>
-                                <PackagePlus className="size-4" aria-hidden="true" /> {translate('Tambah kapasitas produk')}
-                            </Link>
+                        <Button type="button" variant="outline" className="min-h-11" onClick={() => setProductLimitOpen(true)}>
+                            <PackagePlus className="size-4" aria-hidden="true" /> {translate('Tambah kapasitas produk')}
                         </Button>
                     ) : undefined
                 }
@@ -954,12 +949,8 @@ export default function ProductsIndex({
                                         </Button>
                                     </div>
                                 ) : canManage && productLimitReached ? (
-                                    <Button asChild>
-                                        <Link
-                                            href={`${pricing.url({ query: { category: 'product_capacity' } })}#category-product_capacity`}
-                                        >
-                                            {translate('Tambah kapasitas produk')}
-                                        </Link>
+                                    <Button type="button" onClick={() => setProductLimitOpen(true)}>
+                                        {translate('Tambah kapasitas produk')}
                                     </Button>
                                 ) : undefined
                             }
@@ -1178,6 +1169,7 @@ export default function ProductsIndex({
                                     error={form.errors.name}
                                     value={form.data.name}
                                     onChange={(event) => form.setData('name', event.target.value)}
+                                    placeholder={translate('Contoh: Kopi Arabika 250 g')}
                                     className="h-11 bg-card"
                                     required
                                 />
@@ -1197,21 +1189,24 @@ export default function ProductsIndex({
                                     error={form.errors.description}
                                     value={form.data.description}
                                     onChange={(event) => form.setData('description', event.target.value)}
+                                    placeholder={translate('Tambahkan merek, ukuran, atau catatan produk')}
                                     rows={3}
                                     className="resize-y bg-card text-base sm:text-sm"
                                 />
                                 {form.data.variant_mode === 'none' && (
                                     <div className="grid gap-3 sm:grid-cols-2">
-                                        <FormInput
+                                        <SkuField
                                             id="product-sku"
                                             name="sku"
-                                            label={translate('SKU')}
                                             error={form.errors.sku}
                                             value={form.data.sku}
-                                            onChange={(event) => form.setData('sku', event.target.value)}
-                                            className="h-11 bg-card"
+                                            productName={form.data.name}
+                                            onChange={(value) => form.setData('sku', value)}
                                         />
-                                        <BarcodeField
+                                        <FormBarcodeInput
+                                            id="product-barcode"
+                                            name="barcode"
+                                            label={translate('Barcode / QR')}
                                             value={form.data.barcode}
                                             error={form.errors.barcode}
                                             onScan={() => {
@@ -1221,8 +1216,8 @@ export default function ProductsIndex({
                                                     label: form.data.name || 'produk',
                                                 });
                                             }}
-                                            onClear={() => form.setData('barcode', '')}
                                             onChange={(value) => form.setData('barcode', value)}
+                                            onGenerate={() => form.setData('barcode', generateInternalBarcode())}
                                         />
                                     </div>
                                 )}
@@ -1383,7 +1378,7 @@ export default function ProductsIndex({
                                 <FormCurrencyInput
                                     id="purchase_price"
                                     name="purchase_price"
-                                    label={translate(discoveryPrefill ? 'Estimasi HPP' : 'HPP per 1 ecer')}
+                                    label={translate(discoveryPrefill ? 'Estimasi harga modal' : 'Harga modal')}
                                     value={form.data.purchase_price}
                                     onValueChange={(value) => {
                                         setDiscoveryPrefill(false);
@@ -1396,7 +1391,7 @@ export default function ProductsIndex({
                                 <FormCurrencyInput
                                     id="selling_price"
                                     name="selling_price"
-                                    label={translate(discoveryPrefill ? 'Rekomendasi harga jual' : 'Harga jual per 1 ecer')}
+                                    label={translate(discoveryPrefill ? 'Rekomendasi harga jual' : 'Harga jual')}
                                     value={form.data.selling_price}
                                     onValueChange={(value) => {
                                         setDiscoveryPrefill(false);
@@ -1406,23 +1401,25 @@ export default function ProductsIndex({
                                     min="0"
                                     className="h-11"
                                 />
-                                <Field label="Stok saat ini" error={form.errors.current_stock}>
+                                <Field label="Stok awal" error={form.errors.current_stock}>
                                     <Input
                                         inputMode="decimal"
                                         step="0.01"
                                         min="0"
                                         value={form.data.current_stock}
+                                        placeholder="0"
                                         onChange={(event) => form.setData('current_stock', event.target.value)}
                                         onBlur={() => form.setData('current_stock', formatProductDecimal(form.data.current_stock))}
                                         className="h-11 border-input bg-card"
                                     />
                                 </Field>
-                                <Field label="Ingatkan saat stok tinggal" error={form.errors.minimum_stock}>
+                                <Field label="Batas stok minimum" error={form.errors.minimum_stock}>
                                     <Input
                                         inputMode="decimal"
                                         step="0.01"
                                         min="0"
                                         value={form.data.minimum_stock}
+                                        placeholder="0"
                                         onChange={(event) => form.setData('minimum_stock', event.target.value)}
                                         onBlur={() => form.setData('minimum_stock', formatProductDecimal(form.data.minimum_stock))}
                                         className="h-11 border-input bg-card"
@@ -1481,27 +1478,32 @@ export default function ProductsIndex({
                                                     <Trash2 className="size-4" />
                                                 </Button>
                                             </div>
-                                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                            <div className="grid gap-4 sm:grid-cols-2">
                                                 <Field
                                                     label="Nama varian"
                                                     error={errorFor(`variants.${index}.name`)}
-                                                    className="sm:col-span-2 lg:col-span-1"
+                                                    className="sm:col-span-2"
                                                 >
                                                     <Input
                                                         id={`variant-name-${variant.public_id ?? variant.client_id ?? index}`}
                                                         value={variant.name}
+                                                        placeholder={translate('Contoh: 250 g')}
                                                         onChange={(event) => updateVariant(index, 'name', event.target.value)}
-                                                        className="border-input bg-card"
+                                                        className="h-11 rounded-xl border-input bg-card"
                                                     />
                                                 </Field>
-                                                <Field label="SKU varian" error={errorFor(`variants.${index}.sku`)}>
-                                                    <Input
-                                                        value={variant.sku}
-                                                        onChange={(event) => updateVariant(index, 'sku', event.target.value)}
-                                                        className="border-input bg-card"
-                                                    />
-                                                </Field>
-                                                <BarcodeField
+                                                <SkuField
+                                                    id={`variant-${index}-sku`}
+                                                    name={`variants.${index}.sku`}
+                                                    value={variant.sku}
+                                                    productName={`${form.data.name}-${variant.name}`}
+                                                    error={errorFor(`variants.${index}.sku`)}
+                                                    onChange={(value) => updateVariant(index, 'sku', value)}
+                                                />
+                                                <FormBarcodeInput
+                                                    id={`variant-${index}-barcode`}
+                                                    name={`variants.${index}.barcode`}
+                                                    label={translate('Barcode / QR')}
                                                     value={variant.barcode}
                                                     error={errorFor(`variants.${index}.barcode`)}
                                                     onScan={() => {
@@ -1512,13 +1514,13 @@ export default function ProductsIndex({
                                                             label: variant.name || `varian ${index + 1}`,
                                                         });
                                                     }}
-                                                    onClear={() => updateVariant(index, 'barcode', '')}
                                                     onChange={(value) => updateVariant(index, 'barcode', value)}
+                                                    onGenerate={() => updateVariant(index, 'barcode', generateInternalBarcode())}
                                                 />
                                                 <Field
                                                     label="Foto varian"
                                                     error={errorFor(`variants.${index}.photo`)}
-                                                    className="sm:col-span-2 lg:col-span-3"
+                                                    className="sm:col-span-2"
                                                 >
                                                     <ProductPhotoInput
                                                         photo={variant.photo}
@@ -1542,7 +1544,7 @@ export default function ProductsIndex({
                                                 <FormCurrencyInput
                                                     id={`variant-${index}-purchase-price`}
                                                     name={`variants.${index}.purchase_price`}
-                                                    label={translate('HPP varian')}
+                                                    label={translate('Harga modal')}
                                                     value={variant.purchase_price}
                                                     onValueChange={(value) => updateVariant(index, 'purchase_price', value)}
                                                     error={errorFor(`variants.${index}.purchase_price`)}
@@ -1551,7 +1553,7 @@ export default function ProductsIndex({
                                                 <FormCurrencyInput
                                                     id={`variant-${index}-selling-price`}
                                                     name={`variants.${index}.selling_price`}
-                                                    label={translate('Harga jual varian')}
+                                                    label={translate('Harga jual')}
                                                     value={variant.selling_price}
                                                     onValueChange={(value) => updateVariant(index, 'selling_price', value)}
                                                     error={errorFor(`variants.${index}.selling_price`)}
@@ -1559,12 +1561,13 @@ export default function ProductsIndex({
                                                 />
                                                 {form.data.variant_mode === 'separate' ? (
                                                     <>
-                                                        <Field label="Stok saat ini" error={errorFor(`variants.${index}.current_stock`)}>
+                                                        <Field label="Stok awal" error={errorFor(`variants.${index}.current_stock`)}>
                                                             <Input
                                                                 inputMode="decimal"
                                                                 step="0.01"
                                                                 min="0"
                                                                 value={variant.current_stock}
+                                                                placeholder="0"
                                                                 onChange={(event) =>
                                                                     updateVariant(index, 'current_stock', event.target.value)
                                                                 }
@@ -1575,11 +1578,11 @@ export default function ProductsIndex({
                                                                         formatProductDecimal(variant.current_stock),
                                                                     )
                                                                 }
-                                                                className="border-input bg-card"
+                                                                className="h-11 rounded-xl border-input bg-card"
                                                             />
                                                         </Field>
                                                         <Field
-                                                            label="Batas stok minimal"
+                                                            label="Batas stok minimum"
                                                             error={errorFor(`variants.${index}.minimum_stock`)}
                                                         >
                                                             <Input
@@ -1587,6 +1590,7 @@ export default function ProductsIndex({
                                                                 step="0.01"
                                                                 min="0"
                                                                 value={variant.minimum_stock}
+                                                                placeholder="0"
                                                                 onChange={(event) =>
                                                                     updateVariant(index, 'minimum_stock', event.target.value)
                                                                 }
@@ -1597,7 +1601,7 @@ export default function ProductsIndex({
                                                                         formatProductDecimal(variant.minimum_stock),
                                                                     )
                                                                 }
-                                                                className="border-input bg-card"
+                                                                className="h-11 rounded-xl border-input bg-card"
                                                             />
                                                         </Field>
                                                     </>
@@ -1641,6 +1645,7 @@ export default function ProductsIndex({
                                                             <Input
                                                                 inputMode="decimal"
                                                                 value={variant.conversion_factor}
+                                                                placeholder={translate('Contoh: 12')}
                                                                 onChange={(event) =>
                                                                     updateVariant(index, 'conversion_factor', event.target.value)
                                                                 }
@@ -1651,7 +1656,7 @@ export default function ProductsIndex({
                                                                         formatProductDecimal(variant.conversion_factor),
                                                                     )
                                                                 }
-                                                                className="border-input bg-card"
+                                                                className="h-11 rounded-xl border-input bg-card"
                                                             />
                                                         </Field>
                                                     </>
@@ -1672,20 +1677,22 @@ export default function ProductsIndex({
 
                                 {form.data.variant_mode === 'shared' && (
                                     <div className="grid gap-4 rounded-xl border border-border bg-secondary p-4 sm:grid-cols-2">
-                                        <Field label="Stok gabungan saat ini" error={form.errors.current_stock}>
+                                        <Field label="Stok gabungan awal" error={form.errors.current_stock}>
                                             <Input
                                                 inputMode="decimal"
                                                 value={form.data.current_stock}
+                                                placeholder="0"
                                                 onChange={(event) => form.setData('current_stock', event.target.value)}
-                                                className="h-11 border-input bg-card"
+                                                className="h-11 rounded-xl border-input bg-card"
                                             />
                                         </Field>
-                                        <Field label="Ingatkan saat stok tinggal" error={form.errors.minimum_stock}>
+                                        <Field label="Batas stok minimum" error={form.errors.minimum_stock}>
                                             <Input
                                                 inputMode="decimal"
                                                 value={form.data.minimum_stock}
+                                                placeholder="0"
                                                 onChange={(event) => form.setData('minimum_stock', event.target.value)}
-                                                className="h-11 border-input bg-card"
+                                                className="h-11 rounded-xl border-input bg-card"
                                             />
                                         </Field>
                                     </div>
@@ -1757,6 +1764,7 @@ export default function ProductsIndex({
                     {translate('sudah menggunakan barcode ini.')}
                 </p>
             </ResponsiveDialog>
+            <SubscriptionLimitContactDialog kind="product" open={productLimitOpen} onOpenChange={setProductLimitOpen} />
             {barcodeTarget && (
                 <BarcodeScannerDialog
                     open

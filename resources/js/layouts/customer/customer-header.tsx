@@ -15,6 +15,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import AppearanceToggleTab from '@/components/appearance-tabs';
 import LanguageSwitcher from '@/components/language-switcher';
+import { ResponsiveDialog } from '@/components/overlays';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     DropdownMenu,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { CustomerPageProps } from '@/layouts/customer/customer-page-props';
 import { StoreSwitcher } from '@/layouts/customer/store-switcher';
 import { formatQuantity } from '@/lib/currency';
@@ -45,11 +47,13 @@ export function CustomerHeader() {
     const getInitials = useInitials();
     const [profilePanel, setProfilePanel] = useState<'main' | 'language' | 'appearance'>('main');
     const profileContent = useRef<HTMLDivElement>(null);
-    const { locale } = usePage().props;
+    const { locale, locales } = usePage().props;
+    const localeLabel = locales?.find((option) => option.code === locale)?.label ?? locale?.toUpperCase();
     useEffect(() => {
         profileContent.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     }, [profilePanel]);
     const { appearance, resolvedAppearance } = useAppearance();
+    const isMobile = useIsMobile();
     const theme = storeThemeVariables(activeStore?.theme_color, resolvedAppearance);
     const [stockNoticeOpen, setStockNoticeOpen] = useState(false);
     const [acknowledgedUnreadKey, setAcknowledgedUnreadKey] = useState<string | null>(null);
@@ -81,9 +85,27 @@ export function CustomerHeader() {
             },
         );
     };
+    const notificationTrigger = (
+        <button
+            type="button"
+            onClick={isMobile ? () => handleStockNoticeOpen(true) : undefined}
+            aria-label={unreadCount > 0 ? `${unreadCount} ${t('notifikasi belum dibaca')}` : t('Buka notifikasi')}
+            className={cn(
+                'relative ml-auto grid size-11 shrink-0 place-items-center rounded-full transition focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none',
+                unreadCount > 0 ? 'bg-destructive/10 text-destructive hover:bg-destructive/15' : 'text-primary hover:bg-secondary',
+            )}
+        >
+            <Bell className="size-[18px]" aria-hidden="true" />
+            {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 grid min-w-5 translate-x-1/4 -translate-y-1/4 place-items-center rounded-full bg-destructive px-1 text-xs leading-5 font-bold text-white ring-2 ring-card">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+            )}
+        </button>
+    );
 
     return (
-        <header className="sticky top-0 z-40 border-t-[3px] border-b border-border border-t-[var(--app-primary)] bg-card pt-[env(safe-area-inset-top)]">
+        <header className="sticky top-0 z-40 border-b border-border bg-card pt-[env(safe-area-inset-top)] lg:border-t-2 lg:border-t-[var(--app-primary)]">
             <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-2 px-3 min-[375px]:px-4 sm:h-[72px] sm:gap-5 sm:px-6 lg:px-7">
                 <Link
                     href={dashboard.url()}
@@ -96,127 +118,52 @@ export function CustomerHeader() {
                 </Link>
                 <StoreSwitcher stores={stores} activeStore={activeStore} storeCreation={storeCreation} />
 
-                <DropdownMenu open={stockNoticeOpen} onOpenChange={handleStockNoticeOpen}>
-                    <DropdownMenuTrigger asChild>
-                        <button
-                            type="button"
-                            aria-label={unreadCount > 0 ? `${unreadCount} notifikasi belum dibaca` : 'Buka notifikasi'}
-                            className={cn(
-                                'relative ml-auto grid size-11 shrink-0 place-items-center rounded-full transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/30 focus-visible:outline-none',
-                                unreadCount > 0
-                                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                                    : 'text-[var(--app-primary)] hover:bg-[var(--app-soft-strong)]',
-                            )}
+                {isMobile ? (
+                    <>
+                        {notificationTrigger}
+                        <ResponsiveDialog
+                            open={stockNoticeOpen}
+                            onOpenChange={handleStockNoticeOpen}
+                            title={t('Notifikasi')}
+                            description={
+                                stockAlertCount > 0 ? `${stockAlertCount} ${t('stok perlu perhatian')}` : t('Semua stok dalam kondisi aman')
+                            }
+                            size="sm"
+                            bodyClassName="p-0 sm:p-0"
                         >
-                            <Bell className="size-[18px]" />
-                            {unreadCount > 0 && (
-                                <span className="absolute top-0 right-0 grid min-w-5 translate-x-1/4 -translate-y-1/4 place-items-center rounded-full bg-red-600 px-1 text-xs leading-5 font-black text-white ring-2 ring-card">
-                                    {unreadCount > 9 ? '9+' : unreadCount}
-                                </span>
-                            )}
-                        </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        style={theme}
-                        align="end"
-                        sideOffset={10}
-                        className="w-[min(23rem,calc(100vw-1.25rem))] overflow-hidden rounded-[1.4rem] border-[var(--app-ink)]/10 bg-popover p-0 shadow-xl"
-                    >
-                        <div className="flex items-center justify-between border-b border-[var(--app-ink)]/8 px-4 py-3.5">
-                            <div>
-                                <p className="text-sm font-black text-[var(--app-ink)]">Notifikasi</p>
-                                <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">
+                            <StockNotificationContent
+                                stockAlerts={stockAlerts}
+                                acknowledgedUnreadKey={acknowledgedUnreadKey}
+                                unreadKey={unreadKey}
+                                onNavigate={() => setStockNoticeOpen(false)}
+                            />
+                        </ResponsiveDialog>
+                    </>
+                ) : (
+                    <DropdownMenu open={stockNoticeOpen} onOpenChange={handleStockNoticeOpen}>
+                        <DropdownMenuTrigger asChild>{notificationTrigger}</DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            style={theme}
+                            align="end"
+                            sideOffset={10}
+                            className="w-[min(23rem,calc(100vw-1.25rem))] overflow-hidden rounded-2xl border-border bg-popover p-0 shadow-xl dark:shadow-none"
+                        >
+                            <div className="border-b border-border px-4 py-3.5">
+                                <p className="text-sm font-bold text-foreground">{t('Notifikasi')}</p>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
                                     {stockAlertCount > 0
                                         ? `${stockAlertCount} ${t('stok perlu perhatian')}`
                                         : t('Semua stok dalam kondisi aman')}
                                 </p>
                             </div>
-                            {unreadCount === 0 && stockAlertCount > 0 && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--app-soft)] px-2 py-1 text-xs font-bold text-[var(--app-primary)]">
-                                    <CheckCheck className="size-3" />
-                                    Sudah dibaca
-                                </span>
-                            )}
-                        </div>
-
-                        {stockAlertCount === 0 ? (
-                            <div className="grid place-items-center px-6 py-9 text-center">
-                                <span className="grid size-11 place-items-center rounded-2xl bg-[var(--app-soft)] text-[var(--app-primary)]">
-                                    <CheckCheck className="size-5" />
-                                </span>
-                                <p className="mt-3 text-sm font-black text-[var(--app-ink)]">Tidak ada notifikasi</p>
-                            </div>
-                        ) : (
-                            <div className="max-h-[min(25rem,calc(100svh-11rem))] overflow-y-auto p-2">
-                                {stockAlerts?.items.map((item) => {
-                                    const empty = Number(item.quantity) <= 0;
-                                    const itemUnread = item.unread && acknowledgedUnreadKey !== unreadKey;
-
-                                    return (
-                                        <div
-                                            key={item.id}
-                                            className={cn(
-                                                'relative flex gap-3 rounded-2xl px-3 py-3',
-                                                itemUnread ? 'bg-red-50/90' : 'bg-transparent',
-                                            )}
-                                        >
-                                            <span
-                                                className={cn(
-                                                    'grid size-9 shrink-0 place-items-center rounded-xl',
-                                                    empty ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700',
-                                                )}
-                                            >
-                                                <AlertTriangle className="size-4" />
-                                            </span>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-start gap-2">
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="truncate text-xs font-black text-[var(--app-ink)]">{item.name}</p>
-                                                        {item.variant_name && (
-                                                            <p className="truncate text-xs font-semibold text-[var(--muted-foreground)]">
-                                                                {item.variant_name}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    {itemUnread && (
-                                                        <span
-                                                            aria-label="Belum dibaca"
-                                                            className="mt-1 size-2 shrink-0 rounded-full bg-red-600"
-                                                        />
-                                                    )}
-                                                </div>
-                                                <p
-                                                    className={cn(
-                                                        'mt-1.5 text-[11px] font-bold',
-                                                        empty ? 'text-red-700' : 'text-amber-700',
-                                                    )}
-                                                >
-                                                    {empty ? 'Stok habis' : `Sisa ${formatQuantity(item.quantity)} ${item.unit}`}
-                                                    <span className="font-medium text-[var(--muted-foreground)]">
-                                                        {' '}
-                                                        · Batas {formatQuantity(item.minimum_quantity)} {item.unit}
-                                                    </span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {stockAlertCount > 0 && (
-                            <DropdownMenuItem asChild className="m-2 mt-0 rounded-xl p-0 focus:bg-[var(--app-soft)]">
-                                <Link
-                                    href={operationsRoutes.inventory.url()}
-                                    className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-black text-[var(--app-primary)]"
-                                >
-                                    Lihat inventori
-                                    <ChevronRight className="size-3.5" />
-                                </Link>
-                            </DropdownMenuItem>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                            <StockNotificationContent
+                                stockAlerts={stockAlerts}
+                                acknowledgedUnreadKey={acknowledgedUnreadKey}
+                                unreadKey={unreadKey}
+                            />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
 
                 {auth.user && (
                     <DropdownMenu
@@ -245,7 +192,7 @@ export function CustomerHeader() {
                             style={theme}
                             align="end"
                             sideOffset={10}
-                            className="max-h-[min(38rem,calc(100svh-6rem))] w-[min(20rem,calc(100vw-2rem))] [scrollbar-color:var(--muted-foreground)_transparent] overflow-y-auto rounded-2xl border-[var(--app-ink)]/10 bg-popover p-2 shadow-xl"
+                            className="max-h-[min(38rem,calc(100svh-6rem))] w-[min(20rem,calc(100vw-2rem))] [scrollbar-color:var(--muted-foreground)_transparent] overflow-y-auto rounded-2xl border-border bg-popover p-2 shadow-xl dark:shadow-none"
                         >
                             {profilePanel === 'main' ? (
                                 <>
@@ -282,9 +229,7 @@ export function CustomerHeader() {
                                     >
                                         <Globe2 className="size-4" />
                                         <span>{t('Bahasa')}</span>
-                                        <span className="ml-auto text-xs text-muted-foreground">
-                                            {locale === 'en' ? 'English' : locale === 'ms' ? 'Melayu' : 'Indonesia'}
-                                        </span>
+                                        <span className="ml-auto text-xs text-muted-foreground">{localeLabel}</span>
                                         <ChevronRight className="size-4" />
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
@@ -344,5 +289,96 @@ export function CustomerHeader() {
                 )}
             </div>
         </header>
+    );
+}
+
+function StockNotificationContent({
+    stockAlerts,
+    acknowledgedUnreadKey,
+    unreadKey,
+    onNavigate,
+}: {
+    stockAlerts: CustomerPageProps['stockAlerts'];
+    acknowledgedUnreadKey: string | null;
+    unreadKey: string;
+    onNavigate?: () => void;
+}) {
+    const { t } = useTranslation();
+    const items = stockAlerts?.items ?? [];
+
+    if (items.length === 0) {
+        return (
+            <div className="grid place-items-center px-6 py-8 text-center">
+                <span className="grid size-11 place-items-center rounded-xl bg-secondary text-primary">
+                    <CheckCheck className="size-5" aria-hidden="true" />
+                </span>
+                <p className="mt-3 text-sm font-semibold text-foreground">{t('Stok aman')}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('Tidak ada produk yang perlu diisi ulang.')}</p>
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <div className="max-h-[min(25rem,calc(100svh-11rem))] overflow-y-auto p-2">
+                {items.map((item) => {
+                    const empty = Number(item.quantity) <= 0;
+                    const itemUnread = item.unread && acknowledgedUnreadKey !== unreadKey;
+
+                    return (
+                        <Link
+                            key={item.id}
+                            href={operationsRoutes.inventory.url()}
+                            onClick={onNavigate}
+                            className={cn(
+                                'relative flex gap-3 rounded-xl px-3 py-3 transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                itemUnread && 'bg-destructive/5',
+                            )}
+                        >
+                            <span
+                                className={cn(
+                                    'grid size-9 shrink-0 place-items-center rounded-xl',
+                                    empty ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-primary',
+                                )}
+                            >
+                                <AlertTriangle className="size-4" aria-hidden="true" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-start gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
+                                        {item.variant_name && <p className="truncate text-xs text-muted-foreground">{item.variant_name}</p>}
+                                    </div>
+                                    {itemUnread && (
+                                        <span
+                                            aria-label={t('Belum dibaca')}
+                                            className="mt-1.5 size-2 shrink-0 rounded-full bg-destructive"
+                                        />
+                                    )}
+                                </div>
+                                <p className={cn('mt-1.5 text-xs font-medium', empty ? 'text-destructive' : 'text-primary')}>
+                                    {empty ? t('Stok habis') : `${t('Sisa')} ${formatQuantity(item.quantity)} ${item.unit}`}
+                                    <span className="text-muted-foreground">
+                                        {' '}
+                                        · {t('Batas')} {formatQuantity(item.minimum_quantity)} {item.unit}
+                                    </span>
+                                </p>
+                            </div>
+                            <ChevronRight className="mt-2 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        </Link>
+                    );
+                })}
+            </div>
+            <div className="border-t border-border p-2">
+                <Link
+                    href={operationsRoutes.inventory.url()}
+                    onClick={onNavigate}
+                    className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-semibold text-primary transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                    {t('Lihat inventori')}
+                    <ChevronRight className="size-3.5" aria-hidden="true" />
+                </Link>
+            </div>
+        </>
     );
 }

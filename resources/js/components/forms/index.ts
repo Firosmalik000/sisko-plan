@@ -1,4 +1,5 @@
 export { FormCheckbox } from './form-checkbox';
+export { FormBarcodeInput } from './form-barcode-input';
 export { FormCurrencyInput } from './form-currency-input';
 export { FormField, fieldMessageIds } from './form-field';
 export { FormInput } from './form-input';

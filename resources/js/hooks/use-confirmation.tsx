@@ -47,7 +47,6 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
                 open={pending !== null}
                 onOpenChange={(open) => !open && settle(false)}
                 title={translate(pending?.options.title ?? 'Konfirmasi')}
-                description={pending?.options.description ? translate(pending.options.description) : undefined}
                 size="sm"
                 footer={
                     <>
@@ -64,7 +63,9 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
                     </>
                 }
             >
-                <span className="sr-only">{translate('Pilih tindakan untuk melanjutkan.')}</span>
+                <p className="text-sm leading-6 text-muted-foreground">
+                    {translate(pending?.options.description ?? 'Pilih tindakan untuk melanjutkan.')}
+                </p>
             </ResponsiveDialog>
         </ConfirmationContext.Provider>
     );

@@ -82,7 +82,7 @@ function QuickActionTrigger({ onClick, disabled }: { onClick: () => void; disabl
             onClick={onClick}
             className="group flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-xs font-bold text-primary transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 md:order-first md:mb-2 md:min-h-16 md:flex-none md:bg-secondary"
         >
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_10px_22px_-14px_var(--app-shadow)] transition group-hover:bg-primary/90">
+            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_10px_22px_-14px_var(--app-shadow)] transition group-hover:bg-primary/90 dark:shadow-none">
                 <ScanLine className="size-5" />
             </span>
             <span className="truncate">{t('Aksi')}</span>

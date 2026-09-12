@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
-import { currencySymbol, currencySymbolPosition, formatCurrencyNumber, parseCurrencyInput } from '@/lib/currency';
+import { currencySymbol, currencySymbolPosition, formatCurrencyInput, formatCurrencyNumber, parseCurrencyInput } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { FormField, fieldMessageIds } from './form-field';
 
@@ -16,6 +16,7 @@ export function FormCurrencyInput({
     required,
     disabled,
     min,
+    placeholder = '0',
     className,
 }: {
     id: string;
@@ -28,10 +29,11 @@ export function FormCurrencyInput({
     required?: boolean;
     disabled?: boolean;
     min?: string;
+    placeholder?: string;
     className?: string;
 }) {
     const [focused, setFocused] = useState(false);
-    const [draft, setDraft] = useState(value);
+    const [draft, setDraft] = useState(() => formatCurrencyInput(value));
     const position = currencySymbolPosition();
 
     const displayValue = focused ? draft : value === '' ? '' : formatCurrencyNumber(value);
@@ -61,13 +63,15 @@ export function FormCurrencyInput({
                     aria-invalid={Boolean(error)}
                     aria-describedby={fieldMessageIds(id, description, error)}
                     data-min={min}
+                    placeholder={placeholder}
                     onFocus={() => {
-                        setDraft(value);
+                        setDraft(formatCurrencyInput(value));
                         setFocused(true);
                     }}
                     onChange={(event) => {
-                        setDraft(event.target.value);
-                        onValueChange(parseCurrencyInput(event.target.value));
+                        const normalized = parseCurrencyInput(event.target.value);
+                        setDraft(formatCurrencyInput(normalized));
+                        onValueChange(normalized);
                     }}
                     onBlur={() => {
                         const normalized = parseCurrencyInput(draft).replace(/\.$/, '');

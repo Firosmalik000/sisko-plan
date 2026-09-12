@@ -1,32 +1,15 @@
 import { useForm, usePage } from '@inertiajs/react';
-import {
-    Camera,
-    ChevronDown,
-    CreditCard,
-    FileCheck2,
-    Mail,
-    Minus,
-    PackageOpen,
-    Plus,
-    Search,
-    ShoppingCart,
-    ShoppingBag,
-    Store,
-    Trash2,
-    Upload,
-    UserRound,
-    X,
-} from 'lucide-react';
+import { Camera, ChevronDown, CreditCard, FileCheck2, Plus, ShoppingCart, ShoppingBag, Store, Upload, UserRound, X } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { CommerceBrandMark } from '@/components/commerce-brand-mark';
-import { FormCurrencyInput, FormPhoneInput } from '@/components/forms';
+import { FormCurrencyInput, FormInput, FormPhoneInput, FormSelect } from '@/components/forms';
 import { ResponsiveDialog } from '@/components/overlays';
 import { AppPage } from '@/components/page/app-page';
-import { EmptyState } from '@/components/page/empty-state';
 import { Button } from '@/components/ui/button';
 import { prepareScannerTone } from '@/components/widgets/product-scanner/scanner-feedback';
 import type { ScannerApplyResult, ScannerProductCandidate, ScannerSelection } from '@/components/widgets/product-scanner/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { formatMoney as money, formatQuantity as quantity } from '@/lib/currency';
 import { cashTenderSuggestions, localeTag } from '@/lib/currency';
 import { currentDateTime } from '@/lib/date-time';
@@ -34,72 +17,10 @@ import { translate } from '@/lib/i18n';
 import { postingToken } from '@/lib/posting-token';
 import { store as storeSale } from '@/routes/pos/sales';
 import type { StoreSummary } from '@/types';
-
-type ProductOption = {
-    catalog_product_id: string;
-    catalog_product_name: string;
-    category_public_id: string | null;
-    category_name: string | null;
-    photo_url: string | null;
-    product_id: string;
-    product_name: string;
-    variant_name: string | null;
-    sku: string | null;
-    barcode: string | null;
-    unit_id: string;
-    unit_name: string;
-    unit_symbol: string;
-    conversion_factor: string;
-    selling_price: string;
-    stock_quantity: string;
-    minimum_quantity: string;
-    is_base_unit: boolean | number;
-};
-type CatalogProduct = {
-    id: string;
-    name: string;
-    photo_url: string | null;
-    sku: string | null;
-    barcode: string | null;
-    category_public_id: string | null;
-    category_name: string | null;
-    options: ProductOption[];
-};
-type PaymentMethod = {
-    method: 'cash' | 'qris' | 'qr_payment' | 'bank_transfer' | 'e_wallet';
-    label: string;
-    account_id: string;
-    brand: string | null;
-};
-type Marketplace = {
-    code: string;
-    label: string;
-};
-type CartItem = ProductOption & {
-    quantity: string;
-    discount_amount: string;
-};
-type SaleForm = {
-    account_id: string;
-    transaction_discount_amount: string;
-    paid_amount: string;
-    payment_proof: File | null;
-    customer_name: string;
-    customer_phone: string;
-    customer_email: string;
-    sales_channel: 'in_store' | 'marketplace';
-    payment_method: PaymentMethod['method'] | 'marketplace';
-    marketplace_code: string;
-    external_order_number: string;
-    occurred_at: string;
-    notes: string;
-    idempotency_key: string;
-    items: CartItem[];
-};
+import { PosCartItems } from './cart';
+import { PosCatalog } from './catalog';
+import type { CatalogProduct, CartItem, Marketplace, PaymentMethod, ProductOption, SaleForm } from './types';
 const ProductScanner = lazy(() => import('@/components/widgets/product-scanner/product-scanner'));
-
-const fieldClass =
-    'h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15';
 
 export default function PosIndex({
     products,
@@ -125,9 +46,14 @@ export default function PosIndex({
     const [scannerResetKey, setScannerResetKey] = useState(0);
     const [customerOpen, setCustomerOpen] = useState(false);
     const [paymentOpen, setPaymentOpen] = useState(false);
+    const [cartOpen, setCartOpen] = useState(false);
+    const [desktopCheckout, setDesktopCheckout] = useState(
+        () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1100px)').matches,
+    );
     const [otherPaymentsOpen, setOtherPaymentsOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
     const searchRef = useRef<HTMLInputElement>(null);
+    const isMobile = useIsMobile();
     const defaultPaymentMethod = paymentMethods.find((method) => method.method === 'cash') ?? paymentMethods[0];
     const sale = useForm<SaleForm>({
         account_id: defaultPaymentMethod?.account_id ?? '',
@@ -200,8 +126,6 @@ export default function PosIndex({
                 )),
     );
     const available = (product: ProductOption) => Number(product.stock_quantity) / Number(product.conversion_factor);
-    const isCritical = (product: ProductOption) =>
-        available(product) <= Number(product.minimum_quantity) / Number(product.conversion_factor);
     const scannerProducts = useMemo<ScannerProductCandidate[]>(
         () =>
             catalog.map((product) => ({
@@ -237,6 +161,21 @@ export default function PosIndex({
     const isMarketplace = sale.data.sales_channel === 'marketplace';
     const change = Math.max(0, Number(sale.data.paid_amount || 0) - total);
     const cashSuggestions = cashTenderSuggestions(total);
+
+    useEffect(() => {
+        const media = window.matchMedia('(min-width: 1100px)');
+        const updateLayout = () => {
+            setDesktopCheckout(media.matches);
+
+            if (media.matches) {
+                setCartOpen(false);
+            }
+        };
+
+        media.addEventListener('change', updateLayout);
+
+        return () => media.removeEventListener('change', updateLayout);
+    }, []);
 
     useEffect(() => {
         if (isMarketplace) {
@@ -461,6 +400,7 @@ export default function PosIndex({
                 icon={ShoppingCart}
                 headerSurface
                 size="wide"
+                className="pb-28 min-[1100px]:pb-9"
                 actions={
                     <Button
                         type="button"
@@ -478,8 +418,8 @@ export default function PosIndex({
                 {sale.data.items.length > 0 && (
                     <button
                         type="button"
-                        onClick={() => document.getElementById('pos-cart')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                        className="flex min-h-12 items-center justify-between rounded-xl bg-[var(--app-primary)] px-4 text-sm font-bold text-[var(--app-primary-foreground)] min-[960px]:hidden"
+                        onClick={() => setCartOpen(true)}
+                        className="fixed right-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] left-3 z-30 flex min-h-12 items-center justify-between rounded-xl bg-[var(--app-primary)] px-4 text-sm font-bold text-[var(--app-primary-foreground)] shadow-lg min-[1100px]:hidden dark:shadow-none"
                     >
                         <span>
                             {translate('Keranjang')} · {sale.data.items.length} {translate('barang')}
@@ -487,170 +427,58 @@ export default function PosIndex({
                         <strong>{money(total)}</strong>
                     </button>
                 )}
-                <div className="grid gap-5 min-[960px]:grid-cols-[minmax(0,1fr)_330px] min-[1101px]:grid-cols-[minmax(0,1fr)_380px]">
-                    <section className="min-w-0 space-y-4">
-                        <section className="rounded-2xl bg-card p-3 text-card-foreground sm:p-4">
-                            {scannerSession.count > 0 && (
-                                <div className="flex gap-2">
-                                    <Button
-                                        type="button"
-                                        size="touch"
-                                        variant="outline"
-                                        onClick={() => {
-                                            prepareScannerTone();
-                                            setScannerView('review');
-                                            setScannerOpen(true);
-                                        }}
-                                    >
-                                        {translate('Lihat hasil')} ({scannerSession.count})
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        size="touch"
-                                        variant="ghost"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => {
-                                            setScannerResetKey((key) => key + 1);
-                                            setScannerSession({ count: 0, pending: 0 });
-                                        }}
-                                    >
-                                        {translate('Buang hasil scan')}
-                                    </Button>
-                                </div>
-                            )}
-                            {scannerSummary && (
-                                <p
-                                    role="status"
-                                    className="mt-3 rounded-xl bg-[var(--app-soft)] px-3 py-2 text-xs font-bold text-[var(--app-primary)]"
-                                >
-                                    {scannerSummary}
-                                </p>
-                            )}
-                            <div className="relative mt-4">
-                                <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
-                                <input
-                                    ref={searchRef}
-                                    autoFocus
-                                    value={search}
-                                    onChange={(event) => {
-                                        setSearch(event.target.value);
-                                        setSearchError('');
-                                    }}
-                                    onKeyDown={onSearchKeyDown}
-                                    placeholder={translate('Cari nama / scan barcode lalu Enter')}
-                                    aria-label={translate('Cari nama produk, SKU, atau scan barcode')}
-                                    aria-invalid={Boolean(searchError)}
-                                    className="h-12 w-full rounded-lg border border-input bg-background pr-4 pl-11 text-sm text-foreground transition outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15"
-                                />
-                            </div>
-                            <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                                {translate('Ketik untuk mencari, atau fokuskan kolom lalu gunakan scanner alat.')}
-                            </p>
-                            {searchError && <p className="mt-2 text-sm font-semibold text-destructive">{searchError}</p>}
-                            <div className="mt-4 flex max-w-full gap-2 overflow-x-auto pb-1" aria-label={translate('Filter kategori')}>
-                                <button
-                                    type="button"
-                                    aria-pressed={activeCategory === ''}
-                                    onClick={() => setActiveCategory('')}
-                                    className={`min-h-9 shrink-0 rounded-lg border px-3 text-xs font-semibold transition ${
-                                        activeCategory === ''
-                                            ? 'border-[var(--app-primary)]/30 bg-[var(--app-soft)] text-[var(--app-primary)]'
-                                            : 'border-border bg-card text-foreground hover:bg-[var(--app-soft)]'
-                                    }`}
-                                >
-                                    {translate('Semua')}
-                                </button>
-                                {categories.map(([id, name]) => (
-                                    <button
-                                        key={id}
-                                        type="button"
-                                        aria-pressed={activeCategory === id}
-                                        onClick={() => setActiveCategory(id)}
-                                        className={`min-h-9 shrink-0 rounded-lg border px-3 text-xs font-semibold transition ${
-                                            activeCategory === id
-                                                ? 'border-[var(--app-primary)]/30 bg-[var(--app-soft)] text-[var(--app-primary)]'
-                                                : 'border-border bg-card text-foreground hover:bg-[var(--app-soft)]'
-                                        }`}
-                                    >
-                                        {name}
-                                    </button>
-                                ))}
-                            </div>
-                        </section>
-
-                        <div className="grid grid-cols-2 gap-2.5 min-[960px]:grid-cols-2 min-[1101px]:grid-cols-3 sm:grid-cols-3">
-                            {visibleProducts.map((product) => {
-                                const prices = product.options.map((option) => Number(option.selling_price));
-                                const minimumPrice = Math.min(...prices);
-                                const maximumPrice = Math.max(...prices);
-                                const criticalStock = product.options.some(isCritical);
-
-                                return (
-                                    <button
-                                        type="button"
-                                        key={product.id}
-                                        onClick={() => chooseProduct(product)}
-                                        className="group min-w-0 overflow-hidden rounded-2xl border border-[var(--app-ink)]/10 bg-card text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--app-primary)]/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
-                                    >
-                                        <div className="aspect-[4/3] overflow-hidden bg-[var(--app-soft)]">
-                                            {product.photo_url ? (
-                                                <img
-                                                    src={product.photo_url}
-                                                    alt={product.name}
-                                                    loading="lazy"
-                                                    className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                                                />
-                                            ) : (
-                                                <span className="grid h-full place-items-center text-[var(--muted-foreground)]">
-                                                    <PackageOpen className="size-8" />
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex min-h-24 flex-col justify-between gap-3 p-3 sm:min-h-28 sm:p-3.5">
-                                            <p className="line-clamp-2 text-sm leading-snug font-bold text-foreground sm:text-base">
-                                                {product.name}
-                                            </p>
-                                            <p className="text-base font-bold tracking-[-0.02em] text-[var(--app-primary)] sm:text-lg">
-                                                {money(minimumPrice)}
-                                                {maximumPrice !== minimumPrice && (
-                                                    <span className="block text-[11px] leading-tight font-bold text-muted-foreground sm:text-xs">
-                                                        sampai {money(maximumPrice)}
-                                                    </span>
-                                                )}
-                                            </p>
-                                            <div className="flex items-center gap-2">
-                                                {criticalStock && (
-                                                    <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive">
-                                                        Kritis
-                                                    </span>
-                                                )}
-                                                <p
-                                                    className={`text-[11px] font-bold ${criticalStock ? 'text-destructive' : 'text-muted-foreground'}`}
-                                                >
-                                                    Stok tersisa {Math.min(...product.options.map((option) => available(option)))}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        {visibleProducts.length === 0 && (
-                            <div className="rounded-2xl bg-card">
-                                <EmptyState
-                                    icon={Search}
-                                    title={translate('Produk tidak ditemukan')}
-                                    description={translate('Coba gunakan nama, SKU, atau barcode yang lain.')}
-                                />
-                            </div>
-                        )}
-                    </section>
-
+                <div className="grid gap-5 min-[1100px]:grid-cols-[minmax(0,1fr)_clamp(22.5rem,28vw,24rem)]">
+                    <PosCatalog
+                        activeCategory={activeCategory}
+                        categories={categories}
+                        products={visibleProducts}
+                        scannerCount={scannerSession.count}
+                        scannerSummary={scannerSummary}
+                        search={search}
+                        searchError={searchError}
+                        searchRef={searchRef}
+                        onCategoryChange={setActiveCategory}
+                        onChooseProduct={chooseProduct}
+                        onDiscardScan={() => {
+                            setScannerResetKey((key) => key + 1);
+                            setScannerSession({ count: 0, pending: 0 });
+                        }}
+                        onReviewScan={() => {
+                            prepareScannerTone();
+                            setScannerView('review');
+                            setScannerOpen(true);
+                        }}
+                        onScan={() => {
+                            prepareScannerTone();
+                            setScannerOpen(true);
+                        }}
+                        onSearchChange={(value) => {
+                            setSearch(value);
+                            setSearchError('');
+                        }}
+                        onSearchKeyDown={onSearchKeyDown}
+                    />
+                    {!desktopCheckout && cartOpen && (
+                        <button
+                            type="button"
+                            aria-label={translate('Tutup keranjang')}
+                            className="fixed inset-0 z-40 bg-black/55"
+                            onClick={() => setCartOpen(false)}
+                        />
+                    )}
                     <form
                         id="pos-checkout-form"
                         onSubmit={submit}
                         noValidate
-                        className="h-fit min-w-0 scroll-mt-4 rounded-2xl bg-card p-4 text-card-foreground min-[960px]:sticky min-[960px]:top-5 sm:p-5"
+                        className={`min-w-0 bg-card p-4 text-card-foreground sm:p-5 ${
+                            desktopCheckout
+                                ? 'sticky top-5 h-fit rounded-2xl'
+                                : cartOpen
+                                  ? isMobile
+                                      ? 'fixed inset-x-0 bottom-0 z-50 max-h-[86dvh] overflow-y-auto rounded-t-[18px] border-t border-border pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-2xl dark:shadow-none'
+                                      : 'fixed inset-y-0 right-0 z-50 w-[min(26rem,calc(100vw-2rem))] overflow-y-auto border-l border-border shadow-2xl dark:shadow-none'
+                                  : 'hidden'
+                        }`}
                     >
                         <div className="flex items-center justify-between gap-3">
                             <div className="flex min-w-0 items-center gap-3">
@@ -671,117 +499,29 @@ export default function PosIndex({
                                     Kosongkan
                                 </button>
                             )}
+                            {!desktopCheckout && (
+                                <button
+                                    type="button"
+                                    onClick={() => setCartOpen(false)}
+                                    aria-label={translate('Tutup keranjang')}
+                                    className="grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                >
+                                    <X className="size-5" aria-hidden="true" />
+                                </button>
+                            )}
                         </div>
 
                         <div id="pos-cart" className="mt-5 space-y-3">
-                            {sale.data.items.map((item, index) => {
-                                const lineTotal = Math.max(
-                                    0,
-                                    Number(item.quantity) * Number(item.selling_price) - Number(item.discount_amount || 0),
-                                );
-
-                                return (
-                                    <article
-                                        key={`${item.product_id}:${item.unit_id}`}
-                                        className="rounded-xl border border-border bg-muted/35 p-3.5"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-bold text-foreground">{item.catalog_product_name}</p>
-                                                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                                                    <span className="rounded-md bg-background px-2 py-0.5 font-semibold text-[var(--app-primary)] ring-1 ring-border">
-                                                        {item.variant_name || item.unit_name}
-                                                    </span>
-                                                    <span>{money(item.selling_price)}</span>
-                                                    <span
-                                                        className={`font-bold ${isCritical(item) ? 'text-destructive' : 'text-muted-foreground'}`}
-                                                    >
-                                                        {isCritical(item) && 'Kritis · '}
-                                                        Stok {available(item)}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex shrink-0 items-start gap-2">
-                                                <strong className="pt-1 text-sm text-[var(--app-ink)]">{money(lineTotal)}</strong>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        sale.setData(
-                                                            'items',
-                                                            sale.data.items.filter((_, itemIndex) => itemIndex !== index),
-                                                        )
-                                                    }
-                                                    aria-label={`Hapus ${item.catalog_product_name}`}
-                                                    className="grid size-9 place-items-center rounded-lg text-destructive transition hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive/40 focus-visible:outline-none"
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-3 grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)]">
-                                            <div>
-                                                <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">Jumlah</span>
-                                                <div className="flex w-full items-center overflow-hidden rounded-xl border border-input bg-card sm:w-fit">
-                                                    <button
-                                                        type="button"
-                                                        aria-label={`Kurangi ${item.catalog_product_name}`}
-                                                        className="grid size-11 shrink-0 place-items-center transition hover:bg-muted"
-                                                        onClick={() =>
-                                                            updateItem(index, {
-                                                                quantity: String(Math.max(0.000001, Number(item.quantity) - 1)),
-                                                            })
-                                                        }
-                                                    >
-                                                        <Minus className="size-4" />
-                                                    </button>
-                                                    <input
-                                                        aria-label={`Jumlah ${item.catalog_product_name}`}
-                                                        className="h-11 min-w-0 flex-1 border-x border-border bg-card px-1 text-center text-sm sm:w-16 sm:flex-none"
-                                                        type="number"
-                                                        min="0.000001"
-                                                        max={available(item)}
-                                                        step="0.000001"
-                                                        value={item.quantity}
-                                                        onChange={(event) =>
-                                                            updateItem(index, {
-                                                                quantity: event.target.value,
-                                                            })
-                                                        }
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        aria-label={`Tambah ${item.catalog_product_name}`}
-                                                        className="grid size-11 shrink-0 place-items-center transition hover:bg-muted"
-                                                        onClick={() =>
-                                                            updateItem(index, {
-                                                                quantity: String(Math.min(available(item), Number(item.quantity) + 1)),
-                                                            })
-                                                        }
-                                                    >
-                                                        <Plus className="size-4" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <FormCurrencyInput
-                                                id={`item-discount-${index}`}
-                                                name={`items.${index}.discount_amount`}
-                                                label={translate('Diskon item')}
-                                                value={item.discount_amount}
-                                                onValueChange={(value) => updateItem(index, { discount_amount: value })}
-                                                min="0"
-                                            />
-                                        </div>
-                                    </article>
-                                );
-                            })}
-                            {sale.data.items.length === 0 && (
-                                <div className="grid place-items-center rounded-2xl border border-dashed border-input px-4 py-9 text-center">
-                                    <PackageOpen className="size-7 text-muted-foreground" />
-                                    <p className="mt-2 text-sm text-muted-foreground">Pilih produk untuk mulai.</p>
-                                </div>
-                            )}
-
+                            <PosCartItems
+                                items={sale.data.items}
+                                onRemove={(index) =>
+                                    sale.setData(
+                                        'items',
+                                        sale.data.items.filter((_, itemIndex) => itemIndex !== index),
+                                    )
+                                }
+                                onUpdate={updateItem}
+                            />
                             <ResponsiveDialog
                                 open={paymentOpen}
                                 onOpenChange={setPaymentOpen}
@@ -789,6 +529,19 @@ export default function PosIndex({
                                 description={`${translate('Total')} ${money(total)}`}
                                 size="lg"
                                 bodyClassName="space-y-4"
+                                footer={
+                                    <Button
+                                        type="submit"
+                                        form="pos-checkout-form"
+                                        size="checkout"
+                                        disabled={
+                                            sale.processing || sale.data.items.length === 0 || !paymentReady || sale.data.paid_amount === ''
+                                        }
+                                        className="w-full text-base font-bold"
+                                    >
+                                        {sale.processing ? translate('Memproses...') : `${translate('Bayar')} ${money(total)}`}
+                                    </Button>
+                                }
                             >
                                 <section className="overflow-hidden rounded-xl border border-border bg-[var(--app-soft)]/35">
                                     <button
@@ -815,53 +568,42 @@ export default function PosIndex({
 
                                     {customerExpanded && (
                                         <div id="pos-customer-fields" className="grid gap-3 border-t border-border p-3.5 sm:grid-cols-2">
-                                            <label className="grid gap-1.5 text-sm font-semibold text-foreground">
-                                                Nama pelanggan
-                                                <span className="relative">
-                                                    <UserRound className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                                                    <input
-                                                        className={`${fieldClass} pl-10`}
-                                                        autoComplete="name"
-                                                        value={sale.data.customer_name}
-                                                        onChange={(event) => sale.setData('customer_name', event.target.value)}
-                                                        maxLength={160}
-                                                    />
-                                                </span>
-                                                {sale.errors.customer_name && (
-                                                    <span role="alert" className="text-xs font-semibold text-destructive">
-                                                        {sale.errors.customer_name}
-                                                    </span>
-                                                )}
-                                            </label>
+                                            <FormInput
+                                                id="customer_name"
+                                                name="customer_name"
+                                                label={translate('Nama pelanggan')}
+                                                placeholder={translate('Contoh: Budi Santoso')}
+                                                autoComplete="name"
+                                                value={sale.data.customer_name}
+                                                onChange={(event) => sale.setData('customer_name', event.target.value)}
+                                                maxLength={160}
+                                                error={sale.errors.customer_name}
+                                            />
                                             <FormPhoneInput
                                                 id="customer_phone"
                                                 name="customer_phone"
                                                 label={translate('Nomor telepon')}
+                                                placeholder={translate('Contoh: 0812 3456 7890')}
                                                 value={sale.data.customer_phone}
                                                 onChange={(event) => sale.setData('customer_phone', event.target.value)}
                                                 maxLength={30}
                                                 error={sale.errors.customer_phone}
                                             />
-                                            <label className="grid gap-1.5 text-sm font-semibold text-foreground sm:col-span-2">
-                                                Email
-                                                <span className="relative">
-                                                    <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                                                    <input
-                                                        className={`${fieldClass} pl-10`}
-                                                        type="email"
-                                                        inputMode="email"
-                                                        autoComplete="email"
-                                                        value={sale.data.customer_email}
-                                                        onChange={(event) => sale.setData('customer_email', event.target.value)}
-                                                        maxLength={254}
-                                                    />
-                                                </span>
-                                                {sale.errors.customer_email && (
-                                                    <span role="alert" className="text-xs font-semibold text-destructive">
-                                                        {sale.errors.customer_email}
-                                                    </span>
-                                                )}
-                                            </label>
+                                            <div className="sm:col-span-2">
+                                                <FormInput
+                                                    id="customer_email"
+                                                    name="customer_email"
+                                                    label="Email"
+                                                    placeholder={translate('Contoh: budi@email.com')}
+                                                    type="email"
+                                                    inputMode="email"
+                                                    autoComplete="email"
+                                                    value={sale.data.customer_email}
+                                                    onChange={(event) => sale.setData('customer_email', event.target.value)}
+                                                    maxLength={254}
+                                                    error={sale.errors.customer_email}
+                                                />
+                                            </div>
                                             {(sale.data.customer_name || sale.data.customer_phone || sale.data.customer_email) && (
                                                 <button
                                                     type="button"
@@ -904,9 +646,9 @@ export default function PosIndex({
                                             min="0"
                                         />
                                     </div>
-                                    <div className="flex items-end justify-between gap-3 rounded-2xl bg-[var(--app-primary)] p-4 text-[var(--app-primary-foreground)]">
-                                        <span className="text-sm opacity-75">Total</span>
-                                        <strong className="text-right text-2xl">{money(total)}</strong>
+                                    <div className="flex items-end justify-between gap-3 rounded-2xl border border-[var(--app-primary)]/20 bg-[var(--app-soft)] p-4 text-[var(--app-primary)]">
+                                        <span className="text-sm font-medium">{translate('Total')}</span>
+                                        <strong className="text-right text-2xl tracking-[-0.02em]">{money(total)}</strong>
                                     </div>
 
                                     <fieldset>
@@ -928,8 +670,8 @@ export default function PosIndex({
                                                         onClick={() => selectSalesChannel(channel)}
                                                         className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
                                                             active
-                                                                ? 'border-[var(--app-ink)] bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-sm'
-                                                                : 'border-border bg-background text-foreground hover:border-[var(--app-primary)] hover:bg-[var(--app-soft)]'
+                                                                ? 'border-[var(--app-primary)]/40 bg-[var(--app-soft)] text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/10'
+                                                                : 'border-border bg-background text-foreground hover:border-[var(--app-primary)]/40 hover:bg-[var(--app-soft)]/40'
                                                         }`}
                                                     >
                                                         <Icon className="size-4" />
@@ -956,8 +698,8 @@ export default function PosIndex({
                                                                 onClick={() => sale.setData('marketplace_code', marketplace.code)}
                                                                 className={`flex min-h-12 min-w-0 items-center gap-2 rounded-xl border px-2.5 text-left text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
                                                                     active
-                                                                        ? 'border-[var(--app-primary)] bg-background text-foreground'
-                                                                        : 'border-border bg-background/70 text-muted-foreground hover:border-[var(--app-primary)]'
+                                                                        ? 'border-[var(--app-primary)]/40 bg-[var(--app-soft)] text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/10'
+                                                                        : 'border-border bg-background/70 text-muted-foreground hover:border-[var(--app-primary)]/40 hover:bg-[var(--app-soft)]/40'
                                                                 }`}
                                                             >
                                                                 <CommerceBrandMark code={marketplace.code} />
@@ -969,15 +711,18 @@ export default function PosIndex({
                                                     })}
                                                 </div>
                                             </fieldset>
-                                            <label className="grid gap-1.5 text-sm font-semibold text-foreground sm:col-span-2">
-                                                {translate('Nomor pesanan')}
-                                                <input
-                                                    className={fieldClass}
+                                            <div className="sm:col-span-2">
+                                                <FormInput
+                                                    id="external_order_number"
+                                                    name="external_order_number"
+                                                    label={translate('Nomor pesanan')}
+                                                    placeholder={translate('Contoh: INV-2026-00125')}
                                                     value={sale.data.external_order_number}
                                                     onChange={(event) => sale.setData('external_order_number', event.target.value)}
                                                     maxLength={100}
+                                                    error={sale.errors.external_order_number}
                                                 />
-                                            </label>
+                                            </div>
                                             <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-sm sm:col-span-2">
                                                 <span className="font-semibold text-muted-foreground">
                                                     {translate('Masuk ke saldo marketplace')}
@@ -1002,8 +747,8 @@ export default function PosIndex({
                                                     {primaryPaymentMethods.map((method) => {
                                                         const active = method.account_id === sale.data.account_id;
                                                         const pillClass = active
-                                                            ? 'border-[var(--app-ink)] bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-sm'
-                                                            : 'border-border bg-background text-foreground hover:border-[var(--app-primary)] hover:bg-[var(--app-soft)]';
+                                                            ? 'border-[var(--app-primary)]/40 bg-[var(--app-soft)] text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/10'
+                                                            : 'border-border bg-background text-foreground hover:border-[var(--app-primary)]/40 hover:bg-[var(--app-soft)]/40';
 
                                                         return (
                                                             <button
@@ -1038,50 +783,50 @@ export default function PosIndex({
                                                     </button>
                                                     {otherPaymentsExpanded && (
                                                         <div id="pos-other-payments" className="border-t border-border p-3">
-                                                            <label className="grid gap-1.5 text-sm font-semibold text-foreground">
-                                                                {translate('Akun penerimaan')}
-                                                                <select
-                                                                    className={fieldClass}
-                                                                    value={
-                                                                        selectedMethod &&
-                                                                        otherPaymentMethods.some(
-                                                                            (method) => method.account_id === selectedMethod.account_id,
-                                                                        )
-                                                                            ? selectedMethod.account_id
-                                                                            : ''
-                                                                    }
-                                                                    onChange={(event) => {
-                                                                        const method = otherPaymentMethods.find(
-                                                                            (option) => option.account_id === event.target.value,
-                                                                        );
-
-                                                                        if (method) {
-                                                                            selectPaymentMethod(method);
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <option value="">{translate('Pilih akun')}</option>
-                                                                    {otherPaymentMethods.map((method) => (
-                                                                        <option key={method.account_id} value={method.account_id}>
-                                                                            {translate(
-                                                                                method.method === 'bank_transfer'
-                                                                                    ? 'Transfer bank'
-                                                                                    : 'E-wallet',
-                                                                            )}{' '}
-                                                                            · {method.label}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                                {selectedMethod &&
+                                                            <FormSelect
+                                                                id="payment_account"
+                                                                name="account_id"
+                                                                label={translate('Akun penerimaan')}
+                                                                error={sale.errors.account_id}
+                                                                value={
+                                                                    selectedMethod &&
                                                                     otherPaymentMethods.some(
                                                                         (method) => method.account_id === selectedMethod.account_id,
-                                                                    ) && (
-                                                                        <span className="mt-1 inline-flex items-center gap-2 text-xs font-bold text-[var(--app-primary)]">
-                                                                            <CommerceBrandMark code={selectedMethod.brand} />
-                                                                            {selectedMethod.label}
-                                                                        </span>
-                                                                    )}
-                                                            </label>
+                                                                    )
+                                                                        ? selectedMethod.account_id
+                                                                        : ''
+                                                                }
+                                                                onChange={(event) => {
+                                                                    const method = otherPaymentMethods.find(
+                                                                        (option) => option.account_id === event.target.value,
+                                                                    );
+
+                                                                    if (method) {
+                                                                        selectPaymentMethod(method);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <option value="">{translate('Pilih akun')}</option>
+                                                                {otherPaymentMethods.map((method) => (
+                                                                    <option key={method.account_id} value={method.account_id}>
+                                                                        {translate(
+                                                                            method.method === 'bank_transfer'
+                                                                                ? 'Transfer bank'
+                                                                                : 'E-wallet',
+                                                                        )}{' '}
+                                                                        · {method.label}
+                                                                    </option>
+                                                                ))}
+                                                            </FormSelect>
+                                                            {selectedMethod &&
+                                                                otherPaymentMethods.some(
+                                                                    (method) => method.account_id === selectedMethod.account_id,
+                                                                ) && (
+                                                                    <span className="mt-2 inline-flex items-center gap-2 text-xs font-bold text-[var(--app-primary)]">
+                                                                        <CommerceBrandMark code={selectedMethod.brand} />
+                                                                        {selectedMethod.label}
+                                                                    </span>
+                                                                )}
                                                         </div>
                                                     )}
                                                 </section>
@@ -1206,13 +951,15 @@ export default function PosIndex({
                                         </>
                                     )}
 
-                                    <input
-                                        className={fieldClass}
-                                        aria-label="Catatan"
-                                        placeholder="Catatan opsional"
+                                    <FormInput
+                                        id="sale_notes"
+                                        name="notes"
+                                        label={translate('Catatan')}
+                                        placeholder={translate('Contoh: Pesanan dibungkus terpisah')}
                                         value={sale.data.notes}
                                         onChange={(event) => sale.setData('notes', event.target.value)}
                                         maxLength={500}
+                                        error={sale.errors.notes}
                                     />
                                     {checkoutError && (
                                         <p
@@ -1222,17 +969,6 @@ export default function PosIndex({
                                             {checkoutError}
                                         </p>
                                     )}
-                                    <Button
-                                        type="submit"
-                                        form="pos-checkout-form"
-                                        size="checkout"
-                                        disabled={
-                                            sale.processing || sale.data.items.length === 0 || !paymentReady || sale.data.paid_amount === ''
-                                        }
-                                        className="w-full text-base font-bold"
-                                    >
-                                        {sale.processing ? translate('Memproses...') : `${translate('Bayar')} ${money(total)}`}
-                                    </Button>
                                 </div>
                             </ResponsiveDialog>
                             <div className="mt-2 space-y-3 border-t border-border pt-5">
@@ -1253,7 +989,10 @@ export default function PosIndex({
                                 <Button
                                     type="button"
                                     size="checkout"
-                                    onClick={() => setPaymentOpen(true)}
+                                    onClick={() => {
+                                        setCartOpen(false);
+                                        setPaymentOpen(true);
+                                    }}
                                     disabled={sale.data.items.length === 0}
                                     className="w-full text-base font-bold"
                                 >

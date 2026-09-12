@@ -11,6 +11,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAppearance } from '@/hooks/use-appearance';
+import { translate } from '@/lib/i18n';
 import { storeThemeVariables } from '@/lib/store-theme';
 import storesRoutes from '@/routes/stores';
 import type { StoreCreationState, StoreSummary } from '@/types';
@@ -32,28 +33,28 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                 {canCreateStore ? (
                     <Link
                         href={storesRoutes.create.url()}
-                        className="flex min-w-0 items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-sm ring-1 ring-[var(--app-ink)]/8"
+                        className="flex min-w-0 items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2"
                     >
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f5b942] text-[var(--app-ink)]">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                             <Plus className="size-4" />
                         </span>
                         <span className="min-w-0">
-                            <span className="block truncate text-xs font-bold">Buat toko</span>
-                            <span className="block truncate text-[10px] text-[var(--muted-foreground)]">Mulai operasional</span>
+                            <span className="block truncate text-xs font-bold">{translate('Buat toko')}</span>
+                            <span className="block truncate text-xs text-muted-foreground">{translate('Mulai operasional')}</span>
                         </span>
                     </Link>
                 ) : (
                     <button
                         type="button"
                         onClick={() => setLimitOpen(true)}
-                        className="flex min-w-0 items-center gap-2 rounded-2xl bg-card px-3 py-2 text-left shadow-sm ring-1 ring-[var(--app-ink)]/8"
+                        className="flex min-w-0 items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 text-left"
                     >
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f5b942] text-[var(--app-ink)]">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                             <LockKeyhole className="size-4" />
                         </span>
                         <span className="min-w-0">
-                            <span className="block truncate text-xs font-bold">Tambah kapasitas</span>
-                            <span className="block truncate text-xs text-[var(--muted-foreground)]">Hubungi admin</span>
+                            <span className="block truncate text-xs font-bold">{translate('Tambah kapasitas')}</span>
+                            <span className="block truncate text-xs text-muted-foreground">{translate('Hubungi admin')}</span>
                         </span>
                     </button>
                 )}
@@ -82,9 +83,11 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                 <DropdownMenuContent
                     style={storeThemeVariables(activeStore.theme_color, resolvedAppearance)}
                     align="start"
-                    className="max-h-[70svh] w-72 max-w-[calc(100vw-2rem)] [scrollbar-color:var(--muted-foreground)_transparent] overflow-y-auto rounded-2xl border-[var(--app-ink)]/10 p-2 shadow-xl"
+                    className="max-h-[70svh] w-72 max-w-[calc(100vw-2rem)] [scrollbar-color:var(--muted-foreground)_transparent] overflow-y-auto rounded-2xl border-border p-2 shadow-xl dark:shadow-none"
                 >
-                    <DropdownMenuLabel className="px-3 py-2 text-xs text-muted-foreground">Pilih ruang kerja</DropdownMenuLabel>
+                    <DropdownMenuLabel className="px-3 py-2 text-xs text-muted-foreground">
+                        {translate('Pilih ruang kerja')}
+                    </DropdownMenuLabel>
                     {stores.map((store) => (
                         <DropdownMenuItem
                             key={store.public_id}
@@ -98,7 +101,7 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                             </span>
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate font-semibold">{store.name}</span>
-                                <span className="block text-[11px] text-muted-foreground capitalize">{store.role}</span>
+                                <span className="block text-[11px] text-muted-foreground capitalize">{translate(store.role)}</span>
                             </span>
                             {store.public_id === activeStore.public_id && <Check className="size-4 text-primary" />}
                         </DropdownMenuItem>
@@ -108,13 +111,13 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                         <DropdownMenuItem asChild className="rounded-xl p-3">
                             <Link href={storesRoutes.create.url()}>
                                 <Plus className="size-4" />
-                                Tambah toko baru
+                                {translate('Tambah toko baru')}
                             </Link>
                         </DropdownMenuItem>
                     ) : (
                         <DropdownMenuItem className="rounded-xl p-3" onSelect={() => setLimitOpen(true)}>
                             <LockKeyhole className="size-4" />
-                            Tambah kapasitas toko
+                            {translate('Tambah kapasitas toko')}
                         </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>

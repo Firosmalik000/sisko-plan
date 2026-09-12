@@ -17,9 +17,9 @@ import { setActiveLocale, useTranslation } from '@/lib/i18n';
 type LocaleOption = { code: AppLocale; label: string };
 
 const fallbackLocales: LocaleOption[] = [
-    { code: 'id', label: 'Indonesia' },
     { code: 'en', label: 'English' },
-    { code: 'ms', label: 'Melayu' },
+    { code: 'ms', label: 'Bahasa Melayu' },
+    { code: 'id', label: 'Bahasa Indonesia' },
     { code: 'vi', label: 'Tiếng Việt' },
 ];
 

@@ -93,6 +93,27 @@ function createIdempotencyKey() {
     return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
 }
 
+export function generateProductSku(name: string): string {
+    const prefix = name
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/gu, '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/gu, '-')
+        .replace(/^-|-$/gu, '')
+        .slice(0, 20);
+    const suffix = createIdempotencyKey().replaceAll('-', '').slice(-6).toUpperCase();
+
+    return `${prefix || 'PRD'}-${suffix}`;
+}
+
+export function generateInternalBarcode(): string {
+    const source = createIdempotencyKey().replaceAll('-', '');
+    const digits = Array.from(source.slice(-12), (character) => String(Number.parseInt(character, 16) % 10));
+    const sum = digits.reduce((total, digit, index) => total + Number(digit) * (index % 2 === 0 ? 1 : 3), 0);
+
+    return `${digits.join('')}${(10 - (sum % 10)) % 10}`;
+}
+
 export function createBlankVariant(): ProductVariant {
     return {
         client_id: createIdempotencyKey(),

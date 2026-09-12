@@ -182,6 +182,8 @@ void createInertiaApp({
     },
     progress: {
         color: '#ee4d2d',
+        delay: 250,
+        showSpinner: false,
     },
 }).then(dismissBootScreen);
 

@@ -695,12 +695,16 @@ export const englishOverrides: Record<string, string> = {
     'Stok masuk': 'Stock in',
     'Transfer masuk': 'Incoming transfer',
     'Kapasitas toko sudah penuh': 'Store capacity reached',
+    'Kapasitas produk sudah penuh': 'Product capacity reached',
     'Kapasitas staf sudah penuh': 'Staff capacity reached',
     'Kuota scan sudah habis': 'Scan quota reached',
     'Hubungi admin untuk menambah kapasitas toko pada akun Anda.': 'Contact the administrator to add store capacity to your account.',
+    'Hubungi admin untuk menambah kapasitas produk pada akun Anda.': 'Contact the administrator to add product capacity to your account.',
     'Hubungi admin untuk menambah kapasitas staf pada akun Anda.': 'Contact the administrator to add staff capacity to your account.',
     'Hubungi admin untuk menambah kuota scan pada akun Anda.': 'Contact the administrator to add scan quota to your account.',
     'saya ingin mengajukan penambahan kapasitas toko untuk akun saya': 'I would like to request additional store capacity for my account',
+    'saya ingin mengajukan penambahan kapasitas produk untuk akun saya':
+        'I would like to request additional product capacity for my account',
     'saya ingin mengajukan penambahan kapasitas staf untuk akun saya': 'I would like to request additional staff capacity for my account',
     'saya ingin mengajukan penambahan kuota scan untuk akun saya': 'I would like to request additional scan quota for my account',
     'Hubungi admin via WhatsApp': 'Contact admin via WhatsApp',
@@ -709,6 +713,10 @@ export const englishOverrides: Record<string, string> = {
     'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.':
         'The support WhatsApp number is not available yet. Please contact the platform administrator.',
     'WhatsApp dukungan': 'Support WhatsApp',
+    'Stok aman': 'Stock is healthy',
+    'Tidak ada produk yang perlu diisi ulang.': 'No products need restocking.',
+    'notifikasi belum dibaca': 'unread notifications',
+    'Tutup notifikasi': 'Dismiss notification',
     'Berlaku untuk toko dan perangkat ini. Pengaturan perangkat kasir lain tidak berubah.':
         'Applies to this store and device. Settings on other cashier devices will not change.',
     'Cetak sistem/browser': 'System/browser printing',

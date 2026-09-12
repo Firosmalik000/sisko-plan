@@ -317,13 +317,17 @@ export const vietnameseCustomerCatalog: Record<string, string> = {
     Terjadwal: 'Đã lên lịch',
     'sedang dikenali': 'đang nhận diện',
     'Kapasitas toko sudah penuh': 'Đã đạt giới hạn cửa hàng',
+    'Kapasitas produk sudah penuh': 'Đã đạt giới hạn sản phẩm',
     'Kapasitas staf sudah penuh': 'Đã đạt giới hạn nhân viên',
     'Kuota scan sudah habis': 'Đã hết hạn mức quét',
     'Hubungi admin untuk menambah kapasitas toko pada akun Anda.': 'Liên hệ quản trị viên để tăng số lượng cửa hàng cho tài khoản của bạn.',
+    'Hubungi admin untuk menambah kapasitas produk pada akun Anda.':
+        'Liên hệ quản trị viên để tăng số lượng sản phẩm cho tài khoản của bạn.',
     'Hubungi admin untuk menambah kapasitas staf pada akun Anda.':
         'Liên hệ quản trị viên để tăng số lượng nhân viên cho tài khoản của bạn.',
     'Hubungi admin untuk menambah kuota scan pada akun Anda.': 'Liên hệ quản trị viên để tăng hạn mức quét cho tài khoản của bạn.',
     'saya ingin mengajukan penambahan kapasitas toko untuk akun saya': 'tôi muốn yêu cầu tăng số lượng cửa hàng cho tài khoản của mình',
+    'saya ingin mengajukan penambahan kapasitas produk untuk akun saya': 'tôi muốn yêu cầu tăng số lượng sản phẩm cho tài khoản của mình',
     'saya ingin mengajukan penambahan kapasitas staf untuk akun saya': 'tôi muốn yêu cầu tăng số lượng nhân viên cho tài khoản của mình',
     'saya ingin mengajukan penambahan kuota scan untuk akun saya': 'tôi muốn yêu cầu tăng hạn mức quét cho tài khoản của mình',
     'Hubungi admin via WhatsApp': 'Liên hệ quản trị viên qua WhatsApp',
@@ -332,6 +336,9 @@ export const vietnameseCustomerCatalog: Record<string, string> = {
     'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.':
         'Số WhatsApp hỗ trợ chưa được thiết lập. Vui lòng liên hệ quản trị viên nền tảng.',
     'WhatsApp dukungan': 'WhatsApp hỗ trợ',
+    'Tidak ada produk yang perlu diisi ulang.': 'Không có sản phẩm nào cần nhập thêm.',
+    'notifikasi belum dibaca': 'thông báo chưa đọc',
+    'Tutup notifikasi': 'Đóng thông báo',
     'Belum lunas': 'Chưa thanh toán hết',
     'Belum ada pergerakan utang.': 'Chưa có biến động công nợ.',
     'Buku utang': 'Sổ công nợ',

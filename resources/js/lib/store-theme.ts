@@ -41,15 +41,15 @@ function contrastColor(hex: string) {
 export function storeThemeVariables(color = '#ee4d2d', appearance: 'light' | 'dark' = 'light'): CSSProperties {
     const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#ee4d2d';
     const dark = appearance === 'dark';
-    const foreground = dark ? '#f5efec' : '#2d2928';
-    const surface = dark ? mix(safeColor, '#171514', 0.9) : mix(safeColor, '#ffffff', 0.965);
-    const card = dark ? mix(safeColor, '#211e1d', 0.94) : '#ffffff';
-    const soft = dark ? mix(safeColor, '#201c1b', 0.86) : mix(safeColor, '#ffffff', 0.9);
-    const softStrong = dark ? mix(safeColor, '#201c1b', 0.72) : mix(safeColor, '#ffffff', 0.8);
-    const border = dark ? '#51443f' : mix(safeColor, '#ffffff', 0.76);
-    const input = dark ? '#6a5951' : mix(safeColor, '#ffffff', 0.68);
-    const muted = dark ? mix(safeColor, '#26211f', 0.92) : mix(safeColor, '#ffffff', 0.94);
-    const mutedForeground = dark ? '#c1b3ad' : '#756d6a';
+    const foreground = dark ? '#f4f1ef' : '#2d2928';
+    const surface = dark ? '#141414' : mix(safeColor, '#ffffff', 0.965);
+    const card = dark ? '#1c1c1c' : '#ffffff';
+    const soft = dark ? '#242424' : mix(safeColor, '#ffffff', 0.9);
+    const softStrong = dark ? mix(safeColor, '#242424', 0.84) : mix(safeColor, '#ffffff', 0.8);
+    const border = dark ? '#343434' : mix(safeColor, '#ffffff', 0.76);
+    const input = dark ? '#454545' : mix(safeColor, '#ffffff', 0.68);
+    const muted = dark ? '#222222' : mix(safeColor, '#ffffff', 0.94);
+    const mutedForeground = dark ? '#b9b3b0' : '#756d6a';
     const primaryForeground = contrastColor(safeColor);
 
     return {
@@ -57,7 +57,7 @@ export function storeThemeVariables(color = '#ee4d2d', appearance: 'light' | 'da
         fontFamily: '"Inter", ui-sans-serif, system-ui, sans-serif',
         '--app-primary': safeColor,
         '--app-primary-foreground': primaryForeground,
-        '--app-shadow': `${safeColor}38`,
+        '--app-shadow': dark ? 'transparent' : `${safeColor}38`,
         '--app-ink': foreground,
         '--app-soft': soft,
         '--app-soft-strong': softStrong,

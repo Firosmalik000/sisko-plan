@@ -40,10 +40,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
     }, [theme, resolvedAppearance]);
 
     return (
-        <div
-            className="customer-workspace min-h-svh [scrollbar-color:var(--muted-foreground)_transparent] bg-background font-sans text-foreground [&_*]:[scrollbar-color:var(--muted-foreground)_transparent] [html:has(&)]:[scrollbar-color:var(--muted-foreground)_transparent]"
-            style={theme}
-        >
+        <div className="customer-workspace min-h-svh bg-background font-sans text-foreground" style={theme}>
             <ImpersonationBanner />
             <CustomerHeader />
             <SubscriptionBanner />

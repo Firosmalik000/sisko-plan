@@ -1,4 +1,5 @@
 import {
+    Barcode,
     BarChart3,
     Boxes,
     CircleDollarSign,
@@ -43,7 +44,7 @@ export type { QuickActionMode } from '@/layouts/customer/quick-action';
 
 export const primaryDestinations = [
     { title: 'Beranda', href: dashboard.url(), icon: Home },
-    { title: 'Produk', href: productRoutes.index.url(), icon: PackageSearch },
+    { title: 'Produk', href: productRoutes.index.url(), icon: Barcode },
     { title: 'Transaksi', href: salesRoutes.index.url(), icon: ReceiptText },
 ] as const;
 
