@@ -1,5 +1,18 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, ChevronUp, CreditCard, Gauge, Globe2, LogOut, LockKeyhole, MapPinned, ReceiptText, UserCog, Users } from 'lucide-react';
+import {
+    Building2,
+    ChevronUp,
+    CreditCard,
+    Gauge,
+    Gift,
+    Globe2,
+    LogOut,
+    LockKeyhole,
+    MapPinned,
+    ReceiptText,
+    UserCog,
+    Users,
+} from 'lucide-react';
 import type { ComponentType } from 'react';
 import BrandMark from '@/components/brand-mark';
 import LanguageSwitcher from '@/components/language-switcher';
@@ -19,6 +32,7 @@ type NavigationItem = {
     href: string;
     icon: ComponentType<{ className?: string }>;
     permission?: string;
+    permissions?: string[];
 };
 
 const navigation: Array<{ label: string; items: NavigationItem[] }> = [
@@ -64,6 +78,12 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 href: '/super-admin/payments',
                 icon: ReceiptText,
                 permission: 'platform.payments.view',
+            },
+            {
+                label: 'Referral & Commission',
+                href: '/super-admin/referral-commission',
+                icon: Gift,
+                permissions: ['platform.referrals.view', 'platform.commissions.view', 'platform.payouts.view'],
             },
         ],
     },
@@ -127,7 +147,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                             (item) =>
                                 item.permission === undefined ||
                                 platformAdmin.role === 'super_admin' ||
-                                platformAdmin.permissions.includes(item.permission),
+                                platformAdmin.permissions.includes(item.permission) ||
+                                item.permissions?.some((permission) => platformAdmin.permissions.includes(permission)),
                         );
 
                         if (items.length === 0) {
@@ -141,12 +162,20 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                                 </p>
                                 <div className="flex shrink-0 gap-1 md:block md:space-y-1">
                                     {items.map((item) => {
+                                        const href =
+                                            item.href === '/super-admin/referral-commission' &&
+                                            platformAdmin.role !== 'super_admin' &&
+                                            !platformAdmin.permissions.includes('platform.referrals.view')
+                                                ? platformAdmin.permissions.includes('platform.commissions.view')
+                                                    ? '/super-admin/referral-commission/commissions'
+                                                    : '/super-admin/referral-commission/payouts'
+                                                : item.href;
                                         const active = item.href === '/super-admin' ? path === item.href : path.startsWith(item.href);
 
                                         return (
                                             <Link
                                                 key={item.href}
-                                                href={item.href}
+                                                href={href}
                                                 prefetch
                                                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition ${active ? 'bg-white text-[#b83219] shadow-lg shadow-[#9f2f19]/20' : 'text-white/80 hover:bg-white/12 hover:text-white'}`}
                                             >

@@ -44,6 +44,16 @@ final class PlatformPermission
 
     public const GEOGRAPHY_MANAGE = 'platform.geography.manage';
 
+    public const REFERRALS_VIEW = 'platform.referrals.view';
+
+    public const COMMISSIONS_VIEW = 'platform.commissions.view';
+
+    public const COMMISSIONS_MANAGE = 'platform.commissions.manage';
+
+    public const PAYOUTS_VIEW = 'platform.payouts.view';
+
+    public const PAYOUTS_MANAGE = 'platform.payouts.manage';
+
     /** @return list<string> */
     public static function all(): array
     {
@@ -71,6 +81,11 @@ final class PlatformPermission
             self::BRANDING_MANAGE,
             self::GEOGRAPHY_VIEW,
             self::GEOGRAPHY_MANAGE,
+            self::REFERRALS_VIEW,
+            self::COMMISSIONS_VIEW,
+            self::COMMISSIONS_MANAGE,
+            self::PAYOUTS_VIEW,
+            self::PAYOUTS_MANAGE,
         ];
     }
 
@@ -101,6 +116,13 @@ final class PlatformPermission
             ['label' => 'Pembayaran', 'permissions' => [
                 ['name' => self::PAYMENTS_VIEW, 'label' => 'Lihat riwayat pembayaran'],
             ]],
+            ['label' => 'Referral & Commission', 'permissions' => [
+                ['name' => self::REFERRALS_VIEW, 'label' => 'Lihat referral'],
+                ['name' => self::COMMISSIONS_VIEW, 'label' => 'Lihat commission'],
+                ['name' => self::COMMISSIONS_MANAGE, 'label' => 'Kelola commission'],
+                ['name' => self::PAYOUTS_VIEW, 'label' => 'Lihat payout'],
+                ['name' => self::PAYOUTS_MANAGE, 'label' => 'Kelola payout'],
+            ]],
             ['label' => 'Admin Platform', 'permissions' => [
                 ['name' => self::ADMINS_VIEW, 'label' => 'Lihat admin platform'],
                 ['name' => self::ADMINS_MANAGE, 'label' => 'Kelola admin dan akses'],
@@ -124,6 +146,9 @@ final class PlatformPermission
             self::STORES_VIEW => 'super-admin.stores.index',
             self::SUBSCRIPTIONS_VIEW => 'super-admin.subscriptions.index',
             self::PAYMENTS_VIEW => 'super-admin.payments.index',
+            self::REFERRALS_VIEW => 'super-admin.referral-commission.overview',
+            self::COMMISSIONS_VIEW => 'super-admin.referral-commission.commissions',
+            self::PAYOUTS_VIEW => 'super-admin.referral-commission.payouts',
             self::ADMINS_VIEW => 'super-admin.platform-admins.index',
             self::BRANDING_VIEW => 'super-admin.brand-seo.index',
             self::GEOGRAPHY_VIEW => 'super-admin.geography.index',

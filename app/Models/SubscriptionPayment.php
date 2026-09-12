@@ -7,12 +7,18 @@ use App\Models\Concerns\ImmutableLedgerRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property string $public_id
  * @property int|null $store_id
+ * @property int|null $user_id
+ * @property int $subscription_id
+ * @property int|null $plan_id
+ * @property string|null $plan_name
+ * @property string|null $plan_kind
  * @property string $receipt_number
  * @property string $amount
  * @property Carbon $period_start
@@ -23,9 +29,11 @@ use Illuminate\Support\Carbon;
  * @property string|null $notes
  * @property-read Store|null $store
  * @property-read Subscription $subscription
+ * @property-read Plan|null $plan
+ * @property-read ReferralCommission|null $referralCommission
  * @property-read User|null $creator
  */
-#[Fillable(['user_id', 'store_id', 'subscription_id', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'idempotency_key', 'request_hash', 'paid_at', 'notes', 'created_by_user_id'])]
+#[Fillable(['user_id', 'store_id', 'subscription_id', 'plan_id', 'plan_name', 'plan_kind', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'idempotency_key', 'request_hash', 'paid_at', 'notes', 'created_by_user_id'])]
 class SubscriptionPayment extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;
@@ -54,6 +62,18 @@ class SubscriptionPayment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    /** @return BelongsTo<Plan, $this> */
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
+    }
+
+    /** @return HasOne<ReferralCommission, $this> */
+    public function referralCommission(): HasOne
+    {
+        return $this->hasOne(ReferralCommission::class);
     }
 
     protected function casts(): array

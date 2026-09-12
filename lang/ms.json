@@ -290,5 +290,13 @@
     "Paid": "Dibayar",
     "Change": "Baki",
     "Order": "Pesanan",
-    "Fixed quantity products require whole quantities.": "Produk berkuantiti tetap mesti dijual dalam jumlah bulat."
+    "Fixed quantity products require whole quantities.": "Produk berkuantiti tetap mesti dijual dalam jumlah bulat.",
+    "You cannot refer yourself.": "Anda tidak boleh merujuk diri sendiri.",
+    "This commission transition is not allowed.": "Perubahan status komisen ini tidak dibenarkan.",
+    "A commission included in a payout cannot be changed.": "Komisen yang telah dimasukkan dalam pembayaran tidak boleh diubah.",
+    "Only approved unpaid commissions for one referrer may be paid out.": "Hanya komisen diluluskan yang belum dibayar untuk seorang perujuk boleh dibayar.",
+    "All payout commissions must still be approved.": "Semua komisen dalam pembayaran mesti kekal diluluskan.",
+    "Commission updated successfully.": "Komisen berjaya dikemas kini.",
+    "Payout created successfully.": "Pembayaran komisen berjaya dicipta.",
+    "Payout marked as paid.": "Pembayaran komisen ditandakan sebagai dibayar."
 }

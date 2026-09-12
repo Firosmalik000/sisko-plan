@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasPublicId;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property string $name
  * @property string $monthly_price
+ * @property string $referral_commission_rate
  * @property string $kind
  * @property string|null $offer_category
  * @property string $billing_cycle
@@ -23,8 +25,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_trial
  * @property bool $is_active
  * @property int|null $subscriptions_count
+ * @property-read Collection<int, ReferralCommission> $referralCommissions
  */
-#[Fillable(['code', 'name', 'description', 'kind', 'offer_category', 'monthly_price', 'billing_cycle', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active'])]
+#[Fillable(['code', 'name', 'description', 'kind', 'offer_category', 'monthly_price', 'referral_commission_rate', 'billing_cycle', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active'])]
 class Plan extends Model
 {
     use HasPublicId;
@@ -67,10 +70,17 @@ class Plan extends Model
         return $this->hasMany(SubscriptionAddon::class);
     }
 
+    /** @return HasMany<ReferralCommission, $this> */
+    public function referralCommissions(): HasMany
+    {
+        return $this->hasMany(ReferralCommission::class);
+    }
+
     protected function casts(): array
     {
         return [
             'monthly_price' => 'decimal:4',
+            'referral_commission_rate' => 'decimal:2',
             'duration_months' => 'integer',
             'max_stores' => 'integer',
             'max_products' => 'integer',

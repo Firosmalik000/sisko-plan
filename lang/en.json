@@ -209,5 +209,13 @@
     "Paid": "Paid",
     "Change": "Change",
     "Order": "Order",
-    "Fixed quantity products require whole quantities.": "Fixed quantity products require whole quantities."
+    "Fixed quantity products require whole quantities.": "Fixed quantity products require whole quantities.",
+    "You cannot refer yourself.": "You cannot refer yourself.",
+    "This commission transition is not allowed.": "This commission transition is not allowed.",
+    "A commission included in a payout cannot be changed.": "A commission included in a payout cannot be changed.",
+    "Only approved unpaid commissions for one referrer may be paid out.": "Only approved unpaid commissions for one referrer may be paid out.",
+    "All payout commissions must still be approved.": "All payout commissions must still be approved.",
+    "Commission updated successfully.": "Commission updated successfully.",
+    "Payout created successfully.": "Payout created successfully.",
+    "Payout marked as paid.": "Payout marked as paid."
 }

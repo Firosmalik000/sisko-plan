@@ -34,7 +34,7 @@ class SubscriptionController extends Controller
             ])
             ->orderBy('monthly_price')->get()
             ->map(fn (Plan $plan): array => [
-                ...$plan->only(['public_id', 'name', 'description', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active']),
+                ...$plan->only(['public_id', 'name', 'description', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'referral_commission_rate', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active']),
                 'subscriptions_count' => $plan->kind === Plan::KIND_ADDON ? $plan->subscription_addons_count : $plan->subscriptions_count,
             ]);
         $subscriptions = Subscription::query()
@@ -254,13 +254,14 @@ class SubscriptionController extends Controller
         return back();
     }
 
-    /** @return array{name:string,description:?string,kind:string,offer_category:?string,billing_cycle:string,monthly_price:string,duration_months:int,max_stores:int,max_products:int,max_members:int,max_scans:int,is_active:bool} */
+    /** @return array{name:string,description:?string,kind:string,offer_category:?string,billing_cycle:string,monthly_price:string,referral_commission_rate:string,duration_months:int,max_stores:int,max_products:int,max_members:int,max_scans:int,is_active:bool} */
     private function planData(Request $request, ?Plan $plan = null): array
     {
         $request->merge([
             'kind' => $request->input('kind', Plan::KIND_BASE),
             'offer_category' => $request->input('offer_category'),
             'billing_cycle' => $request->input('billing_cycle', Plan::BILLING_FIXED),
+            'referral_commission_rate' => $request->input('referral_commission_rate', $plan === null ? '0' : $plan->referral_commission_rate),
             'max_scans' => $request->input('max_scans', 0),
         ]);
         $validated = $request->validate([
@@ -274,6 +275,7 @@ class SubscriptionController extends Controller
             ],
             'billing_cycle' => ['required', Rule::in([Plan::BILLING_FIXED, Plan::BILLING_LIFETIME])],
             'monthly_price' => ['required', 'decimal:0,4', 'gte:0', 'lte:999999999999999.9999'],
+            'referral_commission_rate' => ['required', 'decimal:0,2', 'gte:0', 'lte:100'],
             'duration_months' => ['required', 'integer', 'between:1,12'],
             'max_stores' => ['required', 'integer', 'min:0', 'max:4294967295'],
             'max_products' => ['required', 'integer', 'min:0', 'max:4294967295'],
@@ -314,6 +316,7 @@ class SubscriptionController extends Controller
             'offer_category' => $validated['kind'] === Plan::KIND_ADDON ? $validated['offer_category'] : null,
             'billing_cycle' => $validated['billing_cycle'],
             'monthly_price' => $validated['monthly_price'], 'duration_months' => (int) $validated['duration_months'], 'max_stores' => (int) $validated['max_stores'],
+            'referral_commission_rate' => $validated['referral_commission_rate'],
             'max_products' => (int) $validated['max_products'], 'max_members' => (int) $validated['max_members'],
             'max_scans' => (int) $validated['max_scans'],
             'is_active' => (bool) $validated['is_active'],

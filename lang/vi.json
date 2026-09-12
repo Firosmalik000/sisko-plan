@@ -45,5 +45,13 @@
     "Paid": "Đã trả",
     "Change": "Tiền thừa",
     "Order": "Đơn hàng",
-    "Fixed quantity products require whole quantities.": "Sản phẩm có số lượng cố định phải được bán theo số nguyên."
+    "Fixed quantity products require whole quantities.": "Sản phẩm có số lượng cố định phải được bán theo số nguyên.",
+    "You cannot refer yourself.": "Bạn không thể tự giới thiệu chính mình.",
+    "This commission transition is not allowed.": "Không cho phép thay đổi trạng thái hoa hồng này.",
+    "A commission included in a payout cannot be changed.": "Không thể thay đổi hoa hồng đã nằm trong đợt chi trả.",
+    "Only approved unpaid commissions for one referrer may be paid out.": "Chỉ hoa hồng đã duyệt và chưa trả của cùng một người giới thiệu mới được chi trả.",
+    "All payout commissions must still be approved.": "Tất cả hoa hồng trong đợt chi trả vẫn phải ở trạng thái đã duyệt.",
+    "Commission updated successfully.": "Đã cập nhật hoa hồng.",
+    "Payout created successfully.": "Đã tạo đợt chi trả.",
+    "Payout marked as paid.": "Đã đánh dấu đợt chi trả là đã trả."
 }

@@ -19,6 +19,7 @@ type Plan = {
     offer_category: OfferCategory | null;
     billing_cycle: 'fixed' | 'lifetime';
     monthly_price: string;
+    referral_commission_rate: string;
     duration_months: number;
     max_stores: number;
     max_products: number;
@@ -99,6 +100,7 @@ type PlanData = {
     name: string;
     description: string;
     monthly_price: string;
+    referral_commission_rate: string;
     kind: 'base' | 'addon';
     offer_category: OfferCategory | '';
     billing_cycle: 'fixed' | 'lifetime';
@@ -393,6 +395,7 @@ function CreatePlanDialog() {
         name: '',
         description: '',
         monthly_price: '0',
+        referral_commission_rate: '0',
         kind: 'base',
         offer_category: '',
         billing_cycle: 'fixed',
@@ -440,6 +443,7 @@ function PlanRow({ plan, canManage, compact = false }: { plan: Plan; canManage: 
         name: plan.name,
         description: plan.description ?? '',
         monthly_price: plan.monthly_price,
+        referral_commission_rate: plan.referral_commission_rate,
         kind: plan.kind,
         offer_category: plan.offer_category ?? '',
         billing_cycle: plan.billing_cycle,
@@ -481,6 +485,11 @@ function PlanRow({ plan, canManage, compact = false }: { plan: Plan; canManage: 
                         {formatMoney(plan.monthly_price)}
                         {plan.billing_cycle === 'fixed' ? translate('/bulan') : ''}
                     </span>
+                    {Number(plan.referral_commission_rate) > 0 && (
+                        <span>
+                            {plan.referral_commission_rate}% {translate('komisi rujukan')}
+                        </span>
+                    )}
                     <span>{planTerm(plan)}</span>
                     <span>{localizedQuantity(plan.subscriptions_count, plan.kind === 'addon' ? 'aktivasi' : 'akun')}</span>
                     {(plan.kind === 'base' || plan.max_stores > 0) && <span>{localizedCapacity(plan, plan.max_stores, 'toko')}</span>}
@@ -646,6 +655,22 @@ function PlanModal({
                             value={form.data.monthly_price}
                             onChange={(event) => form.setData('monthly_price', event.target.value)}
                         />
+                    </Field>
+                    <Field label="Komisi rujukan (%)">
+                        <input
+                            className={inputClass}
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            required
+                            disabled={trial || defaultPlan}
+                            value={form.data.referral_commission_rate}
+                            onChange={(event) => form.setData('referral_commission_rate', event.target.value)}
+                        />
+                        <p className="mt-1 text-xs text-slate-500">
+                            Dihitung berdasarkan nilai pembayaran sebenarnya. Gunakan 0 untuk menonaktifkan komisi.
+                        </p>
                     </Field>
                     <Field label="Masa berlaku">
                         <select

@@ -99,5 +99,13 @@
     "Total": "Total",
     "Paid": "Dibayar",
     "Change": "Kembalian",
-    "Order": "Pesanan"
+    "Order": "Pesanan",
+    "You cannot refer yourself.": "Anda tidak dapat mereferensikan diri sendiri.",
+    "This commission transition is not allowed.": "Perubahan status komisi ini tidak diizinkan.",
+    "A commission included in a payout cannot be changed.": "Komisi yang sudah masuk pembayaran tidak dapat diubah.",
+    "Only approved unpaid commissions for one referrer may be paid out.": "Hanya komisi disetujui yang belum dibayar milik satu referrer yang dapat dibayarkan.",
+    "All payout commissions must still be approved.": "Semua komisi dalam pembayaran harus tetap berstatus disetujui.",
+    "Commission updated successfully.": "Komisi berhasil diperbarui.",
+    "Payout created successfully.": "Pembayaran komisi berhasil dibuat.",
+    "Payout marked as paid.": "Pembayaran komisi ditandai sudah dibayar."
 }

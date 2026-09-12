@@ -4,6 +4,7 @@ import { vietnameseExtendedCatalog } from './extended';
 import { vietnamesePlatformCatalog } from './platform';
 import { vietnameseProductCatalog } from './product';
 import { vietnamesePublicCatalog } from './public';
+import { vietnameseReferralCatalog } from './referral';
 import { vietnameseSharedCatalog } from './shared';
 
 export const vietnameseCatalog: Record<string, string> = {
@@ -644,6 +645,7 @@ export const vietnameseCatalog: Record<string, string> = {
     ...vietnameseProductCatalog,
     ...vietnamesePublicCatalog,
     ...vietnameseDynamicCatalog,
+    ...vietnameseReferralCatalog,
     'Filter transaksi': 'Bộ lọc giao dịch',
     'Reset filter': 'Đặt lại bộ lọc',
     'Cari transaksi': 'Tìm giao dịch',

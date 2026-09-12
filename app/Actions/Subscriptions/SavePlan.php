@@ -13,7 +13,7 @@ class SavePlan
 {
     public function __construct(private RecordAdminAudit $audit) {}
 
-    /** @param array{name:string,description:?string,kind:string,offer_category:?string,billing_cycle:string,monthly_price:string,duration_months:int,max_stores:int,max_products:int,max_members:int,max_scans:int,is_active:bool} $data */
+    /** @param array{name:string,description:?string,kind:string,offer_category:?string,billing_cycle:string,monthly_price:string,referral_commission_rate:string,duration_months:int,max_stores:int,max_products:int,max_members:int,max_scans:int,is_active:bool} $data */
     public function handle(User $admin, array $data, ?Plan $plan, ?string $ipAddress): Plan
     {
         return DB::transaction(function () use ($admin, $data, $plan, $ipAddress): Plan {
@@ -27,6 +27,7 @@ class SavePlan
                 $data['offer_category'] = null;
                 $data['billing_cycle'] = Plan::BILLING_LIFETIME;
                 $data['monthly_price'] = '0';
+                $data['referral_commission_rate'] = '0';
                 $data['is_active'] = true;
             }
             if ($locked?->is_trial) {
@@ -34,7 +35,7 @@ class SavePlan
                 $data['duration_months'] = 1;
                 $data['is_active'] = true;
             }
-            $before = $locked?->only(['code', 'name', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active']);
+            $before = $locked?->only(['code', 'name', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'referral_commission_rate', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active']);
             if ($locked === null) {
                 $locked = Plan::create([
                     ...$data,
@@ -45,7 +46,7 @@ class SavePlan
             } else {
                 $locked->update($data);
             }
-            $this->audit->handle($admin, $plan === null ? 'plan.created' : 'plan.updated', $locked, $ipAddress, ['before' => $before, 'after' => $locked->only(['code', 'name', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active'])]);
+            $this->audit->handle($admin, $plan === null ? 'plan.created' : 'plan.updated', $locked, $ipAddress, ['before' => $before, 'after' => $locked->only(['code', 'name', 'kind', 'offer_category', 'billing_cycle', 'monthly_price', 'referral_commission_rate', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active'])]);
 
             return $locked;
         });

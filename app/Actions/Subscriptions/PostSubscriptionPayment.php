@@ -4,6 +4,7 @@ namespace App\Actions\Subscriptions;
 
 use App\Actions\Ledgers\IdempotencyGuard;
 use App\Actions\Platform\RecordAdminAudit;
+use App\Actions\Referrals\CreateReferralCommissionForPayment;
 use App\Enums\SubscriptionStatus;
 use App\Models\Subscription;
 use App\Models\SubscriptionPayment;
@@ -14,12 +15,12 @@ use Illuminate\Support\Facades\DB;
 
 class PostSubscriptionPayment
 {
-    public function __construct(private IdempotencyGuard $idempotency, private RecordAdminAudit $audit) {}
+    public function __construct(private IdempotencyGuard $idempotency, private RecordAdminAudit $audit, private CreateReferralCommissionForPayment $createCommission) {}
 
     public function handle(User $admin, Subscription $subscription, string $amount, string $periodStart, string $periodEnd, string $method, ?string $externalReference, string $paidAt, ?string $notes, string $idempotencyKey, ?string $ipAddress): SubscriptionPayment
     {
         $paidDate = CarbonImmutable::parse($paidAt)->utc();
-        $requestHash = $this->idempotency->hash(compact('amount', 'periodStart', 'periodEnd', 'method', 'externalReference', 'notes') + ['subscription_id' => $subscription->id, 'paid_at' => $paidDate->toISOString()]);
+        $requestHash = $this->idempotency->hash(compact('amount', 'periodStart', 'periodEnd', 'method', 'externalReference', 'notes') + ['subscription_id' => $subscription->id, 'plan_id' => $subscription->plan_id, 'paid_at' => $paidDate->toISOString()]);
 
         try {
             return DB::transaction(function () use ($admin, $subscription, $amount, $periodStart, $periodEnd, $method, $externalReference, $paidDate, $notes, $idempotencyKey, $requestHash, $ipAddress): SubscriptionPayment {
@@ -28,6 +29,7 @@ class PostSubscriptionPayment
                     return $existing;
                 }
                 $locked = Subscription::query()->whereKey($subscription->id)->lockForUpdate()->firstOrFail();
+                $locked->load('plan');
                 $period = $paidDate->format('Ym');
                 DB::table('platform_sequences')->insertOrIgnore(['document_type' => 'subpay', 'period' => $period, 'last_number' => 0, 'created_at' => now(), 'updated_at' => now()]);
                 $sequence = DB::table('platform_sequences')->where(['document_type' => 'subpay', 'period' => $period])->lockForUpdate()->firstOrFail();
@@ -35,11 +37,14 @@ class PostSubscriptionPayment
                 DB::table('platform_sequences')->where('id', $sequence->id)->update(['last_number' => $number, 'updated_at' => now()]);
                 $payment = SubscriptionPayment::create([
                     'user_id' => $locked->user_id, 'store_id' => $locked->store_id, 'subscription_id' => $locked->id,
+                    'plan_id' => $locked->plan_id, 'plan_name' => $locked->plan->name, 'plan_kind' => $locked->plan->kind,
                     'receipt_number' => sprintf('SUBPAY-%s-%05d', $period, $number), 'amount' => $amount,
                     'period_start' => $periodStart, 'period_end' => $periodEnd, 'payment_method' => $method,
                     'external_reference' => $externalReference, 'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash,
                     'paid_at' => $paidDate, 'notes' => $notes, 'created_by_user_id' => $admin->id,
                 ]);
+                $payment->setRelation('plan', $locked->plan);
+                $this->createCommission->handle($payment);
                 $renewed = $this->renewWhenEligible($locked, $periodStart, $periodEnd);
                 $this->audit->handle($admin, 'subscription.payment_posted', $payment, $ipAddress, ['user_id' => $locked->user_id, 'subscription_id' => $locked->id, 'amount' => $amount, 'period_end' => $periodEnd, 'renewed' => $renewed]);
 
