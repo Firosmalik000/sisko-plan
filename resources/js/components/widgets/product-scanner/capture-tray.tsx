@@ -1,7 +1,7 @@
 import { AlertCircle, Check, LoaderCircle, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import type { ScannerCapture } from '@/components/widgets/product-scanner/types';
 import { translate } from '@/lib/i18n';
-import type { ScannerCapture } from './types';
 
 export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]; onRemove: (id: string) => void }) {
     const tray = useRef<HTMLDivElement>(null);

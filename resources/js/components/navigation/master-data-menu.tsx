@@ -10,24 +10,29 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { translate } from '@/lib/i18n';
+import { index as categoriesIndex } from '@/routes/master-data/categories';
+import { index as financialAccountsIndex } from '@/routes/master-data/financial-accounts';
+import { index as productsIndex } from '@/routes/master-data/products';
+import { index as suppliersIndex } from '@/routes/master-data/suppliers';
+import { index as unitsIndex } from '@/routes/master-data/units';
 
 const supportingDataLinks = [
-    { label: 'Produk', href: '/master-data/products' },
-    { label: 'Kategori', href: '/master-data/categories' },
-    { label: 'Satuan', href: '/master-data/units' },
-    { label: 'Supplier', href: '/master-data/suppliers' },
-    { label: 'Kas & rekening', href: '/master-data/financial-accounts' },
+    { label: 'Produk', href: productsIndex.url() },
+    { label: 'Kategori', href: categoriesIndex.url() },
+    { label: 'Satuan', href: unitsIndex.url() },
+    { label: 'Supplier', href: suppliersIndex.url() },
+    { label: 'Kas & rekening', href: financialAccountsIndex.url() },
 ];
 
 type MasterDataLink = (typeof supportingDataLinks)[number];
 
-export function SupportingDataMenu({ links: visibleLinks = supportingDataLinks }: { links?: MasterDataLink[] }) {
+export function MasterDataMenu({ links: visibleLinks = supportingDataLinks }: { links?: MasterDataLink[] }) {
     const { url } = usePage();
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="h-10">
+                <Button type="button" variant="outline" className="h-11">
                     <Grid2X2 className="size-4" aria-hidden="true" />
                     {translate('Data pendukung')}
                     <ChevronDown className="size-3.5" aria-hidden="true" />

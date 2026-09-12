@@ -3,16 +3,22 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { SubscriptionLimitContactDialog } from '@/components/subscription-limit-contact-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { barcodeStatusResetDelay } from '@/components/widgets/product-scanner/barcode-scanner-feedback';
+import type { AutoCaptureStatus, BarcodeScanStatus } from '@/components/widgets/product-scanner/barcode-scanner-feedback';
+import { CameraViewport } from '@/components/widgets/product-scanner/camera-viewport';
+import { decodeBarcodeImage } from '@/components/widgets/product-scanner/decode-barcode-image';
+import { ScanReview } from '@/components/widgets/product-scanner/scan-review';
+import { playScannerSuccessTone, prepareScannerTone } from '@/components/widgets/product-scanner/scanner-feedback';
+import type {
+    ScannerApplyResult,
+    ScannerConfig,
+    ScannerProductCandidate,
+    ScannerPurpose,
+    ScannerSelection,
+} from '@/components/widgets/product-scanner/types';
+import { normalizeImage, useCamera } from '@/components/widgets/product-scanner/use-camera';
+import { useProductScanner } from '@/components/widgets/product-scanner/use-product-scanner';
 import { translate } from '@/lib/i18n';
-import { barcodeStatusResetDelay } from './barcode-scanner-feedback';
-import type { AutoCaptureStatus, BarcodeScanStatus } from './barcode-scanner-feedback';
-import { CameraViewport } from './CameraViewport';
-import { decodeBarcodeImage } from './decode-barcode-image';
-import { playScannerSuccessTone, prepareScannerTone } from './scanner-feedback';
-import { ScanReview } from './ScanReview';
-import type { ScannerApplyResult, ScannerConfig, ScannerProductCandidate, ScannerPurpose, ScannerSelection } from './types';
-import { normalizeImage, useCamera } from './use-camera';
-import { useProductScanner } from './use-product-scanner';
 
 type ProductScannerProps = {
     purpose: ScannerPurpose;

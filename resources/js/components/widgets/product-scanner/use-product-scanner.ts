@@ -8,19 +8,10 @@ import type {
     ScannerPurpose,
     ScannerSaleOption,
     ScannerSelection,
-} from './types';
-import { normalizeImage } from './use-camera';
-
-const csrfToken = () => {
-    const value = document.cookie
-        .split('; ')
-        .find((cookie) => cookie.startsWith('XSRF-TOKEN='))
-        ?.split('=')
-        .slice(1)
-        .join('=');
-
-    return value ? decodeURIComponent(value) : '';
-};
+} from '@/components/widgets/product-scanner/types';
+import { normalizeImage } from '@/components/widgets/product-scanner/use-camera';
+import { apiClient } from '@/lib/api-client';
+import { lookup as lookupCatalogItem, recognize as recognizeCatalogItems } from '@/routes/scanner/catalog-items';
 
 export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig) {
     const [captures, setCapturesState] = useState<ScannerCapture[]>([]);
@@ -144,23 +135,13 @@ export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig
             form.append('capture_ids[]', capture.id);
 
             try {
-                const response = await fetch('/scanner/catalog-item-recognitions', {
-                    method: 'POST',
-                    body: form,
-                    signal: controller.signal,
-                    headers: {
-                        Accept: 'application/json',
-                        'X-XSRF-TOKEN': csrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                });
-
-                const payload = (await response.json()) as {
+                const response = await apiClient.post<{
                     data?: ScannerCatalogItem[];
                     code?: string;
                     retryable?: boolean;
                     retry_after_ms?: number;
-                };
+                }>(recognizeCatalogItems.url(), form, { signal: controller.signal });
+                const payload = response.body;
 
                 if (!response.ok) {
                     throw new ScannerRequestError(payload.code, payload.retryable === true, payload.retry_after_ms);
@@ -243,26 +224,16 @@ export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig
             const target = capturesRef.current.find((capture) => capture.id === captureId);
             const targetEntry = target?.results.find((entry) => entry.itemIndex === itemIndex);
             const barcodeId = crypto.randomUUID();
-            const response = await fetch('/scanner/catalog-item-lookups', {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': csrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify({
-                    purpose,
-                    type: 'barcode',
-                    identifier,
-                    capture_id: barcodeId,
-                }),
-            });
-
-            const payload = (await response.json()) as {
+            const response = await apiClient.post<{
                 data?: ScannerCatalogItem[];
                 code?: string;
-            };
+            }>(lookupCatalogItem.url(), {
+                purpose,
+                type: 'barcode',
+                identifier,
+                capture_id: barcodeId,
+            });
+            const payload = response.body;
 
             if (!response.ok) {
                 throw new ScannerRequestError(payload.code);

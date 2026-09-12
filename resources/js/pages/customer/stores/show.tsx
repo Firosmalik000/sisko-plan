@@ -1,7 +1,8 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
-import { Archive, ArrowLeft, Coins, Globe2, Mail, MapPin, RotateCcw, Shield, Trash2, UserPlus, Users } from 'lucide-react';
+import { Form, usePage } from '@inertiajs/react';
+import { Archive, Building2, Coins, Globe2, Mail, MapPin, RotateCcw, Shield, Trash2, UserPlus, Users } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
+import { AppPage } from '@/components/page/app-page';
 import { SubscriptionLimitContactDialog } from '@/components/subscription-limit-contact-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import storesRoutes from '@/routes/stores';
 
 type Member = {
     id: number;
@@ -65,46 +67,34 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
 
     return (
         <>
-            <Head title={store.name} />
-            <div className="flex flex-1 flex-col gap-4 bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
-                <div className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
-                    <Link
-                        href="/stores"
-                        className="mb-3 inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground"
-                    >
-                        <ArrowLeft className="size-4" />
-                        Kembali ke daftar toko
-                    </Link>
-                    <div className="flex flex-col gap-3 min-[375px]:flex-row min-[375px]:items-center min-[375px]:justify-between">
-                        <h1 className="text-2xl font-black tracking-[-0.04em] break-words text-[var(--app-ink)]">{store.name}</h1>
-                        <Badge variant={store.status === 'active' ? 'secondary' : 'destructive'}>
-                            {store.status === 'active'
-                                ? 'Toko aktif'
-                                : store.status === 'archived'
-                                  ? 'Toko diarsipkan'
-                                  : 'Toko ditangguhkan'}
-                        </Badge>
-                    </div>
-                </div>
-
+            <AppPage
+                title={store.name}
+                icon={Building2}
+                back={{ href: storesRoutes.index.url(), label: 'Kembali ke daftar toko' }}
+                actions={
+                    <Badge variant={store.status === 'active' ? 'secondary' : 'destructive'}>
+                        {store.status === 'active' ? 'Toko aktif' : store.status === 'archived' ? 'Toko diarsipkan' : 'Toko ditangguhkan'}
+                    </Badge>
+                }
+            >
                 <Card className="rounded-[1.25rem] border-[var(--app-ink)]/8 py-4 shadow-sm">
                     <CardContent className="grid gap-3 min-[375px]:grid-cols-2">
                         <div className="flex items-start gap-3 rounded-xl bg-muted/35 p-3 min-[375px]:col-span-2">
-                            <MapPin className="size-5 shrink-0 text-emerald-700" />
+                            <MapPin className="size-5 shrink-0 text-primary" />
                             <div className="min-w-0">
                                 <p className="text-xs font-bold text-muted-foreground">Alamat toko</p>
                                 <p className="font-bold break-words">{store.address ?? '-'}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 rounded-xl bg-muted/35 p-3">
-                            <Globe2 className="size-5 shrink-0 text-emerald-700" />
+                            <Globe2 className="size-5 shrink-0 text-primary" />
                             <div className="min-w-0">
                                 <p className="text-xs font-bold text-muted-foreground">Negara</p>
                                 <p className="truncate font-bold">{store.country_name ?? store.country_code ?? '-'}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 rounded-xl bg-muted/35 p-3">
-                            <Coins className="size-5 shrink-0 text-emerald-700" />
+                            <Coins className="size-5 shrink-0 text-primary" />
                             <div className="min-w-0">
                                 <p className="text-xs font-bold text-muted-foreground">Mata uang</p>
                                 <p className="truncate font-bold">
@@ -129,11 +119,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                         Tambah kapasitas staf
                                     </Button>
                                 ) : (
-                                    <Button
-                                        type="button"
-                                        className="bg-emerald-700 hover:bg-emerald-800"
-                                        onClick={() => setMemberOpen(true)}
-                                    >
+                                    <Button type="button" onClick={() => setMemberOpen(true)}>
                                         <UserPlus className="mr-2 size-4" />
                                         Tambah Anggota
                                     </Button>
@@ -151,7 +137,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                 {store.can_restore && (
                     <Card className="rounded-[1.25rem] border-[var(--app-ink)]/8 py-4 shadow-sm">
                         <CardContent className="flex flex-col gap-2 sm:flex-row">
-                            <Form action={`/stores/${store.public_id}/restore`} method="patch" className="flex-1">
+                            <Form {...storesRoutes.restore.form(store.public_id)} className="flex-1">
                                 {({ processing, errors }) => (
                                     <>
                                         <Button disabled={processing} className="h-11 w-full">
@@ -181,7 +167,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                         {store.members.map((member) => (
                             <div key={member.id} className="flex flex-col gap-3 rounded-xl border p-3 md:flex-row md:items-center">
                                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-sm font-semibold text-emerald-800">
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-primary">
                                         {member.name.slice(0, 2).toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
@@ -203,8 +189,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                 </div>
                                 {store.can_manage && member.id !== store.owner_user_id && (
                                     <Form
-                                        action={`/stores/${store.public_id}/members/${member.id}`}
-                                        method="patch"
+                                        {...storesRoutes.members.update.form({ store: store.public_id, member: member.id })}
                                         className="flex flex-wrap items-end gap-2"
                                     >
                                         {({ processing }) => (
@@ -239,13 +224,12 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                         ))}
                     </CardContent>
                 </Card>
-            </div>
+            </AppPage>
 
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
                 <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-stone-200 bg-white p-0 shadow-2xl sm:max-w-lg">
                     <Form
-                        action={`/stores/${store.public_id}`}
-                        method="patch"
+                        {...storesRoutes.update.form(store.public_id)}
                         className="flex min-h-0 flex-col"
                         onSuccess={() => setEditOpen(false)}
                     >
@@ -338,7 +322,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                         <Button type="button" variant="outline" className="h-11" onClick={() => setArchiveOpen(false)}>
                             Batal
                         </Button>
-                        <Form action={`/stores/${store.public_id}`} method="delete">
+                        <Form {...storesRoutes.destroy.form(store.public_id)}>
                             {({ processing }) => (
                                 <Button variant="destructive" disabled={processing} className="h-11 w-full">
                                     <Archive /> Arsipkan
@@ -357,7 +341,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                     <p className="text-sm text-muted-foreground">
                         Semua produk, transaksi, anggota, dan riwayat toko akan dihapus dan tidak dapat dipulihkan.
                     </p>
-                    <Form action={`/stores/${store.public_id}/permanent`} method="delete">
+                    <Form {...storesRoutes.forceDestroy.form(store.public_id)}>
                         {({ processing, errors }) => (
                             <div className="grid gap-4">
                                 <input type="hidden" name="confirmation" value="1" />
@@ -383,8 +367,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
             <Dialog open={memberOpen && !memberLimitReached} onOpenChange={setMemberOpen}>
                 <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-stone-200 bg-white p-0 shadow-2xl sm:max-w-lg">
                     <Form
-                        action={`/stores/${store.public_id}/members`}
-                        method="post"
+                        {...storesRoutes.members.store.form(store.public_id)}
                         className="flex min-h-0 flex-col"
                         resetOnSuccess
                         onSuccess={() => setMemberOpen(false)}
@@ -483,7 +466,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                     <Button type="button" variant="outline" onClick={() => setMemberOpen(false)}>
                                         Batal
                                     </Button>
-                                    <Button disabled={processing} className="bg-emerald-700 hover:bg-emerald-800">
+                                    <Button disabled={processing}>
                                         {memberMode === 'create' ? 'Buat akun pekerja' : 'Hubungkan akun'}
                                     </Button>
                                 </div>
@@ -499,5 +482,5 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
 }
 
 StoreShow.layout = {
-    breadcrumbs: [{ title: 'Toko & Anggota', href: '/stores' }],
+    breadcrumbs: [{ title: 'Toko & Anggota', href: storesRoutes.index.url() }],
 };

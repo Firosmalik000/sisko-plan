@@ -3,7 +3,15 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
 
 export function RecordList({ className, ...props }: ComponentProps<'div'>) {
-    return <div className={cn('overflow-hidden rounded-2xl bg-card text-card-foreground', className)} {...props} />;
+    return (
+        <div
+            className={cn(
+                'overflow-hidden rounded-2xl bg-card text-card-foreground sm:shadow-[0_16px_36px_-32px_var(--app-shadow)]',
+                className,
+            )}
+            {...props}
+        />
+    );
 }
 
 export function RecordListHeader({ className, ...props }: ComponentProps<'div'>) {

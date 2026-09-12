@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { discover as discoverCatalogItem } from '@/routes/scanner/catalog-items';
 
 export type DiscoverySuggestion = {
     item_type: string;
@@ -60,17 +62,6 @@ export type ProductDraft = {
     startedAt: number;
 };
 
-const csrfToken = () => {
-    const value = document.cookie
-        .split('; ')
-        .find((cookie) => cookie.startsWith('XSRF-TOKEN='))
-        ?.split('=')
-        .slice(1)
-        .join('=');
-
-    return value ? decodeURIComponent(value) : '';
-};
-
 export function useProductDrafts() {
     const [drafts, setDrafts] = useState<ProductDraft[]>([]);
     const draftsRef = useRef<ProductDraft[]>([]);
@@ -126,19 +117,14 @@ export function useProductDrafts() {
             }
 
             try {
-                const response = await fetch('/scanner/catalog-item-discoveries', {
-                    method: 'POST',
-                    body: form,
-                    signal: controller.signal,
-                    headers: { Accept: 'application/json', 'X-XSRF-TOKEN': csrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
-                });
-                const payload = (await response.json()) as {
+                const response = await apiClient.post<{
                     data?: DiscoverySuggestion;
                     message?: string;
                     code?: string;
                     retryable?: boolean;
                     retry_after_ms?: number;
-                };
+                }>(discoverCatalogItem.url(), form, { signal: controller.signal });
+                const payload = response.body;
 
                 if (!response.ok || !payload.data) {
                     const delay = Math.min(

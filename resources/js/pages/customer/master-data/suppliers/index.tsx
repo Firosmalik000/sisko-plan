@@ -1,6 +1,8 @@
+import { Contact, Truck } from 'lucide-react';
+import { ReferenceDataPage } from '@/components/page/reference-data-page';
+import type { ReferenceRecord } from '@/components/page/reference-data-page';
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/features/customer/master-data/reference-data-page';
-import type { ReferenceRecord } from '@/features/customer/master-data/reference-data-page';
+import { index, store, update } from '@/routes/master-data/suppliers';
 
 type Supplier = ReferenceRecord & {
     contact_person: string | null;
@@ -23,7 +25,9 @@ export default function SuppliersIndex({
     return (
         <ReferenceDataPage
             title="Supplier"
-            endpoint="/master-data/suppliers"
+            icon={Truck}
+            recordIcon={Contact}
+            routes={{ index: index.url(), store: store.url(), update: update.url }}
             singular="Supplier"
             items={suppliers}
             search={search}

@@ -13,8 +13,6 @@ import {
     X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { formatMoney, localeTag } from '@/lib/currency';
-import { translate } from '@/lib/i18n';
 import type {
     ScannerApplyResult,
     ScannerCapture,
@@ -22,7 +20,9 @@ import type {
     ScannerPurpose,
     ScannerSaleOption,
     ScannerSelection,
-} from './types';
+} from '@/components/widgets/product-scanner/types';
+import { formatMoney, localeTag } from '@/lib/currency';
+import { translate } from '@/lib/i18n';
 
 const actionLabels: Record<ScannerPurpose, string> = {
     sale: 'Tambahkan ke keranjang',

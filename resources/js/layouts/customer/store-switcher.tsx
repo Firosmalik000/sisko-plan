@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppearance } from '@/hooks/use-appearance';
 import { storeThemeVariables } from '@/lib/store-theme';
+import storesRoutes from '@/routes/stores';
 import type { StoreCreationState, StoreSummary } from '@/types';
 
 type StoreSwitcherProps = {
@@ -30,7 +31,7 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
             <>
                 {canCreateStore ? (
                     <Link
-                        href="/stores/create"
+                        href={storesRoutes.create.url()}
                         className="flex min-w-0 items-center gap-2 rounded-2xl bg-card px-3 py-2 shadow-sm ring-1 ring-[var(--app-ink)]/8"
                     >
                         <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#f5b942] text-[var(--app-ink)]">
@@ -89,7 +90,7 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                             key={store.public_id}
                             className="gap-3 rounded-xl p-3"
                             onSelect={() =>
-                                router.post(`/stores/${store.public_id}/switch`, {}, { preserveState: false, preserveScroll: false })
+                                router.post(storesRoutes.switch.url(store.public_id), {}, { preserveState: false, preserveScroll: false })
                             }
                         >
                             <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--app-soft)] text-[var(--app-primary)]">
@@ -99,13 +100,13 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                                 <span className="block truncate font-semibold">{store.name}</span>
                                 <span className="block text-[11px] text-muted-foreground capitalize">{store.role}</span>
                             </span>
-                            {store.public_id === activeStore.public_id && <Check className="size-4 text-emerald-700" />}
+                            {store.public_id === activeStore.public_id && <Check className="size-4 text-primary" />}
                         </DropdownMenuItem>
                     ))}
                     <DropdownMenuSeparator />
                     {canCreateStore ? (
                         <DropdownMenuItem asChild className="rounded-xl p-3">
-                            <Link href="/stores/create">
+                            <Link href={storesRoutes.create.url()}>
                                 <Plus className="size-4" />
                                 Tambah toko baru
                             </Link>

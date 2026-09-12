@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps, CSSProperties, ReactNode, Ref } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,8 @@ type ResponsiveDialogProps = ComponentProps<typeof Dialog> & {
     mobile?: 'sheet' | 'fullscreen';
     contentClassName?: string;
     bodyClassName?: string;
+    contentStyle?: CSSProperties;
+    bodyRef?: Ref<HTMLDivElement>;
 };
 
 const widths = {
@@ -29,11 +31,14 @@ export function ResponsiveDialog({
     mobile = 'sheet',
     contentClassName,
     bodyClassName,
+    contentStyle,
+    bodyRef,
     ...props
 }: ResponsiveDialogProps) {
     return (
         <Dialog {...props}>
             <DialogContent
+                style={contentStyle}
                 className={cn(
                     'flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden border-border bg-card p-0 text-card-foreground shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-2xl',
                     mobile === 'sheet' &&
@@ -50,7 +55,9 @@ export function ResponsiveDialog({
                     </DialogTitle>
                     {description && <DialogDescription className="leading-5">{description}</DialogDescription>}
                 </DialogHeader>
-                <div className={cn('min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6', bodyClassName)}>{children}</div>
+                <div ref={bodyRef} className={cn('min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6', bodyClassName)}>
+                    {children}
+                </div>
                 {footer && (
                     <DialogFooter className="shrink-0 border-t border-border bg-card px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-4">
                         {footer}

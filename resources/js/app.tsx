@@ -6,6 +6,7 @@ import PublicSiteLayout from '@/components/public/site-shell';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
+import { ConfirmationProvider } from '@/hooks/use-confirmation';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import ErrorLayout from '@/layouts/error-layout';
@@ -172,7 +173,9 @@ void createInertiaApp({
 
         return (
             <TooltipProvider delayDuration={0}>
-                <LocaleBoundary>{app}</LocaleBoundary>
+                <ConfirmationProvider>
+                    <LocaleBoundary>{app}</LocaleBoundary>
+                </ConfirmationProvider>
                 <Toaster />
             </TooltipProvider>
         );

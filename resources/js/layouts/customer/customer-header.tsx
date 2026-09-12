@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import AppearanceToggleTab from '@/components/appearance-tabs';
-import { Breadcrumbs } from '@/components/breadcrumbs';
 import LanguageSwitcher from '@/components/language-switcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -27,18 +26,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
-import { customerBackTarget } from '@/layouts/customer/customer-back-target';
 import type { CustomerPageProps } from '@/layouts/customer/customer-page-props';
 import { StoreSwitcher } from '@/layouts/customer/store-switcher';
 import { formatQuantity } from '@/lib/currency';
 import { useTranslation } from '@/lib/i18n';
 import { storeThemeVariables } from '@/lib/store-theme';
 import { cn } from '@/lib/utils';
-import { logout } from '@/routes';
+import { dashboard, logout } from '@/routes';
+import notificationsRoutes from '@/routes/notifications';
+import operationsRoutes from '@/routes/operations';
 import { edit } from '@/routes/profile';
-import type { BreadcrumbItem } from '@/types';
+import { edit as editSecurity } from '@/routes/security';
+import subscriptionRoutes from '@/routes/subscription';
 
-export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] }) {
+export function CustomerHeader() {
     const { t } = useTranslation();
     const { auth, stores, activeStore, storeCreation, stockAlerts } = usePage<CustomerPageProps>().props;
     const getInitials = useInitials();
@@ -51,9 +52,6 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
     const { appearance, resolvedAppearance } = useAppearance();
     const theme = storeThemeVariables(activeStore?.theme_color, resolvedAppearance);
     const [stockNoticeOpen, setStockNoticeOpen] = useState(false);
-    const pageUrl = usePage().url;
-    const parsedUrl = new URL(pageUrl, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
-    const backTarget = customerBackTarget(parsedUrl.pathname, parsedUrl.searchParams);
     const [acknowledgedUnreadKey, setAcknowledgedUnreadKey] = useState<string | null>(null);
     const stockAlertCount = stockAlerts?.count ?? 0;
     const serverUnreadCount = stockAlerts?.unread_count ?? 0;
@@ -73,7 +71,7 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
 
         setAcknowledgedUnreadKey(unreadKey);
         router.post(
-            '/notifications/stock-alerts/read',
+            notificationsRoutes.stockAlerts.read.url(),
             {},
             {
                 preserveScroll: true,
@@ -87,17 +85,8 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
     return (
         <header className="sticky top-0 z-40 border-t-[3px] border-b border-border border-t-[var(--app-primary)] bg-card pt-[env(safe-area-inset-top)]">
             <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-2 px-3 min-[375px]:px-4 sm:h-[72px] sm:gap-5 sm:px-6 lg:px-7">
-                {backTarget && (
-                    <Link
-                        href={backTarget.href}
-                        aria-label={backTarget.label}
-                        className="grid size-10 shrink-0 place-items-center rounded-xl text-[var(--app-ink)] transition hover:bg-[var(--app-soft)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/30 focus-visible:outline-none"
-                    >
-                        <ArrowLeft className="size-5" />
-                    </Link>
-                )}
                 <Link
-                    href="/dashboard"
+                    href={dashboard.url()}
                     className="hidden shrink-0 items-center gap-2.5 text-lg font-black tracking-[-0.04em] text-[var(--app-ink)] md:flex"
                 >
                     <span className="grid size-8 place-items-center rounded-lg bg-[var(--app-primary)] text-sm font-black text-[var(--app-primary-foreground)]">
@@ -121,7 +110,7 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
                         >
                             <Bell className="size-[18px]" />
                             {unreadCount > 0 && (
-                                <span className="absolute top-0 right-0 grid min-w-4 translate-x-1/4 -translate-y-1/4 place-items-center rounded-full bg-red-600 px-1 text-[10px] leading-4 font-black text-white ring-2 ring-[#fffdfc]">
+                                <span className="absolute top-0 right-0 grid min-w-5 translate-x-1/4 -translate-y-1/4 place-items-center rounded-full bg-red-600 px-1 text-xs leading-5 font-black text-white ring-2 ring-card">
                                     {unreadCount > 9 ? '9+' : unreadCount}
                                 </span>
                             )}
@@ -136,14 +125,14 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
                         <div className="flex items-center justify-between border-b border-[var(--app-ink)]/8 px-4 py-3.5">
                             <div>
                                 <p className="text-sm font-black text-[var(--app-ink)]">Notifikasi</p>
-                                <p className="mt-0.5 text-[11px] font-semibold text-[var(--muted-foreground)]">
+                                <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">
                                     {stockAlertCount > 0
                                         ? `${stockAlertCount} ${t('stok perlu perhatian')}`
                                         : t('Semua stok dalam kondisi aman')}
                                 </p>
                             </div>
                             {unreadCount === 0 && stockAlertCount > 0 && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--app-soft)] px-2 py-1 text-[10px] font-bold text-[var(--app-primary)]">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--app-soft)] px-2 py-1 text-xs font-bold text-[var(--app-primary)]">
                                     <CheckCheck className="size-3" />
                                     Sudah dibaca
                                 </span>
@@ -184,7 +173,7 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-xs font-black text-[var(--app-ink)]">{item.name}</p>
                                                         {item.variant_name && (
-                                                            <p className="truncate text-[10px] font-semibold text-[var(--muted-foreground)]">
+                                                            <p className="truncate text-xs font-semibold text-[var(--muted-foreground)]">
                                                                 {item.variant_name}
                                                             </p>
                                                         )}
@@ -218,7 +207,7 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
                         {stockAlertCount > 0 && (
                             <DropdownMenuItem asChild className="m-2 mt-0 rounded-xl p-0 focus:bg-[var(--app-soft)]">
                                 <Link
-                                    href="/operations/inventory"
+                                    href={operationsRoutes.inventory.url()}
                                     className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-black text-[var(--app-primary)]"
                                 >
                                     Lihat inventori
@@ -265,6 +254,9 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
                                         <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">{auth.user.email}</p>
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
+                                    <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] font-semibold text-muted-foreground">
+                                        {t('Akun')}
+                                    </DropdownMenuLabel>
                                     <DropdownMenuItem asChild className="rounded-xl p-3">
                                         <Link href={edit()}>
                                             <UserRound className="size-4" />
@@ -272,18 +264,15 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild className="rounded-xl p-3">
-                                        <Link href="/settings/security">
+                                        <Link href={editSecurity()}>
                                             <ShieldCheck className="size-4" />
                                             {t('Keamanan')}
                                         </Link>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem asChild className="rounded-xl p-3">
-                                        <Link href="/subscription">
-                                            <CreditCard className="size-4" />
-                                            {t('Langganan')}
-                                        </Link>
-                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
+                                    <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] font-semibold text-muted-foreground">
+                                        {t('Preferensi')}
+                                    </DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onSelect={(event) => {
                                             event.preventDefault();
@@ -311,6 +300,16 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
                                             {t(appearance === 'light' ? 'Terang' : appearance === 'dark' ? 'Gelap' : 'Sistem')}
                                         </span>
                                         <ChevronRight className="size-4" />
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] font-semibold text-muted-foreground">
+                                        {t('Paket')}
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem asChild className="rounded-xl p-3">
+                                        <Link href={subscriptionRoutes.index.url()}>
+                                            <CreditCard className="size-4" />
+                                            {t('Langganan')}
+                                        </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild className="rounded-xl p-3 text-rose-700">
@@ -344,14 +343,6 @@ export function CustomerHeader({ breadcrumbs }: { breadcrumbs: BreadcrumbItem[] 
                     </DropdownMenu>
                 )}
             </div>
-
-            {breadcrumbs.length > 0 && (
-                <div className="border-t border-[var(--app-ink)]/6 px-4 py-2.5 sm:px-6 lg:px-8">
-                    <div className="mx-auto max-w-[1296px] overflow-x-auto text-xs text-[var(--muted-foreground)] [&_ol]:flex-nowrap [&_ol]:whitespace-nowrap">
-                        <Breadcrumbs breadcrumbs={breadcrumbs} />
-                    </div>
-                </div>
-            )}
         </header>
     );
 }

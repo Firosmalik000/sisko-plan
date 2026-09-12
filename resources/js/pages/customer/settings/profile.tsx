@@ -14,7 +14,6 @@ import {
     Printer,
     ReceiptText,
     Save,
-    ShieldCheck,
     Store as StoreIcon,
     UserRound,
 } from 'lucide-react';
@@ -35,8 +34,10 @@ import {
     receiptPrintStyles,
     writeReceiptPrintPreferences,
 } from '@/lib/receipt-printing';
-import { previewStoreTheme } from '@/lib/store-theme';
+import { previewStoreTheme, storeThemePresets } from '@/lib/store-theme';
 import { edit } from '@/routes/profile';
+import storesRoutes from '@/routes/stores';
+import subscriptionRoutes from '@/routes/subscription';
 import { send } from '@/routes/verification';
 import type { User } from '@/types';
 
@@ -68,15 +69,6 @@ type Subscription = {
     members_used: number;
 };
 type PageProps = { auth: { user: User } };
-
-const themePresets = [
-    { name: 'Sisko Orange', color: '#ee4d2d' },
-    { name: 'Coral', color: '#f35d3d' },
-    { name: 'Samudra', color: '#147d92' },
-    { name: 'Nila', color: '#5753c9' },
-    { name: 'Anggur', color: '#a34888' },
-    { name: 'Arang', color: '#334155' },
-];
 
 export default function Profile({
     mustVerifyEmail,
@@ -129,13 +121,11 @@ export default function Profile({
             <h1 className="sr-only">Pengaturan akun dan toko</h1>
 
             <section className="relative overflow-hidden rounded-[1.35rem] bg-[var(--app-ink)] px-4 py-4 text-white shadow-sm sm:px-5">
-                <div className="absolute -top-14 -right-10 size-48 rounded-full bg-white/6" />
-                <div className="absolute -right-2 -bottom-20 size-40 rounded-full border border-white/10" />
                 <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <Form action="/settings/profile/photo" method="post" encType="multipart/form-data" className="relative w-fit shrink-0">
+                    <Form {...ProfileController.updatePhoto.form()} encType="multipart/form-data" className="relative w-fit shrink-0">
                         {({ processing, errors }) => (
                             <>
-                                <Avatar className="size-24 border-4 border-white/15 bg-white/10 shadow-lg sm:size-28">
+                                <Avatar className="size-16 border-2 border-white/15 bg-white/10 sm:size-20">
                                     <AvatarImage src={avatarPreview ?? auth.user.avatar} alt={auth.user.name} className="object-cover" />
                                     <AvatarFallback className="bg-white/10 text-2xl font-black text-white">{initials}</AvatarFallback>
                                 </Avatar>
@@ -182,20 +172,12 @@ export default function Profile({
                             {auth.user.email}
                         </p>
                     </div>
-                    <Link
-                        href="/settings/security"
-                        className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-bold transition hover:bg-white/14 sm:justify-start"
-                    >
-                        <ShieldCheck className="size-4 text-emerald-200" />
-                        Keamanan akun
-                        <ChevronRight className="size-4 text-white/45" />
-                    </Link>
                 </div>
             </section>
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,.75fr)]">
                 <div className="space-y-4">
-                    <SettingsCard icon={CircleUserRound} eyebrow="Profil" title="Akun saya">
+                    <SettingsCard icon={CircleUserRound} title="Akun saya">
                         <Form {...ProfileController.update.form()} options={{ preserveScroll: true }} className="grid gap-4 sm:grid-cols-2">
                             {({ processing, errors }) => (
                                 <>
@@ -241,15 +223,10 @@ export default function Profile({
                     </SettingsCard>
 
                     {store ? (
-                        <Form action="/settings/store" method="patch" options={{ preserveScroll: true }} className="space-y-5">
+                        <Form {...ProfileController.updateStore.form()} options={{ preserveScroll: true }} className="space-y-5">
                             {({ processing, errors }) => (
                                 <>
-                                    <SettingsCard
-                                        icon={Building2}
-                                        eyebrow="Identitas"
-                                        title="Data toko"
-                                        badge={store.can_manage ? undefined : 'Hanya lihat'}
-                                    >
+                                    <SettingsCard icon={Building2} title="Data toko" badge={store.can_manage ? undefined : 'Hanya lihat'}>
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Field label="Nama toko" icon={StoreIcon} className="sm:col-span-2">
                                                 <Input
@@ -294,7 +271,7 @@ export default function Profile({
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard icon={ReceiptText} eyebrow="Cetak" title="Struk penjualan">
+                                    <SettingsCard icon={ReceiptText} title="Struk penjualan">
                                         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
                                             <div className="space-y-4">
                                                 <Field label="Judul struk">
@@ -358,7 +335,7 @@ export default function Profile({
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard icon={Printer} eyebrow="Perangkat ini" title="Printer struk">
+                                    <SettingsCard icon={Printer} title="Printer struk">
                                         <p className="text-sm leading-6 text-muted-foreground">
                                             {translate(
                                                 'Berlaku untuk toko dan perangkat ini. Pengaturan perangkat kasir lain tidak berubah.',
@@ -432,9 +409,9 @@ export default function Profile({
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard icon={Palette} eyebrow="Personalisasi" title="Warna aplikasi">
+                                    <SettingsCard icon={Palette} title="Warna aplikasi">
                                         <div className="flex flex-wrap gap-3">
-                                            {themePresets.map((preset) => (
+                                            {storeThemePresets.map((preset) => (
                                                 <button
                                                     key={preset.color}
                                                     type="button"
@@ -513,7 +490,7 @@ export default function Profile({
                             <StoreIcon className="mx-auto size-9 text-muted-foreground" />
                             <h2 className="mt-3 font-bold">Belum ada toko aktif</h2>
                             <Button asChild className="mt-4">
-                                <Link href="/stores/create">Buat toko</Link>
+                                <Link href={storesRoutes.create.url()}>Buat toko</Link>
                             </Button>
                         </div>
                     )}
@@ -521,7 +498,7 @@ export default function Profile({
 
                 <aside className="space-y-5 xl:sticky xl:top-24 xl:self-start">
                     {subscription && (
-                        <SettingsCard icon={CreditCard} eyebrow="Langganan" title={translate(subscription.plan_name)}>
+                        <SettingsCard icon={CreditCard} title={translate(subscription.plan_name)}>
                             <div className="flex items-center justify-between gap-3">
                                 <Badge
                                     className={
@@ -541,33 +518,13 @@ export default function Profile({
                                 <UsageRow label="Staf aktif" used={subscription.members_used} limit={subscription.max_members} />
                             </div>
                             <Button variant="outline" asChild className="mt-5 min-h-11 w-full">
-                                <Link href="/subscription">
+                                <Link href={subscriptionRoutes.index.url()}>
                                     Kelola langganan
                                     <ChevronRight className="size-4" />
                                 </Link>
                             </Button>
                         </SettingsCard>
                     )}
-                    <div className="rounded-3xl border border-[var(--app-ink)]/8 bg-[var(--app-soft)] p-5">
-                        <div className="flex items-center gap-3">
-                            <span className="flex size-10 items-center justify-center rounded-xl bg-white text-[var(--app-primary)] shadow-sm">
-                                <ShieldCheck className="size-5" />
-                            </span>
-                            <div>
-                                <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Akun</p>
-                                <h2 className="font-bold">Privasi & keamanan</h2>
-                            </div>
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                            Ubah password, aktifkan autentikasi dua langkah, dan kelola passkey.
-                        </p>
-                        <Button asChild variant="outline" className="mt-4 min-h-11 w-full bg-white">
-                            <Link href="/settings/security">
-                                Buka keamanan
-                                <ChevronRight className="size-4" />
-                            </Link>
-                        </Button>
-                    </div>
                 </aside>
             </div>
             <section className="rounded-3xl border border-red-200/70 bg-white p-5 sm:p-6">
@@ -584,13 +541,12 @@ function SettingsCard({
     children,
 }: {
     icon: typeof Printer;
-    eyebrow: string;
     title: string;
     badge?: string;
     children: React.ReactNode;
 }) {
     return (
-        <section className="rounded-[1.35rem] border border-[var(--app-ink)]/8 bg-white p-4 shadow-sm sm:p-5">
+        <section className="rounded-2xl bg-card p-4 text-card-foreground sm:p-5">
             <header className="mb-4 flex items-center gap-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                     <Icon className="size-5" />
@@ -668,12 +624,12 @@ function ReceiptPreview({
         <div className="rounded-2xl bg-slate-100 p-3">
             <div
                 data-print-receipt
-                className={`mx-auto bg-white p-4 font-mono text-[10px] leading-4 text-slate-800 shadow-md transition-all ${paperSize === '58mm' ? 'max-w-48' : 'max-w-60'}`}
+                className={`mx-auto bg-white p-4 font-mono text-xs leading-4 text-slate-800 shadow-md transition-all ${paperSize === '58mm' ? 'max-w-48' : 'max-w-60'}`}
             >
                 <div className="text-center">
                     <p className="font-black">{storeName}</p>
-                    {address && <p className="mt-0.5 text-[8px]">{address}</p>}
-                    {header && <p className="mt-1 text-[8px]">{header}</p>}
+                    {address && <p className="mt-0.5 text-xs">{address}</p>}
+                    {header && <p className="mt-1 text-xs">{header}</p>}
                 </div>
                 <div className="my-3 border-t border-dashed border-slate-400" />
                 <div className="flex justify-between gap-2">
@@ -689,7 +645,7 @@ function ReceiptPreview({
                     <span>TOTAL</span>
                     <span>51.000</span>
                 </div>
-                {footer && <p className="mt-4 text-center text-[8px]">{footer}</p>}
+                {footer && <p className="mt-4 text-center text-xs">{footer}</p>}
             </div>
             <div className="mt-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-500">
                 <Printer className="size-3.5" />

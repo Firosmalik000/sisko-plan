@@ -158,6 +158,9 @@ export const vietnameseCustomerCatalog: Record<string, string> = {
     'Hapus item': 'Xóa mặt hàng',
     'Hapus permanen': 'Xóa vĩnh viễn',
     'Hapus produk': 'Xóa sản phẩm',
+    'Nonaktifkan produk': 'Vô hiệu hóa sản phẩm',
+    'Produk tetap tersimpan sebagai riwayat, tetapi tidak muncul untuk transaksi baru.':
+        'Sản phẩm vẫn được lưu trong lịch sử nhưng sẽ không xuất hiện trong giao dịch mới.',
     'Harga / satuan': 'Giá / đơn vị',
     'Harga jual varian': 'Giá bán biến thể',
     'Harga per bulan': 'Giá mỗi tháng',
@@ -354,4 +357,7 @@ export const vietnameseCustomerCatalog: Record<string, string> = {
     'Cari nama / scan barcode lalu Enter': 'Tìm theo tên / quét mã vạch rồi nhấn Enter',
     'Cari nama produk, SKU, atau scan barcode': 'Tìm theo tên sản phẩm, SKU hoặc quét mã vạch',
     'Barcode atau produk tidak ditemukan.': 'Không tìm thấy mã vạch hoặc sản phẩm.',
+    'Tinggalkan halaman?': 'Rời khỏi trang này?',
+    'Perubahan produk yang belum disimpan akan hilang.': 'Các thay đổi sản phẩm chưa lưu sẽ bị mất.',
+    'Pilih tindakan untuk melanjutkan.': 'Chọn một thao tác để tiếp tục.',
 };

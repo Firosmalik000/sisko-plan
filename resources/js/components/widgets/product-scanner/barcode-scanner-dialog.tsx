@@ -1,12 +1,12 @@
 import { AlertCircle, Camera, Check, ImageUp, LoaderCircle, RefreshCw, ScanBarcode, X, Zap, ZapOff } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { barcodeScannerFeedback } from '@/components/widgets/product-scanner/barcode-scanner-feedback';
+import type { BarcodeScanStatus } from '@/components/widgets/product-scanner/barcode-scanner-feedback';
+import { decodeBarcodeImage } from '@/components/widgets/product-scanner/decode-barcode-image';
+import { playScannerSuccessTone, prepareScannerTone } from '@/components/widgets/product-scanner/scanner-feedback';
+import { useCamera } from '@/components/widgets/product-scanner/use-camera';
 import { translate } from '@/lib/i18n';
-import { barcodeScannerFeedback } from './barcode-scanner-feedback';
-import type { BarcodeScanStatus } from './barcode-scanner-feedback';
-import { decodeBarcodeImage } from './decode-barcode-image';
-import { playScannerSuccessTone, prepareScannerTone } from './scanner-feedback';
-import { useCamera } from './use-camera';
 
 type BarcodeScannerDialogProps = {
     open: boolean;

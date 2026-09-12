@@ -1,11 +1,11 @@
 import { AlertCircle, Camera, Check, Images, LoaderCircle, Pause, Play, ScanBarcode, SwitchCamera, X, Zap, ZapOff } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { ChangeEvent, RefObject } from 'react';
+import { autoCaptureFeedback, barcodeScannerFeedback } from '@/components/widgets/product-scanner/barcode-scanner-feedback';
+import type { AutoCaptureStatus, BarcodeScanStatus } from '@/components/widgets/product-scanner/barcode-scanner-feedback';
+import { CaptureTray } from '@/components/widgets/product-scanner/capture-tray';
+import type { ScannerCapture } from '@/components/widgets/product-scanner/types';
 import { translate } from '@/lib/i18n';
-import { autoCaptureFeedback, barcodeScannerFeedback } from './barcode-scanner-feedback';
-import type { AutoCaptureStatus, BarcodeScanStatus } from './barcode-scanner-feedback';
-import { CaptureTray } from './CaptureTray';
-import type { ScannerCapture } from './types';
 
 export function CameraViewport({
     barcodeEnabled,

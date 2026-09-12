@@ -1,9 +1,11 @@
+import { Ruler } from 'lucide-react';
+import { ReferenceDataPage } from '@/components/page/reference-data-page';
+import type { ReferenceRecord } from '@/components/page/reference-data-page';
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/features/customer/master-data/reference-data-page';
-import type { ReferenceRecord } from '@/features/customer/master-data/reference-data-page';
 import { translate } from '@/lib/i18n';
 import { referenceLabel } from '@/lib/unit-references';
 import type { UnitReference } from '@/lib/unit-references';
+import { index, store, update } from '@/routes/master-data/units';
 
 type Unit = ReferenceRecord & {
     symbol: string;
@@ -27,7 +29,8 @@ export default function UnitsIndex({
     return (
         <ReferenceDataPage
             title="Satuan barang"
-            endpoint="/master-data/units"
+            icon={Ruler}
+            routes={{ index: index.url(), store: store.url(), update: update.url }}
             singular="Satuan"
             items={units}
             search={search}

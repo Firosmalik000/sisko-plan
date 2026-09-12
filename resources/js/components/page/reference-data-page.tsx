@@ -1,11 +1,13 @@
 import { router, useForm } from '@inertiajs/react';
 import { Edit3, Plus, RotateCcw, Search } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { FormCheckbox, FormInput, FormPhoneInput, FormSelect, FormTextarea } from '@/components/forms';
+import { MasterDataMenu } from '@/components/navigation/master-data-menu';
 import { ResponsiveDialog } from '@/components/overlays';
 import { AppPage } from '@/components/page/app-page';
-import { DataToolbar } from '@/components/page/data-toolbar';
+import { DataToolbar, dataToolbarControlClass } from '@/components/page/data-toolbar';
 import { EmptyState } from '@/components/page/empty-state';
 import { RecordList, RecordListRow } from '@/components/page/record-list';
 import { Pagination } from '@/components/pagination';
@@ -14,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { translate } from '@/lib/i18n';
-import { SupportingDataMenu } from './supporting-data-menu';
 
 type FormValue = string | boolean;
 type FieldOption = { value: string; label: string; disabled?: boolean };
@@ -40,7 +41,7 @@ type Paginator<T> = {
 
 export function ReferenceDataPage<T extends ReferenceRecord>({
     title,
-    endpoint,
+    routes,
     singular,
     items,
     fields,
@@ -50,9 +51,11 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
     details,
     canManage,
     displayName = (item: T) => item.name,
+    icon,
+    recordIcon: RecordIcon,
 }: {
     title: string;
-    endpoint: string;
+    routes: { index: string; store: string; update: (publicId: string) => string };
     singular: string;
     items: Paginator<T>;
     fields: Field[];
@@ -62,6 +65,8 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
     details: Array<{ key: string; label: string }>;
     canManage: boolean;
     displayName?: (item: T) => string;
+    icon?: LucideIcon;
+    recordIcon?: LucideIcon;
 }) {
     const [openCreateFromQuery] = useState(
         () => typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('create') === '1',
@@ -117,38 +122,40 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
         };
 
         if (editing) {
-            form.patch(`${endpoint}/${editing.public_id}`, options);
+            form.patch(routes.update(editing.public_id), options);
         } else {
-            form.post(endpoint, options);
+            form.post(routes.store, options);
         }
     };
     const applyFilters = () => {
-        router.get(endpoint, { search, status }, { preserveState: true, replace: true });
+        router.get(routes.index, { search, status }, { preserveState: true, replace: true });
     };
     const resetFilters = () => {
         setSearch('');
         setStatus('');
-        router.get(endpoint, {}, { preserveState: true, replace: true });
+        router.get(routes.index, {}, { preserveState: true, replace: true });
     };
     const hasFilters = search !== '' || status !== '';
 
     return (
         <AppPage
             title={translate(title)}
+            icon={icon}
+            headerSurface
             description={
                 <>
-                    <strong>{items.total}</strong> data
+                    <strong>{items.total}</strong> {translate('data')}
                 </>
             }
             actions={
                 canManage ? (
-                    <Button onClick={openCreate}>
-                        <Plus /> Tambah
+                    <Button onClick={openCreate} className="min-h-11 rounded-xl px-4 font-semibold">
+                        <Plus className="size-4" /> {translate('Tambah')}
                     </Button>
                 ) : undefined
             }
         >
-            <RecordList>
+            <RecordList className="-mx-3 rounded-none border-y border-border min-[375px]:-mx-4 sm:mx-0 sm:rounded-2xl sm:border-0">
                 <DataToolbar
                     onSubmit={(event) => {
                         event.preventDefault();
@@ -160,9 +167,9 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                             <Input
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
-                                className="h-10 bg-background pl-9"
-                                placeholder={`Cari ${singular.toLowerCase()}...`}
-                                aria-label={`Cari ${singular.toLowerCase()}`}
+                                className="h-11 rounded-xl bg-background pl-9 text-base sm:text-sm"
+                                placeholder={translate(`Cari ${singular.toLowerCase()}...`)}
+                                aria-label={translate(`Cari ${singular.toLowerCase()}`)}
                             />
                         </div>
                     }
@@ -170,25 +177,25 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                         <select
                             value={status}
                             onChange={(event) => setStatus(event.target.value)}
-                            className="h-10 min-w-36 rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className={dataToolbarControlClass}
                             aria-label={translate('Filter status')}
                         >
-                            <option value="">Semua status</option>
-                            <option value="active">Aktif</option>
-                            <option value="inactive">Nonaktif</option>
+                            <option value="">{translate('Semua status')}</option>
+                            <option value="active">{translate('Aktif')}</option>
+                            <option value="inactive">{translate('Nonaktif')}</option>
                         </select>
                     }
                     actions={
                         <>
-                            <SupportingDataMenu />
+                            <MasterDataMenu />
                             {hasFilters && (
-                                <Button type="button" variant="ghost" onClick={resetFilters} className="h-10">
+                                <Button type="button" variant="ghost" onClick={resetFilters} className="h-11 rounded-xl">
                                     <RotateCcw className="size-4" aria-hidden="true" />
-                                    Reset
+                                    {translate('Reset')}
                                 </Button>
                             )}
-                            <Button type="submit" variant="outline" className="h-10">
-                                Terapkan
+                            <Button type="submit" variant="outline" className="h-11 rounded-xl">
+                                {translate('Terapkan')}
                             </Button>
                         </>
                     }
@@ -197,7 +204,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                 {items.data.length === 0 ? (
                     <EmptyState
                         icon={hasFilters ? Search : Plus}
-                        title={hasFilters ? translate('Data tidak ditemukan') : `Belum ada ${singular.toLowerCase()}`}
+                        title={hasFilters ? translate('Data tidak ditemukan') : translate(`Belum ada ${singular.toLowerCase()}`)}
                         description={
                             hasFilters
                                 ? translate('Coba ubah kata kunci atau filter yang digunakan.')
@@ -206,12 +213,12 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                         action={
                             hasFilters ? (
                                 <Button type="button" variant="outline" onClick={resetFilters}>
-                                    Reset filter
+                                    {translate('Reset filter')}
                                 </Button>
                             ) : canManage ? (
                                 <Button type="button" onClick={openCreate}>
                                     <Plus className="size-4" aria-hidden="true" />
-                                    Tambah {singular}
+                                    {translate('Tambah')} {translate(singular)}
                                 </Button>
                             ) : undefined
                         }
@@ -219,16 +226,19 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                 ) : (
                     <div>
                         {items.data.map((item) => (
-                            <RecordListRow key={item.public_id} className="flex items-start justify-between gap-4">
+                            <RecordListRow key={item.public_id} className="flex min-h-18 items-center justify-between gap-3 sm:gap-4">
+                                {RecordIcon && (
+                                    <span
+                                        className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-primary"
+                                        aria-hidden="true"
+                                    >
+                                        <RecordIcon className="size-4" />
+                                    </span>
+                                )}
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <h2 className="truncate font-bold text-foreground">{displayName(item)}</h2>
-                                        <Badge
-                                            variant={item.is_active ? 'secondary' : 'outline'}
-                                            className="h-5 px-2 text-[10px] uppercase"
-                                        >
-                                            {item.is_active ? 'Aktif' : 'Nonaktif'}
-                                        </Badge>
+                                        <h2 className="truncate font-semibold text-foreground">{displayName(item)}</h2>
+                                        {!item.is_active && <Badge variant="outline">{translate('Nonaktif')}</Badge>}
                                     </div>
                                     {details.length > 0 && (
                                         <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
@@ -251,7 +261,8 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                         size="icon"
                                         variant="ghost"
                                         onClick={() => openEdit(item)}
-                                        aria-label={`Edit ${displayName(item)}`}
+                                        aria-label={`${translate('Edit')} ${displayName(item)}`}
+                                        className="size-11 rounded-xl"
                                     >
                                         <Edit3 className="size-4" aria-hidden="true" />
                                     </Button>
@@ -278,10 +289,16 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                     bodyClassName="p-0"
                     footer={
                         <>
-                            <Button type="button" variant="outline" onClick={closeForm} disabled={form.processing}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={closeForm}
+                                disabled={form.processing}
+                                className="min-h-11 rounded-xl"
+                            >
                                 {translate('Batal')}
                             </Button>
-                            <Button type="submit" form="reference-data-form" disabled={form.processing}>
+                            <Button type="submit" form="reference-data-form" disabled={form.processing} className="min-h-11 rounded-xl">
                                 {form.processing
                                     ? translate('Menyimpan...')
                                     : editing

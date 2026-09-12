@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { decodeBarcodeImage } from './decode-barcode-image';
+import { decodeBarcodeImage } from '@/components/widgets/product-scanner/decode-barcode-image';
 
 type BarcodeDetectorResult = { rawValue: string };
 type BarcodeDetectorInstance = {

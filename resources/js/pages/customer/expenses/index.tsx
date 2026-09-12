@@ -1,15 +1,24 @@
-import { Head, router, useForm } from '@inertiajs/react';
-import { CalendarDays, CircleDollarSign, Filter, Plus, ReceiptText, Search, Tags, WalletCards } from 'lucide-react';
+import { router, useForm } from '@inertiajs/react';
+import { CircleDollarSign, Plus, ReceiptText, RotateCcw, Search, Tags, WalletCards } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
-import { buttonClass, fieldClass } from '@/components/operations-shell';
+import type { FormEvent } from 'react';
+import AlertError from '@/components/alert-error';
+import { FormCurrencyInput, FormInput, FormSelect, FormTextarea } from '@/components/forms';
+import { ResponsiveDialog } from '@/components/overlays';
+import { AppPage } from '@/components/page/app-page';
+import { DataToolbar, dataToolbarControlClass } from '@/components/page/data-toolbar';
+import { EmptyState } from '@/components/page/empty-state';
+import { RecordList, RecordListHeader, RecordListRow } from '@/components/page/record-list';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { currencySymbol, formatMoney as money, localeTag } from '@/lib/currency';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { formatMoney as money, localeTag } from '@/lib/currency';
 import { currentDateTime, ledgerDateTime } from '@/lib/date-time';
 import { translate } from '@/lib/i18n';
 import { postingToken } from '@/lib/posting-token';
+import { index as expensesIndex, store as storeExpense } from '@/routes/expenses';
+import { store as storeExpenseCategory, update as updateExpenseCategory } from '@/routes/expenses/categories';
 
 type Category = {
     public_id: string;
@@ -75,15 +84,14 @@ export default function ExpensesPage({
 
     const submitCategory = (event: FormEvent) => {
         event.preventDefault();
-        category.post('/expenses/categories', {
+        category.post(storeExpenseCategory.url(), {
             preserveScroll: true,
             onSuccess: () => category.reset(),
         });
     };
-
     const submitExpense = (event: FormEvent) => {
         event.preventDefault();
-        expense.post('/expenses', {
+        expense.post(storeExpense.url(), {
             preserveScroll: true,
             onSuccess: () => {
                 expense.reset('amount', 'notes');
@@ -92,438 +100,333 @@ export default function ExpensesPage({
             },
         });
     };
-
     const applyFilter = (event: FormEvent) => {
         event.preventDefault();
-        router.get('/expenses', filter.data, {
-            preserveState: true,
-            replace: true,
-        });
+        router.get(expensesIndex.url(), filter.data, { preserveState: true, replace: true });
     };
+    const resetFilters = () => router.get(expensesIndex.url(), {}, { preserveState: true, replace: true });
 
     return (
         <>
-            <Head title="Biaya" />
-            <main className="min-h-full bg-[linear-gradient(180deg,#f7faf8_0%,#f1f5f3_100%)] px-3 py-3 sm:px-5 lg:px-6">
-                <div className="mx-auto max-w-7xl space-y-3">
-                    <header className="relative overflow-hidden rounded-2xl border border-teal-950/10 bg-[var(--app-ink)] px-4 py-4 text-white shadow-[0_12px_32px_rgba(18,61,54,0.13)] sm:px-5">
-                        <div className="absolute -top-16 right-0 size-44 rounded-full bg-teal-300/15 blur-2xl" />
-                        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-xs font-black tracking-[0.18em] text-amber-300 uppercase">Operasional</p>
-                                <h1 className="mt-0.5 text-xl font-black tracking-[-0.04em] sm:text-2xl">Biaya toko</h1>
-                            </div>
-                            <div className="grid grid-cols-1 gap-2 min-[375px]:grid-cols-2">
-                                <button
-                                    type="button"
-                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 text-sm font-bold text-white transition hover:bg-white/15"
-                                    onClick={() => setCategoryOpen(true)}
-                                >
-                                    <Tags className="size-4" /> Kategori
-                                </button>
-                                <button
-                                    type="button"
-                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 text-sm font-black text-[var(--app-ink)] transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={!canPost}
-                                    onClick={() => setExpenseOpen(true)}
-                                >
-                                    <Plus className="size-4" /> Catat biaya
-                                </button>
-                            </div>
-                        </div>
-                    </header>
+            <AppPage
+                title={translate('Biaya toko')}
+                icon={ReceiptText}
+                headerSurface
+                description={translate('Catat pengeluaran dan pantau penggunaan saldo toko.')}
+                actions={
+                    <>
+                        <Button size="touch" variant="outline" onClick={() => setCategoryOpen(true)}>
+                            <Tags className="size-4" aria-hidden="true" /> {translate('Kategori')}
+                        </Button>
+                        <Button size="touch" disabled={!canPost} onClick={() => setExpenseOpen(true)}>
+                            <Plus className="size-4" aria-hidden="true" /> {translate('Catat biaya')}
+                        </Button>
+                    </>
+                }
+            >
+                <section className="grid grid-cols-2 overflow-hidden rounded-2xl bg-secondary text-secondary-foreground lg:grid-cols-4">
+                    <SummaryItem icon={CircleDollarSign} label="Total terfilter" value={money(summary.total)} />
+                    <SummaryItem icon={ReceiptText} label="Transaksi" value={summary.count.toLocaleString(localeTag())} />
+                    <SummaryItem
+                        icon={Tags}
+                        label="Kategori terbesar"
+                        value={summary.largest_category?.name ?? '-'}
+                        meta={summary.largest_category ? money(summary.largest_category.total) : undefined}
+                    />
+                    <SummaryItem icon={WalletCards} label="Saldo akun aktif" value={money(summary.account_balance)} />
+                </section>
 
-                    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                        <MetricCard
-                            icon={<CircleDollarSign className="size-5" />}
-                            label="Total terfilter"
-                            value={money(summary.total)}
-                            tone="rose"
-                        />
-                        <MetricCard
-                            icon={<ReceiptText className="size-5" />}
-                            label="Transaksi"
-                            value={summary.count.toLocaleString(localeTag())}
-                            tone="teal"
-                        />
-                        <MetricCard
-                            icon={<Tags className="size-5" />}
-                            label="Kategori terbesar"
-                            value={summary.largest_category?.name ?? '-'}
-                            meta={summary.largest_category ? money(summary.largest_category.total) : undefined}
-                            tone="amber"
-                        />
-                        <MetricCard
-                            icon={<WalletCards className="size-5" />}
-                            label="Saldo akun aktif"
-                            value={money(summary.account_balance)}
-                            tone="blue"
-                        />
-                    </section>
-
-                    <section className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
-                        <form onSubmit={applyFilter} className="space-y-2.5">
-                            <div className="flex items-center gap-2 text-sm font-black text-stone-800">
-                                <Filter className="size-4 text-teal-700" /> Filter
+                <RecordList className="-mx-3 rounded-none border-y border-border min-[375px]:-mx-4 sm:mx-0 sm:rounded-2xl sm:border-0">
+                    <DataToolbar
+                        onSubmit={applyFilter}
+                        search={
+                            <div className="relative">
+                                <Search
+                                    className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                                    aria-hidden="true"
+                                />
+                                <Input
+                                    placeholder={translate('Cari dokumen atau catatan')}
+                                    aria-label={translate('Cari biaya')}
+                                    value={filter.data.search}
+                                    onChange={(event) => filter.setData('search', event.target.value)}
+                                    className="h-11 rounded-xl bg-background pl-9 text-base sm:text-sm"
+                                />
                             </div>
-                            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1.4fr)_minmax(180px,1fr)_150px_150px_auto]">
-                                <label className="relative">
-                                    <span className="sr-only">Cari biaya</span>
-                                    <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
-                                    <input
-                                        className={`${fieldClass} pl-9`}
-                                        placeholder="Cari dokumen atau catatan"
-                                        value={filter.data.search}
-                                        onChange={(event) => filter.setData('search', event.target.value)}
-                                    />
-                                </label>
-                                <label>
-                                    <span className="sr-only">Kategori</span>
-                                    <select
-                                        className={fieldClass}
-                                        value={filter.data.category}
-                                        onChange={(event) => filter.setData('category', event.target.value)}
-                                    >
-                                        <option value="">Semua kategori</option>
-                                        {categories.map((item) => (
-                                            <option key={item.public_id} value={item.public_id}>
-                                                {item.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
-                                <Field label="Dari">
-                                    <input
-                                        className={fieldClass}
-                                        type="date"
-                                        value={filter.data.start_date}
-                                        onChange={(event) => filter.setData('start_date', event.target.value)}
-                                    />
-                                </Field>
-                                <Field label="Sampai">
-                                    <input
-                                        className={fieldClass}
-                                        type="date"
-                                        min={filter.data.start_date || undefined}
-                                        value={filter.data.end_date}
-                                        onChange={(event) => filter.setData('end_date', event.target.value)}
-                                    />
-                                </Field>
-                                <div className="flex gap-2 sm:col-span-2 lg:col-span-1 lg:self-end">
-                                    {hasFilters && (
-                                        <button
-                                            type="button"
-                                            className="h-10 flex-1 rounded-xl border border-stone-300 px-3 text-sm font-bold text-stone-700 hover:bg-stone-50 lg:flex-none"
-                                            onClick={() => router.get('/expenses', {}, { replace: true })}
-                                        >
-                                            Reset
-                                        </button>
-                                    )}
-                                    <button className={`${buttonClass} flex-1 lg:flex-none`}>Terapkan</button>
-                                </div>
-                            </div>
-                            <FormErrors errors={filter.errors} />
-                        </form>
-                    </section>
-
-                    <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-                        <div className="flex items-center justify-between gap-3 border-b border-stone-200 px-4 py-3 sm:px-5">
-                            <div>
-                                <h2 className="text-lg font-black tracking-[-0.025em] text-stone-900">Riwayat biaya</h2>
-                                <p className="text-xs font-semibold text-stone-500">{expenses.total.toLocaleString(localeTag())} dokumen</p>
-                            </div>
-                            <CalendarDays className="size-5 text-teal-700" />
-                        </div>
-
-                        <div className="divide-y divide-stone-100 md:hidden">
-                            {expenses.data.map((item) => (
-                                <article key={item.public_id} className="space-y-2.5 p-3.5">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <p className="truncate font-mono text-xs font-bold text-teal-800">{item.document_number}</p>
-                                            <p className="mt-1 truncate text-sm font-bold text-stone-900">{item.category_name}</p>
-                                        </div>
-                                        <p className="shrink-0 font-black text-rose-700">-{money(item.amount)}</p>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500">
-                                        <span>{item.account_name}</span>
-                                        <span>{ledgerDateTime(item.occurred_at, timezone)}</span>
-                                    </div>
-                                    {item.notes && <p className="text-sm break-words text-stone-600">{item.notes}</p>}
-                                </article>
-                            ))}
-                        </div>
-
-                        <div className="hidden overflow-x-auto md:block">
-                            <table className="w-full min-w-[760px] text-left text-sm">
-                                <thead className="bg-stone-50 text-xs font-black tracking-wide text-stone-500 uppercase">
-                                    <tr>
-                                        <th className="px-4 py-2.5">Dokumen</th>
-                                        <th className="px-3 py-2.5">Kategori</th>
-                                        <th className="px-3 py-2.5">Akun</th>
-                                        <th className="px-3 py-2.5">Waktu</th>
-                                        <th className="px-4 py-2.5 text-right">Nominal</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-stone-100">
-                                    {expenses.data.map((item) => (
-                                        <tr key={item.public_id} className="hover:bg-stone-50/70">
-                                            <td className="px-4 py-3">
-                                                <p className="font-mono text-xs font-bold text-teal-800">{item.document_number}</p>
-                                                {item.notes && (
-                                                    <p className="mt-1 max-w-64 truncate text-xs text-stone-500">{item.notes}</p>
-                                                )}
-                                            </td>
-                                            <td className="px-3 py-3 font-semibold text-stone-900">{item.category_name}</td>
-                                            <td className="px-3 py-3 text-stone-600">{item.account_name}</td>
-                                            <td className="px-3 py-3 text-stone-600">{ledgerDateTime(item.occurred_at, timezone)}</td>
-                                            <td className="px-4 py-3 text-right font-black text-rose-700">-{money(item.amount)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {expenses.data.length === 0 && (
-                            <div className="px-4 py-14 text-center">
-                                <ReceiptText className="mx-auto size-8 text-stone-300" />
-                                <p className="mt-3 text-sm font-bold text-stone-600">Belum ada biaya pada filter ini</p>
-                            </div>
-                        )}
-                        {expenses.links.length > 3 && (
-                            <div className="border-t border-stone-200 px-4 py-4 sm:px-5">
-                                <Pagination links={expenses.links} />
-                            </div>
-                        )}
-                    </section>
-                </div>
-            </main>
-
-            <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
-                <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-stone-200 bg-white p-0 shadow-2xl sm:max-w-lg">
-                    <DialogHeader className="border-b border-stone-200 px-4 py-4 pr-12 text-left sm:px-5">
-                        <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">Catat biaya</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={submitExpense} className="flex min-h-0 flex-1 flex-col">
-                        <div className="grid min-h-0 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-5">
-                            <div className="sm:col-span-2">
-                                <label className="mb-1 block text-sm font-bold text-stone-700">Nominal</label>
-                                <div className="flex h-12 items-center overflow-hidden rounded-xl border border-stone-300 bg-white focus-within:border-teal-700 focus-within:ring-2 focus-within:ring-teal-700/15">
-                                    <span className="border-r border-stone-200 bg-stone-50 px-3 text-sm font-black text-stone-600">
-                                        {currencySymbol()}
-                                    </span>
-                                    <input
-                                        className="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-lg font-black text-stone-900 outline-none"
-                                        type="number"
-                                        min="0.0001"
-                                        step="0.0001"
-                                        required
-                                        autoFocus
-                                        placeholder="0"
-                                        value={expense.data.amount}
-                                        onChange={(event) => expense.setData('amount', event.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <Field label="Kategori">
+                        }
+                        filters={
+                            <>
                                 <select
-                                    className={fieldClass}
-                                    required
-                                    value={expense.data.category_id}
-                                    onChange={(event) => expense.setData('category_id', event.target.value)}
+                                    className={dataToolbarControlClass}
+                                    value={filter.data.category}
+                                    onChange={(event) => filter.setData('category', event.target.value)}
+                                    aria-label={translate('Kategori')}
                                 >
-                                    {activeCategories.map((item) => (
+                                    <option value="">{translate('Semua kategori')}</option>
+                                    {categories.map((item) => (
                                         <option key={item.public_id} value={item.public_id}>
                                             {item.name}
                                         </option>
                                     ))}
                                 </select>
-                            </Field>
-                            <Field label="Bayar dari akun">
-                                <select
-                                    className={fieldClass}
-                                    required
-                                    value={expense.data.account_id}
-                                    onChange={(event) => expense.setData('account_id', event.target.value)}
-                                >
-                                    {accounts.map((item) => (
-                                        <option key={item.public_id} value={item.public_id}>
-                                            {item.name} - {money(item.balance)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </Field>
-                            <div className="sm:col-span-2">
-                                <Field label="Waktu">
+                                <label className="space-y-1 text-xs font-medium text-muted-foreground">
+                                    {translate('Dari')}
                                     <input
-                                        className={fieldClass}
-                                        type="datetime-local"
-                                        required
-                                        value={expense.data.occurred_at}
-                                        onChange={(event) => expense.setData('occurred_at', event.target.value)}
+                                        className={dataToolbarControlClass}
+                                        type="date"
+                                        value={filter.data.start_date}
+                                        onChange={(event) => filter.setData('start_date', event.target.value)}
                                     />
-                                </Field>
-                            </div>
-                            <label className="space-y-1 text-sm font-bold text-stone-700 sm:col-span-2">
-                                Catatan <span className="font-normal text-stone-400">(opsional)</span>
-                                <textarea
-                                    className={`${fieldClass} min-h-20 resize-y py-2.5`}
-                                    maxLength={500}
-                                    placeholder="Contoh: tagihan listrik Agustus"
-                                    value={expense.data.notes}
-                                    onChange={(event) => expense.setData('notes', event.target.value)}
-                                />
-                            </label>
-                            <div className="grid grid-cols-1 divide-y divide-teal-900/10 rounded-xl border border-teal-900/10 bg-[#fff3ef] px-1 py-1 text-[var(--app-ink)] min-[375px]:grid-cols-3 min-[375px]:divide-x min-[375px]:divide-y-0 min-[375px]:py-3 sm:col-span-2">
-                                <Calculation label="Saldo awal" value={money(selectedAccount?.balance ?? 0)} />
-                                <Calculation label="Biaya" value={`-${money(amount)}`} />
-                                <Calculation label="Saldo akhir" value={money(remainingBalance)} danger={remainingBalance < 0} />
-                            </div>
-                            <FormErrors errors={expense.errors} />
-                        </div>
-                        <div className="flex flex-col-reverse gap-2 border-t border-stone-200 bg-white px-4 py-3 min-[375px]:flex-row min-[375px]:justify-end sm:px-5">
-                            <button
-                                type="button"
-                                className="h-10 rounded-xl border border-stone-300 px-4 text-sm font-bold text-stone-700 hover:bg-stone-50"
-                                onClick={() => setExpenseOpen(false)}
-                            >
-                                Batal
-                            </button>
-                            <button className={buttonClass} disabled={expense.processing || remainingBalance < 0}>
-                                {expense.processing ? 'Menyimpan...' : 'Simpan biaya'}
-                            </button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                                </label>
+                                <label className="space-y-1 text-xs font-medium text-muted-foreground">
+                                    {translate('Sampai')}
+                                    <input
+                                        className={dataToolbarControlClass}
+                                        type="date"
+                                        min={filter.data.start_date || undefined}
+                                        value={filter.data.end_date}
+                                        onChange={(event) => filter.setData('end_date', event.target.value)}
+                                    />
+                                </label>
+                            </>
+                        }
+                        actions={
+                            <>
+                                {hasFilters && (
+                                    <Button type="button" size="touch" variant="ghost" onClick={resetFilters}>
+                                        <RotateCcw className="size-4" aria-hidden="true" /> {translate('Reset')}
+                                    </Button>
+                                )}
+                                <Button type="submit" size="touch" variant="outline">
+                                    {translate('Terapkan')}
+                                </Button>
+                            </>
+                        }
+                    />
 
-            <Dialog open={categoryOpen} onOpenChange={setCategoryOpen}>
-                <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-stone-200 bg-white p-0 shadow-2xl sm:max-w-md">
-                    <DialogHeader className="border-b border-stone-200 px-4 py-4 pr-12 text-left sm:px-5">
-                        <DialogTitle className="text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">Kategori biaya</DialogTitle>
-                    </DialogHeader>
-                    <div className="min-h-0 flex-1 overflow-y-auto">
-                        <form onSubmit={submitCategory} className="space-y-3 border-b border-stone-200 p-4 sm:p-5">
-                            <div className="flex flex-col gap-3 min-[375px]:flex-row min-[375px]:items-end">
-                                <div className="min-w-0 flex-1">
-                                    <Field label="Nama kategori">
-                                        <input
-                                            className={fieldClass}
-                                            required
-                                            maxLength={120}
-                                            placeholder="Contoh: Listrik"
-                                            value={category.data.name}
-                                            onChange={(event) => category.setData('name', event.target.value)}
-                                        />
-                                    </Field>
-                                </div>
-                                <button
-                                    className={`${buttonClass} inline-flex shrink-0 items-center justify-center gap-2`}
-                                    disabled={category.processing}
+                    {expenses.data.length > 0 && (
+                        <RecordListHeader className="grid-cols-[minmax(14rem,1fr)_11rem_11rem_9rem] gap-4">
+                            <span>{translate('Dokumen')}</span>
+                            <span>{translate('Akun')}</span>
+                            <span>{translate('Waktu')}</span>
+                            <span className="text-right">{translate('Nominal')}</span>
+                        </RecordListHeader>
+                    )}
+
+                    {expenses.data.length === 0 ? (
+                        <EmptyState
+                            icon={ReceiptText}
+                            title={translate('Belum ada biaya pada filter ini')}
+                            description={hasFilters ? translate('Coba ubah kata kunci atau filter yang digunakan.') : undefined}
+                            action={
+                                hasFilters ? (
+                                    <Button type="button" size="touch" variant="outline" onClick={resetFilters}>
+                                        {translate('Reset filter')}
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
+                    ) : (
+                        <div>
+                            {expenses.data.map((item) => (
+                                <RecordListRow
+                                    key={item.public_id}
+                                    className="grid gap-3 md:grid-cols-[minmax(14rem,1fr)_11rem_11rem_9rem] md:items-center"
                                 >
-                                    <Plus className="size-4" /> Tambah
-                                </button>
-                            </div>
-                            <FormErrors errors={category.errors} />
-                        </form>
-                        <div className="divide-y divide-stone-100">
-                            {categories.map((item) => (
-                                <div key={item.public_id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                                     <div className="min-w-0">
-                                        <p className="truncate text-sm font-bold text-stone-900">{item.name}</p>
+                                        <p className="truncate font-mono text-xs font-semibold text-primary">{item.document_number}</p>
+                                        <p className="mt-1 truncate text-sm font-semibold text-foreground">{item.category_name}</p>
+                                        {item.notes && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.notes}</p>}
                                     </div>
-                                    <button
-                                        type="button"
-                                        className={`h-9 shrink-0 rounded-full px-3 text-xs font-black transition ${
-                                            item.is_active
-                                                ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                                                : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
-                                        }`}
-                                        onClick={() =>
-                                            router.patch(
-                                                `/expenses/categories/${item.public_id}`,
-                                                {
-                                                    name: item.name,
-                                                    is_active: !item.is_active,
-                                                },
-                                                { preserveScroll: true },
-                                            )
-                                        }
-                                    >
-                                        {item.is_active ? 'Aktif' : 'Nonaktif'}
-                                    </button>
-                                </div>
+                                    <div className="flex justify-between gap-3 text-sm md:block">
+                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Akun')}</span>
+                                        <span className="text-foreground">{item.account_name}</span>
+                                    </div>
+                                    <div className="flex justify-between gap-3 text-sm md:block">
+                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Waktu')}</span>
+                                        <span className="text-muted-foreground">{ledgerDateTime(item.occurred_at, timezone)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 md:block md:text-right">
+                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Nominal')}</span>
+                                        <span className="font-semibold text-destructive tabular-nums">-{money(item.amount)}</span>
+                                    </div>
+                                </RecordListRow>
                             ))}
-                            {categories.length === 0 && (
-                                <p className="px-5 py-10 text-center text-sm font-semibold text-stone-500">Belum ada kategori</p>
-                            )}
                         </div>
+                    )}
+
+                    {expenses.links.length > 3 && (
+                        <div className="border-t border-border px-3 py-3 sm:px-4">
+                            <Pagination links={expenses.links} />
+                        </div>
+                    )}
+                </RecordList>
+            </AppPage>
+
+            <ResponsiveDialog
+                open={expenseOpen}
+                onOpenChange={setExpenseOpen}
+                title={translate('Catat biaya')}
+                size="md"
+                footer={
+                    <>
+                        <Button type="button" size="touch" variant="outline" onClick={() => setExpenseOpen(false)}>
+                            {translate('Batal')}
+                        </Button>
+                        <Button type="submit" form="expense-form" disabled={expense.processing || remainingBalance < 0} size="touch">
+                            {translate(expense.processing ? 'Menyimpan...' : 'Simpan biaya')}
+                        </Button>
+                    </>
+                }
+            >
+                <form id="expense-form" onSubmit={submitExpense} className="grid gap-4 sm:grid-cols-2">
+                    <FormCurrencyInput
+                        id="expense-amount"
+                        name="amount"
+                        label={translate('Nominal')}
+                        value={expense.data.amount}
+                        onValueChange={(value) => expense.setData('amount', value)}
+                        min="0.0001"
+                        required
+                        error={expense.errors.amount}
+                        className="text-lg font-semibold"
+                    />
+                    <FormSelect
+                        id="expense-category"
+                        name="category_id"
+                        label={translate('Kategori')}
+                        required
+                        value={expense.data.category_id}
+                        onChange={(event) => expense.setData('category_id', event.target.value)}
+                        error={expense.errors.category_id}
+                    >
+                        {activeCategories.map((item) => (
+                            <option key={item.public_id} value={item.public_id}>
+                                {item.name}
+                            </option>
+                        ))}
+                    </FormSelect>
+                    <FormSelect
+                        id="expense-account"
+                        name="account_id"
+                        label={translate('Bayar dari akun')}
+                        required
+                        value={expense.data.account_id}
+                        onChange={(event) => expense.setData('account_id', event.target.value)}
+                        error={expense.errors.account_id}
+                    >
+                        {accounts.map((item) => (
+                            <option key={item.public_id} value={item.public_id}>
+                                {item.name} · {money(item.balance)}
+                            </option>
+                        ))}
+                    </FormSelect>
+                    <FormInput
+                        id="expense-occurred-at"
+                        name="occurred_at"
+                        type="datetime-local"
+                        label={translate('Waktu')}
+                        required
+                        value={expense.data.occurred_at}
+                        onChange={(event) => expense.setData('occurred_at', event.target.value)}
+                        error={expense.errors.occurred_at}
+                    />
+                    <FormTextarea
+                        id="expense-notes"
+                        name="notes"
+                        label={translate('Catatan')}
+                        description={translate('Opsional')}
+                        maxLength={500}
+                        placeholder={translate('Contoh: tagihan listrik Agustus')}
+                        value={expense.data.notes}
+                        onChange={(event) => expense.setData('notes', event.target.value)}
+                        error={expense.errors.notes}
+                        className="min-h-20"
+                    />
+                    <div className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-xl bg-secondary sm:col-span-2">
+                        <Calculation label="Saldo awal" value={money(selectedAccount?.balance ?? 0)} />
+                        <Calculation label="Biaya" value={`-${money(amount)}`} />
+                        <Calculation label="Saldo akhir" value={money(remainingBalance)} danger={remainingBalance < 0} />
                     </div>
-                </DialogContent>
-            </Dialog>
+                    <div className="sm:col-span-2">
+                        <AlertError errors={Object.values(expense.errors)} />
+                    </div>
+                </form>
+            </ResponsiveDialog>
+
+            <ResponsiveDialog open={categoryOpen} onOpenChange={setCategoryOpen} title={translate('Kategori biaya')} size="sm">
+                <form onSubmit={submitCategory} className="flex items-end gap-2 border-b border-border pb-5">
+                    <div className="min-w-0 flex-1">
+                        <FormInput
+                            id="expense-category-name"
+                            name="name"
+                            label={translate('Nama kategori')}
+                            required
+                            maxLength={120}
+                            placeholder={translate('Contoh: Listrik')}
+                            value={category.data.name}
+                            onChange={(event) => category.setData('name', event.target.value)}
+                            error={category.errors.name}
+                        />
+                    </div>
+                    <Button size="touch" disabled={category.processing} className="shrink-0">
+                        <Plus className="size-4" aria-hidden="true" /> {translate('Tambah')}
+                    </Button>
+                </form>
+                <div className="divide-y divide-border">
+                    {categories.map((item) => (
+                        <div key={item.public_id} className="flex min-h-14 items-center justify-between gap-3">
+                            <p className="min-w-0 truncate text-sm font-medium text-foreground">{item.name}</p>
+                            <Button
+                                type="button"
+                                variant={item.is_active ? 'secondary' : 'outline'}
+                                size="touch"
+                                className="shrink-0"
+                                onClick={() =>
+                                    router.patch(
+                                        updateExpenseCategory.url(item.public_id),
+                                        { name: item.name, is_active: !item.is_active },
+                                        { preserveScroll: true },
+                                    )
+                                }
+                            >
+                                {translate(item.is_active ? 'Aktif' : 'Nonaktif')}
+                            </Button>
+                        </div>
+                    ))}
+                    {categories.length === 0 && (
+                        <p className="py-10 text-center text-sm text-muted-foreground">{translate('Belum ada kategori')}</p>
+                    )}
+                </div>
+            </ResponsiveDialog>
         </>
     );
 }
 
-function MetricCard({
-    icon,
-    label,
-    value,
-    meta,
-    tone,
-}: {
-    icon: ReactNode;
-    label: string;
-    value: string;
-    meta?: string;
-    tone: 'rose' | 'teal' | 'amber' | 'blue';
-}) {
-    const tones = {
-        rose: 'bg-rose-50 text-rose-700',
-        teal: 'bg-teal-50 text-teal-700',
-        amber: 'bg-amber-50 text-amber-700',
-        blue: 'bg-sky-50 text-sky-700',
-    };
-
+function SummaryItem({ icon: Icon, label, value, meta }: { icon: typeof ReceiptText; label: string; value: string; meta?: string }) {
     return (
-        <article className="min-w-0 rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
-            <div className={`inline-flex rounded-lg p-1.5 ${tones[tone]}`}>{icon}</div>
-            <p className="mt-2 text-[10px] font-black tracking-wide text-stone-500 uppercase">{translate(label)}</p>
-            <p className="mt-0.5 truncate text-sm font-black tracking-[-0.025em] text-stone-900 sm:text-lg" title={value}>
+        <div className="min-w-0 border-border p-4 odd:border-r max-lg:border-b lg:border-r lg:last:border-r-0 lg:[&:nth-child(n+3)]:border-b-0">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Icon className="size-4 text-primary" aria-hidden="true" /> {translate(label)}
+            </div>
+            <p className="mt-2 truncate text-lg font-semibold text-foreground tabular-nums" title={value}>
                 {value}
             </p>
-            {meta && <p className="mt-0.5 truncate text-xs font-bold text-stone-500">{meta}</p>}
-        </article>
-    );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-    return (
-        <label className="space-y-1 text-sm font-bold text-stone-700">
-            {translate(label)}
-            {children}
-        </label>
+            {meta && <p className="mt-0.5 truncate text-xs text-muted-foreground">{meta}</p>}
+        </div>
     );
 }
 
 function Calculation({ label, value, danger = false }: { label: string; value: string; danger?: boolean }) {
     return (
-        <div className="flex min-w-0 items-center justify-between px-3 py-2 min-[375px]:block min-[375px]:px-2 min-[375px]:py-0 min-[375px]:text-center">
-            <p className="text-[10px] font-bold tracking-wide text-stone-500 uppercase">{translate(label)}</p>
+        <div className="min-w-0 px-2 py-3 text-center">
+            <p className="truncate text-xs text-muted-foreground">{translate(label)}</p>
             <p
-                className={`truncate text-xs font-black min-[375px]:mt-1 sm:text-sm ${danger ? 'text-rose-600' : 'text-[var(--app-ink)]'}`}
+                className={`mt-1 truncate text-sm font-semibold tabular-nums ${danger ? 'text-destructive' : 'text-foreground'}`}
                 title={value}
             >
                 {value}
             </p>
         </div>
     );
-}
-
-function FormErrors({ errors }: { errors: Partial<Record<string, string>> }) {
-    if (Object.keys(errors).length === 0) {
-        return null;
-    }
-
-    return <p className="text-sm font-semibold text-rose-700 sm:col-span-2">{Object.values(errors)[0]}</p>;
 }

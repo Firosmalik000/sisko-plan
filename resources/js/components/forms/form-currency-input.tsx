@@ -75,7 +75,11 @@ export function FormCurrencyInput({
                         setDraft(normalized);
                         setFocused(false);
                     }}
-                    className={cn(position === 'before' ? 'pl-12' : 'pr-12', 'text-right tabular-nums', className)}
+                    className={cn(
+                        position === 'before' ? 'pl-12' : 'pr-12',
+                        'h-11 rounded-xl bg-background text-right text-base tabular-nums sm:text-sm',
+                        className,
+                    )}
                 />
             </div>
         </FormField>

@@ -1,5 +1,14 @@
 import type { CSSProperties } from 'react';
 
+export const storeThemePresets = [
+    { name: 'Sisko Orange', color: '#ee4d2d' },
+    { name: 'Coral', color: '#f35d3d' },
+    { name: 'Samudra', color: '#147d92' },
+    { name: 'Nila', color: '#5753c9' },
+    { name: 'Anggur', color: '#a34888' },
+    { name: 'Arang', color: '#334155' },
+] as const;
+
 function hexToRgb(hex: string) {
     const value = hex.replace('#', '');
     const number = Number.parseInt(value, 16);
@@ -33,10 +42,14 @@ export function storeThemeVariables(color = '#ee4d2d', appearance: 'light' | 'da
     const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#ee4d2d';
     const dark = appearance === 'dark';
     const foreground = dark ? '#f5efec' : '#2d2928';
-    const surface = dark ? '#201c1b' : '#fffaf7';
+    const surface = dark ? mix(safeColor, '#171514', 0.9) : mix(safeColor, '#ffffff', 0.965);
+    const card = dark ? mix(safeColor, '#211e1d', 0.94) : '#ffffff';
     const soft = dark ? mix(safeColor, '#201c1b', 0.86) : mix(safeColor, '#ffffff', 0.9);
     const softStrong = dark ? mix(safeColor, '#201c1b', 0.72) : mix(safeColor, '#ffffff', 0.8);
     const border = dark ? '#51443f' : mix(safeColor, '#ffffff', 0.76);
+    const input = dark ? '#6a5951' : mix(safeColor, '#ffffff', 0.68);
+    const muted = dark ? mix(safeColor, '#26211f', 0.92) : mix(safeColor, '#ffffff', 0.94);
+    const mutedForeground = dark ? '#c1b3ad' : '#756d6a';
     const primaryForeground = contrastColor(safeColor);
 
     return {
@@ -50,20 +63,20 @@ export function storeThemeVariables(color = '#ee4d2d', appearance: 'light' | 'da
         '--app-soft-strong': softStrong,
         '--background': surface,
         '--foreground': foreground,
-        '--card': dark ? '#2b2523' : '#ffffff',
+        '--card': card,
         '--card-foreground': foreground,
-        '--popover': dark ? '#2b2523' : '#ffffff',
+        '--popover': card,
         '--popover-foreground': foreground,
         '--primary': safeColor,
         '--primary-foreground': primaryForeground,
         '--secondary': soft,
         '--secondary-foreground': foreground,
-        '--muted': dark ? '#352e2b' : '#f8ede9',
-        '--muted-foreground': dark ? '#c1b3ad' : '#756d6a',
+        '--muted': muted,
+        '--muted-foreground': mutedForeground,
         '--accent': softStrong,
         '--accent-foreground': foreground,
         '--border': border,
-        '--input': dark ? '#6a5951' : mix(safeColor, '#ffffff', 0.68),
+        '--input': input,
         '--ring': safeColor,
         '--sidebar': surface,
         '--sidebar-foreground': foreground,
@@ -73,6 +86,34 @@ export function storeThemeVariables(color = '#ee4d2d', appearance: 'light' | 'da
         '--sidebar-accent-foreground': foreground,
         '--sidebar-border': border,
         '--sidebar-ring': safeColor,
+        // Tailwind's generated utilities read --color-* tokens. Defining the
+        // aliases at the customer boundary keeps the public/landing palette
+        // untouched while making shared semantic components store-aware.
+        '--color-background': surface,
+        '--color-foreground': foreground,
+        '--color-card': card,
+        '--color-card-foreground': foreground,
+        '--color-popover': card,
+        '--color-popover-foreground': foreground,
+        '--color-primary': safeColor,
+        '--color-primary-foreground': primaryForeground,
+        '--color-secondary': soft,
+        '--color-secondary-foreground': foreground,
+        '--color-muted': muted,
+        '--color-muted-foreground': mutedForeground,
+        '--color-accent': softStrong,
+        '--color-accent-foreground': foreground,
+        '--color-border': border,
+        '--color-input': input,
+        '--color-ring': safeColor,
+        '--color-sidebar': surface,
+        '--color-sidebar-foreground': foreground,
+        '--color-sidebar-primary': safeColor,
+        '--color-sidebar-primary-foreground': primaryForeground,
+        '--color-sidebar-accent': soft,
+        '--color-sidebar-accent-foreground': foreground,
+        '--color-sidebar-border': border,
+        '--color-sidebar-ring': safeColor,
         '--workspace-50': mix(safeColor, '#ffffff', 0.94),
         '--workspace-100': mix(safeColor, '#ffffff', 0.88),
         '--workspace-200': mix(safeColor, '#ffffff', 0.74),
