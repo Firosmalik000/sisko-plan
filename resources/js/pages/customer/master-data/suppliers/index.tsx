@@ -1,6 +1,8 @@
+import { Contact, Truck } from 'lucide-react';
+import { ReferenceDataPage } from '@/components/page/reference-data-page';
+import type { ReferenceRecord } from '@/components/page/reference-data-page';
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/components/reference-data-page';
-import type { ReferenceRecord } from '@/components/reference-data-page';
+import { index, store, update } from '@/routes/master-data/suppliers';
 
 type Supplier = ReferenceRecord & {
     contact_person: string | null;
@@ -23,7 +25,9 @@ export default function SuppliersIndex({
     return (
         <ReferenceDataPage
             title="Supplier"
-            endpoint="/master-data/suppliers"
+            icon={Truck}
+            recordIcon={Contact}
+            routes={{ index: index.url(), store: store.url(), update: update.url }}
             singular="Supplier"
             items={suppliers}
             search={search}
@@ -39,7 +43,7 @@ export default function SuppliersIndex({
             fields={[
                 { name: 'name', label: 'Nama supplier' },
                 { name: 'contact_person', label: 'Kontak utama' },
-                { name: 'phone', label: 'Nomor telepon' },
+                { name: 'phone', label: 'Nomor telepon', type: 'tel' },
                 { name: 'email', label: 'Email', type: 'email' },
                 { name: 'address', label: 'Alamat', type: 'textarea' },
             ]}
@@ -51,10 +55,3 @@ export default function SuppliersIndex({
         />
     );
 }
-
-SuppliersIndex.layout = {
-    breadcrumbs: [
-        { title: 'Master Data', href: '/master-data/products' },
-        { title: 'Supplier', href: '/master-data/suppliers' },
-    ],
-};

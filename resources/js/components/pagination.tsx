@@ -33,7 +33,7 @@ export function Pagination({ links }: { links: PaginationLink[] }) {
                 const className = `inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-3 text-sm transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none ${
                     link.active
                         ? 'bg-[var(--app-primary)] text-[var(--app-primary-foreground)] shadow-[0_8px_18px_-12px_var(--app-shadow)]'
-                        : 'border border-slate-900/10 bg-white/60 text-slate-700 hover:bg-white'
+                        : 'border border-border bg-card text-foreground hover:bg-[var(--app-soft)]'
                 }`;
 
                 if (link.url === null) {

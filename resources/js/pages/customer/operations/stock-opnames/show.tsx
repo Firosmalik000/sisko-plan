@@ -1,12 +1,23 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { AlertTriangle, ArrowLeft, Camera, Check, ClipboardCheck, PackageCheck, RotateCcw, Save, Search, Send, X } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { AlertTriangle, Camera, Check, ClipboardCheck, PackageCheck, RotateCcw, Save, Search, Send, X } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { ledgerDateTime, money, OperationsShell, quantity } from '@/components/operations-shell';
-import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
-import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
-import { formatCompactMoney, localeTag } from '@/lib/currency';
+import { fieldClass, OperationsShell } from '@/components/operations-shell';
+import { Button } from '@/components/ui/button';
+import { prepareScannerTone } from '@/components/widgets/product-scanner/scanner-feedback';
+import type { ScannerApplyResult, ScannerSelection } from '@/components/widgets/product-scanner/types';
+import { useConfirmation } from '@/hooks/use-confirmation';
+import { formatCompactMoney, formatMoney as money, formatQuantity as quantity, localeTag } from '@/lib/currency';
+import { ledgerDateTime } from '@/lib/date-time';
 import { decimalInput } from '@/lib/decimal-input';
 import { translate } from '@/lib/i18n';
+import {
+    cancel as cancelStockOpname,
+    complete as completeStockOpname,
+    index as stockOpnamesIndex,
+    post as postStockOpname,
+    reopen as reopenStockOpname,
+    update as updateStockOpname,
+} from '@/routes/operations/stock-opnames';
 
 type Item = {
     product_id: string;
@@ -43,7 +54,7 @@ const statusLabels = {
     posted: 'Diposting',
     cancelled: 'Dibatalkan',
 };
-const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
+const ProductScanner = lazy(() => import('@/components/widgets/product-scanner/product-scanner'));
 
 export default function StockOpnameShow({
     stockCount,
@@ -56,6 +67,7 @@ export default function StockOpnameShow({
     canManage: boolean;
     timezone: string;
 }) {
+    const confirm = useConfirmation();
     const [values, setValues] = useState<Record<string, string>>(() =>
         Object.fromEntries(stockCount.items.map((item) => [item.product_id, decimalInput(item.counted_quantity)])),
     );
@@ -118,7 +130,6 @@ export default function StockOpnameShow({
         return matchesSearch && matchesFilter;
     });
 
-    const base = `/operations/stock-opnames/${stockCount.public_id}`;
     const editable = stockCount.status === 'draft' && canCount;
 
     useEffect(() => {
@@ -175,7 +186,7 @@ export default function StockOpnameShow({
 
         setProcessing(true);
         router.patch(
-            base,
+            updateStockOpname.url(stockCount.public_id),
             {
                 items: stockCount.items
                     .filter((item) => dirty.has(item.product_id))
@@ -192,14 +203,27 @@ export default function StockOpnameShow({
         );
     };
 
-    const workflow = (action: 'complete' | 'reopen' | 'post' | 'cancel', confirmation?: string) => {
-        if (confirmation && !window.confirm(confirmation)) {
+    const workflow = async (action: 'complete' | 'reopen' | 'post' | 'cancel', confirmation?: string) => {
+        if (
+            confirmation &&
+            !(await confirm({
+                title: confirmation,
+                confirmLabel: action === 'cancel' ? 'Batalkan opname' : 'Lanjutkan',
+                variant: action === 'cancel' ? 'destructive' : 'default',
+            }))
+        ) {
             return;
         }
 
+        const routes = {
+            complete: completeStockOpname,
+            reopen: reopenStockOpname,
+            post: postStockOpname,
+            cancel: cancelStockOpname,
+        };
         setProcessing(true);
         router.post(
-            `${base}/${action}`,
+            routes[action].url(stockCount.public_id),
             {},
             {
                 preserveScroll: action !== 'cancel',
@@ -210,24 +234,22 @@ export default function StockOpnameShow({
 
     return (
         <>
-            <Head title={stockCount.document_number} />
-            <OperationsShell active="/operations/stock-opnames" eyebrow="Stock opname" title={stockCount.document_number} description="">
-                <section className="overflow-hidden rounded-[1.2rem] border border-[var(--app-ink)]/10 bg-white shadow-sm">
+            <OperationsShell
+                active={stockOpnamesIndex.url()}
+                title={stockCount.document_number}
+                icon={ClipboardCheck}
+                back={{ href: stockOpnamesIndex.url(), label: translate('Kembali ke daftar stock opname') }}
+            >
+                <section className="overflow-hidden rounded-2xl border border-[var(--app-ink)]/10 bg-card shadow-sm">
                     <div className="flex items-center gap-2 border-b border-[var(--app-ink)]/8 px-3 py-2.5 sm:px-4">
-                        <Link
-                            href="/operations/stock-opnames"
-                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[var(--app-soft)] px-2.5 text-xs font-black text-[var(--app-ink)]"
-                        >
-                            <ArrowLeft className="size-3.5" /> Kembali
-                        </Link>
-                        <div className="min-w-0 flex-1 text-xs text-stone-500">
-                            <p className="truncate font-bold text-stone-700">{ledgerDateTime(stockCount.snapshot_at, timezone)}</p>
+                        <div className="min-w-0 flex-1 text-xs text-muted-foreground">
+                            <p className="truncate font-bold text-foreground">{ledgerDateTime(stockCount.snapshot_at, timezone)}</p>
                             <p className="truncate">
                                 {stockCount.created_by}
                                 {stockCount.notes && ` · ${stockCount.notes}`}
                             </p>
                         </div>
-                        <span className="shrink-0 rounded-lg bg-[var(--app-soft)] px-2 py-1.5 text-[10px] font-black text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/15 sm:text-xs">
+                        <span className="shrink-0 rounded-lg bg-[var(--app-soft)] px-2 py-1.5 text-[10px] font-bold text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/15 sm:text-xs">
                             {translate(statusLabels[stockCount.status])}
                         </span>
                     </div>
@@ -239,9 +261,9 @@ export default function StockOpnameShow({
                         <Summary label="Estimasi rugi" value={compactMoney(stats.estimatedLoss)} danger={stats.estimatedLoss > 0} />
                     </div>
 
-                    <div className="h-1.5 bg-stone-100">
+                    <div className="h-1.5 bg-muted">
                         <div
-                            className="h-full bg-teal-600 transition-[width]"
+                            className="h-full bg-primary transition-[width]"
                             style={{
                                 width: `${stockCount.items.length === 0 ? 0 : (stats.counted / stockCount.items.length) * 100}%`,
                             }}
@@ -249,15 +271,15 @@ export default function StockOpnameShow({
                     </div>
                 </section>
 
-                <section className="rounded-[1.2rem] border border-stone-200 bg-white p-2.5 shadow-sm sm:p-3">
+                <section className="rounded-2xl border border-border bg-card p-2.5 shadow-sm sm:p-3">
                     <div className="flex flex-wrap gap-2">
                         <label className="relative flex-1">
                             <span className="sr-only">Cari produk</span>
-                            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
+                            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
-                                className="h-10 w-full rounded-xl border border-stone-300 bg-white pr-3 pl-9 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                                className={`${fieldClass} pl-9`}
                                 placeholder="Cari produk, SKU, atau barcode"
                             />
                         </label>
@@ -265,23 +287,23 @@ export default function StockOpnameShow({
                             value={filter}
                             onChange={(event) => setFilter(event.target.value as typeof filter)}
                             aria-label="Filter produk opname"
-                            className="h-10 w-32 shrink-0 rounded-xl border border-stone-300 bg-white px-2 text-xs font-bold text-stone-700 outline-none sm:w-44 sm:px-3 sm:text-sm"
+                            className={`${fieldClass} w-32 shrink-0 px-2 text-xs font-bold sm:w-44 sm:px-3 sm:text-sm`}
                         >
                             <option value="all">Semua produk</option>
                             <option value="pending">Belum dihitung</option>
                             <option value="difference">Ada selisih</option>
                         </select>
                         {editable && (
-                            <button
+                            <Button
                                 type="button"
+                                size="touch"
                                 onClick={() => {
                                     prepareScannerTone();
                                     setScannerOpen(true);
                                 }}
-                                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] sm:text-sm"
                             >
                                 <Camera className="size-4" /> Scan produk
-                            </button>
+                            </Button>
                         )}
                     </div>
                     {scannerMessage && (
@@ -304,29 +326,29 @@ export default function StockOpnameShow({
                             return (
                                 <article
                                     key={item.product_id}
-                                    className={`rounded-xl border p-2.5 transition sm:p-3 ${difference !== null && difference < 0 ? 'border-red-200 bg-red-50/50' : difference !== null && difference > 0 ? 'border-emerald-200 bg-emerald-50/40' : 'border-stone-200 bg-white'}`}
+                                    className={`rounded-xl border p-2.5 transition sm:p-3 ${difference !== null && difference < 0 ? 'border-destructive/20 bg-destructive/10' : difference !== null && difference > 0 ? 'border-emerald-200 bg-emerald-50/40' : 'border-border bg-card'}`}
                                 >
                                     <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_9rem_7rem] sm:items-center">
                                         <div className="min-w-0">
-                                            <p className="truncate text-sm font-black text-stone-900">{item.variant_name ?? item.name}</p>
+                                            <p className="truncate text-sm font-bold text-foreground">{item.variant_name ?? item.name}</p>
                                             {item.parent_name && (
                                                 <p className="truncate text-xs font-bold text-[var(--app-primary)]">{item.parent_name}</p>
                                             )}
-                                            <p className="text-[10px] text-stone-500">
+                                            <p className="text-[10px] text-muted-foreground">
                                                 {item.sku || item.barcode || 'Tanpa SKU'} · {item.unit}
                                             </p>
                                         </div>
                                         <div className="grid grid-cols-3 gap-1.5 sm:contents">
                                             <div className="rounded-lg bg-white/70 px-2 py-1.5 text-right sm:bg-transparent sm:p-0">
-                                                <span className="block text-[9px] font-bold tracking-wide text-stone-500 uppercase">
+                                                <span className="block text-[9px] font-bold tracking-wide text-muted-foreground uppercase">
                                                     Sistem
                                                 </span>
-                                                <p className="text-sm font-black text-stone-700 tabular-nums">
+                                                <p className="text-sm font-bold text-foreground tabular-nums">
                                                     {quantity(item.system_quantity)}
                                                 </p>
                                             </div>
                                             <label>
-                                                <span className="block text-right text-[9px] font-bold tracking-wide text-stone-500 uppercase">
+                                                <span className="block text-right text-[9px] font-bold tracking-wide text-muted-foreground uppercase">
                                                     Fisik
                                                 </span>
                                                 <input
@@ -343,16 +365,16 @@ export default function StockOpnameShow({
                                                         }));
                                                         setDirty((current) => new Set(current).add(item.product_id));
                                                     }}
-                                                    className="mt-0.5 h-9 w-full rounded-lg border border-stone-300 bg-white px-2 text-right text-sm font-black tabular-nums outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 disabled:bg-stone-50"
+                                                    className="mt-0.5 h-9 w-full rounded-lg border border-input bg-card px-2 text-right text-sm font-bold tabular-nums outline-none focus:border-primary focus:ring-2 focus:ring-ring/15 disabled:bg-muted"
                                                     placeholder="—"
                                                 />
                                             </label>
                                             <div className="rounded-lg bg-white/70 px-2 py-1.5 text-right sm:bg-transparent sm:p-0">
-                                                <span className="block text-[9px] font-bold tracking-wide text-stone-500 uppercase">
+                                                <span className="block text-[9px] font-bold tracking-wide text-muted-foreground uppercase">
                                                     Selisih
                                                 </span>
                                                 <p
-                                                    className={`text-sm font-black tabular-nums ${difference === null || difference === 0 ? 'text-stone-500' : difference > 0 ? 'text-emerald-700' : 'text-red-700'}`}
+                                                    className={`text-sm font-bold tabular-nums ${difference === null || difference === 0 ? 'text-muted-foreground' : difference > 0 ? 'text-emerald-700' : 'text-destructive'}`}
                                                 >
                                                     {difference === null ? '—' : `${difference > 0 ? '+' : ''}${quantity(difference)}`}
                                                 </p>
@@ -370,7 +392,7 @@ export default function StockOpnameShow({
                                                 <span />
                                             )}
                                             {estimatedLoss > 0 && (
-                                                <span className="font-black text-red-700">Rugi {money(estimatedLoss)}</span>
+                                                <span className="font-bold text-destructive">Rugi {money(estimatedLoss)}</span>
                                             )}
                                         </div>
                                     )}
@@ -378,7 +400,7 @@ export default function StockOpnameShow({
                             );
                         })}
                         {visibleItems.length === 0 && (
-                            <div className="py-8 text-center text-sm font-bold text-stone-500">Produk tidak ditemukan</div>
+                            <div className="py-8 text-center text-sm font-bold text-muted-foreground">Produk tidak ditemukan</div>
                         )}
                     </div>
                 </section>
@@ -386,72 +408,78 @@ export default function StockOpnameShow({
                 <div className="sticky bottom-20 z-20 rounded-xl border border-[var(--app-ink)]/10 bg-white/95 p-2.5 shadow-xl backdrop-blur md:bottom-4">
                     {stockCount.status === 'draft' && editable && (
                         <div>
-                            <p className="mb-1.5 text-[10px] font-semibold text-stone-500 sm:text-right sm:text-xs">
+                            <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground sm:text-right sm:text-xs">
                                 Simpan untuk lanjut nanti · Selesai menghitung mengunci hasil
                             </p>
                             <div className={`grid gap-1.5 ${canManage ? 'grid-cols-3' : 'grid-cols-2'} sm:flex sm:justify-end`}>
                                 {canManage && (
-                                    <button
+                                    <Button
                                         type="button"
+                                        size="touch"
+                                        variant="destructive"
                                         disabled={processing}
                                         onClick={() => workflow('cancel', 'Batalkan sesi stock opname ini?')}
-                                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-black text-red-700 ring-1 ring-red-200 sm:px-4 sm:text-sm"
+                                        className="px-2 text-xs sm:px-4 sm:text-sm"
                                     >
                                         <X className="hidden size-4 sm:block" /> Batal
-                                    </button>
+                                    </Button>
                                 )}
-                                <button
+                                <Button
                                     type="button"
+                                    size="touch"
+                                    variant="secondary"
                                     disabled={processing || dirty.size === 0}
                                     onClick={save}
-                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-[var(--app-soft)] px-2 text-xs font-black text-[var(--app-primary)] disabled:opacity-50 sm:px-4 sm:text-sm"
+                                    className="px-2 text-xs sm:px-4 sm:text-sm"
                                 >
                                     <Save className="hidden size-4 sm:block" /> Simpan
                                     {dirty.size > 0 && ` (${dirty.size})`}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    size="touch"
                                     disabled={processing || dirty.size > 0 || stats.remaining > 0}
                                     onClick={() => workflow('complete', 'Selesaikan penghitungan dan kunci hasil untuk diperiksa?')}
-                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-teal-700 px-2 text-xs font-black text-white disabled:opacity-50 sm:px-4 sm:text-sm"
+                                    className="px-2 text-xs sm:px-4 sm:text-sm"
                                 >
                                     <ClipboardCheck className="hidden size-4 sm:block" /> Selesai hitung
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     )}
                     {stockCount.status === 'counted' && canManage && (
                         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                            <button
+                            <Button
                                 type="button"
+                                size="touch"
+                                variant="secondary"
                                 disabled={processing}
-                                onClick={() => workflow('reopen')}
-                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-stone-100 px-4 text-sm font-black text-stone-700"
+                                onClick={() => workflow('reopen', 'Buka kembali hasil agar dapat dihitung ulang?')}
                             >
                                 <RotateCcw className="size-4" /> Buka kembali
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 type="button"
+                                size="touch"
                                 disabled={processing}
                                 onClick={() => workflow('post', `Posting ${stats.differences} selisih ke persediaan?`)}
-                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 text-sm font-black text-white disabled:opacity-50"
                             >
                                 <Send className="size-4" /> Posting hasil
-                            </button>
+                            </Button>
                         </div>
                     )}
                     {stockCount.status === 'counted' && !canManage && (
-                        <p className="flex items-center justify-center gap-2 py-2 text-sm font-black text-sky-700">
+                        <p className="flex items-center justify-center gap-2 py-2 text-sm font-bold text-sky-700">
                             <Check className="size-4" /> Menunggu owner/admin memposting hasil
                         </p>
                     )}
                     {stockCount.status === 'posted' && (
-                        <p className="flex items-center justify-center gap-2 py-2 text-sm font-black text-emerald-700">
+                        <p className="flex items-center justify-center gap-2 py-2 text-sm font-bold text-emerald-700">
                             <PackageCheck className="size-4" /> Hasil sudah masuk ke persediaan
                         </p>
                     )}
                     {stockCount.status === 'cancelled' && (
-                        <p className="flex items-center justify-center gap-2 py-2 text-sm font-black text-stone-600">
+                        <p className="flex items-center justify-center gap-2 py-2 text-sm font-bold text-muted-foreground">
                             <X className="size-4" /> Sesi dibatalkan
                         </p>
                     )}
@@ -484,7 +512,7 @@ function Summary({ label, value, danger = false }: { label: string; value: strin
                 {translate(label)}
             </p>
             <p
-                className={`mt-0.5 truncate text-sm font-black tabular-nums sm:text-base ${danger ? 'text-red-700' : 'text-[var(--app-ink)]'}`}
+                className={`mt-0.5 truncate text-sm font-bold tabular-nums sm:text-base ${danger ? 'text-destructive' : 'text-[var(--app-ink)]'}`}
             >
                 {value}
             </p>

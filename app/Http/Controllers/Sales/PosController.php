@@ -34,6 +34,7 @@ class PosController extends Controller
         $products = ProductUnit::query()->where('product_units.store_id', $store->id)
             ->where('product_units.is_active', true)->where('products.is_active', true)->where('units.is_active', true)
             ->join('products', 'products.id', '=', 'product_units.product_id')
+            ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
             ->leftJoin('product_variants', 'product_variants.id', '=', 'product_units.product_variant_id')
             ->join('units', 'units.id', '=', 'product_units.unit_id')
             ->where(fn ($query) => $query->whereNull('product_units.product_variant_id')->orWhere('product_variants.is_active', true))
@@ -44,6 +45,7 @@ class PosController extends Controller
             })
             ->orderBy('products.name')->orderBy('product_variants.name')->orderBy('units.name')->get([
                 'products.public_id as catalog_product_id', 'products.name as catalog_product_name',
+                'categories.public_id as category_public_id', 'categories.name as category_name',
                 'products.photo_path as catalog_product_photo_path',
                 DB::raw('COALESCE(product_variants.public_id, products.public_id) as product_id'),
                 'products.name as product_name', 'product_variants.name as variant_name',

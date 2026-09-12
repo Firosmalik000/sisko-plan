@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Services\Reporting\BusinessMetrics;
 use App\Support\CurrentStore;
+use App\Support\Decimal;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,52 +30,33 @@ class DashboardController extends Controller
                 ? $request->string('period')->toString()
                 : 'month';
             $dashboardPeriod = $this->dashboardPeriod($today, $periodKey);
-            $payload['monthLabel'] = $dashboardPeriod['label'];
-            $payload['period'] = ['key' => $periodKey, 'label' => $dashboardPeriod['label']];
+            $payload['period'] = ['key' => $periodKey];
 
             $selectedPeriod = $metrics->period($store, $dashboardPeriod['start']->format('Y-m-d'), $dashboardPeriod['end']->format('Y-m-d'));
             $comparisonPeriod = $metrics->period($store, $dashboardPeriod['previous_start']->format('Y-m-d'), $dashboardPeriod['previous_end']->format('Y-m-d'));
             $performance = $metrics->performance($store->id, $selectedPeriod['start'], $selectedPeriod['end']);
             $previousPerformance = $metrics->performance($store->id, $comparisonPeriod['start'], $comparisonPeriod['end']);
             $position = $metrics->position($store->id);
-            $transactions = $metrics->transactionCount($store->id, $selectedPeriod['start'], $selectedPeriod['end']);
-            $trend = [];
-
-            $cursor = $dashboardPeriod['start'];
-            while ($cursor->lte($dashboardPeriod['end'])) {
-                $date = $cursor->format('Y-m-d');
-                $trend[$date] = ['date' => $date, 'net_revenue' => '0.0000', 'transactions' => 0];
-                $cursor = $cursor->addDay();
-            }
-
-            $countsByDate = [];
-            foreach (DB::table('sales')
-                ->where('store_id', $store->id)
-                ->whereBetween('occurred_at', [$selectedPeriod['start'], $selectedPeriod['end']])
-                ->get(['occurred_at']) as $sale) {
-                $date = CarbonImmutable::parse((string) $sale->occurred_at)->setTimezone($timezone)->format('Y-m-d');
-                $countsByDate[$date] = ($countsByDate[$date] ?? 0) + 1;
-            }
-            foreach ($metrics->daily($store, $selectedPeriod['start'], $selectedPeriod['end']) as $day) {
-                if (isset($trend[$day['date']])) {
-                    $trend[$day['date']] = [...$day, 'transactions' => $countsByDate[$day['date']] ?? 0];
-                }
-            }
+            $daily = $metrics->daily($store, $selectedPeriod['start'], $selectedPeriod['end']);
 
             $payload['performance'] = $performance;
-            $payload['comparison'] = ['previous_net_revenue' => $previousPerformance['net_revenue']];
+            $payload['comparison'] = $this->comparison($performance['net_revenue'], $previousPerformance['net_revenue']);
             $payload['position'] = $position;
             $payload['lowStock'] = $metrics->lowStock($store->id, 6);
-            $payload['transactions'] = $transactions;
-            $payload['salesTrend'] = array_values($trend);
+            $payload['transactions'] = array_sum(array_column($daily, 'transactions'));
+            $payload['salesTrend'] = array_map(fn (array $day): array => [
+                'date' => $day['date'],
+                'net_revenue' => $day['net_revenue'],
+                'transactions' => $day['transactions'],
+            ], $daily);
             $payload['topProducts'] = array_slice($metrics->products($store->id, $selectedPeriod['start'], $selectedPeriod['end']), 0, 3);
             $payload['categorySales'] = $metrics->categories($store->id, $selectedPeriod['start'], $selectedPeriod['end']);
         }
 
-        return Inertia::render('customer/dashboard', $payload);
+        return Inertia::render('customer/dashboard/index', $payload);
     }
 
-    /** @return array{start:CarbonImmutable,end:CarbonImmutable,previous_start:CarbonImmutable,previous_end:CarbonImmutable,label:string} */
+    /** @return array{start:CarbonImmutable,end:CarbonImmutable,previous_start:CarbonImmutable,previous_end:CarbonImmutable} */
     private function dashboardPeriod(CarbonImmutable $today, string $period): array
     {
         $end = $today->startOfDay();
@@ -90,20 +71,31 @@ class DashboardController extends Controller
         $previousEnd = $start->subDay();
         $days = (int) $start->diffInDays($end);
         $previousStart = $previousEnd->subDays($days);
-        $labels = [
-            'day' => 'Hari ini',
-            'month' => 'Bulan ini',
-            'quarter' => '3 bulan terakhir',
-            'semester' => '6 bulan terakhir',
-            'year' => '12 bulan terakhir',
-        ];
 
         return [
             'start' => $start,
             'end' => $end,
             'previous_start' => $previousStart,
             'previous_end' => $previousEnd,
-            'label' => __($labels[$period] ?? $labels['month']),
+        ];
+    }
+
+    /** @return array{direction:'up'|'down'|'flat',percentage:int|null} */
+    private function comparison(string $current, string $previous): array
+    {
+        $comparison = Decimal::compare($current, $previous, Decimal::MONEY_SCALE);
+        $direction = $comparison > 0 ? 'up' : ($comparison < 0 ? 'down' : 'flat');
+
+        if (Decimal::compare($previous, '0', Decimal::MONEY_SCALE) === 0) {
+            return ['direction' => $direction, 'percentage' => $comparison === 0 ? 0 : null];
+        }
+
+        $difference = Decimal::absolute(Decimal::subtract($current, $previous, Decimal::MONEY_SCALE), Decimal::MONEY_SCALE);
+        $ratio = Decimal::divide($difference, Decimal::absolute($previous, Decimal::MONEY_SCALE), 6);
+
+        return [
+            'direction' => $direction,
+            'percentage' => (int) round((float) Decimal::multiply($ratio, '100', 2)),
         ];
     }
 }

@@ -28,3 +28,11 @@ test('Vietnamese landing demo products are localized and included in the catalog
     assert.match(publicCatalog, /'Minyak Goreng 2 L': 'Dầu ăn 2 L'/u);
     assert.match(publicCatalog, /'Gula Pasir 1 kg': 'Đường cát 1 kg'/u);
 });
+
+test('standard cash payment labels are localized', () => {
+    const malay = source('../../resources/js/lang/ms/reviewed.ts');
+    const vietnamese = source('../../resources/js/lang/vi/customer.ts');
+
+    assert.match(malay, /Cash: 'Tunai'/u);
+    assert.match(vietnamese, /Cash: 'Tiền mặt'/u);
+});

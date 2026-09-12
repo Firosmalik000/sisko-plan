@@ -1,9 +1,11 @@
+import { Tags } from 'lucide-react';
+import { ReferenceDataPage } from '@/components/page/reference-data-page';
+import type { ReferenceRecord } from '@/components/page/reference-data-page';
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/components/reference-data-page';
-import type { ReferenceRecord } from '@/components/reference-data-page';
 import { translate } from '@/lib/i18n';
 import { referenceLabel } from '@/lib/unit-references';
 import type { CategoryReference } from '@/lib/unit-references';
+import { index, store, update } from '@/routes/master-data/categories';
 
 type Category = ReferenceRecord;
 
@@ -23,7 +25,8 @@ export default function CategoriesIndex({
     return (
         <ReferenceDataPage
             title="Kategori produk"
-            endpoint="/master-data/categories"
+            icon={Tags}
+            routes={{ index: index.url(), store: store.url(), update: update.url }}
             singular="Kategori"
             items={categories}
             search={search}
@@ -77,10 +80,3 @@ export default function CategoriesIndex({
         />
     );
 }
-
-CategoriesIndex.layout = {
-    breadcrumbs: [
-        { title: 'Master Data', href: '/master-data/products' },
-        { title: 'Kategori', href: '/master-data/categories' },
-    ],
-};

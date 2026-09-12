@@ -1,11 +1,11 @@
 import { usePage } from '@inertiajs/react';
-import { Building2, ExternalLink, MessageCircle, ScanLine, Users } from 'lucide-react';
+import { Building2, ExternalLink, MessageCircle, PackagePlus, ScanLine, Users } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { ResponsiveDialog } from '@/components/overlays';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useTranslation } from '@/lib/i18n';
 
-export type SubscriptionLimitKind = 'store' | 'staff' | 'scan';
+export type SubscriptionLimitKind = 'store' | 'product' | 'staff' | 'scan';
 
 type Locale = 'id' | 'en' | 'ms' | 'vi';
 
@@ -23,6 +23,14 @@ const copy: Record<SubscriptionLimitKind, LocalizedCopy> = {
         title: 'Kapasitas toko sudah penuh',
         description: 'Hubungi admin untuk menambah kapasitas toko pada akun Anda.',
         request: 'saya ingin mengajukan penambahan kapasitas toko untuk akun saya',
+        action: 'Hubungi admin via WhatsApp',
+        cancel: 'Nanti saja',
+        unavailable: 'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.',
+    },
+    product: {
+        title: 'Kapasitas produk sudah penuh',
+        description: 'Hubungi admin untuk menambah kapasitas produk pada akun Anda.',
+        request: 'saya ingin mengajukan penambahan kapasitas produk untuk akun saya',
         action: 'Hubungi admin via WhatsApp',
         cancel: 'Nanti saja',
         unavailable: 'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.',
@@ -47,6 +55,7 @@ const copy: Record<SubscriptionLimitKind, LocalizedCopy> = {
 
 const icons: Record<SubscriptionLimitKind, ComponentType<{ className?: string }>> = {
     store: Building2,
+    product: PackagePlus,
     staff: Users,
     scan: ScanLine,
 };
@@ -69,25 +78,13 @@ export function SubscriptionLimitContactDialog({
     const whatsappUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : null;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[calc(100%-1rem)] gap-0 overflow-hidden rounded-2xl border-[#ead8d1] bg-[#fffdfc] p-0 shadow-[0_24px_70px_-30px_rgba(74,36,26,.45)] sm:max-w-md">
-                <DialogHeader className="border-b border-[#ead8d1] px-5 py-5 pr-12 text-left">
-                    <span className="mb-3 flex size-11 items-center justify-center rounded-xl bg-[#fff0eb] text-[#d83f22]">
-                        <Icon className="size-5" />
-                    </span>
-                    <DialogTitle className="text-xl font-black tracking-[-0.03em] text-[var(--app-ink)]">{t(content.title)}</DialogTitle>
-                    <DialogDescription className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">
-                        {t(content.description)}
-                    </DialogDescription>
-                </DialogHeader>
-
-                {!whatsappUrl && (
-                    <p role="status" className="mx-5 my-4 rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-                        {t(content.unavailable)}
-                    </p>
-                )}
-
-                <DialogFooter className="flex-col-reverse gap-2 border-t border-[#ead8d1] bg-[#fffaf7] px-5 py-4 sm:flex-row sm:justify-end">
+        <ResponsiveDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            title={t(content.title)}
+            size="sm"
+            footer={
+                <>
                     <Button type="button" variant="outline" className="h-11" onClick={() => onOpenChange(false)}>
                         {t(content.cancel)}
                     </Button>
@@ -100,9 +97,21 @@ export function SubscriptionLimitContactDialog({
                             </a>
                         </Button>
                     )}
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </>
+            }
+        >
+            <div className="flex items-start gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+                    <Icon className="size-5" />
+                </span>
+                <p className="pt-1 text-sm leading-6 text-muted-foreground">{t(content.description)}</p>
+            </div>
+            {!whatsappUrl && (
+                <p role="status" className="mt-4 rounded-xl bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground">
+                    {t(content.unavailable)}
+                </p>
+            )}
+        </ResponsiveDialog>
     );
 }
 

@@ -1,12 +1,12 @@
 import { Form, Head } from '@inertiajs/react';
 import { CalendarDays, CreditCard, ReceiptText, Search, WalletCards } from 'lucide-react';
-import { money } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import { paginatedRowNumber, PlatformTableLeadCell, PlatformTableLeadHeader } from '@/components/platform-table-lead-cell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatMoney as money } from '@/lib/currency';
 import { localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
 

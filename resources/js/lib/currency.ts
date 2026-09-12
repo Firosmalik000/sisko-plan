@@ -55,7 +55,7 @@ export function currencySymbol(market = currentMarket()) {
 const highDenominationCurrencies = new Set(['IDR', 'VND']);
 const mediumDenominationCurrencies = new Set(['JPY', 'KRW']);
 
-export function cashTenderSuggestions(total: number, limit = 3, code = currencyCode(), decimalPlaces = currencyDecimals()): number[] {
+export function cashTenderSuggestions(total: number, limit = 3, code = currencyCode(), decimalPlaces = currencyDecimalPlaces()): number[] {
     if (!Number.isFinite(total) || total <= 0 || limit <= 0) {
         return [];
     }
@@ -74,24 +74,92 @@ export function cashTenderSuggestions(total: number, limit = 3, code = currencyC
         .slice(0, limit);
 }
 
-function currencyDecimals(): number {
+export function currencyDecimalPlaces(): number {
     const configured = typeof document !== 'undefined' ? Number(document.documentElement.dataset.currencyDecimals) : 0;
 
     return Number.isInteger(configured) && configured >= 0 ? configured : 0;
 }
 
+export function currencySymbolPosition(): 'before' | 'after' {
+    return typeof document !== 'undefined' && document.documentElement.dataset.currencyPosition === 'after' ? 'after' : 'before';
+}
+
+export function formatCurrencyNumber(value: string | number, locale = currentLocale(), market = currentMarket()) {
+    const numeric = Number(value);
+
+    if (!Number.isFinite(numeric)) {
+        return String(value);
+    }
+
+    return new Intl.NumberFormat(localeTag(locale, market), {
+        minimumFractionDigits: currencyDecimalPlaces(),
+        maximumFractionDigits: currencyDecimalPlaces(),
+    }).format(numeric);
+}
+
+export function formatCurrencyInput(value: string, locale = currentLocale(), market = currentMarket()): string {
+    if (value === '') {
+        return '';
+    }
+
+    const decimals = currencyDecimalPlaces();
+
+    if (decimals === 0) {
+        const numeric = Number(value);
+
+        return Number.isFinite(numeric)
+            ? new Intl.NumberFormat(localeTag(locale, market), { maximumFractionDigits: 0 }).format(numeric)
+            : value;
+    }
+
+    const [whole = '0', fraction] = value.split('.');
+    const integer = Number(whole || '0');
+    const formattedWhole = Number.isFinite(integer)
+        ? new Intl.NumberFormat(localeTag(locale, market), { maximumFractionDigits: 0 }).format(integer)
+        : whole;
+
+    if (fraction === undefined) {
+        return formattedWhole;
+    }
+
+    const decimal =
+        new Intl.NumberFormat(localeTag(locale, market)).formatToParts(1.1).find((part) => part.type === 'decimal')?.value ?? '.';
+
+    return `${formattedWhole}${decimal}${fraction.slice(0, decimals)}`;
+}
+
+export function parseCurrencyInput(value: string, locale = currentLocale(), market = currentMarket()): string {
+    const parts = new Intl.NumberFormat(localeTag(locale, market)).formatToParts(12345.6);
+    const group = parts.find((part) => part.type === 'group')?.value ?? ',';
+    const decimal = parts.find((part) => part.type === 'decimal')?.value ?? '.';
+    const decimals = currencyDecimalPlaces();
+    let normalized = value.trim().replaceAll(group, '');
+
+    if (decimal !== '.') {
+        normalized = normalized.replaceAll(decimal, '.');
+    }
+
+    normalized = normalized.replace(/[^0-9.-]/g, '').replace(/(?!^)-/g, '');
+
+    if (decimals === 0) {
+        return normalized.replaceAll('.', '');
+    }
+
+    const [whole = '', ...fractionParts] = normalized.split('.');
+    const fraction = fractionParts.join('').slice(0, decimals);
+
+    return fractionParts.length > 0 ? `${whole || '0'}.${fraction}` : whole;
+}
+
 function withCurrencySymbol(value: string, market: MarketCode): string {
     const symbol = currencySymbol(market);
-    const position = typeof document !== 'undefined' ? document.documentElement.dataset.currencyPosition : 'before';
+    const position = currencySymbolPosition();
 
     return position === 'after' ? `${value} ${symbol}` : `${symbol}${value}`;
 }
 
 export function formatMoney(value: string | number, locale = currentLocale(), market = currentMarket()) {
-    const formatted = new Intl.NumberFormat(localeTag(locale, market), {
-        minimumFractionDigits: currencyDecimals(),
-        maximumFractionDigits: currencyDecimals(),
-    }).format(Number(value));
+    const formatted = formatCurrencyNumber(value, locale, market);
 
     return withCurrencySymbol(formatted, market);
 }
@@ -99,7 +167,7 @@ export function formatMoney(value: string | number, locale = currentLocale(), ma
 export function formatCompactMoney(value: string | number, locale = currentLocale(), market = currentMarket()) {
     const formatted = new Intl.NumberFormat(localeTag(locale, market), {
         notation: 'compact',
-        maximumFractionDigits: Math.max(1, currencyDecimals()),
+        maximumFractionDigits: Math.max(1, currencyDecimalPlaces()),
     }).format(Number(value));
 
     return withCurrencySymbol(formatted, market);
