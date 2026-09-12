@@ -1,198 +1,481 @@
-<laravel-boost-guidelines>
-=== foundation rules ===
+# AGENTS.md
 
-# Laravel Boost Guidelines
+## Purpose
 
-The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
+Work as a senior engineer on this codebase.
 
-## Foundational Context
+Your job is to implement the requested result accurately, safely, and efficiently while preserving the application's existing architecture, conventions, behavior, and design language.
 
-This application is a Laravel application running on PHP 8.4. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
+Prefer execution over explanation.
 
-Before relying on a package's API, confirm its installed version:
-- PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
-- JS packages: check `package.json` for the installed versions.
+---
 
-## Conventions
+# 1. Core Working Principles
 
-- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
-- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
-- Check for existing components to reuse before writing a new one.
+Before changing code:
 
-## Verification Scripts
+- Inspect the relevant existing implementation.
+- Understand the local pattern before introducing a new one.
+- Check sibling files when structure, naming, or conventions are unclear.
+- Reuse existing components, utilities, services, hooks, actions, routes, translations, and patterns whenever appropriate.
 
-- Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
+When implementing:
 
-## Application Structure & Architecture
+- Make the smallest complete change that solves the task.
+- Do not refactor unrelated code.
+- Do not rewrite working code merely because another approach looks cleaner.
+- Do not introduce unnecessary abstractions.
+- Do not duplicate functionality that already exists.
+- Preserve backward compatibility unless the task explicitly requires otherwise.
+- Follow the application's existing architecture and directory structure.
+- Do not create new base directories without approval.
+- Do not add, remove, or upgrade dependencies without approval.
+- Do not create documentation files unless explicitly requested.
 
-- Stick to existing directory structure; don't create new base folders without approval.
-- Do not change the application's dependencies without approval.
+When requirements are clear, proceed autonomously.
 
-## Frontend Bundling
+Do not ask questions for routine implementation decisions that can be resolved safely from the existing codebase.
 
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+---
 
-## Documentation Files
+# 2. Project Context
 
-- You must only create documentation files if explicitly requested by the user.
+This is a Laravel application running on PHP 8.4 with an Inertia + React frontend.
 
-## Replies
+Never assume framework or package versions.
 
-- Be concise in your explanations - focus on what's important rather than explaining obvious details.
+When implementation depends on version-specific behavior, determine the installed version from the project first.
 
-=== boost rules ===
+For PHP packages, inspect Composer metadata or use:
 
-# Laravel Boost
+`composer show <vendor/package>`
 
-## Tools
+For JavaScript packages, inspect `package.json`.
 
-- Laravel Boost is an MCP server with tools designed specifically for this application. Prefer Boost tools over manual alternatives like shell commands or file reads.
-- Use `database-query` to run read-only queries against the database instead of writing raw SQL in tinker.
-- Use `database-schema` to inspect table structure before writing migrations or models.
-- Use `get-absolute-url` to resolve the correct scheme, domain, and port for project URLs. Always use this before sharing a URL with the user.
-- Use `browser-logs` to read browser logs, errors, and exceptions. Only recent logs are useful, ignore old entries.
+Do not repeatedly check versions when the relevant version is already established in the current context or clearly represented by existing project code.
 
-## Searching Documentation (IMPORTANT)
+---
 
-- Use `search-docs` before changes that depend on Laravel ecosystem APIs, behavior, configuration, or version-specific syntax. Skip it for copy-only edits and other changes where package documentation is irrelevant. Reuse sufficient results already in context instead of searching again.
-- Pass a `packages` array to scope results when you know which packages are relevant.
-- Use multiple broad, topic-based queries: `['rate limiting', 'routing rate limiting', 'routing']`. Expect the most relevant results first.
-- Do not add package names to queries because package info is already shared. Use `test resource table`, not `filament 4 test resource table`.
+# 3. Existing Code Is the Primary Reference
 
-### Search Syntax
+Existing working project code is the first implementation reference.
 
-1. Use words for auto-stemmed AND logic: `rate limit` matches both "rate" AND "limit".
-2. Use `"quoted phrases"` for exact position matching: `"infinite scroll"` requires adjacent words in order.
-3. Combine words and phrases for mixed queries: `middleware "rate limit"`.
-4. Use multiple queries for OR logic: `queries=["authentication", "middleware"]`.
+When the codebase already demonstrates the correct pattern:
 
-## Project Rules
+- follow it;
+- do not search documentation unnecessarily;
+- do not introduce a competing pattern.
 
-- This project contains committed, area-grouped rules in `.ai/rules` when that directory exists (settled decisions, non-obvious traps, standing constraints). Framework and package guidelines that only apply to specific paths (testing, frontend, components) also live there, under `.ai/rules/boost` — this is not just recorded decisions, it is load-bearing guidance you have not seen inline. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule. If `.ai/rules` does not exist, continue without it.
-- Record durable rules with `record-rule` so the next agent or teammate inherits them instead of working them out again. Pass a `glob` (e.g. `app/Http/Controllers/**`), a short `title`, and a few-line `note`. Always use `record-rule`, never your native memory or notes tool — native memory is personal and session-scoped; only `.ai/rules` is shared with the team and persists in the repo.
+Use external/package documentation when:
 
-## Artisan
+- behavior is version-specific;
+- the API is unfamiliar;
+- existing code does not establish the correct approach;
+- a framework/package feature is being introduced or changed;
+- there is uncertainty about supported behavior.
 
-- Run Artisan commands directly via the command line (e.g., `php artisan route:list`). Use `php artisan list` to discover available commands and `php artisan [command] --help` to check parameters.
-- Inspect routes with `php artisan route:list`. Filter with: `--method=GET`, `--name=users`, `--path=api`, `--except-vendor`, `--only-vendor`.
-- Read configuration values using dot notation: `php artisan config:show app.name`, `php artisan config:show database.default`. Or read config files directly from the `config/` directory.
+---
 
-## Tinker
+# 4. Project-Specific Rules
 
-- Execute PHP in app context for debugging and testing code. Do not create models without user approval, prefer tests with factories instead. Prefer existing Artisan commands over custom tinker code.
-- Always use single quotes to prevent shell expansion: `php artisan tinker --execute 'Your::code();'`
-  - Double quotes for PHP strings inside: `php artisan tinker --execute 'User::where("active", true)->count();'`
+If `.ai/rules/index.md` exists:
 
-=== php rules ===
+- inspect it before modifying code;
+- identify rules relevant to the files or behavior in scope;
+- load only the relevant rules;
+- follow every applicable rule.
 
-# PHP
+Do not load unrelated rule files merely because they exist.
 
-- Always use curly braces for control structures, even for single-line bodies.
-- Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) { }`. Do not leave empty zero-parameter `__construct()` methods unless the constructor is private.
-- Use explicit return type declarations and type hints for all method parameters: `function isAccessible(User $user, ?string $path = null): bool`
-- Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
-- Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
-- Use array shape type definitions in PHPDoc blocks.
+Search `.ai/rules` when:
 
-=== deployments rules ===
+- the task involves non-obvious project behavior;
+- a known project constraint may apply;
+- path-based matching is insufficient;
+- implementation decisions remain ambiguous after inspecting existing code.
 
-# Deployment
+Durable, non-obvious project constraints should be recorded using the project's `record-rule` mechanism when available.
 
-- Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+Record only rules that future work reasonably needs.
 
-=== tests rules ===
+Do not record:
 
-# Test Enforcement
+- temporary task details;
+- obvious framework conventions;
+- facts already clear from the code;
+- one-off implementation decisions.
 
-- Test every code change by adding or updating a test.
-- Run the affected tests and ensure they pass.
-- Test the changed behavior and its important failure modes, but do not add tests beyond them.
-- Read the `testing-best-practices` skill before writing tests.
+---
 
-=== inertia-laravel/core rules ===
+# 5. Laravel Boost
 
-# Inertia
+Laravel Boost provides project-aware tools. Prefer Boost tools when they provide safer or more accurate application context than manual inspection.
 
-- Inertia creates fully client-side rendered SPAs without modern SPA complexity, leveraging existing server-side patterns.
-- Components live in `resources/js/pages` (unless specified in `vite.config.js`). Use `Inertia::render()` for server-side routing instead of Blade views.
-- ALWAYS use `search-docs` tool for version-specific Inertia documentation and updated code examples.
-- IMPORTANT: Activate `inertia-react-development` when working with Inertia client-side patterns.
+Use relevant tools selectively.
 
-# Inertia v3
+Prefer:
 
-- Use all Inertia features from v1, v2, and v3. Check the documentation before making changes to ensure the correct approach.
-- New v3 features: standalone HTTP requests (`useHttp` hook), optimistic updates with automatic rollback, layout props (`useLayoutProps` hook), instant visits, simplified SSR via `@inertiajs/vite` plugin, custom exception handling for error pages.
-- Carried over from v2: deferred props, infinite scroll, merging props, polling, prefetching, once props, flash data.
-- When using deferred props, add an empty state with a pulsing or animated skeleton.
-- Axios has been removed. Use the built-in XHR client with interceptors, or install Axios separately if needed.
-- `Inertia::lazy()` / `LazyProp` has been removed. Use `Inertia::optional()` instead.
-- Prop types (`Inertia::optional()`, `Inertia::defer()`, `Inertia::merge()`) work inside nested arrays with dot-notation paths.
-- SSR works automatically in Vite dev mode with `@inertiajs/vite` - no separate Node.js server needed during development.
-- Event renames: `invalid` is now `httpException`, `exception` is now `networkError`.
-- `router.cancel()` replaced by `router.cancelAll()`.
-- The `future` configuration namespace has been removed - all v2 future options are now always enabled.
+- `database-schema` before schema-dependent changes;
+- `database-query` for read-only database inspection;
+- `browser-logs` when investigating recent frontend/browser errors;
+- `get-absolute-url` before sharing application URLs;
+- `search-docs` for Laravel ecosystem behavior that is version-sensitive, unfamiliar, or insufficiently demonstrated by existing code.
 
-=== laravel/core rules ===
+Do not call Boost tools mechanically when the requested change does not require them.
 
-# Do Things the Laravel Way
+Do not repeatedly search documentation when sufficient results are already available.
 
-- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using `php artisan list` and check their parameters with `php artisan [command] --help`.
-- If you're creating a generic PHP class, use `php artisan make:class`.
-- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
+---
 
-### Model Creation
+# 6. Laravel Conventions
 
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
+Follow existing Laravel conventions used by this application.
 
-## APIs & Eloquent Resources
+When creating Laravel-managed files, use the appropriate Artisan generator where practical.
 
-- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
+Use:
 
-## URL Generation
+`php artisan make:* --no-interaction`
 
-- When generating links to other pages, prefer named routes and the `route()` function.
+Prefer:
 
-## Testing
+- Eloquent over raw SQL;
+- existing models and relationships over duplicated queries;
+- Form Requests when consistent with the project;
+- named routes over hardcoded application URLs;
+- Eloquent API Resources for APIs when consistent with existing API architecture;
+- factories when creating test data.
 
-- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
-- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
-- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
+Before introducing a migration, model, service, action, policy, job, event, listener, middleware, or other architectural element, verify that it is actually required.
 
-## Vite Error
+Do not create additional layers merely for architectural purity.
 
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+---
 
-=== wayfinder/core rules ===
+# 7. Database Safety
 
-# Laravel Wayfinder
+Before making schema-dependent changes:
 
-Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `@/actions/` (controllers) or `@/routes/` (named routes).
+- inspect the existing schema;
+- inspect relevant models, casts, relationships, scopes, and migrations;
+- understand existing constraints and indexes.
 
-=== pint/core rules ===
+Do not modify production-oriented data structures unnecessarily.
 
-# Laravel Pint Code Formatter
+Do not create or modify records during investigation unless the task requires it or the user has approved it.
 
-- If you have modified any PHP files, you must run `vendor/bin/pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
-- Do not run `vendor/bin/pint --test --format agent`, simply run `vendor/bin/pint --format agent` to fix any formatting issues.
+For read-only investigation, prefer safe read-only database tooling.
 
-=== phpunit/core rules ===
+---
 
-# PHPUnit
+# 8. PHP Standards
 
-- This project uses PHPUnit. Create tests with `php artisan make:test --phpunit {name}`.
-- Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
-- Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
+Follow existing PHP style and project conventions.
 
-## Running Tests
+Additionally:
 
-- Run the narrowest set of tests that covers the change. Pass a file path or `--filter=testName` to `php artisan test --compact`.
-- Rerun a test after each change to it.
-- Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
+- use curly braces for all control structures;
+- use explicit parameter type declarations;
+- use explicit return types;
+- use constructor property promotion where appropriate;
+- do not create empty public constructors;
+- use descriptive method and variable names;
+- use TitleCase for Enum cases;
+- prefer PHPDoc for useful structural/type information;
+- use array-shape PHPDoc where it materially improves static understanding;
+- avoid unnecessary comments;
+- add inline comments only when logic would otherwise be difficult to understand.
 
-=== inertia-react/core rules ===
+Do not add types or abstractions solely to make code look more sophisticated.
 
-# Inertia + React
+---
 
-- IMPORTANT: Activate `inertia-react-development` when working with Inertia React client-side patterns.
+# 9. Inertia + React
 
-</laravel-boost-guidelines>
+Follow the existing Inertia and React architecture.
+
+Before creating a new frontend pattern:
+
+- inspect similar pages/components;
+- reuse existing layout structures;
+- reuse existing hooks;
+- reuse existing UI components;
+- reuse existing form patterns;
+- reuse existing route/navigation conventions;
+- reuse existing utilities and design tokens.
+
+Use Wayfinder-generated route functions where the project already uses Wayfinder.
+
+Do not hardcode application routes when an existing route abstraction should be used.
+
+For version-specific Inertia behavior, consult the relevant installed-version documentation when necessary.
+
+Do not assume APIs from older Inertia versions.
+
+---
+
+# 10. UI and UX
+
+Preserve the existing visual language.
+
+For UI changes:
+
+- reuse the current component system;
+- maintain visual consistency;
+- maintain responsive behavior;
+- preserve accessibility;
+- account for loading, empty, success, disabled, and error states when relevant;
+- avoid unnecessary redesign of unrelated areas.
+
+Do not change business logic when the task is UI-only.
+
+Do not change UI behavior when the task is backend-only unless necessary.
+
+---
+
+# 11. Localization / Internationalization
+
+The application supports these locales:
+
+- Indonesian — `id`
+- Malay — `ms`
+- Vietnamese — `vi`
+- English — `en`
+
+Localization is mandatory for user-facing text.
+
+Whenever user-visible text is added, removed, renamed, or changed:
+
+- do not hardcode translatable copy when the application uses localization;
+- reuse an existing translation key when semantically appropriate;
+- update all four supported locales;
+- keep translation key structures synchronized;
+- preserve equivalent meaning across languages;
+- preserve interpolation/placeholders across every locale;
+- preserve pluralization structure where applicable;
+- avoid duplicate translation keys representing the same concept;
+- follow the existing translation file organization.
+
+Before completing any localization-affecting change, verify:
+
+1. the affected key exists in `id`;
+2. the affected key exists in `ms`;
+3. the affected key exists in `vi`;
+4. the affected key exists in `en`;
+5. interpolation variables match across all locales;
+6. no untranslated key is exposed in the UI;
+7. no stale translation remains because a key was renamed or removed.
+
+Do not perform localization inspection for changes that do not affect user-facing text unless there is a concrete reason.
+
+---
+
+# 12. Testing
+
+Behavioral changes must be covered by an appropriate test when practical and consistent with the project.
+
+Add or update tests for:
+
+- new behavior;
+- changed business behavior;
+- bug fixes;
+- authorization behavior;
+- validation behavior;
+- important failure modes.
+
+Do not create tests solely for:
+
+- copy-only changes;
+- styling-only changes;
+- documentation changes;
+- equivalent non-behavioral changes;
+
+unless the existing project has a specific convention requiring them.
+
+Prefer Feature tests over Unit tests unless the behavior is genuinely unit-scoped.
+
+Use existing factories and factory states when available.
+
+When creating PHPUnit tests, follow the project's PHPUnit conventions.
+
+Run the narrowest relevant test set first.
+
+Examples:
+
+`php artisan test --compact --filter=RelevantTest`
+
+or:
+
+`php artisan test --compact tests/Feature/RelevantTest.php`
+
+Do not run the entire test suite unnecessarily when a narrow test sufficiently validates the change.
+
+Escalate to broader testing when the change has wider impact.
+
+---
+
+# 13. Verification
+
+Every implementation must be verified appropriately.
+
+Use the narrowest useful verification for the task.
+
+Depending on the change, verification may include:
+
+- targeted PHPUnit tests;
+- type checking;
+- linting;
+- frontend build;
+- relevant browser/runtime checks;
+- database/schema inspection;
+- route inspection;
+- localization consistency checks.
+
+Do not create throwaway verification scripts when existing tests or project tooling already prove the behavior.
+
+If PHP files were modified, run:
+
+`vendor/bin/pint --dirty --format agent`
+
+Fix formatting issues before finalizing.
+
+If frontend behavior fails to appear despite correct source changes, consider whether the application's frontend assets need rebuilding or the dev server needs to be running.
+
+Do not treat a stale frontend build as a source-code failure without checking.
+
+---
+
+# 14. Debugging
+
+When fixing a bug:
+
+1. inspect the relevant implementation;
+2. reproduce or establish the failure from available evidence;
+3. identify the root cause;
+4. make the smallest correct fix;
+5. verify the affected behavior;
+6. check that the fix does not break adjacent behavior.
+
+Do not guess at the root cause when evidence can be obtained from:
+
+- application logs;
+- browser logs;
+- tests;
+- database state;
+- routes;
+- configuration;
+- existing code.
+
+Avoid speculative refactoring during bug fixes.
+
+---
+
+# 15. Security and Data Integrity
+
+Do not weaken:
+
+- authentication;
+- authorization;
+- validation;
+- CSRF protection;
+- data isolation;
+- tenant boundaries;
+- permission checks;
+- database constraints;
+
+unless explicitly required by the task and justified by the existing architecture.
+
+Do not expose secrets, credentials, tokens, environment values, or sensitive internal information.
+
+Do not remove security checks merely to make a test or feature pass.
+
+---
+
+# 16. Scope Discipline
+
+Respect the requested scope.
+
+If the task targets one feature or page:
+
+- do not redesign neighboring pages;
+- do not rename unrelated code;
+- do not perform opportunistic cleanup;
+- do not upgrade packages;
+- do not alter architecture unnecessarily.
+
+A small task should normally produce a small diff.
+
+A large diff requires a clear technical reason.
+
+---
+
+# 17. Efficiency
+
+Use context efficiently.
+
+Do not:
+
+- repeatedly inspect files already understood;
+- repeatedly search the same documentation;
+- repeatedly check known package versions;
+- load unrelated rule files;
+- narrate routine operations;
+- dump large command outputs into the response;
+- explain obvious framework behavior unless it materially affects the result.
+
+Prefer targeted inspection over broad repository scanning.
+
+Prefer direct implementation when the requirements and existing patterns are clear.
+
+---
+
+# 18. Communication
+
+Be concise and execution-focused.
+
+Do not narrate every routine action.
+
+Do not provide long explanations before starting work when the task is clear.
+
+When requirements are sufficiently clear, implement the task directly.
+
+Ask for clarification only when a missing decision would materially affect:
+
+- product behavior;
+- data integrity;
+- security;
+- architecture;
+- destructive operations;
+
+and cannot safely be inferred from the codebase.
+
+---
+
+# 19. Completion Checklist
+
+Before finalizing a task, confirm as applicable:
+
+- requested behavior is implemented;
+- relevant existing conventions are followed;
+- no unrelated code was changed;
+- no unnecessary dependency was introduced;
+- localization is complete for `id`, `ms`, `vi`, and `en` when user-facing text changed;
+- relevant tests pass;
+- relevant validation/build checks pass;
+- modified PHP files are formatted with Pint;
+- the final diff contains no accidental changes.
+
+---
+
+# 20. Final Response
+
+Keep the final response short.
+
+Report only:
+
+- what changed;
+- important files/areas changed;
+- validation performed and result;
+- any unresolved issue or required user action, only when relevant.
+
+Do not repeat implementation details that are obvious from the diff.
