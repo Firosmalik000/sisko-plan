@@ -2,9 +2,11 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowLeft, FileCheck2, Printer, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { FormEvent } from 'react';
-import { currentDateTime, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
+import { formatMoney as money, formatQuantity as quantity } from '@/lib/currency';
 import { currentLocale } from '@/lib/currency';
+import { currentDateTime, ledgerDateTime } from '@/lib/date-time';
 import { translate } from '@/lib/i18n';
+import { postingToken } from '@/lib/posting-token';
 import { buildAndroidPrinterIntent, readReceiptPrintPreferences, receiptPrintStyles } from '@/lib/receipt-printing';
 
 type Sale = {

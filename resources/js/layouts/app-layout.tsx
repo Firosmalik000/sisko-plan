@@ -1,5 +1,5 @@
 import { usePage } from '@inertiajs/react';
-import AppLayoutTemplate from '@/layouts/app/app-mobile-layout';
+import CustomerLayout from '@/layouts/customer/customer-layout';
 import { applyStoreCurrency } from '@/lib/currency';
 import type { MarketCode } from '@/lib/currency';
 import { useTranslation } from '@/lib/i18n';
@@ -16,8 +16,8 @@ export default function AppLayout({ breadcrumbs = [], children }: { breadcrumbs?
     applyStoreCurrency(activeStore, market);
 
     return (
-        <AppLayoutTemplate key={activeStore?.public_id ?? 'no-store'} breadcrumbs={breadcrumbs}>
+        <CustomerLayout key={activeStore?.public_id ?? 'no-store'} breadcrumbs={breadcrumbs}>
             {children}
-        </AppLayoutTemplate>
+        </CustomerLayout>
     );
 }

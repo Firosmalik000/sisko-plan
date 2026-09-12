@@ -4,7 +4,7 @@ import {
     autoCaptureFeedback,
     barcodeScannerFeedback,
     barcodeStatusResetDelay,
-} from '../../resources/js/components/product-scanner/barcode-scanner-feedback.ts';
+} from '../../resources/js/features/product-scanner/barcode-scanner-feedback.ts';
 
 test('barcode scanner feedback gives every state explicit text and tone', () => {
     assert.deepEqual(barcodeScannerFeedback('scanning'), {

@@ -1,8 +1,9 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import { ArrowRight, ClipboardList, PackageCheck, Plus } from 'lucide-react';
-import { LedgerCard, ledgerDateTime, OperationsShell } from '@/components/operations-shell';
+import { LedgerCard, OperationsShell } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import { ledgerDateTime } from '@/lib/date-time';
 import { translate } from '@/lib/i18n';
 
 type StockCount = {
@@ -46,7 +47,6 @@ export default function StockOpnameIndex({
 }) {
     return (
         <>
-            <Head title="Stock Opname" />
             <OperationsShell active="/operations/stock-opnames" eyebrow="Persediaan" title="Stock Opname" description="">
                 {canManage && (
                     <LedgerCard title="Mulai Opname">

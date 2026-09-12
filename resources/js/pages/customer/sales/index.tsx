@@ -2,10 +2,11 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { CalendarDays, Filter, ReceiptText, RotateCcw, Search, ShoppingCart, UserRound, WalletCards } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { CommerceBrandMark } from '@/components/commerce-brand-mark';
-import { ledgerDateTime, money } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
+import { formatMoney as money } from '@/lib/currency';
+import { ledgerDateTime } from '@/lib/date-time';
 import { translate } from '@/lib/i18n';
 
 type Sale = {

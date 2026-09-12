@@ -1,6 +1,6 @@
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/components/reference-data-page';
-import type { ReferenceRecord } from '@/components/reference-data-page';
+import { ReferenceDataPage } from '@/features/customer/master-data/reference-data-page';
+import type { ReferenceRecord } from '@/features/customer/master-data/reference-data-page';
 import { translate } from '@/lib/i18n';
 
 type Account = ReferenceRecord & {
@@ -74,10 +74,3 @@ export default function FinancialAccountsIndex({
         />
     );
 }
-
-FinancialAccountsIndex.layout = {
-    breadcrumbs: [
-        { title: 'Master Data', href: '/master-data/products' },
-        { title: 'Kas & rekening', href: '/master-data/financial-accounts' },
-    ],
-};

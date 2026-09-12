@@ -3,13 +3,13 @@ import type { InertiaFormProps } from '@inertiajs/react';
 import { CreditCard, PackagePlus, Pencil, Plus, ReceiptText, RefreshCw, Search, Store, Trash2 } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { useState } from 'react';
-import { postingToken } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
 import { paginatedRowNumber, PlatformTableLeadCell, PlatformTableLeadHeader } from '@/components/platform-table-lead-cell';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { formatMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
+import { postingToken } from '@/lib/posting-token';
 
 type Plan = {
     public_id: string;

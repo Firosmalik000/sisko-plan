@@ -1,10 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { AlertTriangle, ArrowLeft, Camera, Check, ClipboardCheck, PackageCheck, RotateCcw, Save, Search, Send, X } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { ledgerDateTime, money, OperationsShell, quantity } from '@/components/operations-shell';
-import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
-import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
-import { formatCompactMoney, localeTag } from '@/lib/currency';
+import { OperationsShell } from '@/components/operations-shell';
+import { prepareScannerTone } from '@/features/product-scanner/scanner-feedback';
+import type { ScannerApplyResult, ScannerSelection } from '@/features/product-scanner/types';
+import { formatCompactMoney, formatMoney as money, formatQuantity as quantity, localeTag } from '@/lib/currency';
+import { ledgerDateTime } from '@/lib/date-time';
 import { decimalInput } from '@/lib/decimal-input';
 import { translate } from '@/lib/i18n';
 
@@ -43,7 +44,7 @@ const statusLabels = {
     posted: 'Diposting',
     cancelled: 'Dibatalkan',
 };
-const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
+const ProductScanner = lazy(() => import('@/features/product-scanner/ProductScanner'));
 
 export default function StockOpnameShow({
     stockCount,
@@ -210,7 +211,6 @@ export default function StockOpnameShow({
 
     return (
         <>
-            <Head title={stockCount.document_number} />
             <OperationsShell active="/operations/stock-opnames" eyebrow="Stock opname" title={stockCount.document_number} description="">
                 <section className="overflow-hidden rounded-[1.2rem] border border-[var(--app-ink)]/10 bg-white shadow-sm">
                     <div className="flex items-center gap-2 border-b border-[var(--app-ink)]/8 px-3 py-2.5 sm:px-4">

@@ -1,18 +1,12 @@
-import { Head, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
-import {
-    buttonClass,
-    currentDateTime,
-    fieldClass,
-    LedgerCard,
-    ledgerDateTime,
-    money,
-    OperationsShell,
-    postingToken,
-} from '@/components/operations-shell';
+import { buttonClass, fieldClass, LedgerCard, OperationsShell } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
+import { formatMoney as money } from '@/lib/currency';
+import { currentDateTime, ledgerDateTime } from '@/lib/date-time';
 import { translate } from '@/lib/i18n';
+import { postingToken } from '@/lib/posting-token';
 
 type Account = {
     public_id: string;
@@ -98,7 +92,6 @@ export default function CashPage({
 
     return (
         <>
-            <Head title="Cash ledger" />
             <OperationsShell
                 active="/operations/cash"
                 eyebrow="Buku 02 / Uang"

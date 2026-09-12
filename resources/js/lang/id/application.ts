@@ -233,4 +233,18 @@ export const indonesianOverrides: Record<string, string> = {
     'Cetak sistem': 'Cetak sistem',
     'Cetak langsung': 'Cetak langsung',
     'Printer struk': 'Printer struk',
+    'Navigasi operasional': 'Navigasi operasional',
+    Aksi: 'Aksi',
+    'Data pendukung': 'Data pendukung',
+    'Harga jual': 'Harga jual',
+    'Lanjut pembayaran': 'Lanjut pembayaran',
+    'Lihat stok': 'Lihat stok',
+    'Master data': 'Master data',
+    'Periksa sebelum stok kosong.': 'Periksa sebelum stok kosong.',
+    'produk hampir habis': 'produk hampir habis',
+    'Ketik untuk mencari, atau fokuskan kolom lalu gunakan scanner alat.':
+        'Ketik untuk mencari, atau fokuskan kolom lalu gunakan scanner alat.',
+    'Cari nama / scan barcode lalu Enter': 'Cari nama / scan barcode lalu Enter',
+    'Cari nama produk, SKU, atau scan barcode': 'Cari nama produk, SKU, atau scan barcode',
+    'Barcode atau produk tidak ditemukan.': 'Barcode atau produk tidak ditemukan.',
 };

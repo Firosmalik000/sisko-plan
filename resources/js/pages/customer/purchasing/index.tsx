@@ -15,14 +15,17 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { buttonClass, currentDateTime, fieldClass, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
+import { buttonClass, fieldClass } from '@/components/operations-shell';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
-import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
-import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { prepareScannerTone } from '@/features/product-scanner/scanner-feedback';
+import type { ScannerApplyResult, ScannerSelection } from '@/features/product-scanner/types';
+import { formatMoney as money, formatQuantity as quantity } from '@/lib/currency';
+import { currentDateTime, ledgerDateTime } from '@/lib/date-time';
 import { decimalInput } from '@/lib/decimal-input';
 import { useTranslation } from '@/lib/i18n';
+import { postingToken } from '@/lib/posting-token';
 
 type Supplier = {
     public_id: string;
@@ -80,7 +83,7 @@ const defaultItem = (product?: ProductOption) => ({
     quantity: '1',
     unit_price: decimalInput(product?.purchase_price ?? '0'),
 });
-const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
+const ProductScanner = lazy(() => import('@/features/product-scanner/ProductScanner'));
 
 type PurchasingView = 'purchases' | 'payables';
 
