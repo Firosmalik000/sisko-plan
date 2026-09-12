@@ -17,6 +17,10 @@ use App\Models\User;
  * | sale.create      |   ✓   |   ✓   |    ✓    |
  * | scan.use         |   ✓   |   ✓   |    ✓    |
  * | product.write    |   ✓   |   ✓   |    ✗    |
+ * | catalog.write    |   ✓   |   ✓   |    ✗    |
+ * | purchasing.write |   ✓   |   ✓   |    ✗    |
+ * | inventory.write  |   ✓   |   ✓   |    ✗    |
+ * | finance.write    |   ✓   |   ✓   |    ✗    |
  * | store.settings   |   ✓   |   ✓   |    ✗    |
  * | sale.reconcile   |   ✓   |   ✗   |    ✗    |
  */
@@ -33,6 +37,10 @@ class TokenAbilities
             'sale.create',
             'scan.use',
             'product.write',
+            'catalog.write',
+            'purchasing.write',
+            'inventory.write',
+            'finance.write',
             'store.settings',
             'sale.reconcile',
         ],
@@ -41,6 +49,10 @@ class TokenAbilities
             'sale.create',
             'scan.use',
             'product.write',
+            'catalog.write',
+            'purchasing.write',
+            'inventory.write',
+            'finance.write',
             'store.settings',
         ],
         MembershipRole::Cashier->value => [

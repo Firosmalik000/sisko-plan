@@ -46,6 +46,7 @@ class SaleDetailResource extends JsonResource
             ],
             'items' => $this->items
                 ->map(fn ($item): array => [
+                    'public_id' => $item->public_id,
                     'product_unit_id' => (string) $item->product_unit_id,
                     'product_name' => $item->product_name,
                     'sku' => $item->sku,

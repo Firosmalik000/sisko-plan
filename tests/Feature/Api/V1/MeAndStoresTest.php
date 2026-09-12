@@ -50,6 +50,46 @@ class MeAndStoresTest extends TestCase
         $this->assertContains('store.read', $caps);
     }
 
+    public function test_me_is_workspace_aware_with_stores_and_per_store_capabilities(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $store = Store::factory()->create(['owner_user_id' => $user->id]);
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson('/api/v1/me')->assertOk();
+
+        // Workspace type merchant (Req 1.2).
+        $response->assertJsonPath('data.workspace.type', 'merchant');
+        $response->assertJsonPath('data.user.email_verified', false);
+
+        // Toko + role + capability per-store (Req 1.3).
+        $response->assertJsonPath('data.stores.0.public_id', $store->public_id);
+        $response->assertJsonPath('data.stores.0.membership.role', 'owner');
+
+        $storeCaps = $response->json('data.stores.0.capabilities');
+        $this->assertContains('catalog.write', $storeCaps);
+        $this->assertContains('finance.write', $storeCaps);
+    }
+
+    public function test_cashier_lacks_write_capabilities(): void
+    {
+        $owner = User::factory()->create();
+        $store = Store::factory()->create(['owner_user_id' => $owner->id]);
+
+        $cashier = User::factory()->create();
+        $this->attach($store, $cashier, MembershipRole::Cashier);
+        Sanctum::actingAs($cashier);
+
+        $response = $this->getJson('/api/v1/me')->assertOk();
+        $caps = $response->json('data.capabilities');
+
+        $this->assertContains('sale.create', $caps);
+        $this->assertNotContains('catalog.write', $caps);
+        $this->assertNotContains('purchasing.write', $caps);
+        $this->assertNotContains('inventory.write', $caps);
+        $this->assertNotContains('finance.write', $caps);
+    }
+
     public function test_stores_returns_only_active_memberships(): void
     {
         $user = User::factory()->create();

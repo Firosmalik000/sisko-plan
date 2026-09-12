@@ -43,14 +43,38 @@ class MeController
     private function profilePayload(Request $request): array
     {
         $user = $request->user();
+        $stores = $user->activeStores()->get();
 
         return [
             'user' => [
                 'public_id' => $user->public_id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'avatar' => $user->avatar,
+                'email_verified' => $user->email_verified_at !== null,
             ],
+            // Workspace-aware (Req 1.2): tipe workspace merchant + struktur siap
+            // menampung tipe workspace lain di masa depan tanpa dibangun sekarang.
+            'workspace' => [
+                'type' => 'merchant',
+            ],
+            // Capability union antar toko (kemudahan tampilan; server tetap
+            // otoritatif). Klien mengabaikan capability tak dikenal (Req 1.5).
             'capabilities' => TokenAbilities::forUser($user),
+            // Daftar toko + role + capability per-store agar shell dapat
+            // memfilter menu berdasarkan capability, bukan nama route (Req 1.3).
+            'stores' => $stores->map(fn ($store): array => [
+                'public_id' => $store->public_id,
+                'name' => $store->name,
+                'status' => $store->status->value,
+                'membership' => [
+                    'role' => $store->pivot->role,
+                    'status' => $store->pivot->status,
+                ],
+                'capabilities' => is_string($store->pivot->role)
+                    ? TokenAbilities::forRole($store->pivot->role)
+                    : [],
+            ])->all(),
         ];
     }
 }

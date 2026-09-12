@@ -54,10 +54,13 @@ class TokenTest extends TestCase
         $this->assertIsString($response->json('data.token'));
         $this->assertNotEmpty($response->json('data.token'));
 
-        // Owner abilities per matrix §3.4.
+        // Owner abilities per matrix §3.4 (termasuk domain write Fase 2-3).
         $abilities = $response->json('data.abilities');
         sort($abilities);
-        $expected = ['sale.create', 'sale.reconcile', 'scan.use', 'store.read', 'store.settings', 'product.write'];
+        $expected = [
+            'sale.create', 'sale.reconcile', 'scan.use', 'store.read', 'store.settings',
+            'product.write', 'catalog.write', 'purchasing.write', 'inventory.write', 'finance.write',
+        ];
         sort($expected);
         $this->assertSame($expected, $abilities);
 

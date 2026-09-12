@@ -47,7 +47,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, Store> $ownedStores
  * @property-read Subscription|null $subscription
  */
-#[Fillable(['name', 'email', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at'])]
+#[Fillable(['name', 'email', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at', 'notification_preferences'])]
 #[Hidden(['avatar_path', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -136,6 +136,7 @@ class User extends Authenticatable implements PasskeyUser
             'status' => UserStatus::class,
             'platform_role' => PlatformAdminRole::class,
             'last_login_at' => 'datetime',
+            'notification_preferences' => 'array',
         ];
     }
 }

@@ -25,6 +25,7 @@ class StoreProfileResource extends JsonResource
         return [
             'public_id' => $this->public_id,
             'name' => $this->name,
+            'status' => $this->status->value,
             'settings' => $settings === null ? null : [
                 'timezone' => $settings->timezone,
                 'currency_code' => $settings->currency,
