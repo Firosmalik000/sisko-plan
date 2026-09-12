@@ -18,7 +18,7 @@ final class LocaleContext
     /** @return list<string> */
     public static function allowedLocales(Request $request, ?bool $customerPortal = null): array
     {
-        return [self::INDONESIA, self::ENGLISH, self::MALAYSIA, self::VIETNAM];
+        return [self::ENGLISH, self::MALAYSIA, self::INDONESIA, self::VIETNAM];
     }
 
     public static function locale(Request $request): string
@@ -63,9 +63,9 @@ final class LocaleContext
     public static function options(Request $request): array
     {
         return [
-            ['code' => self::INDONESIA, 'label' => 'Indonesia'],
             ['code' => self::ENGLISH, 'label' => 'English'],
-            ['code' => self::MALAYSIA, 'label' => 'Melayu'],
+            ['code' => self::MALAYSIA, 'label' => 'Bahasa Melayu'],
+            ['code' => self::INDONESIA, 'label' => 'Bahasa Indonesia'],
             ['code' => self::VIETNAM, 'label' => 'Tiếng Việt'],
         ];
     }

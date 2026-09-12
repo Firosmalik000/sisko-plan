@@ -1,113 +1,85 @@
-import { Form, Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Coins, Globe2 } from 'lucide-react';
+import { Form } from '@inertiajs/react';
+import { Building2, Coins } from 'lucide-react';
 import { useState } from 'react';
-import InputError from '@/components/input-error';
+import { FormInput, FormSelect, FormTextarea } from '@/components/forms';
+import { AppPage } from '@/components/page/app-page';
+import { PageSection } from '@/components/page/page-section';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { translate } from '@/lib/i18n';
+import storesRoutes from '@/routes/stores';
 
-type CountryOption = {
-    code: string;
-    name: string;
-    currency: { code: string; name: string; symbol: string };
-};
+type CountryOption = { code: string; name: string; currency: { code: string; name: string; symbol: string } };
 
 export default function CreateStore({ countries, defaultCountry }: { countries: CountryOption[]; defaultCountry: string }) {
     const [countryCode, setCountryCode] = useState(defaultCountry);
     const currency = countries.find((country) => country.code === countryCode)?.currency;
 
     return (
-        <>
-            <Head title="Buat Toko" />
-            <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
-                <div className="mx-auto w-full max-w-xl">
-                    <Card className="rounded-[1.35rem] border-[var(--app-ink)]/8 py-5 shadow-sm">
-                        <CardContent className="space-y-5 px-4 sm:px-5">
-                            <div>
-                                <Link
-                                    href="/stores"
-                                    className="mb-4 inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground"
+        <AppPage
+            title={translate('Buat toko')}
+            description={translate('Lengkapi identitas dasar toko.')}
+            icon={Building2}
+            back={{ href: storesRoutes.index.url(), label: translate('Daftar toko') }}
+            size="form"
+        >
+            <PageSection>
+                <Form {...storesRoutes.store.form()} className="grid gap-4 p-4 sm:p-5">
+                    {({ processing, errors }) => (
+                        <>
+                            <FormInput
+                                id="name"
+                                name="name"
+                                label={translate('Nama toko')}
+                                placeholder={translate('Contoh: Toko Berkah Utama')}
+                                autoFocus
+                                required
+                                maxLength={120}
+                                error={errors.name}
+                            />
+                            <FormTextarea
+                                id="address"
+                                name="address"
+                                label={translate('Alamat toko')}
+                                rows={3}
+                                maxLength={500}
+                                placeholder={translate('Contoh: Jalan Utama No. 10')}
+                                error={errors.address}
+                            />
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <FormSelect
+                                    id="country"
+                                    name="country"
+                                    label={translate('Negara toko')}
+                                    value={countryCode}
+                                    onChange={(event) => setCountryCode(event.target.value)}
+                                    required
+                                    error={errors.country}
                                 >
-                                    <ArrowLeft className="size-4" />
-                                    Daftar toko
-                                </Link>
-                                <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--app-ink)]">Buat Toko</h1>
+                                    {countries.map((country) => (
+                                        <option key={country.code} value={country.code}>
+                                            {country.name}
+                                        </option>
+                                    ))}
+                                </FormSelect>
+                                <div>
+                                    <p className="mb-2 text-sm font-medium">{translate('Mata uang')}</p>
+                                    <div className="flex h-11 items-center gap-2 rounded-xl border border-input bg-muted/40 px-3 text-sm font-semibold">
+                                        <Coins className="size-4 text-muted-foreground" />
+                                        {currency ? `${currency.code} (${currency.symbol})` : '-'}
+                                    </div>
+                                </div>
                             </div>
-                            <Form action="/stores" method="post" className="space-y-4">
-                                {({ processing, errors }) => (
-                                    <>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="name">Nama toko</Label>
-                                            <Input
-                                                id="name"
-                                                name="name"
-                                                placeholder="Contoh: Toko Berkah Utama"
-                                                autoFocus
-                                                required
-                                                maxLength={120}
-                                                className="h-11"
-                                            />
-                                            <InputError message={errors.name} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="address">Alamat toko</Label>
-                                            <textarea
-                                                id="address"
-                                                name="address"
-                                                rows={3}
-                                                maxLength={500}
-                                                placeholder="Contoh: Jalan Utama No. 10"
-                                                className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-sm"
-                                            />
-                                            <InputError message={errors.address} />
-                                        </div>
-                                        <div className="grid gap-3 sm:grid-cols-2">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="country">Negara toko</Label>
-                                                <div className="relative">
-                                                    <Globe2 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                                                    <select
-                                                        id="country"
-                                                        name="country"
-                                                        value={countryCode}
-                                                        onChange={(event) => setCountryCode(event.target.value)}
-                                                        required
-                                                        className="h-11 w-full rounded-md border border-input bg-background py-2 pr-3 pl-9 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                                                    >
-                                                        {countries.map((country) => (
-                                                            <option key={country.code} value={country.code}>
-                                                                {country.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <InputError message={errors.country} />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label>Mata uang</Label>
-                                                <div className="flex h-11 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm font-semibold">
-                                                    <Coins className="size-4 text-muted-foreground" />
-                                                    {currency ? `${currency.code} (${currency.symbol})` : '-'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <Button disabled={processing} className="h-11 w-full bg-emerald-700 hover:bg-emerald-800">
-                                            {processing && <Spinner />}
-                                            Buat toko dan lanjutkan
-                                        </Button>
-                                    </>
-                                )}
-                            </Form>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        </>
+                            <Button disabled={processing} size="touch" className="w-full">
+                                {processing && <Spinner />}
+                                {translate('Buat toko dan lanjutkan')}
+                            </Button>
+                        </>
+                    )}
+                </Form>
+            </PageSection>
+        </AppPage>
     );
 }
 
-CreateStore.layout = {
-    breadcrumbs: [{ title: 'Buat toko', href: '/stores/create' }],
-};
+CreateStore.layout = { breadcrumbs: [{ title: 'Buat toko', href: storesRoutes.create.url() }] };

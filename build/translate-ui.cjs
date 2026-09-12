@@ -30,6 +30,43 @@ module.exports = function translateUiLiterals({ types: t }) {
         return t.callExpression(t.identifier('__translateUi'), [t.stringLiteral(value)]);
     };
 
+    const translatedTemplate = (node) => {
+        if (node.expressions.length === 0) {
+            return translationCall(node.quasis[0]?.value.cooked ?? '');
+        }
+
+        const quasis = [t.templateElement({ raw: '', cooked: '' })];
+        const expressions = [];
+
+        const appendLiteral = (raw, cooked) => {
+            const current = quasis.at(-1);
+            current.value.raw += raw;
+            current.value.cooked += cooked;
+        };
+
+        node.quasis.forEach((quasi, index) => {
+            const cooked = quasi.value.cooked ?? quasi.value.raw;
+
+            if (isHumanText(cooked)) {
+                expressions.push(translationCall(cooked));
+                quasis.push(t.templateElement({ raw: '', cooked: '' }));
+            } else {
+                appendLiteral(quasi.value.raw, cooked);
+            }
+
+            if (index < node.expressions.length) {
+                expressions.push(node.expressions[index]);
+                quasis.push(t.templateElement({ raw: '', cooked: '' }));
+            }
+        });
+
+        quasis.forEach((quasi, index) => {
+            quasi.tail = index === quasis.length - 1;
+        });
+
+        return t.templateLiteral(quasis, expressions);
+    };
+
     const isHumanText = (value) => {
         const normalized = value.trim();
 
@@ -235,7 +272,7 @@ module.exports = function translateUiLiterals({ types: t }) {
 
                 if (isTranslatedAttribute && isHumanText(visibleText)) {
                     needsImport = true;
-                    path.replaceWith(t.callExpression(t.identifier('__translateUi'), [path.node]));
+                    path.replaceWith(translatedTemplate(path.node));
                     path.skip();
 
                     return;
@@ -243,7 +280,7 @@ module.exports = function translateUiLiterals({ types: t }) {
 
                 if (isRenderedExpression && isHumanText(visibleText)) {
                     needsImport = true;
-                    path.replaceWith(t.callExpression(t.identifier('__translateUi'), [path.node]));
+                    path.replaceWith(translatedTemplate(path.node));
                     path.skip();
                 }
             },

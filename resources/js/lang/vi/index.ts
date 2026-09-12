@@ -7,6 +7,11 @@ import { vietnamesePublicCatalog } from './public';
 import { vietnameseSharedCatalog } from './shared';
 
 export const vietnameseCatalog: Record<string, string> = {
+    Profil: 'Hồ sơ',
+    Tampilan: 'Giao diện',
+    Terang: 'Sáng',
+    Gelap: 'Tối',
+    'Ikuti perangkat': 'Theo thiết bị',
     'Foto gagal diproses. Coba lagi.': 'Không xử lý được ảnh. Vui lòng thử lại.',
 
     'Foto barang': 'Ảnh sản phẩm',

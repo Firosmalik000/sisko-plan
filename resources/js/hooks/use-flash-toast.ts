@@ -14,7 +14,9 @@ export function useFlashToast(): void {
                 return;
             }
 
-            toast[data.type](translate(data.message));
+            toast[data.type](translate(data.message), {
+                duration: data.type === 'error' ? 10_000 : data.type === 'warning' ? 7_000 : 4_000,
+            });
         });
     }, []);
 }

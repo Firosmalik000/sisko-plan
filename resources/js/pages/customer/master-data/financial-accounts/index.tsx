@@ -1,7 +1,9 @@
+import { Landmark, WalletCards } from 'lucide-react';
+import { ReferenceDataPage } from '@/components/page/reference-data-page';
+import type { ReferenceRecord } from '@/components/page/reference-data-page';
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/components/reference-data-page';
-import type { ReferenceRecord } from '@/components/reference-data-page';
 import { translate } from '@/lib/i18n';
+import { index, store, update } from '@/routes/master-data/financial-accounts';
 
 type Account = ReferenceRecord & {
     type: string;
@@ -16,6 +18,7 @@ const labels: Record<string, string> = {
 
 export default function FinancialAccountsIndex({
     accounts,
+    accountTypes,
     search,
     status,
     canManage,
@@ -37,7 +40,9 @@ export default function FinancialAccountsIndex({
     return (
         <ReferenceDataPage
             title="Kas & rekening"
-            endpoint="/master-data/financial-accounts"
+            icon={WalletCards}
+            recordIcon={Landmark}
+            routes={{ index: index.url(), store: store.url(), update: update.url }}
             singular="Akun"
             items={mapped}
             search={search}
@@ -59,9 +64,9 @@ export default function FinancialAccountsIndex({
                     name: 'type',
                     label: 'Jenis akun',
                     type: 'select',
-                    options: Object.entries(labels).map(([value, label]) => ({
-                        value,
-                        label,
+                    options: accountTypes.map((type) => ({
+                        value: type,
+                        label: labels[type] ?? type,
                     })),
                 },
                 { name: 'account_number', label: 'Nomor rekening / akun' },
@@ -74,10 +79,3 @@ export default function FinancialAccountsIndex({
         />
     );
 }
-
-FinancialAccountsIndex.layout = {
-    breadcrumbs: [
-        { title: 'Master Data', href: '/master-data/products' },
-        { title: 'Kas & rekening', href: '/master-data/financial-accounts' },
-    ],
-};

@@ -52,14 +52,6 @@ class BusinessMetrics
         ];
     }
 
-    public function transactionCount(int $storeId, CarbonImmutable $start, CarbonImmutable $end): int
-    {
-        return DB::table('sales')
-            ->where('store_id', $storeId)
-            ->whereBetween('occurred_at', [$start, $end])
-            ->count();
-    }
-
     /** @return list<array{category_name:string,net_revenue:string,quantity_sold:string}> */
     public function categories(int $storeId, CarbonImmutable $start, CarbonImmutable $end): array
     {
@@ -122,7 +114,7 @@ class BusinessMetrics
         return array_values($rows);
     }
 
-    /** @return list<array{date:string,net_revenue:string,gross_profit:string,expenses:string,estimated_profit:string}> */
+    /** @return list<array{date:string,net_revenue:string,gross_profit:string,expenses:string,estimated_profit:string,transactions:int}> */
     public function daily(Store $store, CarbonImmutable $start, CarbonImmutable $end): array
     {
         $timezone = (string) ($store->settings()->value('timezone') ?? 'Asia/Jakarta');
@@ -130,6 +122,7 @@ class BusinessMetrics
         $revenueByDate = [];
         $cogsByDate = [];
         $expensesByDate = [];
+        $transactionsByDate = [];
         $cursor = $start->setTimezone($timezone)->startOfDay();
         $last = $end->setTimezone($timezone)->startOfDay();
         while ($cursor->lte($last)) {
@@ -139,6 +132,7 @@ class BusinessMetrics
         foreach (DB::table('sales')->where('store_id', $store->id)->whereBetween('occurred_at', [$start, $end])->cursor() as $row) {
             $date = CarbonImmutable::parse((string) $row->occurred_at)->setTimezone($timezone)->format('Y-m-d');
             $revenueByDate[$date] = Decimal::add($revenueByDate[$date] ?? '0.0000', (string) $row->total_amount, Decimal::MONEY_SCALE);
+            $transactionsByDate[$date] = ($transactionsByDate[$date] ?? 0) + 1;
         }
         foreach (DB::table('sale_items')->join('sales', 'sales.id', '=', 'sale_items.sale_id')->where('sale_items.store_id', $store->id)->whereBetween('sales.occurred_at', [$start, $end])->cursor() as $row) {
             $date = CarbonImmutable::parse((string) $row->occurred_at)->setTimezone($timezone)->format('Y-m-d');
@@ -154,16 +148,16 @@ class BusinessMetrics
             $expensesByDate[$date] = Decimal::add($expensesByDate[$date] ?? '0.0000', (string) $row->amount, Decimal::MONEY_SCALE);
         }
 
-        return array_map(function (string $date) use ($revenueByDate, $cogsByDate, $expensesByDate): array {
+        return array_map(function (string $date) use ($revenueByDate, $cogsByDate, $expensesByDate, $transactionsByDate): array {
             $revenue = $revenueByDate[$date] ?? '0.0000';
             $expenses = $expensesByDate[$date] ?? '0.0000';
             $grossProfit = Decimal::subtract($revenue, $cogsByDate[$date] ?? '0.0000', Decimal::MONEY_SCALE);
 
-            return ['date' => $date, 'net_revenue' => $revenue, 'gross_profit' => $grossProfit, 'expenses' => $expenses, 'estimated_profit' => Decimal::subtract($grossProfit, $expenses, Decimal::MONEY_SCALE)];
+            return ['date' => $date, 'net_revenue' => $revenue, 'gross_profit' => $grossProfit, 'expenses' => $expenses, 'estimated_profit' => Decimal::subtract($grossProfit, $expenses, Decimal::MONEY_SCALE), 'transactions' => $transactionsByDate[$date] ?? 0];
         }, $dates);
     }
 
-    /** @return list<array{product_name:string,quantity_sold:string,quantity_returned:string,net_revenue:string,net_cogs:string,gross_profit:string}> */
+    /** @return list<array{product_name:string,quantity_sold:string,quantity_returned:string,net_quantity_sold:string,net_revenue:string,net_cogs:string,gross_profit:string}> */
     public function products(int $storeId, CarbonImmutable $start, CarbonImmutable $end): array
     {
         $sold = DB::table('sale_items')->join('sales', 'sales.id', '=', 'sale_items.sale_id')
@@ -187,11 +181,14 @@ class BusinessMetrics
             $snapshotId = $sale->snapshot_sale_item_id ?? $return->snapshot_sale_item_id;
             $netRevenue = Decimal::subtract((string) ($sale->revenue ?? '0'), (string) ($return->refund ?? '0'), Decimal::MONEY_SCALE);
             $netCogs = Decimal::subtract((string) ($sale->cogs ?? '0'), (string) ($return->cogs_reversed ?? '0'), Decimal::MONEY_SCALE);
+            $quantitySold = Decimal::add('0', (string) ($sale->quantity_sold ?? '0'), Decimal::QUANTITY_SCALE);
+            $quantityReturned = Decimal::add('0', (string) ($return->quantity_returned ?? '0'), Decimal::QUANTITY_SCALE);
 
             return [
                 'product_name' => (string) $snapshotNames->get($snapshotId),
-                'quantity_sold' => Decimal::add('0', (string) ($sale->quantity_sold ?? '0'), Decimal::QUANTITY_SCALE),
-                'quantity_returned' => Decimal::add('0', (string) ($return->quantity_returned ?? '0'), Decimal::QUANTITY_SCALE),
+                'quantity_sold' => $quantitySold,
+                'quantity_returned' => $quantityReturned,
+                'net_quantity_sold' => Decimal::subtract($quantitySold, $quantityReturned, Decimal::QUANTITY_SCALE),
                 'net_revenue' => $netRevenue, 'net_cogs' => $netCogs,
                 'gross_profit' => Decimal::subtract($netRevenue, $netCogs, Decimal::MONEY_SCALE),
             ];

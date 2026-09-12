@@ -153,9 +153,9 @@ class LocaleTest extends TestCase
                 ->component('public/welcome')
                 ->where('market', 'ms')
                 ->where('locale', 'en')
-                ->where('locales.0.code', 'id')
-                ->where('locales.1.code', 'en')
-                ->where('locales.2.code', 'ms')
+                ->where('locales.0.code', 'en')
+                ->where('locales.1.code', 'ms')
+                ->where('locales.2.code', 'id')
                 ->where('locales.3.code', 'vi'));
 
         $this->from(route('login'))
@@ -174,9 +174,9 @@ class LocaleTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('market', 'id')
                 ->where('locale', 'id')
-                ->where('locales.0.code', 'id')
-                ->where('locales.1.code', 'en')
-                ->where('locales.2.code', 'ms')
+                ->where('locales.0.code', 'en')
+                ->where('locales.1.code', 'ms')
+                ->where('locales.2.code', 'id')
                 ->where('locales.3.code', 'vi'));
 
         $this->actingAs($user)
@@ -198,9 +198,9 @@ class LocaleTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('market', 'ms')
                 ->where('locale', 'en')
-                ->where('locales.0.code', 'id')
-                ->where('locales.1.code', 'en')
-                ->where('locales.2.code', 'ms')
+                ->where('locales.0.code', 'en')
+                ->where('locales.1.code', 'ms')
+                ->where('locales.2.code', 'id')
                 ->where('locales.3.code', 'vi'));
 
         $this->actingAs($user)
@@ -222,9 +222,9 @@ class LocaleTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('market', 'id')
                 ->where('locale', 'id')
-                ->where('locales.0.code', 'id')
-                ->where('locales.1.code', 'en')
-                ->where('locales.2.code', 'ms')
+                ->where('locales.0.code', 'en')
+                ->where('locales.1.code', 'ms')
+                ->where('locales.2.code', 'id')
                 ->where('locales.3.code', 'vi'));
     }
 

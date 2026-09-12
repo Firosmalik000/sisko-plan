@@ -31,6 +31,7 @@ class ProductController extends Controller
         Gate::authorize('viewMasterData', $currentStore->get());
         $search = $request->string('search')->trim()->toString();
         $status = $request->string('status')->toString();
+        $category = $request->string('category')->toString();
         $products = Product::query()
             ->where('store_id', $currentStore->id())
             ->with([
@@ -47,6 +48,9 @@ class ProductController extends Controller
                     ->where('sku', 'like', "%{$search}%")
                     ->orWhere('barcode', 'like', "%{$search}%"))))
             ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('is_active', $status === 'active'))
+            ->when($category !== '', fn ($query) => $query->whereHas('category', fn ($categories) => $categories
+                ->where('store_id', $currentStore->id())
+                ->where('public_id', $category)))
             ->orderBy('name')->paginate(12)->withQueryString()
             ->through(fn (Product $product) => $this->serialize($product));
 
@@ -64,6 +68,7 @@ class ProductController extends Controller
                 ->get(['public_id', 'name', 'symbol', 'unit_type', 'reference_code', 'name_is_custom', 'is_active']),
             'search' => $search,
             'status' => $status,
+            'category' => $category,
             'canManage' => Gate::allows('manageMasterData', $currentStore->get()),
         ]);
     }
