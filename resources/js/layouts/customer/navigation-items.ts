@@ -9,20 +9,22 @@ import {
     Handshake,
     Home,
     Landmark,
-    PackageSearch,
     ReceiptText,
     Ruler,
     ShieldCheck,
     Settings,
     ShoppingCart,
+    ScanLine,
     Store,
     Tags,
     Truck,
     MonitorCog,
     WalletCards,
 } from 'lucide-react';
+import { customerNavigationContract } from '@/layouts/customer/navigation-contract';
 import { dashboard } from '@/routes';
 import appearanceRoutes from '@/routes/appearance';
+import { more as moreRoute } from '@/routes/customer';
 import expensesRoutes from '@/routes/expenses';
 import categoriesRoutes from '@/routes/master-data/categories';
 import financialAccountRoutes from '@/routes/master-data/financial-accounts';
@@ -39,33 +41,39 @@ import salesRoutes from '@/routes/sales';
 import securityRoutes from '@/routes/security';
 import storesRoutes from '@/routes/stores';
 import subscriptionRoutes from '@/routes/subscription';
-export { quickActionHref } from '@/layouts/customer/quick-action';
-export type { QuickActionMode } from '@/layouts/customer/quick-action';
 
-export const primaryDestinations = [
-    { title: 'Home', href: dashboard.url(), icon: Home },
-    { title: 'Product', href: productRoutes.index.url(), icon: Barcode },
-    { title: 'Transactions', href: salesRoutes.index.url(), icon: ReceiptText },
-] as const;
+const primaryIcons = {
+    home: Home,
+    products: Barcode,
+    cashier: ShoppingCart,
+    transactions: ReceiptText,
+    more: Grid2X2,
+} as const;
 
-export const moreDestination = { title: 'More', icon: Grid2X2 } as const;
+export const cashierOptionIcons = {
+    scan: ScanLine,
+    manual: ShoppingCart,
+} as const;
 
-export const quickActionGroups = [
-    {
-        title: 'Transactions',
-        items: [
-            { title: 'Sales', href: posRoutes.index.url(), icon: ShoppingCart },
-            { title: 'Purchases', href: purchasingRoutes.index.url(), icon: Truck },
-        ],
-    },
-    {
-        title: 'Inventory',
-        items: [
-            { title: 'Check stock', href: operationsRoutes.inventory.url(), icon: Boxes, supportsScan: false },
-            { title: 'New product', href: productRoutes.index.url(), icon: PackageSearch },
-        ],
-    },
-] as const;
+const primaryHrefs = {
+    home: dashboard.url(),
+    products: productRoutes.index.url(),
+    transactions: salesRoutes.index.url(),
+    more: moreRoute.url(),
+} as const;
+
+export const primaryDestinations = customerNavigationContract.map((item) =>
+    item.kind === 'launcher'
+        ? {
+              ...item,
+              icon: primaryIcons[item.key],
+              options: item.options.map((option) => ({
+                  ...option,
+                  href: posRoutes.index.url(option.key === 'scan' ? { query: { scan: 1 } } : undefined),
+              })),
+          }
+        : { ...item, href: primaryHrefs[item.key], icon: primaryIcons[item.key] },
+);
 
 export const moreMenuSections = [
     {
@@ -105,5 +113,3 @@ export const moreMenuSections = [
         ],
     },
 ] as const;
-
-export const moreDestinationPaths = moreMenuSections.flatMap((section) => section.items.map((item) => item.href));

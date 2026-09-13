@@ -174,7 +174,7 @@ async function bootstrap(): Promise<void> {
         },
         progress: {
             color: '#ee4d2d',
-            delay: 250,
+            delay: 1000,
             showSpinner: false,
         },
     });

@@ -16,7 +16,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light" style="color-scheme: light" data-market="{{ $market }}" data-currency="{{ $page['props']['activeStore']['currency_code'] ?? $marketCurrency['code'] }}" data-currency-symbol="{{ $page['props']['activeStore']['currency_symbol'] ?? $marketCurrency['symbol'] }}" data-currency-decimals="{{ $page['props']['activeStore']['currency_decimal_places'] ?? $marketCurrency['decimals'] }}" data-currency-position="{{ $page['props']['activeStore']['currency_symbol_position'] ?? $marketCurrency['position'] }}" data-app-name="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         @php($publicSeo = request()->routeIs('home') || request()->routeIs('pricing*'))
         @php($brandName = $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan'))
         @php($brandLogoUrl = $page['props']['branding']['logo_url'] ?? null)

@@ -28,21 +28,36 @@ import {
 import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { customerPageParent } from '@/layouts/customer/customer-page-parent';
+import type { CustomerParentDestination } from '@/layouts/customer/customer-page-parent';
 import type { CustomerPageProps } from '@/layouts/customer/customer-page-props';
+import { GlobalSearch } from '@/layouts/customer/global-search';
 import { StoreSwitcher } from '@/layouts/customer/store-switcher';
 import { formatQuantity } from '@/lib/currency';
 import { useTranslation } from '@/lib/i18n';
 import { storeThemeVariables } from '@/lib/store-theme';
 import { cn } from '@/lib/utils';
 import { dashboard, logout } from '@/routes';
+import { more as moreRoute } from '@/routes/customer';
 import notificationsRoutes from '@/routes/notifications';
 import operationsRoutes from '@/routes/operations';
+import stockOpnameRoutes from '@/routes/operations/stock-opnames';
 import { edit } from '@/routes/profile';
+import salesRoutes from '@/routes/sales';
 import { edit as editSecurity } from '@/routes/security';
+import storesRoutes from '@/routes/stores';
 import subscriptionRoutes from '@/routes/subscription';
+
+const parentDestinationHrefs: Record<CustomerParentDestination, string> = {
+    more: moreRoute.url(),
+    sales: salesRoutes.index.url(),
+    stockCounts: stockOpnameRoutes.index.url(),
+    stores: storesRoutes.index.url(),
+};
 
 export function CustomerHeader() {
     const { t } = useTranslation();
+    const { url } = usePage();
     const { auth, stores, activeStore, storeCreation, stockAlerts } = usePage<CustomerPageProps>().props;
     const getInitials = useInitials();
     const [profilePanel, setProfilePanel] = useState<'main' | 'language' | 'appearance'>('main');
@@ -65,6 +80,8 @@ export function CustomerHeader() {
             .map((item) => item.id)
             .join(':') ?? '';
     const unreadCount = acknowledgedUnreadKey === unreadKey ? 0 : serverUnreadCount;
+    const pathname = new URL(url, typeof window === 'undefined' ? 'http://localhost' : window.location.origin).pathname;
+    const contextualPage = customerPageParent(pathname);
 
     const handleStockNoticeOpen = (open: boolean) => {
         setStockNoticeOpen(open);
@@ -106,7 +123,27 @@ export function CustomerHeader() {
 
     return (
         <header className="sticky top-0 z-40 border-b border-border bg-card pt-[env(safe-area-inset-top)] lg:border-t-2 lg:border-t-[var(--app-primary)]">
-            <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-2 px-3 min-[375px]:px-4 sm:h-[72px] sm:gap-5 sm:px-6 lg:px-7">
+            {contextualPage && (
+                <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-2 px-3 min-[375px]:px-4 sm:h-[72px] sm:px-6 lg:hidden">
+                    <Link
+                        href={parentDestinationHrefs[contextualPage.destination]}
+                        aria-label={t(contextualPage.label)}
+                        className="grid size-11 shrink-0 place-items-center rounded-full text-foreground transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:bg-secondary"
+                    >
+                        <ArrowLeft className="size-[22px]" aria-hidden="true" />
+                    </Link>
+                    <strong className="min-w-0 flex-1 truncate text-lg tracking-[-0.02em] text-foreground">
+                        {t(contextualPage.title)}
+                    </strong>
+                    {activeStore && <GlobalSearch />}
+                </div>
+            )}
+            <div
+                className={cn(
+                    'mx-auto flex h-16 max-w-[1440px] items-center gap-2 px-3 min-[375px]:px-4 sm:h-[72px] sm:gap-5 sm:px-6 lg:px-7',
+                    contextualPage && 'max-lg:hidden',
+                )}
+            >
                 <Link
                     href={dashboard.url()}
                     className="hidden shrink-0 items-center gap-2.5 text-lg font-black tracking-[-0.04em] text-[var(--app-ink)] md:flex"
@@ -117,6 +154,7 @@ export function CustomerHeader() {
                     Sisko Plan
                 </Link>
                 <StoreSwitcher stores={stores} activeStore={activeStore} storeCreation={storeCreation} />
+                {activeStore && <GlobalSearch />}
 
                 {isMobile ? (
                     <>

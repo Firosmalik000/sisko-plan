@@ -19,6 +19,35 @@ Before relying on a package's API, confirm its installed version:
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
 
+## Implementation Consistency
+
+- Investigate and fix the owning root cause. When behavior belongs to a shared component, policy, or domain concept, fix it there instead of repeating page-level patches.
+- Before creating a component, hook, service, helper, or UI pattern, inspect the nearest sibling implementation and the existing shared primitives. Reuse the established pattern when it represents the same responsibility.
+- Keep one canonical representation for navigation and domain data. Remove superseded paths after migrating active callers; do not retain parallel implementations as fallbacks.
+- Use Wayfinder-generated functions from `@/routes` or `@/actions` for every internal navigation target and request URL. Do not hardcode internal endpoint strings. Literal route shapes are allowed only for recognizing the current dynamic URL when Wayfinder provides no matcher; navigation produced from that recognition must still use a generated route.
+- Keep changes direct and scoped. Do not introduce wrappers, forwarding APIs, dependencies, or abstractions unless they satisfy the abstraction gate in the repository instructions and have an active caller in the same change.
+
+## Localization
+
+- Every new or changed user-facing message must use the existing translation API and be implemented for every configured locale in the same change: English, Indonesian, Malay, Filipino, Vietnamese, Khmer, Lao, Burmese, Tetum, and Thai.
+- An English fallback does not count as a completed translation for a non-English locale. Do not alias an entire non-English feature catalog to the English catalog.
+- Translate interface copy only. Preserve user data and stable identifiers such as store names, product names, SKUs, barcodes, document numbers, URLs, and external brand names.
+- Design controls and layouts for translated text expansion. Do not rely on English label length, and do not truncate a primary action whose meaning is required to complete a task.
+
+## Customer UI and Responsive Behavior
+
+- Preserve the established customer shell, tokens, breakpoints, and shared page, form, dialog, drawer, toast, and navigation primitives. Do not create page-specific variants for behavior that belongs to a shared primitive.
+- Treat mobile, tablet, and desktop as explicit supported layouts. A mobile-only fix must not change desktop behavior without a documented reason.
+- Mobile controls must respect safe-area insets, visible keyboard focus, reduced-motion preferences, content overflow, and a minimum 44px touch target.
+- Use bottom sheets for short mobile choices and contextual actions, fullscreen flows for long focused mobile tasks, and centered dialogs on wider screens. Temporary overlays use close or dismiss semantics; page-level back navigation belongs to the compact top bar.
+- Motion must communicate direction: sheets slide vertically, fullscreen mobile flows slide horizontally, and reduced-motion users receive no spatial animation.
+
+## Change Verification
+
+- Reproduce bugs and identify the root cause before implementation. Add or update a regression test, observe it fail for the reported behavior, then make the smallest production change that passes it.
+- Run the narrow affected tests after each change. Before completion, run frontend unit tests, TypeScript, ESLint, Prettier, the localization audit, the production build, and applicable PHP tests and static analysis.
+- Review the final diff for literal internal endpoints, untranslated UI copy, duplicated behavior, obsolete paths, speculative compatibility, and abstractions without a concrete responsibility.
+
 ## Verification Scripts
 
 - Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.

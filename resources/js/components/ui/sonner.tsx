@@ -13,11 +13,12 @@ function Toaster({ ...props }: ToasterProps) {
         <Sonner
             theme={resolvedAppearance}
             className="toaster group"
-            position={isMobile ? 'top-center' : 'bottom-right'}
-            offset={isMobile ? { top: 'calc(4.75rem + env(safe-area-inset-top))' } : 20}
+            position={isMobile ? 'bottom-center' : 'bottom-right'}
+            offset={isMobile ? { bottom: 'calc(4.75rem + env(safe-area-inset-bottom))' } : 20}
             closeButton
-            visibleToasts={3}
+            visibleToasts={isMobile ? 1 : 3}
             duration={4000}
+            swipeDirections={isMobile ? ['left', 'right'] : undefined}
             toastOptions={{
                 closeButtonAriaLabel: translate("Dismiss notification"),
                 classNames: {
@@ -25,7 +26,7 @@ function Toaster({ ...props }: ToasterProps) {
                     title: 'font-medium',
                     description: 'text-muted-foreground',
                     closeButton:
-                        'size-7 border-border bg-popover text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
+                        'size-11 border-border bg-popover text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring',
                 },
             }}
             style={

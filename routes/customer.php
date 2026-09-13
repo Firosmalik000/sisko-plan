@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Customer\DashboardController;
+use App\Http\Controllers\Customer\GlobalSearchController;
 use App\Http\Controllers\Customer\ProductScannerController;
 use App\Http\Controllers\Customer\SelectSubscriptionPlanController;
 use App\Http\Controllers\Customer\StoreController;
@@ -44,6 +45,8 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
 
     Route::middleware(['active.store', 'subscription.access'])->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+        Route::inertia('more', 'customer/more/index')->name('customer.more');
+        Route::get('search', GlobalSearchController::class)->middleware('throttle:60,1')->name('customer.search');
 
         Route::post('scanner/catalog-item-lookups', [ProductScannerController::class, 'lookup'])->name('scanner.catalog-items.lookup');
         Route::post('scanner/catalog-item-recognitions', [ProductScannerController::class, 'recognize'])->name('scanner.catalog-items.recognize');

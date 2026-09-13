@@ -1,7 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { customerPageParent } from '@/layouts/customer/customer-page-parent';
 import { cn } from '@/lib/utils';
 
 const pageWidths = {
@@ -33,6 +34,10 @@ export function AppPage({
     children,
     className,
 }: AppPageProps) {
+    const { url } = usePage();
+    const pathname = new URL(url, typeof window === 'undefined' ? 'http://localhost' : window.location.origin).pathname;
+    const compactHeader = customerPageParent(pathname) !== null;
+
     return (
         <>
             <Head title={title} />
@@ -41,11 +46,12 @@ export function AppPage({
                     <header
                         className={cn(
                             'flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between',
+                            compactHeader && !actions && 'max-lg:hidden',
                             headerSurface &&
                                 'sm:rounded-2xl sm:bg-card sm:p-5 sm:text-card-foreground sm:shadow-[0_14px_34px_-28px_var(--app-shadow)]',
                         )}
                     >
-                        <div className="flex min-w-0 items-start gap-2.5">
+                        <div className={cn('flex min-w-0 items-start gap-2.5', compactHeader && 'max-lg:hidden')}>
                             {back && (
                                 <Link
                                     href={back.href}

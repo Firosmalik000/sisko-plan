@@ -237,9 +237,12 @@ export default function ProductsIndex({
     const [deleteError, setDeleteError] = useState('');
     const [productLimitOpen, setProductLimitOpen] = useState(false);
     const [formOpen, setFormOpen] = useState(false);
+    const [createChoiceOpen, setCreateChoiceOpen] = useState(false);
+    const [filterOpen, setFilterOpen] = useState(false);
     const [search, setSearch] = useState(initialSearch);
     const [status, setStatus] = useState(initialStatus);
     const [category, setCategory] = useState(initialCategory);
+    const [filterDraft, setFilterDraft] = useState({ status: initialStatus, category: initialCategory });
     const [scannerOpen, setScannerOpen] = useState(
         () =>
             canManage &&
@@ -816,10 +819,26 @@ export default function ProductsIndex({
         });
     };
     const applyFilters = () => router.get(productsIndex.url(), { search, status, category }, { preserveState: true, replace: true });
+    const openFilters = () => {
+        setFilterDraft({ status, category });
+        setFilterOpen(true);
+    };
+    const applyFilterDraft = () => {
+        setStatus(filterDraft.status);
+        setCategory(filterDraft.category);
+        setFilterOpen(false);
+        router.get(
+            productsIndex.url(),
+            { search, status: filterDraft.status, category: filterDraft.category },
+            { preserveState: true, replace: true },
+        );
+    };
     const resetFilters = () => {
         setSearch('');
         setStatus('');
         setCategory('');
+        setFilterDraft({ status: '', category: '' });
+        setFilterOpen(false);
         router.get(productsIndex.url(), {}, { preserveState: true, replace: true });
     };
     const hasFilters = search !== '' || status !== '' || category !== '';
@@ -837,14 +856,9 @@ export default function ProductsIndex({
                 }
                 actions={
                     canManage && !productLimitReached ? (
-                        <>
-                            <Button onClick={() => openManualCreate()} variant="outline" className="min-h-11 font-semibold">
-                                <Plus className="size-4" aria-hidden="true" /> {translate('Manual entry')}
-                            </Button>
-                            <Button onClick={openCreate} className="min-h-11 font-semibold">
-                                <Camera className="size-4" aria-hidden="true" /> {translate('Scan product')}
-                            </Button>
-                        </>
+                        <Button onClick={() => setCreateChoiceOpen(true)} className="min-h-11 font-semibold">
+                            <Plus className="size-4" aria-hidden="true" /> {translate('Add product')}
+                        </Button>
                     ) : canManage && productLimitReached ? (
                         <Button type="button" variant="outline" className="min-h-11" onClick={() => setProductLimitOpen(true)}>
                             <PackagePlus className="size-4" aria-hidden="true" /> {translate('Increase product capacity')}
@@ -878,7 +892,7 @@ export default function ProductsIndex({
                                 <select
                                     value={category}
                                     onChange={(event) => setCategory(event.target.value)}
-                                    className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-40 sm:flex-none"
+                                    className="hidden h-11 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:block sm:min-w-40 sm:flex-none"
                                     aria-label={translate('Filter category')}
                                 >
                                     <option value="">{translate('All category')}</option>
@@ -891,7 +905,7 @@ export default function ProductsIndex({
                                 <select
                                     value={status}
                                     onChange={(event) => setStatus(event.target.value)}
-                                    className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-36 sm:flex-none"
+                                    className="hidden h-11 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:block sm:min-w-36 sm:flex-none"
                                     aria-label={translate('Status filters')}
                                 >
                                     <option value="">{translate('All status')}</option>
@@ -902,18 +916,58 @@ export default function ProductsIndex({
                         }
                         actions={
                             <>
-                                <MasterDataMenu />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={openFilters}
+                                    className={cn('h-11 sm:hidden', !hasFilters && 'col-span-2')}
+                                >
+                                    <Settings2 className="size-4" aria-hidden="true" /> {translate('Filter')}
+                                    {(category || status) && <span className="size-2 rounded-full bg-primary" aria-hidden="true" />}
+                                </Button>
+                                <div className="hidden sm:block">
+                                    <MasterDataMenu />
+                                </div>
                                 {hasFilters && (
                                     <Button type="button" variant="ghost" onClick={resetFilters} className="h-11">
                                         <RotateCcw className="size-4" aria-hidden="true" /> {translate('Reset')}
                                     </Button>
                                 )}
-                                <Button type="submit" variant="outline" className="h-11">
+                                <Button type="submit" variant="outline" className="hidden h-11 sm:inline-flex">
                                     {translate('Apply')}
                                 </Button>
                             </>
                         }
                     />
+
+                    {(category || status) && (
+                        <div className="flex flex-wrap gap-2 border-b border-border px-3 py-2 sm:hidden">
+                            {category && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCategory('');
+                                        router.get(productsIndex.url(), { search, status }, { preserveState: true, replace: true });
+                                    }}
+                                    className="min-h-9 rounded-full bg-secondary px-3 text-xs font-semibold text-secondary-foreground"
+                                >
+                                    {categories.find((item) => item.public_id === category)?.name ?? translate('Category')} ×
+                                </button>
+                            )}
+                            {status && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setStatus('');
+                                        router.get(productsIndex.url(), { search, category }, { preserveState: true, replace: true });
+                                    }}
+                                    className="min-h-9 rounded-full bg-secondary px-3 text-xs font-semibold text-secondary-foreground"
+                                >
+                                    {translate(status === 'active' ? 'Active' : 'Inactive')} ×
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     {products.data.length > 0 && (
                         <RecordListHeader className="grid-cols-[minmax(15rem,1fr)_9rem_7rem_9rem_5rem] gap-4">
@@ -940,14 +994,9 @@ export default function ProductsIndex({
                                         {translate('Reset filters')}
                                     </Button>
                                 ) : canManage && !productLimitReached ? (
-                                    <div className="flex flex-wrap justify-center gap-2">
-                                        <Button type="button" onClick={() => openManualCreate()} variant="outline">
-                                            {translate('Manual entry')}
-                                        </Button>
-                                        <Button type="button" onClick={openCreate}>
-                                            <Camera className="size-4" aria-hidden="true" /> {translate('Scan product')}
-                                        </Button>
-                                    </div>
+                                    <Button type="button" onClick={() => setCreateChoiceOpen(true)}>
+                                        <Plus className="size-4" aria-hidden="true" /> {translate('Add product')}
+                                    </Button>
                                 ) : canManage && productLimitReached ? (
                                     <Button type="button" onClick={() => setProductLimitOpen(true)}>
                                         {translate('Increase product capacity')}
@@ -973,6 +1022,118 @@ export default function ProductsIndex({
                     </div>
                 </RecordList>
             </AppPage>
+
+            <ResponsiveDialog
+                open={createChoiceOpen}
+                onOpenChange={setCreateChoiceOpen}
+                title={translate('Add product')}
+                description={translate('Choose the fastest input method for this product.')}
+                size="sm"
+                bodyClassName="space-y-2"
+            >
+                <button
+                    type="button"
+                    onClick={() => {
+                        setCreateChoiceOpen(false);
+                        openCreate();
+                    }}
+                    className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-border px-3 text-left hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+                        <Camera className="size-5" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                        <strong className="block text-sm">{translate('Scan product')}</strong>
+                        <span className="text-xs text-muted-foreground">{translate('Use camera or barcode for faster entry.')}</span>
+                    </span>
+                    <ChevronRight className="size-5 text-muted-foreground" aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setCreateChoiceOpen(false);
+                        openManualCreate();
+                    }}
+                    className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-border px-3 text-left hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary text-primary">
+                        <Plus className="size-5" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                        <strong className="block text-sm">{translate('Manual entry')}</strong>
+                        <span className="text-xs text-muted-foreground">{translate('Fill product details without scanning.')}</span>
+                    </span>
+                    <ChevronRight className="size-5 text-muted-foreground" aria-hidden="true" />
+                </button>
+            </ResponsiveDialog>
+
+            <ResponsiveDialog
+                open={filterOpen}
+                onOpenChange={setFilterOpen}
+                title={translate('Filter products')}
+                description={translate('Narrow the product list by category and status.')}
+                size="sm"
+                footer={
+                    <div className="grid w-full grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" onClick={resetFilters}>
+                            {translate('Reset')}
+                        </Button>
+                        <Button type="button" onClick={applyFilterDraft}>
+                            {translate('Show results')}
+                        </Button>
+                    </div>
+                }
+            >
+                <fieldset>
+                    <legend className="mb-2 text-sm font-bold">{translate('Status')}</legend>
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            ['', 'All'],
+                            ['active', 'Active'],
+                            ['inactive', 'Inactive'],
+                        ].map(([value, label]) => (
+                            <label
+                                key={value}
+                                className={cn(
+                                    'grid min-h-11 cursor-pointer place-items-center rounded-xl border px-2 text-sm font-semibold',
+                                    filterDraft.status === value ? 'border-primary bg-secondary text-primary' : 'border-border',
+                                )}
+                            >
+                                <input
+                                    type="radio"
+                                    name="mobile-product-status"
+                                    value={value}
+                                    checked={filterDraft.status === value}
+                                    onChange={() => setFilterDraft((draft) => ({ ...draft, status: value }))}
+                                    className="sr-only"
+                                />
+                                {translate(label)}
+                            </label>
+                        ))}
+                    </div>
+                </fieldset>
+                <fieldset className="mt-5">
+                    <legend className="mb-2 text-sm font-bold">{translate('Category')}</legend>
+                    <div className="max-h-[40dvh] overflow-y-auto rounded-xl border border-border">
+                        {[{ public_id: '', name: translate('All category') }, ...categories].map((item) => (
+                            <label
+                                key={item.public_id}
+                                className="flex min-h-12 cursor-pointer items-center gap-3 border-b border-border px-3 last:border-b-0 hover:bg-accent"
+                            >
+                                <input
+                                    type="radio"
+                                    name="mobile-product-category"
+                                    value={item.public_id}
+                                    checked={filterDraft.category === item.public_id}
+                                    onChange={() => setFilterDraft((draft) => ({ ...draft, category: item.public_id }))}
+                                    className="size-4 accent-primary"
+                                />
+                                <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
+                            </label>
+                        ))}
+                    </div>
+                </fieldset>
+            </ResponsiveDialog>
 
             <ResponsiveDialog
                 open={formOpen && !barcodeTarget && !scannerOpen}

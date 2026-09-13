@@ -35,9 +35,9 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="mx-auto w-full max-w-[1296px] px-3 py-6 min-[375px]:px-4 sm:px-6 sm:py-8 lg:px-7 lg:py-9">
-            <h1 className="text-2xl font-bold tracking-[-0.035em] text-foreground">{t('Settings')}</h1>
+            <h1 className="hidden text-2xl font-bold tracking-[-0.035em] text-foreground lg:block">{t('Settings')}</h1>
 
-            <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start">
+            <div className="flex flex-col gap-4 lg:mt-3 lg:flex-row lg:items-start">
                 <aside className="w-full lg:sticky lg:top-24 lg:w-56 lg:shrink-0">
                     <nav className="flex gap-1.5 overflow-x-auto rounded-2xl bg-card p-1.5 lg:flex-col" aria-label="Settings">
                         {sidebarNavItems.map((item, index) => (
