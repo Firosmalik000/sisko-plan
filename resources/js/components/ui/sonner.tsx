@@ -19,7 +19,7 @@ function Toaster({ ...props }: ToasterProps) {
             visibleToasts={3}
             duration={4000}
             toastOptions={{
-                closeButtonAriaLabel: translate('Tutup notifikasi'),
+                closeButtonAriaLabel: translate("Dismiss notification"),
                 classNames: {
                     toast: 'rounded-xl border-border bg-popover text-popover-foreground shadow-lg dark:shadow-none',
                     title: 'font-medium',

@@ -38,17 +38,17 @@ export default function AdminStores({
 }) {
     return (
         <>
-            <Head title="Kelola Toko" />
+            <Head title="Manage Store" />
             <div className="platform-enter flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
                     <p className="platform-kicker">Tenant management</p>
-                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">Toko terdaftar</h1>
-                    <p className="mt-1 text-xs font-medium text-slate-500">{stores.total} tenant</p>
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">Store registered</h1>
+                    <p className="mt-1 text-xs font-medium text-slate-500">{stores.total} tenants</p>
                 </div>
                 <Form action="/super-admin/stores" method="get" className="flex w-full max-w-sm gap-2">
-                    <Input name="search" defaultValue={filters.search} placeholder="Cari nama toko" className="bg-white/70" />
+                    <Input name="search" defaultValue={filters.search} placeholder="Search by store name" className="bg-white/70" />
                     <Button variant="outline">
-                        <Search /> Cari
+                        <Search /> Search
                     </Button>
                 </Form>
             </div>
@@ -58,12 +58,12 @@ export default function AdminStores({
                         <thead className="platform-table-head">
                             <tr>
                                 <PlatformTableLeadHeader />
-                                <th className="px-5 py-4">Toko</th>
-                                <th className="px-5 py-4">Pemilik</th>
-                                <th className="px-5 py-4">Anggota aktif</th>
-                                <th className="px-5 py-4">Negara / Mata uang</th>
+                                <th className="px-5 py-4">Store</th>
+                                <th className="px-5 py-4">Owner</th>
+                                <th className="px-5 py-4">Members active</th>
+                                <th className="px-5 py-4">Country / Currency</th>
                                 <th className="px-5 py-4">Status</th>
-                                <th className="px-5 py-4">Subscription</th>
+                                <th className="px-5 py-4">Subscriptions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-900/8">
@@ -76,7 +76,7 @@ export default function AdminStores({
                                             can_update_status && store.status !== 'archived'
                                                 ? [
                                                       {
-                                                          label: store.status === 'active' ? 'Tangguhkan toko' : 'Aktifkan toko',
+                                                          label: store.status === 'active' ? 'Suspend store' : 'Activate store',
                                                           icon: Power,
                                                           href: `/super-admin/stores/${store.public_id}/status`,
                                                           method: 'patch',
@@ -111,16 +111,12 @@ export default function AdminStores({
                                     </td>
                                     <td className="px-5 py-4">
                                         <Badge variant={store.status === 'active' ? 'secondary' : 'destructive'}>
-                                            {store.status === 'active'
-                                                ? 'Aktif'
-                                                : store.status === 'archived'
-                                                  ? 'Diarsipkan'
-                                                  : 'Ditangguhkan'}
+                                            {store.status === 'active' ? 'Active' : store.status === 'archived' ? 'Archived' : 'Suspended'}
                                         </Badge>
                                     </td>
                                     <td className="px-5 py-4">
                                         {store.subscription === null ? (
-                                            <span className="text-xs text-rose-700">Belum ada</span>
+                                            <span className="text-xs text-rose-700">None yet</span>
                                         ) : (
                                             <div>
                                                 <p className="font-medium">{store.subscription.plan_name}</p>
@@ -133,10 +129,10 @@ export default function AdminStores({
                         </tbody>
                     </table>
                 </div>
-                {stores.data.length === 0 && <div className="py-14 text-center text-sm text-slate-500">Toko tidak ditemukan.</div>}
+                {stores.data.length === 0 && <div className="py-14 text-center text-sm text-slate-500">Store not found.</div>}
                 <div className="flex flex-col gap-3 border-t border-slate-900/8 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
                     <span>
-                        Halaman {stores.current_page} dari {stores.last_page}
+                        Page {stores.current_page} of {stores.last_page}
                     </span>
                     <Pagination links={stores.links} />
                 </div>

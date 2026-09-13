@@ -36,10 +36,10 @@ type Security = {
 
 const statusLabels: Record<string, string> = {
     trialing: 'Trial',
-    active: 'Aktif',
-    past_due: 'Jatuh tempo',
-    suspended: 'Ditangguhkan',
-    cancelled: 'Dibatalkan',
+    active: 'Active',
+    past_due: 'Due',
+    suspended: 'Suspended',
+    cancelled: 'Cancelled',
 };
 const statusColors: Record<string, string> = {
     trialing: 'bg-sky-500',
@@ -49,18 +49,18 @@ const statusColors: Record<string, string> = {
     cancelled: 'bg-slate-400',
 };
 const actionLabels: Record<string, string> = {
-    'platform_admin.created': 'Admin platform ditambahkan',
-    'platform_admin.status_updated': 'Status admin diperbarui',
-    'user.status_updated': 'Status pengguna diperbarui',
-    'store.status_updated': 'Status toko diperbarui',
-    'subscription.updated': 'Subscription diperbarui',
-    'subscription.payment_posted': 'Pembayaran dicatat',
-    'plan.created': 'Paket dibuat',
-    'plan.updated': 'Paket diperbarui',
-    'admin.2fa_enabled': '2FA admin diaktifkan',
-    'admin.2fa_disabled': '2FA admin dinonaktifkan',
-    'admin.login': 'Admin masuk',
-    'admin.logout': 'Admin keluar',
+    'platform_admin.created': 'Platform admin added',
+    'platform_admin.status_updated': 'Admin status updated',
+    'user.status_updated': 'Status users updated',
+    'store.status_updated': 'Status store updated',
+    'subscription.updated': 'Subscription updated',
+    'subscription.payment_posted': 'Payment recorded',
+    'plan.created': 'Plan created',
+    'plan.updated': 'Plan updated',
+    'admin.2fa_enabled': 'Admin 2FA enabled',
+    'admin.2fa_disabled': 'Admin 2FA disabled',
+    'admin.login': 'Admin signed in',
+    'admin.logout': 'Admin signed out',
 };
 
 export default function SuperAdminDashboard({
@@ -85,28 +85,28 @@ export default function SuperAdminDashboard({
 
     const cards = [
         {
-            label: 'Pengguna',
+            label: 'Users',
             value: metrics.users,
-            meta: `+${metrics.new_users_this_month} ${translate('bulan ini')}`,
+            meta: `+${metrics.new_users_this_month} ${translate('this month')}`,
             icon: Users,
             href: '/super-admin/users',
         },
         {
-            label: 'Tenant toko',
+            label: 'Tenant store',
             value: metrics.stores,
-            meta: `+${metrics.new_stores_this_month} ${translate('bulan ini')}`,
+            meta: `+${metrics.new_stores_this_month} ${translate('this month')}`,
             icon: Building2,
             href: '/super-admin/stores',
         },
         {
-            label: 'Subscription operasional',
+            label: 'Subscription operations',
             value: metrics.operational_subscriptions,
             meta: `${totalSubscriptions} total subscription`,
             icon: CreditCard,
             href: '/super-admin/subscriptions',
         },
         {
-            label: 'MRR terhitung',
+            label: 'MRR calculated',
             value: formatMoney(metrics.monthly_recurring_revenue),
             meta: 'Internal projection',
             icon: Store,
@@ -116,22 +116,22 @@ export default function SuperAdminDashboard({
 
     return (
         <div className="platform-enter">
-            <Head title="Dashboard Platform" />
+            <Head title="Platform Dashboards" />
             <section className="relative overflow-hidden rounded-2xl bg-[#d83f22] p-6 text-white shadow-xl shadow-[#3b211b]/15 sm:p-8">
                 <div className="absolute -top-24 -right-20 size-72 rounded-full border border-white/10" />
                 <div className="absolute -right-8 -bottom-24 size-52 rounded-full bg-white/10" />
                 <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                     <div>
-                        <p className="text-[11px] font-black tracking-[0.2em] text-[#ffd5ca] uppercase">Platform command center</p>
+                        <p className="text-[11px] font-black tracking-[0.2em] text-[#ffd5ca] uppercase">Command center platform</p>
                         <h1 className="mt-3 max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
-                            Kondisi bisnis dalam satu pandangan.
+                            Your business condition in one view.
                         </h1>
                         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
-                            Pantau pertumbuhan tenant, kesiapan subscription, penerimaan, dan keamanan operasional platform.
+                            Monitor tenant growth, subscription readiness, payments, and platform security.
                         </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:flex">
-                        <HeroMetric label="Penerimaan bulan ini" value={formatMoney(metrics.payments_this_month)} />
+                        <HeroMetric label="Payments this month" value={formatMoney(metrics.payments_this_month)} />
                         <HeroMetric label="2FA admin" value={`${securityCoverage}%`} />
                     </div>
                 </div>
@@ -159,7 +159,7 @@ export default function SuperAdminDashboard({
 
             <section className="mt-5 grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
                 <article className="platform-panel p-5 sm:p-6">
-                    <PanelHeader kicker="Revenue pulse" title="Tren penerimaan 6 bulan" href="/super-admin/payments" />
+                    <PanelHeader kicker="Revenue pulse" title="Six-month revenue trend" href="/super-admin/payments" />
                     <div className="mt-6 flex h-52 items-end gap-3 border-b border-[#3b211b]/10 px-1">
                         {payment_trend.map((item) => {
                             const height = Math.max((Number(item.amount) / maxTrend) * 100, Number(item.amount) > 0 ? 8 : 2);
@@ -181,7 +181,7 @@ export default function SuperAdminDashboard({
                 </article>
 
                 <article className="platform-panel p-5 sm:p-6">
-                    <PanelHeader kicker="Billing state" title="Status subscription" href="/super-admin/subscriptions" />
+                    <PanelHeader kicker="Billing state" title="Subscription status" href="/super-admin/subscriptions" />
                     <div className="mt-5 space-y-4">
                         {Object.entries(subscription_breakdown).map(([status, count]) => {
                             const width = totalSubscriptions === 0 ? 0 : (count / totalSubscriptions) * 100;
@@ -208,10 +208,10 @@ export default function SuperAdminDashboard({
             <section className="mt-5 grid gap-5 xl:grid-cols-[1fr_1fr_.72fr]">
                 <article className="platform-panel overflow-hidden">
                     <div className="p-5 pb-3">
-                        <PanelHeader kicker="Cash in" title="Pembayaran terbaru" href="/super-admin/payments" />
+                        <PanelHeader kicker="Cash in" title="Payment latest" href="/super-admin/payments" />
                     </div>
                     {recent_payments.length === 0 ? (
-                        <EmptyState text="Belum ada pembayaran." />
+                        <EmptyState text="No payments yet." />
                     ) : (
                         <div className="divide-y divide-[#3b211b]/8">
                             {recent_payments.map((payment) => (
@@ -232,10 +232,10 @@ export default function SuperAdminDashboard({
 
                 <article className="platform-panel overflow-hidden">
                     <div className="p-5 pb-3">
-                        <PanelHeader kicker="Audit stream" title="Aktivitas admin" />
+                        <PanelHeader kicker="Audit stream" title="Activity admin" />
                     </div>
                     {recent_activity.length === 0 ? (
-                        <EmptyState text="Belum ada aktivitas." />
+                        <EmptyState text="No activity yet." />
                     ) : (
                         <div className="divide-y divide-[#3b211b]/8">
                             {recent_activity.slice(0, 5).map((item) => (
@@ -264,7 +264,7 @@ export default function SuperAdminDashboard({
                     </div>
                     <div className="mt-5 space-y-2 text-xs text-slate-300">
                         <p className="flex justify-between">
-                            <span>Admin platform</span>
+                            <span>Platform admins</span>
                             <strong className="text-white">{security.platform_admins}</strong>
                         </p>
                         <p className="flex justify-between">
@@ -272,7 +272,7 @@ export default function SuperAdminDashboard({
                             <strong className="text-white">{security.super_admins}</strong>
                         </p>
                         <p className="flex justify-between">
-                            <span>2FA aktif</span>
+                            <span>2FA active</span>
                             <strong className="text-white">{security.two_factor_enabled}</strong>
                         </p>
                     </div>
@@ -281,7 +281,7 @@ export default function SuperAdminDashboard({
                         className="mt-6 flex items-center justify-center gap-2 rounded-xl bg-white/10 px-3 py-2.5 text-xs font-bold hover:bg-white/15"
                     >
                         <CheckCircle2 className="size-4" />
-                        Kelola keamanan
+                        Manage security
                     </Link>
                 </article>
             </section>
@@ -306,7 +306,7 @@ function PanelHeader({ kicker, title, href }: { kicker: string; title: string; h
             </div>
             {href && (
                 <Link href={href} className="text-xs font-bold text-[#b83219] hover:underline">
-                    Lihat semua
+                    View all
                 </Link>
             )}
         </div>

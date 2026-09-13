@@ -3,14 +3,14 @@ import { cn } from '@/lib/utils';
 
 const operationItems = [
     { label: 'Inventory', href: '/operations/inventory' },
-    { label: 'Stock opname', href: '/operations/stock-opnames' },
-    { label: 'Kas & akun', href: '/operations/cash' },
-    { label: 'Modal pemilik', href: '/operations/capital' },
+    { label: 'Stock count', href: '/operations/stock-opnames' },
+    { label: 'Cash & account', href: '/operations/cash' },
+    { label: 'Capital owner', href: '/operations/capital' },
 ] as const;
 
 export function OperationsNav({ active }: { active: string }) {
     return (
-        <nav aria-label="Navigasi operasional" className="flex max-w-full gap-1.5 overflow-x-auto pb-0.5">
+        <nav aria-label="Operations navigation" className="flex max-w-full gap-1.5 overflow-x-auto pb-0.5">
             {operationItems.map((item) => (
                 <Link
                     key={item.href}

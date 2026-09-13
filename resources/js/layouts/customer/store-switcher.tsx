@@ -39,8 +39,8 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                             <Plus className="size-4" />
                         </span>
                         <span className="min-w-0">
-                            <span className="block truncate text-xs font-bold">{translate('Buat toko')}</span>
-                            <span className="block truncate text-xs text-muted-foreground">{translate('Mulai operasional')}</span>
+                            <span className="block truncate text-xs font-bold">{translate('Create store')}</span>
+                            <span className="block truncate text-xs text-muted-foreground">{translate('Start operations')}</span>
                         </span>
                     </Link>
                 ) : (
@@ -53,8 +53,8 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                             <LockKeyhole className="size-4" />
                         </span>
                         <span className="min-w-0">
-                            <span className="block truncate text-xs font-bold">{translate('Tambah kapasitas')}</span>
-                            <span className="block truncate text-xs text-muted-foreground">{translate('Hubungi admin')}</span>
+                            <span className="block truncate text-xs font-bold">{translate('Increase capacity')}</span>
+                            <span className="block truncate text-xs text-muted-foreground">{translate('Contact admin')}</span>
                         </span>
                     </button>
                 )}
@@ -86,7 +86,7 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                     className="max-h-[70svh] w-72 max-w-[calc(100vw-2rem)] [scrollbar-color:var(--muted-foreground)_transparent] overflow-y-auto rounded-2xl border-border p-2 shadow-xl dark:shadow-none"
                 >
                     <DropdownMenuLabel className="px-3 py-2 text-xs text-muted-foreground">
-                        {translate('Pilih ruang kerja')}
+                        {translate('Select workspace work')}
                     </DropdownMenuLabel>
                     {stores.map((store) => (
                         <DropdownMenuItem
@@ -111,13 +111,13 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                         <DropdownMenuItem asChild className="rounded-xl p-3">
                             <Link href={storesRoutes.create.url()}>
                                 <Plus className="size-4" />
-                                {translate('Tambah toko baru')}
+                                {translate('Add new store')}
                             </Link>
                         </DropdownMenuItem>
                     ) : (
                         <DropdownMenuItem className="rounded-xl p-3" onSelect={() => setLimitOpen(true)}>
                             <LockKeyhole className="size-4" />
-                            {translate('Tambah kapasitas toko')}
+                            {translate('Increase store capacity')}
                         </DropdownMenuItem>
                     )}
                 </DropdownMenuContent>

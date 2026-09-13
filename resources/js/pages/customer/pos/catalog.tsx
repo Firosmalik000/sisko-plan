@@ -51,7 +51,7 @@ export function PosCatalog({
                 {scannerCount > 0 && (
                     <div className="flex flex-wrap gap-2">
                         <Button type="button" size="touch" variant="outline" onClick={onReviewScan}>
-                            {translate('Lihat hasil')} ({scannerCount})
+                            {translate('View results')} ({scannerCount})
                         </Button>
                         <Button
                             type="button"
@@ -60,7 +60,7 @@ export function PosCatalog({
                             className="text-destructive hover:text-destructive"
                             onClick={onDiscardScan}
                         >
-                            {translate('Buang hasil scan')}
+                            {translate('Discard scan results')}
                         </Button>
                     </div>
                 )}
@@ -84,8 +84,8 @@ export function PosCatalog({
                             value={search}
                             onChange={(event) => onSearchChange(event.target.value)}
                             onKeyDown={onSearchKeyDown}
-                            placeholder={translate('Cari nama, SKU, atau scan barcode')}
-                            aria-label={translate('Cari nama produk, SKU, atau scan barcode')}
+                            placeholder={translate('Search name, SKU, or scan barcode')}
+                            aria-label={translate('Search by product name, SKU, or scan a barcode')}
                             aria-invalid={Boolean(searchError)}
                             className="h-full w-full rounded-none border-0 bg-transparent pr-4 pl-11 text-base shadow-none focus-visible:ring-0 sm:text-sm"
                         />
@@ -94,8 +94,8 @@ export function PosCatalog({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        aria-label={translate('Scan kamera')}
-                        title={translate('Scan kamera')}
+                        aria-label={translate('Scan camera')}
+                        title={translate('Scan camera')}
                         className="h-full w-12 shrink-0 rounded-none border-l text-primary"
                         onClick={onScan}
                     >
@@ -103,8 +103,8 @@ export function PosCatalog({
                     </Button>
                 </div>
                 {searchError && <p className="mt-2 text-sm font-semibold text-destructive">{searchError}</p>}
-                <div className="mt-3 flex max-w-full gap-2 overflow-x-auto pb-1" aria-label={translate('Filter kategori')}>
-                    {[['', translate('Semua')] as [string, string], ...categories].map(([id, name]) => {
+                <div className="mt-3 flex max-w-full gap-2 overflow-x-auto pb-1" aria-label={translate('Filter category')}>
+                    {[['', translate('All')] as [string, string], ...categories].map(([id, name]) => {
                         const active = activeCategory === id;
 
                         return (
@@ -156,18 +156,18 @@ export function PosCatalog({
                                     {formatMoney(minimumPrice)}
                                     {maximumPrice !== minimumPrice && (
                                         <span className="block text-xs leading-tight font-medium text-muted-foreground">
-                                            {translate('sampai')} {formatMoney(maximumPrice)}
+                                            {translate('until')} {formatMoney(maximumPrice)}
                                         </span>
                                     )}
                                 </p>
                                 <div className="flex flex-wrap items-center gap-1.5">
                                     {criticalStock && (
                                         <span className="rounded-md bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
-                                            {translate('Kritis')}
+                                            {translate('Critical')}
                                         </span>
                                     )}
                                     <span className={`text-xs font-medium ${criticalStock ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                        {translate('Stok tersisa')} {formatQuantity(stock)}
+                                        {translate('Stock remaining')} {formatQuantity(stock)}
                                     </span>
                                 </div>
                             </div>
@@ -179,8 +179,8 @@ export function PosCatalog({
                 <div className="rounded-2xl bg-card">
                     <EmptyState
                         icon={Search}
-                        title={translate('Produk tidak ditemukan')}
-                        description={translate('Coba gunakan nama, SKU, atau barcode yang lain.')}
+                        title={translate('Product not found')}
+                        description={translate('Try use name, SKU, or barcode that other.')}
                     />
                 </div>
             )}

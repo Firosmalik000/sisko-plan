@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Stores;
 
+use App\Models\Country;
 use App\Models\Store;
 use App\Support\Authentication\AuthenticatedUser;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -21,6 +22,9 @@ class StoreUpdateRequest extends FormRequest
         $store = $this->route('store');
         abort_unless($store instanceof Store, 404);
 
+        $country = strtoupper((string) $this->input('country', $store->country?->code));
+        $timezones = Country::query()->where('code', $country)->first()?->timezones() ?? [];
+
         return [
             'name' => ['required', 'string', 'max:120'],
             'address' => ['sometimes', 'nullable', 'string', 'max:500'],
@@ -32,6 +36,7 @@ class StoreUpdateRequest extends FormRequest
                     ->where('is_active', true)
                     ->when($store, fn ($query) => $query->orWhere('id', $store->country_id))),
             ],
+            'timezone' => ['sometimes', 'required', 'string', Rule::in($timezones)],
         ];
     }
 
@@ -39,8 +44,9 @@ class StoreUpdateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'address.string' => __('Alamat toko harus berupa teks.'),
-            'address.max' => __('Alamat toko tidak boleh lebih dari 500 karakter.'),
+            'address.string' => __('The store address must be text.'),
+            'address.max' => __('The store address must not exceed 500 characters.'),
+            'timezone.in' => __('The time zone is unavailable for this store country.'),
         ];
     }
 }

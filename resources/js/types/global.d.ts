@@ -1,3 +1,4 @@
+import type { AppLocale } from '@/lib/locales';
 import type { Auth } from '@/types/auth';
 
 declare module 'react' {
@@ -25,10 +26,10 @@ declare module '@inertiajs/core' {
                 social_image_url: string | null;
                 robots_index: boolean;
             };
-            locale?: 'en' | 'id' | 'ms' | 'vi';
-            market?: 'id' | 'ms' | 'vi';
+            locale?: AppLocale;
+            market?: 'BN' | 'KH' | 'ID' | 'LA' | 'MY' | 'MM' | 'PH' | 'SG' | 'TH' | 'TL' | 'VN';
             locales?: Array<{
-                code: 'en' | 'id' | 'ms' | 'vi';
+                code: AppLocale;
                 label: string;
             }>;
             auth: Auth;

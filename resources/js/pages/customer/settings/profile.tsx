@@ -88,8 +88,8 @@ export default function Profile({
     const [paperSize, setPaperSize] = useState<'58mm' | '80mm'>(settings?.receipt_paper_size ?? '58mm');
     const [storeName, setStoreName] = useState(store?.name ?? '');
     const [storeAddress, setStoreAddress] = useState(settings?.address ?? '');
-    const [receiptHeader, setReceiptHeader] = useState(settings?.receipt_header ?? 'Terima kasih sudah berbelanja');
-    const [receiptFooter, setReceiptFooter] = useState(settings?.receipt_footer ?? 'Barang yang sudah dibeli tidak dapat dikembalikan.');
+    const [receiptHeader, setReceiptHeader] = useState(settings?.receipt_header ?? translate('Thank you for shopping with us'));
+    const [receiptFooter, setReceiptFooter] = useState(settings?.receipt_footer ?? translate('Purchased items cannot be returned.'));
     const storeId = store?.public_id ?? 'no-store';
     const [printPreferences, setPrintPreferences] = useState(() =>
         readReceiptPrintPreferences(storeId, typeof window === 'undefined' ? undefined : window.localStorage),
@@ -116,9 +116,9 @@ export default function Profile({
 
     return (
         <>
-            <Head title="Pengaturan akun & toko" />
+            <Head title="Settings account & store" />
             <style>{receiptPrintStyles(paperSize)}</style>
-            <h1 className="sr-only">Pengaturan akun dan toko</h1>
+            <h1 className="sr-only">Settings account and store</h1>
 
             <section className="relative overflow-hidden rounded-[1.35rem] bg-[var(--app-ink)] px-4 py-4 text-white shadow-sm sm:px-5">
                 <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -131,7 +131,7 @@ export default function Profile({
                                 </Avatar>
                                 <label className="absolute -right-1 -bottom-1 flex size-10 cursor-pointer items-center justify-center rounded-full border-4 border-[var(--app-ink)] bg-white text-[var(--app-primary)] shadow-md transition hover:scale-105">
                                     <Camera className="size-4" />
-                                    <span className="sr-only">Pilih foto profil</span>
+                                    <span className="sr-only">Select photo profile</span>
                                     <input
                                         className="sr-only"
                                         type="file"
@@ -157,7 +157,7 @@ export default function Profile({
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge className="border-white/15 bg-white/10 text-white hover:bg-white/10">
-                                {store ? 'Toko aktif' : 'Akun pribadi'}
+                                {store ? 'Active store' : 'Account personal'}
                             </Badge>
                             {subscription && (
                                 <Badge className="border-amber-300/20 bg-amber-300/15 text-amber-200 hover:bg-amber-300/15">
@@ -177,15 +177,15 @@ export default function Profile({
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,.75fr)]">
                 <div className="space-y-4">
-                    <SettingsCard icon={CircleUserRound} title="Akun saya">
+                    <SettingsCard icon={CircleUserRound} title="Account my">
                         <Form {...ProfileController.update.form()} options={{ preserveScroll: true }} className="grid gap-4 sm:grid-cols-2">
                             {({ processing, errors }) => (
                                 <>
-                                    <Field label="Nama lengkap" icon={UserRound}>
+                                    <Field label="Full name" icon={UserRound}>
                                         <Input id="name" name="name" defaultValue={auth.user.name} required autoComplete="name" />
                                         <InputError message={errors.name} />
                                     </Field>
-                                    <Field label="Email akun" icon={Mail}>
+                                    <Field label="Email account" icon={Mail}>
                                         <Input
                                             id="email"
                                             type="email"
@@ -198,12 +198,12 @@ export default function Profile({
                                     </Field>
                                     {mustVerifyEmail && auth.user.email_verified_at === null && (
                                         <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900 sm:col-span-2">
-                                            Email belum diverifikasi.{' '}
+                                            Email not verified.{' '}
                                             <Link href={send()} as="button" className="font-bold underline underline-offset-4">
-                                                Kirim ulang verifikasi
+                                                Send again verification
                                             </Link>
                                             {status === 'verification-link-sent' && (
-                                                <span className="ml-1 font-medium text-emerald-700">Tautan baru telah dikirim.</span>
+                                                <span className="ml-1 font-medium text-emerald-700">Link new has been sent.</span>
                                             )}
                                         </div>
                                     )}
@@ -214,7 +214,7 @@ export default function Profile({
                                             className="min-h-11 w-full sm:w-auto"
                                         >
                                             <Save className="size-4" />
-                                            Simpan profil
+                                            Save profile
                                         </Button>
                                     </div>
                                 </>
@@ -226,9 +226,13 @@ export default function Profile({
                         <Form {...ProfileController.updateStore.form()} options={{ preserveScroll: true }} className="space-y-5">
                             {({ processing, errors }) => (
                                 <>
-                                    <SettingsCard icon={Building2} title="Data toko" badge={store.can_manage ? undefined : 'Hanya lihat'}>
+                                    <SettingsCard
+                                        icon={Building2}
+                                        title="Store details"
+                                        badge={store.can_manage ? undefined : translate('View only')}
+                                    >
                                         <div className="grid gap-4 sm:grid-cols-2">
-                                            <Field label="Nama toko" icon={StoreIcon} className="sm:col-span-2">
+                                            <Field label="Store name" icon={StoreIcon} className="sm:col-span-2">
                                                 <Input
                                                     name="store_name"
                                                     value={storeName}
@@ -237,7 +241,7 @@ export default function Profile({
                                                 />
                                                 <InputError message={errors.store_name} />
                                             </Field>
-                                            <Field label="Nomor telepon">
+                                            <Field label="Phone number">
                                                 <Input
                                                     name="phone"
                                                     defaultValue={settings?.phone ?? ''}
@@ -247,17 +251,17 @@ export default function Profile({
                                                 />
                                                 <InputError message={errors.phone} />
                                             </Field>
-                                            <Field label="Email toko">
+                                            <Field label="Email store">
                                                 <Input
                                                     name="email"
                                                     type="email"
                                                     defaultValue={settings?.email ?? ''}
-                                                    placeholder="toko@email.com"
+                                                    placeholder="store@email.com"
                                                     disabled={!store.can_manage}
                                                 />
                                                 <InputError message={errors.email} />
                                             </Field>
-                                            <Field label="Alamat toko" icon={MapPin} className="sm:col-span-2">
+                                            <Field label="Store address" icon={MapPin} className="sm:col-span-2">
                                                 <textarea
                                                     name="address"
                                                     value={storeAddress}
@@ -271,10 +275,10 @@ export default function Profile({
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard icon={ReceiptText} title="Struk penjualan">
+                                    <SettingsCard icon={ReceiptText} title="Receipt sales">
                                         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
                                             <div className="space-y-4">
-                                                <Field label="Judul struk">
+                                                <Field label="Title receipt">
                                                     <Input
                                                         name="receipt_header"
                                                         value={receiptHeader}
@@ -284,7 +288,7 @@ export default function Profile({
                                                     />
                                                     <InputError message={errors.receipt_header} />
                                                 </Field>
-                                                <Field label="Catatan bawah">
+                                                <Field label="Notes footer">
                                                     <textarea
                                                         name="receipt_footer"
                                                         value={receiptFooter}
@@ -297,7 +301,7 @@ export default function Profile({
                                                     <InputError message={errors.receipt_footer} />
                                                 </Field>
                                                 <div className="grid gap-3">
-                                                    <Field label="Lebar kertas">
+                                                    <Field label="Paper width">
                                                         <select
                                                             name="receipt_paper_size"
                                                             value={paperSize}
@@ -305,21 +309,21 @@ export default function Profile({
                                                             disabled={!store.can_manage}
                                                             className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                                         >
-                                                            <option value="58mm">58 mm</option>
-                                                            <option value="80mm">80 mm</option>
+                                                            <option value="58mm">58mm</option>
+                                                            <option value="80mm">80mm</option>
                                                         </select>
                                                     </Field>
                                                 </div>
                                                 <div className="grid gap-2 sm:grid-cols-2">
                                                     <CheckSetting
                                                         name="receipt_show_address"
-                                                        label="Tampilkan alamat"
+                                                        label="Show address"
                                                         defaultChecked={settings?.receipt_show_address ?? true}
                                                         disabled={!store.can_manage}
                                                     />
                                                     <CheckSetting
                                                         name="receipt_show_cashier"
-                                                        label="Tampilkan kasir"
+                                                        label="Show checkout"
                                                         defaultChecked={settings?.receipt_show_cashier ?? true}
                                                         disabled={!store.can_manage}
                                                     />
@@ -335,10 +339,10 @@ export default function Profile({
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard icon={Printer} title="Printer struk">
+                                    <SettingsCard icon={Printer} title="Receipt printer">
                                         <p className="text-sm leading-6 text-muted-foreground">
                                             {translate(
-                                                'Berlaku untuk toko dan perangkat ini. Pengaturan perangkat kasir lain tidak berubah.',
+                                                'Applies to this store and device. Settings on other cashier devices will not change.',
                                             )}
                                         </p>
                                         <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -366,7 +370,7 @@ export default function Profile({
                                             <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-950">
                                                 <p>
                                                     {translate(
-                                                        'Mendukung printer ESC/POS 58 mm atau 80 mm melalui Bluetooth, USB, dan Wi-Fi/LAN.',
+                                                        'Supports 58 mm or 80 mm ESC/POS printers over Bluetooth, USB, and Wi-Fi/LAN.',
                                                     )}
                                                 </p>
                                                 <Button
@@ -383,7 +387,7 @@ export default function Profile({
                                                     }}
                                                 >
                                                     <Printer className="size-4" />
-                                                    {translate('Atur dan tes printer Android')}
+                                                    {translate('Set up and test Android printer')}
                                                 </Button>
                                             </div>
                                         )}
@@ -396,20 +400,20 @@ export default function Profile({
                                                 }
                                                 className="size-4 accent-[var(--app-primary)]"
                                             />
-                                            {translate('Cetak otomatis setelah transaksi')}
+                                            {translate('Print automatically after a transaction')}
                                         </label>
                                         <div className="mt-4 flex flex-wrap items-center gap-3">
                                             <Button type="button" variant="outline" onClick={() => window.print()} className="min-h-11">
                                                 <Printer className="size-4" />
-                                                {translate('Tes cetak sistem')}
+                                                {translate('Test system printing')}
                                             </Button>
                                             <span className="text-xs text-muted-foreground">
-                                                {translate('Transaksi tetap tersimpan jika printer gagal mencetak.')}
+                                                {translate('The transaction remains saved if printing fails.')}
                                             </span>
                                         </div>
                                     </SettingsCard>
 
-                                    <SettingsCard icon={Palette} title="Warna aplikasi">
+                                    <SettingsCard icon={Palette} title="Color application">
                                         <div className="flex flex-wrap gap-3">
                                             {storeThemePresets.map((preset) => (
                                                 <button
@@ -418,7 +422,7 @@ export default function Profile({
                                                     onClick={() => changeTheme(preset.color)}
                                                     disabled={!store.can_manage}
                                                     className="group min-w-20 rounded-2xl border p-2 text-center text-xs font-bold transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50"
-                                                    aria-label={`Gunakan tema ${preset.name}`}
+                                                    aria-label={`Use theme${preset.name}`}
                                                 >
                                                     <span
                                                         className="mx-auto flex size-10 items-center justify-center rounded-xl text-white shadow-sm"
@@ -442,7 +446,7 @@ export default function Profile({
                                                 >
                                                     <Pipette className="size-4" />
                                                 </span>
-                                                <span className="mt-1.5 block">Kustom</span>
+                                                <span className="mt-1.5 block">Custom</span>
                                                 <input
                                                     type="color"
                                                     className="sr-only"
@@ -460,7 +464,7 @@ export default function Profile({
                                                 }}
                                             />
                                             <div className="min-w-0 flex-1">
-                                                <Label htmlFor="theme_color">Kode warna utama</Label>
+                                                <Label htmlFor="theme_color">Primary color code</Label>
                                                 <Input
                                                     id="theme_color"
                                                     name="theme_color"
@@ -478,7 +482,7 @@ export default function Profile({
                                         <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 flex justify-end rounded-2xl border border-[var(--app-ink)]/8 bg-white/90 p-3 shadow-xl backdrop-blur-xl md:bottom-5">
                                             <Button disabled={processing} className="min-h-11 w-full px-6 sm:w-auto">
                                                 <Save className="size-4" />
-                                                Simpan pengaturan toko
+                                                Save settings store
                                             </Button>
                                         </div>
                                     )}
@@ -488,9 +492,9 @@ export default function Profile({
                     ) : (
                         <div className="rounded-3xl border border-dashed bg-white p-8 text-center">
                             <StoreIcon className="mx-auto size-9 text-muted-foreground" />
-                            <h2 className="mt-3 font-bold">Belum ada toko aktif</h2>
+                            <h2 className="mt-3 font-bold">No active stores yet</h2>
                             <Button asChild className="mt-4">
-                                <Link href={storesRoutes.create.url()}>Buat toko</Link>
+                                <Link href={storesRoutes.create.url()}>Create store</Link>
                             </Button>
                         </div>
                     )}
@@ -507,19 +511,19 @@ export default function Profile({
                                             : 'bg-amber-100 text-amber-800 hover:bg-amber-100'
                                     }
                                 >
-                                    {subscription.can_write ? 'Aktif' : 'Perlu perhatian'}
+                                    {subscription.can_write ? 'Active' : 'Need attention'}
                                 </Badge>
                                 <span className="text-xs font-bold text-muted-foreground uppercase">
                                     {subscription.status.replaceAll('_', ' ')}
                                 </span>
                             </div>
                             <div className="mt-5 space-y-4">
-                                <UsageRow label="Produk" used={subscription.products_used} limit={subscription.max_products} />
-                                <UsageRow label="Staf aktif" used={subscription.members_used} limit={subscription.max_members} />
+                                <UsageRow label="Product" used={subscription.products_used} limit={subscription.max_products} />
+                                <UsageRow label="Staff active" used={subscription.members_used} limit={subscription.max_members} />
                             </div>
                             <Button variant="outline" asChild className="mt-5 min-h-11 w-full">
                                 <Link href={subscriptionRoutes.index.url()}>
-                                    Kelola langganan
+                                    Manage subscription
                                     <ChevronRight className="size-4" />
                                 </Link>
                             </Button>
@@ -633,11 +637,11 @@ function ReceiptPreview({
                 </div>
                 <div className="my-3 border-t border-dashed border-slate-400" />
                 <div className="flex justify-between gap-2">
-                    <span>Kopi Susu × 2</span>
+                    <span>Milk Coffee × 2</span>
                     <span>36.000</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                    <span>Roti Bakar × 1</span>
+                    <span>Toast × 1</span>
                     <span>15.000</span>
                 </div>
                 <div className="my-3 border-t border-dashed border-slate-400" />
@@ -672,4 +676,4 @@ function UsageRow({ label, used, limit }: { label: string; used: number; limit: 
     );
 }
 
-Profile.layout = { breadcrumbs: [{ title: 'Pengaturan', href: edit() }] };
+Profile.layout = { breadcrumbs: [{ title: 'Settings', href: edit() }] };

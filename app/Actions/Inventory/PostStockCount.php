@@ -26,7 +26,7 @@ class PostStockCount
                 ->lockForUpdate()
                 ->firstOrFail();
             if ($locked->status !== StockCountStatus::Counted) {
-                throw ValidationException::withMessages(['stock_count' => 'Opname harus selesai dihitung sebelum diposting.']);
+                throw ValidationException::withMessages(['stock_count' => __('The stock count must be completed before it can be posted.')]);
             }
 
             $items = StockCountItem::query()
@@ -34,7 +34,7 @@ class PostStockCount
                 ->lockForUpdate()
                 ->get();
             if ($items->contains(fn (StockCountItem $item): bool => $item->counted_quantity === null)) {
-                throw ValidationException::withMessages(['items' => 'Semua produk harus dihitung sebelum opname diposting.']);
+                throw ValidationException::withMessages(['items' => __('All products must be counted before the stock count can be posted.')]);
             }
 
             $incoming = [];

@@ -37,6 +37,7 @@ type StoreDetail = {
     currency_code: string | null;
     currency_symbol: string | null;
     address: string | null;
+    timezone: string | null;
     members: Member[];
 };
 
@@ -46,6 +47,8 @@ type CountryOption = {
     currency_code: string;
     currency_symbol: string;
     is_active: boolean;
+    default_timezone: string;
+    timezones: string[];
 };
 
 type SubscriptionState = {
@@ -81,47 +84,48 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
         subscriptionState.max_members > 0 &&
         subscriptionState.members_used >= subscriptionState.max_members,
     );
-    const statusLabel = store.status === 'active' ? 'Toko aktif' : store.status === 'archived' ? 'Toko diarsipkan' : 'Toko ditangguhkan';
+    const statusLabel = store.status === 'active' ? 'Active store' : store.status === 'archived' ? 'Store archived' : 'Store suspended';
 
     return (
         <>
             <AppPage
                 title={store.name}
-                description={translate('Detail toko dan anggota')}
+                description={translate('Details store and members')}
                 icon={Building2}
-                back={{ href: storesRoutes.index.url(), label: translate('Kembali ke daftar toko') }}
+                back={{ href: storesRoutes.index.url(), label: translate('Back to store list') }}
                 actions={<Badge variant={store.status === 'active' ? 'secondary' : 'destructive'}>{translate(statusLabel)}</Badge>}
             >
-                <PageSection title={translate('Informasi toko')}>
+                <PageSection title={translate('Information store')}>
                     <div className="grid gap-x-8 gap-y-4 p-4 sm:grid-cols-2 sm:p-5">
-                        <StoreFact icon={MapPin} label="Alamat toko" value={store.address ?? '-'} wide />
-                        <StoreFact icon={Globe2} label="Negara" value={store.country_name ?? store.country_code ?? '-'} />
+                        <StoreFact icon={MapPin} label="Store address" value={store.address ?? '-'} wide />
+                        <StoreFact icon={Globe2} label="Country" value={store.country_name ?? store.country_code ?? '-'} />
                         <StoreFact
                             icon={Coins}
-                            label="Mata uang"
+                            label="Currency"
                             value={`${store.currency_code ?? '-'}${store.currency_symbol ? ` (${store.currency_symbol})` : ''}`}
                         />
+                        <StoreFact icon={Globe2} label="Time zone" value={store.timezone ?? '-'} />
                     </div>
                 </PageSection>
 
                 {store.can_manage && (
-                    <PageSection title={translate('Kelola toko')}>
+                    <PageSection title={translate('Manage store')}>
                         <div className="flex flex-wrap gap-2 p-4 sm:justify-end sm:p-5">
                             <Button type="button" variant="outline" size="touch" onClick={() => setEditOpen(true)}>
-                                {translate('Ubah identitas')}
+                                {translate('Change identity')}
                             </Button>
                             {memberLimitReached ? (
                                 <Button type="button" variant="outline" size="touch" onClick={() => setStaffLimitOpen(true)}>
-                                    <UserPlus /> {translate('Tambah kapasitas staf')}
+                                    <UserPlus /> {translate('Increase staff capacity')}
                                 </Button>
                             ) : (
                                 <Button type="button" size="touch" onClick={() => setMemberOpen(true)}>
-                                    <UserPlus /> {translate('Tambah anggota')}
+                                    <UserPlus /> {translate('Add member')}
                                 </Button>
                             )}
                             {store.can_archive && (
                                 <Button type="button" variant="destructive" size="touch" onClick={() => setArchiveOpen(true)}>
-                                    <Archive /> {translate('Arsipkan toko')}
+                                    <Archive /> {translate('Archive store')}
                                 </Button>
                             )}
                         </div>
@@ -135,7 +139,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                 {({ processing, errors }) => (
                                     <>
                                         <Button disabled={processing} size="touch" className="w-full">
-                                            <RotateCcw /> {translate('Pulihkan toko')}
+                                            <RotateCcw /> {translate('Restore store')}
                                         </Button>
                                         <InputError className="mt-2" message={errors.name ?? errors.subscription} />
                                     </>
@@ -143,14 +147,14 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                             </Form>
                             {store.can_delete && (
                                 <Button type="button" variant="destructive" size="touch" onClick={() => setDeleteOpen(true)}>
-                                    <Trash2 /> {translate('Hapus permanen')}
+                                    <Trash2 /> {translate('Delete permanen')}
                                 </Button>
                             )}
                         </div>
                     </PageSection>
                 )}
 
-                <PageSection title={translate('Anggota toko')} actions={<Badge variant="outline">{store.members.length}</Badge>}>
+                <PageSection title={translate('Members store')} actions={<Badge variant="outline">{store.members.length}</Badge>}>
                     <RecordList className="rounded-none border-0">
                         {store.members.map((member) => (
                             <RecordListRow key={member.id} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
@@ -167,7 +171,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                         <div className="mt-2 flex flex-wrap items-center gap-2 sm:hidden">
                                             <Badge variant="outline">{translate(member.role)}</Badge>
                                             <Badge variant={member.status === 'active' ? 'secondary' : 'destructive'}>
-                                                {translate(member.status === 'active' ? 'Aktif' : 'Nonaktif')}
+                                                {translate(member.status === 'active' ? 'Active' : 'Inactive')}
                                             </Badge>
                                         </div>
                                     </div>
@@ -177,7 +181,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                         <Shield className="size-4 text-muted-foreground" aria-hidden="true" />
                                         <Badge variant="outline">{translate(member.role)}</Badge>
                                         <Badge variant={member.status === 'active' ? 'secondary' : 'destructive'}>
-                                            {translate(member.status === 'active' ? 'Aktif' : 'Nonaktif')}
+                                            {translate(member.status === 'active' ? 'Active' : 'Inactive')}
                                         </Badge>
                                     </div>
                                     {store.can_manage && member.id !== store.owner_user_id && (
@@ -188,13 +192,13 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                             {({ processing }) => (
                                                 <>
                                                     <select
-                                                        aria-label={translate('Peran')}
+                                                        aria-label={translate('Roles')}
                                                         name="role"
                                                         defaultValue={member.role}
                                                         className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm text-foreground sm:flex-none"
                                                     >
-                                                        <option value="cashier">{translate('Kasir')}</option>
-                                                        <option value="admin">{translate('Admin toko')}</option>
+                                                        <option value="cashier">{translate('Point of sale')}</option>
+                                                        <option value="admin">{translate('Admin store')}</option>
                                                     </select>
                                                     <input
                                                         type="hidden"
@@ -202,7 +206,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                                         value={member.status === 'active' ? 'suspended' : 'active'}
                                                     />
                                                     <Button size="sm" variant="outline" disabled={processing}>
-                                                        {translate(member.status === 'active' ? 'Nonaktifkan' : 'Aktifkan')}
+                                                        {translate(member.status === 'active' ? 'Deactivate' : 'Activate')}
                                                     </Button>
                                                 </>
                                             )}
@@ -218,15 +222,15 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
             <ResponsiveDialog
                 open={editOpen}
                 onOpenChange={setEditOpen}
-                title={translate('Ubah identitas toko')}
+                title={translate('Edit store details')}
                 size="md"
                 footer={
                     <>
                         <Button type="button" variant="outline" size="touch" onClick={() => setEditOpen(false)}>
-                            {translate('Batal')}
+                            {translate('Cancel')}
                         </Button>
                         <Button type="submit" form="edit-store-form" size="touch">
-                            {translate('Simpan perubahan')}
+                            {translate('Save changes')}
                         </Button>
                     </>
                 }
@@ -242,9 +246,9 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                             <FormInput
                                 id="store-name"
                                 name="name"
-                                label={translate('Nama toko')}
+                                label={translate('Store name')}
                                 defaultValue={store.name}
-                                placeholder={translate('Contoh: Toko Berkah Utama')}
+                                placeholder={translate('Sample: Store Berkah Main')}
                                 required
                                 maxLength={120}
                                 error={errors.name}
@@ -252,36 +256,24 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                             <FormTextarea
                                 id="store-address"
                                 name="address"
-                                label={translate('Alamat toko')}
+                                label={translate('Store address')}
                                 defaultValue={store.address ?? ''}
                                 rows={3}
                                 maxLength={500}
-                                placeholder={translate('Contoh: Jalan Utama No. 10')}
+                                placeholder={translate('Example: 10 Main Street')}
                                 error={errors.address}
                             />
                             {store.country_editable ? (
-                                <FormSelect
-                                    id="store-country"
-                                    name="country"
-                                    label={translate('Negara toko')}
-                                    defaultValue={store.country_code ?? ''}
-                                    error={errors.country}
-                                >
-                                    {countries.map((country) => (
-                                        <option key={country.code} value={country.code} disabled={!country.is_active}>
-                                            {country.name} · {country.currency_code} ({country.currency_symbol})
-                                        </option>
-                                    ))}
-                                </FormSelect>
+                                <EditableGeography store={store} countries={countries} errors={errors} />
                             ) : (
                                 <div>
-                                    <p className="mb-1.5 text-sm font-semibold">{translate('Negara toko')}</p>
+                                    <p className="mb-1.5 text-sm font-semibold">{translate('Store country')}</p>
                                     <div className="flex h-11 items-center rounded-xl border border-input bg-muted/40 px-3 text-sm font-semibold">
                                         {store.country_name ?? store.country_code ?? '-'} · {store.currency_code ?? '-'} (
                                         {store.currency_symbol})
                                     </div>
                                     <p className="mt-1.5 text-xs text-muted-foreground">
-                                        {translate('Negara terkunci karena toko sudah memiliki transaksi.')}
+                                        {translate('The country is locked because the store already has transactions.')}
                                     </p>
                                 </div>
                             )}
@@ -293,17 +285,17 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
             <ResponsiveDialog
                 open={archiveOpen}
                 onOpenChange={setArchiveOpen}
-                title={translate('Arsipkan toko?')}
+                title={translate('Archive store?')}
                 size="sm"
                 footer={
                     <>
                         <Button type="button" variant="outline" size="touch" onClick={() => setArchiveOpen(false)}>
-                            {translate('Batal')}
+                            {translate('Cancel')}
                         </Button>
                         <Form {...storesRoutes.destroy.form(store.public_id)}>
                             {({ processing }) => (
                                 <Button variant="destructive" size="touch" disabled={processing} className="w-full">
-                                    <Archive /> {translate('Arsipkan')}
+                                    <Archive /> {translate('Archive')}
                                 </Button>
                             )}
                         </Form>
@@ -311,28 +303,28 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                 }
             >
                 <p className="text-sm leading-6 text-muted-foreground">
-                    {translate('Toko tidak dapat dipakai bertransaksi, tetapi seluruh data dan riwayat tetap tersimpan.')}
+                    {translate('The store can no longer process transactions, but all data and history remain preserved.')}
                 </p>
             </ResponsiveDialog>
 
             <ResponsiveDialog
                 open={deleteOpen}
                 onOpenChange={setDeleteOpen}
-                title={translate('Hapus toko permanen?')}
+                title={translate('Permanently delete this store?')}
                 size="sm"
                 footer={
                     <>
                         <Button type="button" variant="outline" size="touch" onClick={() => setDeleteOpen(false)}>
-                            {translate('Batal')}
+                            {translate('Cancel')}
                         </Button>
                         <Button type="submit" form="delete-store-form" variant="destructive" size="touch">
-                            <Trash2 /> {translate('Hapus permanen')}
+                            <Trash2 /> {translate('Delete permanen')}
                         </Button>
                     </>
                 }
             >
                 <p className="mb-4 text-sm leading-6 text-muted-foreground">
-                    {translate('Semua produk, transaksi, anggota, dan riwayat toko akan dihapus dan tidak dapat dipulihkan.')}
+                    {translate('All store products, transactions, members, and history will be permanently deleted.')}
                 </p>
                 <Form id="delete-store-form" {...storesRoutes.forceDestroy.form(store.public_id)}>
                     {({ errors }) => (
@@ -341,7 +333,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                             <FormInput
                                 id="delete-store-name"
                                 name="store_name"
-                                label={translate('Ketik nama toko')}
+                                label={translate('Enter the store name')}
                                 placeholder={store.name}
                                 autoComplete="off"
                                 required
@@ -355,15 +347,15 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
             <ResponsiveDialog
                 open={memberOpen && !memberLimitReached}
                 onOpenChange={setMemberOpen}
-                title={translate('Tambah anggota')}
+                title={translate('Add member')}
                 size="md"
                 footer={
                     <>
                         <Button type="button" variant="outline" size="touch" onClick={() => setMemberOpen(false)}>
-                            {translate('Batal')}
+                            {translate('Cancel')}
                         </Button>
                         <Button type="submit" form="member-form" size="touch">
-                            {translate(memberMode === 'create' ? 'Buat akun pekerja' : 'Hubungkan akun')}
+                            {translate(memberMode === 'create' ? 'Create account staff' : 'Connect account')}
                         </Button>
                     </>
                 }
@@ -390,7 +382,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                             memberMode === mode ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground',
                                         )}
                                     >
-                                        {translate(mode === 'create' ? 'Buat akun baru' : 'Akun sudah ada')}
+                                        {translate(mode === 'create' ? 'Create account new' : 'Account already exists')}
                                     </button>
                                 ))}
                             </div>
@@ -398,8 +390,8 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                 <FormInput
                                     id="member-name"
                                     name="name"
-                                    label={translate('Nama pekerja')}
-                                    placeholder={translate('Contoh: Siti Rahma')}
+                                    label={translate('Staff name')}
+                                    placeholder={translate('Sample: Siti Rahma')}
                                     autoComplete="name"
                                     required
                                     maxLength={255}
@@ -412,7 +404,7 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                 label={translate('Email')}
                                 type="email"
                                 autoComplete="email"
-                                placeholder="anggota@example.com"
+                                placeholder="members@example.com"
                                 required
                                 error={errors.email}
                             />
@@ -421,28 +413,28 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
                                     <FormInput
                                         id="member-password"
                                         name="password"
-                                        label={translate('Password awal')}
+                                        label={translate('Password opening')}
                                         type="password"
                                         autoComplete="new-password"
-                                        placeholder={translate('Minimal 8 karakter')}
+                                        placeholder={translate('Minimum 8 characters')}
                                         required
                                         error={errors.password}
                                     />
                                     <FormInput
                                         id="member-password-confirmation"
                                         name="password_confirmation"
-                                        label={translate('Ulangi password')}
+                                        label={translate('Repeat password')}
                                         type="password"
                                         autoComplete="new-password"
-                                        placeholder={translate('Ketik ulang password')}
+                                        placeholder={translate('Type again password')}
                                         required
                                         error={errors.password_confirmation}
                                     />
                                 </div>
                             )}
-                            <FormSelect id="member-role" name="role" label={translate('Peran')} defaultValue="cashier" error={errors.role}>
-                                <option value="cashier">{translate('Kasir')}</option>
-                                <option value="admin">{translate('Admin toko')}</option>
+                            <FormSelect id="member-role" name="role" label={translate('Roles')} defaultValue="cashier" error={errors.role}>
+                                <option value="cashier">{translate('Point of sale')}</option>
+                                <option value="admin">{translate('Admin store')}</option>
                             </FormSelect>
                         </>
                     )}
@@ -454,6 +446,54 @@ export default function StoreShow({ store, countries }: { store: StoreDetail; co
     );
 }
 
+function EditableGeography({
+    store,
+    countries,
+    errors,
+}: {
+    store: StoreDetail;
+    countries: CountryOption[];
+    errors: Partial<Record<'country' | 'timezone', string>>;
+}) {
+    const [countryCode, setCountryCode] = useState(store.country_code ?? '');
+    const country = countries.find((option) => option.code === countryCode);
+
+    return (
+        <>
+            <FormSelect
+                id="store-country"
+                name="country"
+                label={translate('Store country')}
+                value={countryCode}
+                onChange={(event) => setCountryCode(event.target.value)}
+                error={errors.country}
+            >
+                {countries.map((option) => (
+                    <option key={option.code} value={option.code} disabled={!option.is_active}>
+                        {option.name} · {option.currency_code} ({option.currency_symbol})
+                    </option>
+                ))}
+            </FormSelect>
+            <FormSelect
+                key={countryCode}
+                id="store-timezone"
+                name="timezone"
+                label={translate('Time zone')}
+                defaultValue={
+                    countryCode === store.country_code ? (store.timezone ?? country?.default_timezone) : country?.default_timezone
+                }
+                error={errors.timezone}
+            >
+                {(country?.timezones ?? []).map((timezone) => (
+                    <option key={timezone} value={timezone}>
+                        {timezone.replace('Asia/', '').replaceAll('_', ' ')}
+                    </option>
+                ))}
+            </FormSelect>
+        </>
+    );
+}
+
 StoreShow.layout = {
-    breadcrumbs: [{ title: 'Toko & Anggota', href: storesRoutes.index.url() }],
+    breadcrumbs: [{ title: 'Stores & Members', href: storesRoutes.index.url() }],
 };

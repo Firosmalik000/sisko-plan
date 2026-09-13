@@ -22,7 +22,7 @@ class ApplyStockMovement
     public function handle(int $storeId, int $productId, string $quantityChange, ?string $incomingUnitCost, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes, bool $requireEmptyProduct = false, ?string $incomingValue = null, ?int $productVariantId = null): StockMovement
     {
         if (Decimal::compare($quantityChange, '0', Decimal::QUANTITY_SCALE) === 0) {
-            throw ValidationException::withMessages(['items' => 'Perubahan stok tidak boleh nol.']);
+            throw ValidationException::withMessages(['items' => __('The stock change cannot be zero.')]);
         }
         if ($productVariantId !== null) {
             ProductVariant::query()->where([
@@ -42,33 +42,33 @@ class ApplyStockMovement
             ->where('product_variant_id', $productVariantId)
             ->latest('occurred_at')->latest('id')->lockForUpdate()->first(['occurred_at']);
         if ($requireEmptyProduct && $latestMovement !== null) {
-            throw ValidationException::withMessages(['items' => 'Saldo awal hanya dapat diposting sebelum produk memiliki pergerakan stok.']);
+            throw ValidationException::withMessages(['items' => __('An opening balance can only be posted before the product has stock movements.')]);
         }
         if ($latestMovement !== null && $occurredAt->lt(CarbonImmutable::parse((string) $latestMovement->occurred_at))) {
-            throw ValidationException::withMessages(['occurred_at' => 'Waktu transaksi tidak boleh mendahului pergerakan stok terakhir produk.']);
+            throw ValidationException::withMessages(['occurred_at' => __("The transaction time cannot be earlier than the product's latest stock movement.")]);
         }
         $newQuantity = Decimal::add($balance->quantity, $quantityChange, Decimal::QUANTITY_SCALE);
         if (Decimal::compare($newQuantity, '0', Decimal::QUANTITY_SCALE) < 0) {
-            throw ValidationException::withMessages(['items' => 'Stok tidak mencukupi untuk transaksi ini.']);
+            throw ValidationException::withMessages(['items' => __('There is insufficient stock for this transaction.')]);
         }
         if (Decimal::compare($newQuantity, self::MAX_QUANTITY, Decimal::QUANTITY_SCALE) > 0) {
-            throw ValidationException::withMessages(['items' => 'Kuantitas stok melebihi kapasitas yang didukung.']);
+            throw ValidationException::withMessages(['items' => __('The stock quantity exceeds the supported capacity.')]);
         }
 
         if (Decimal::compare($quantityChange, '0', Decimal::QUANTITY_SCALE) > 0) {
             if ($incomingUnitCost === null || Decimal::compare($incomingUnitCost, '0', Decimal::MONEY_SCALE) < 0) {
-                throw ValidationException::withMessages(['items' => 'Biaya per unit wajib diisi untuk stok masuk.']);
+                throw ValidationException::withMessages(['items' => __('The cost per unit is required for incoming stock.')]);
             }
             $unitCost = $incomingUnitCost;
             if ($incomingValue !== null && Decimal::compare($incomingValue, '0', Decimal::MONEY_SCALE) < 0) {
-                throw ValidationException::withMessages(['items' => 'Nilai stok masuk tidak boleh negatif.']);
+                throw ValidationException::withMessages(['items' => __('The incoming stock value cannot be negative.')]);
             }
             $valueChange = $incomingValue ?? Decimal::multiply($quantityChange, $unitCost);
             $newValue = Decimal::add($balance->inventory_value, $valueChange, Decimal::MONEY_SCALE);
             $newAverage = Decimal::compare($newQuantity, '0', Decimal::QUANTITY_SCALE) === 0
                 ? '0.0000' : Decimal::divide($newValue, $newQuantity, Decimal::MONEY_SCALE);
             if (Decimal::compare($newValue, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0 || Decimal::compare($newAverage, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0) {
-                throw ValidationException::withMessages(['items' => 'Nilai persediaan melebihi kapasitas yang didukung.']);
+                throw ValidationException::withMessages(['items' => __('The inventory value exceeds the supported capacity.')]);
             }
         } else {
             $unitCost = $balance->average_cost;
@@ -94,7 +94,7 @@ class ApplyStockMovement
     public function revalue(int $storeId, int $productId, string $unitCost, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes = null, ?int $productVariantId = null): ?StockMovement
     {
         if (Decimal::compare($unitCost, '0', Decimal::MONEY_SCALE) < 0) {
-            throw ValidationException::withMessages(['items' => 'Biaya per unit tidak boleh negatif.']);
+            throw ValidationException::withMessages(['items' => __('The cost per unit cannot be negative.')]);
         }
         if ($productVariantId !== null) {
             ProductVariant::query()->where([
@@ -115,12 +115,12 @@ class ApplyStockMovement
             ->where('product_variant_id', $productVariantId)
             ->latest('occurred_at')->latest('id')->lockForUpdate()->first(['occurred_at']);
         if ($latestMovement !== null && $occurredAt->lt(CarbonImmutable::parse((string) $latestMovement->occurred_at))) {
-            throw ValidationException::withMessages(['occurred_at' => 'Waktu revaluasi tidak boleh mendahului pergerakan stok terakhir produk.']);
+            throw ValidationException::withMessages(['occurred_at' => __("The revaluation time cannot be earlier than the product's latest stock movement.")]);
         }
 
         $newValue = Decimal::multiply($balance->quantity, $unitCost);
         if (Decimal::compare($newValue, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0) {
-            throw ValidationException::withMessages(['items' => 'Nilai persediaan melebihi kapasitas yang didukung.']);
+            throw ValidationException::withMessages(['items' => __('The inventory value exceeds the supported capacity.')]);
         }
         $valueChange = Decimal::subtract($newValue, $balance->inventory_value, Decimal::MONEY_SCALE);
         $balance->update(['average_cost' => $unitCost, 'inventory_value' => $newValue]);

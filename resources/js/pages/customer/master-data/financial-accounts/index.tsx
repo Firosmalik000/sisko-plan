@@ -11,8 +11,8 @@ type Account = ReferenceRecord & {
     notes: string | null;
 };
 const labels: Record<string, string> = {
-    cash: 'Kas tunai',
-    bank: 'Bank',
+    cash: 'Cash cash',
+    bank: 'Banks',
     e_wallet: 'E-wallet',
 };
 
@@ -39,11 +39,11 @@ export default function FinancialAccountsIndex({
 
     return (
         <ReferenceDataPage
-            title="Kas & rekening"
+            title="Cash & bank account"
             icon={WalletCards}
             recordIcon={Landmark}
             routes={{ index: index.url(), store: store.url(), update: update.url }}
-            singular="Akun"
+            singular="Account"
             items={mapped}
             search={search}
             status={status}
@@ -57,24 +57,24 @@ export default function FinancialAccountsIndex({
             fields={[
                 {
                     name: 'name',
-                    label: 'Nama akun',
-                    placeholder: 'Contoh: Kas toko',
+                    label: 'Account name',
+                    placeholder: 'Sample: Cash store',
                 },
                 {
                     name: 'type',
-                    label: 'Jenis akun',
+                    label: 'Type account',
                     type: 'select',
                     options: accountTypes.map((type) => ({
                         value: type,
                         label: labels[type] ?? type,
                     })),
                 },
-                { name: 'account_number', label: 'Nomor rekening / akun' },
-                { name: 'notes', label: 'Catatan', type: 'textarea' },
+                { name: 'account_number', label: 'Number bank account / account' },
+                { name: 'notes', label: 'Notes', type: 'textarea' },
             ]}
             details={[
-                { key: 'type_label', label: 'Jenis' },
-                { key: 'account_number', label: 'Nomor' },
+                { key: 'type_label', label: 'Type' },
+                { key: 'account_number', label: 'Number' },
             ]}
         />
     );

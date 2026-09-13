@@ -18,7 +18,7 @@ class ResolveMarketplaceAccount
 
         if ($label === null) {
             throw ValidationException::withMessages([
-                'marketplace_code' => __('Marketplace tidak tersedia untuk negara toko ini.'),
+                'marketplace_code' => __('This marketplace is not available for the store country.'),
             ]);
         }
 

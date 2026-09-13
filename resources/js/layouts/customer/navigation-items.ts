@@ -43,65 +43,65 @@ export { quickActionHref } from '@/layouts/customer/quick-action';
 export type { QuickActionMode } from '@/layouts/customer/quick-action';
 
 export const primaryDestinations = [
-    { title: 'Beranda', href: dashboard.url(), icon: Home },
-    { title: 'Produk', href: productRoutes.index.url(), icon: Barcode },
-    { title: 'Transaksi', href: salesRoutes.index.url(), icon: ReceiptText },
+    { title: 'Home', href: dashboard.url(), icon: Home },
+    { title: 'Product', href: productRoutes.index.url(), icon: Barcode },
+    { title: 'Transactions', href: salesRoutes.index.url(), icon: ReceiptText },
 ] as const;
 
-export const moreDestination = { title: 'Lainnya', icon: Grid2X2 } as const;
+export const moreDestination = { title: 'More', icon: Grid2X2 } as const;
 
 export const quickActionGroups = [
     {
-        title: 'Transaksi',
+        title: 'Transactions',
         items: [
-            { title: 'Penjualan', href: posRoutes.index.url(), icon: ShoppingCart },
-            { title: 'Pembelian', href: purchasingRoutes.index.url(), icon: Truck },
+            { title: 'Sales', href: posRoutes.index.url(), icon: ShoppingCart },
+            { title: 'Purchases', href: purchasingRoutes.index.url(), icon: Truck },
         ],
     },
     {
-        title: 'Persediaan',
+        title: 'Inventory',
         items: [
-            { title: 'Cek stok', href: operationsRoutes.inventory.url(), icon: Boxes, supportsScan: false },
-            { title: 'Produk baru', href: productRoutes.index.url(), icon: PackageSearch },
+            { title: 'Check stock', href: operationsRoutes.inventory.url(), icon: Boxes, supportsScan: false },
+            { title: 'New product', href: productRoutes.index.url(), icon: PackageSearch },
         ],
     },
 ] as const;
 
 export const moreMenuSections = [
     {
-        title: 'Operasional',
+        title: 'Operations',
         items: [
-            { title: 'Persediaan', href: operationsRoutes.inventory.url(), icon: Boxes },
-            { title: 'Stock opname', href: stockOpnameRoutes.index.url(), icon: ClipboardCheck },
-            { title: 'Pembelian', href: purchasingRoutes.index.url(), icon: Truck },
-            { title: 'Supplier', href: supplierRoutes.index.url(), icon: Handshake },
+            { title: 'Inventory', href: operationsRoutes.inventory.url(), icon: Boxes },
+            { title: 'Stock count', href: stockOpnameRoutes.index.url(), icon: ClipboardCheck },
+            { title: 'Purchases', href: purchasingRoutes.index.url(), icon: Truck },
+            { title: 'Suppliers', href: supplierRoutes.index.url(), icon: Handshake },
         ],
     },
     {
-        title: 'Keuangan',
+        title: 'Finance',
         items: [
-            { title: 'Kas & bank', href: operationsRoutes.cash.url(), icon: WalletCards },
-            { title: 'Biaya', href: expensesRoutes.index.url(), icon: CircleDollarSign },
-            { title: 'Modal', href: operationsRoutes.capital.url(), icon: Landmark },
-            { title: 'Laporan', href: reportsRoutes.index.url(), icon: BarChart3 },
+            { title: 'Cash & bank', href: operationsRoutes.cash.url(), icon: WalletCards },
+            { title: 'Expenses', href: expensesRoutes.index.url(), icon: CircleDollarSign },
+            { title: 'Capital', href: operationsRoutes.capital.url(), icon: Landmark },
+            { title: 'Reports', href: reportsRoutes.index.url(), icon: BarChart3 },
         ],
     },
     {
         title: 'Master data',
         items: [
-            { title: 'Kategori', href: categoriesRoutes.index.url(), icon: Tags },
-            { title: 'Satuan', href: unitRoutes.index.url(), icon: Ruler },
-            { title: 'Akun keuangan', href: financialAccountRoutes.index.url(), icon: CreditCard },
+            { title: 'Category', href: categoriesRoutes.index.url(), icon: Tags },
+            { title: 'Unit', href: unitRoutes.index.url(), icon: Ruler },
+            { title: 'Account keuangan', href: financialAccountRoutes.index.url(), icon: CreditCard },
         ],
     },
     {
-        title: 'Akun & toko',
+        title: 'Account & store',
         items: [
-            { title: 'Toko & anggota', href: storesRoutes.index.url(), icon: Store },
-            { title: 'Langganan', href: subscriptionRoutes.index.url(), icon: CreditCard },
-            { title: 'Pengaturan', href: profileRoutes.edit.url(), icon: Settings },
-            { title: 'Keamanan', href: securityRoutes.edit.url(), icon: ShieldCheck },
-            { title: 'Tampilan', href: appearanceRoutes.edit.url(), icon: MonitorCog },
+            { title: 'Stores & team', href: storesRoutes.index.url(), icon: Store },
+            { title: 'Subscriptions', href: subscriptionRoutes.index.url(), icon: CreditCard },
+            { title: 'Settings', href: profileRoutes.edit.url(), icon: Settings },
+            { title: 'Security', href: securityRoutes.edit.url(), icon: ShieldCheck },
+            { title: 'Appearance', href: appearanceRoutes.edit.url(), icon: MonitorCog },
         ],
     },
 ] as const;

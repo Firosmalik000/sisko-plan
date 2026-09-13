@@ -122,7 +122,7 @@ class SecurityController extends Controller
     public function disable(Request $request, DisableTwoFactorAuthentication $disable, RecordAdminAudit $audit): RedirectResponse
     {
         if (config('security.platform_admin_2fa_required')) {
-            throw ValidationException::withMessages(['two_factor' => '2FA wajib pada environment ini dan tidak dapat dinonaktifkan.']);
+            throw ValidationException::withMessages(['two_factor' => __('2FA is required in this environment and cannot be disabled.')]);
         }
 
         $admin = $this->adminAfterPasswordValidation($request);
@@ -139,7 +139,7 @@ class SecurityController extends Controller
         $validated = $request->validate(['current_password' => ['required', 'string']]);
         $admin = AuthenticatedPlatformAdmin::get($request);
         if (! Hash::check($validated['current_password'], $admin->password)) {
-            throw ValidationException::withMessages(['current_password' => 'Kata sandi saat ini tidak valid.']);
+            throw ValidationException::withMessages(['current_password' => __('The current password is invalid.')]);
         }
 
         return $admin;

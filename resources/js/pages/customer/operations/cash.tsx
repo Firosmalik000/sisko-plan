@@ -31,14 +31,14 @@ type Transaction = {
     occurred_at: string;
 };
 const reasonLabels: Record<string, string> = {
-    opening_balance: 'Saldo awal',
-    cash_contribution: 'Setoran modal',
-    cash_withdrawal: 'Penarikan modal',
-    transfer_in: 'Transfer masuk',
-    transfer_out: 'Transfer keluar',
-    sale_payment: 'Pembayaran penjualan',
-    sale_refund: 'Refund penjualan',
-    expense: 'Biaya toko',
+    opening_balance: 'Balance opening',
+    cash_contribution: 'Deposit capital',
+    cash_withdrawal: 'Withdrawal capital',
+    transfer_in: 'Incoming transfer',
+    transfer_out: 'Transfer outgoing',
+    sale_payment: 'Sales payment',
+    sale_refund: 'Refund sales',
+    expense: 'Expense store',
 };
 
 export default function CashPage({
@@ -97,13 +97,13 @@ export default function CashPage({
     const activeAccounts = accounts.filter((account) => account.is_active);
 
     return (
-        <OperationsShell active={cashIndex.url()} title="Kas & Bank" icon={WalletCards}>
+        <OperationsShell active={cashIndex.url()} title="Cash & Bank" icon={WalletCards}>
             <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
                 {canManage && (
-                    <LedgerCard title="Saldo awal akun" description="Hanya untuk akun yang belum pernah memiliki transaksi.">
+                    <LedgerCard title="Balance opening account" description="Only for accounts with no transaction history.">
                         <form onSubmit={submitOpening} className="grid gap-4 md:grid-cols-2">
                             <label className="space-y-1 text-sm font-semibold text-foreground">
-                                Akun
+                                Account
                                 <select
                                     className={fieldClass}
                                     value={opening.data.account_id}
@@ -119,14 +119,14 @@ export default function CashPage({
                             <FormCurrencyInput
                                 id="opening-amount"
                                 name="amount"
-                                label={translate('Nominal')}
+                                label={translate('Amount')}
                                 value={opening.data.amount}
                                 onValueChange={(value) => opening.setData('amount', value)}
                                 min="0.0001"
                                 required
                             />
                             <label className="space-y-1 text-sm font-semibold text-foreground">
-                                Waktu
+                                Time
                                 <input
                                     className={fieldClass}
                                     type="datetime-local"
@@ -137,7 +137,7 @@ export default function CashPage({
                             </label>
                             <div className="flex items-end">
                                 <Button size="touch" className="w-full" disabled={opening.processing}>
-                                    Posting saldo awal
+                                    Post balance opening
                                 </Button>
                             </div>
                             {Object.keys(opening.errors).length > 0 && (
@@ -147,10 +147,10 @@ export default function CashPage({
                     </LedgerCard>
                 )}
                 {canManage && (
-                    <LedgerCard title="Transfer antar-akun" description="Debit dan kredit kas diposting atomik.">
+                    <LedgerCard title="Transfer between-account" description="Debit and credit cash posted atomically.">
                         <form onSubmit={submitTransfer} className="grid gap-4 md:grid-cols-2">
                             <label className="space-y-1 text-sm font-semibold text-foreground">
-                                Dari akun
+                                From account
                                 <select
                                     className={fieldClass}
                                     value={transfer.data.from_account_id}
@@ -164,7 +164,7 @@ export default function CashPage({
                                 </select>
                             </label>
                             <label className="space-y-1 text-sm font-semibold text-foreground">
-                                Ke akun
+                                To account
                                 <select
                                     className={fieldClass}
                                     value={transfer.data.to_account_id}
@@ -180,14 +180,14 @@ export default function CashPage({
                             <FormCurrencyInput
                                 id="transfer-amount"
                                 name="amount"
-                                label={translate('Nominal')}
+                                label={translate('Amount')}
                                 value={transfer.data.amount}
                                 onValueChange={(value) => transfer.setData('amount', value)}
                                 min="0.0001"
                                 required
                             />
                             <label className="space-y-1 text-sm font-semibold text-foreground">
-                                Waktu
+                                Time
                                 <input
                                     className={fieldClass}
                                     type="datetime-local"
@@ -197,7 +197,7 @@ export default function CashPage({
                                 />
                             </label>
                             <Button size="touch" className="md:col-span-2" disabled={transfer.processing || activeAccounts.length < 2}>
-                                Posting transfer
+                                Post transfer
                             </Button>
                             {Object.keys(transfer.errors).length > 0 && (
                                 <p className="text-sm text-destructive md:col-span-full">{Object.values(transfer.errors)[0]}</p>
@@ -206,7 +206,7 @@ export default function CashPage({
                     </LedgerCard>
                 )}
             </div>
-            <LedgerCard title="Posisi kas" description={`Total likuiditas ${money(totalBalance)}`}>
+            <LedgerCard title="Cash position" description={`Total liquidity${money(totalBalance)}`}>
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     {accounts.map((account) => (
                         <article key={account.public_id} className="rounded-2xl border border-border bg-muted p-4">
@@ -219,17 +219,17 @@ export default function CashPage({
                     ))}
                 </div>
             </LedgerCard>
-            <LedgerCard title="Cash transaction terbaru">
+            <LedgerCard title="Cash transaction latest">
                 <div>
                     <table className="w-full text-left text-sm">
                         <thead className="hidden border-b border-border text-xs tracking-wider text-muted-foreground uppercase md:table-header-group">
                             <tr>
-                                <th className="pb-3">Akun</th>
-                                <th className="pb-3">Alasan</th>
-                                <th className="pb-3">Arus</th>
-                                <th className="pb-3">Nominal</th>
-                                <th className="pb-3">Saldo akun</th>
-                                <th className="pb-3">Waktu</th>
+                                <th className="pb-3">Account</th>
+                                <th className="pb-3">Reason</th>
+                                <th className="pb-3">Flow</th>
+                                <th className="pb-3">Amount</th>
+                                <th className="pb-3">Balance account</th>
+                                <th className="pb-3">Time</th>
                             </tr>
                         </thead>
                         <tbody className="block divide-y divide-border md:table-row-group">
@@ -246,7 +246,7 @@ export default function CashPage({
                                     <td
                                         className={`p-0 md:table-cell ${item.direction === 'in' ? 'font-bold text-primary' : 'font-bold text-destructive'}`}
                                     >
-                                        {item.direction === 'in' ? 'Arus masuk' : 'Arus keluar'}
+                                        {item.direction === 'in' ? 'Cash in' : 'Cash out'}
                                     </td>
                                     <td className="p-0 text-right font-bold md:table-cell md:text-left">{money(item.amount)}</td>
                                     <td className="hidden md:table-cell">{money(item.balance_after)}</td>
@@ -256,7 +256,7 @@ export default function CashPage({
                         </tbody>
                     </table>
                     {transactions.data.length === 0 && (
-                        <p className="py-8 text-center text-sm text-muted-foreground">Belum ada transaksi kas.</p>
+                        <p className="py-8 text-center text-sm text-muted-foreground">No cash transactions yet.</p>
                     )}
                     <div className="mt-5">
                         <Pagination links={transactions.links} />

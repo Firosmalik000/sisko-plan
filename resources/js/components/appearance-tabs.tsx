@@ -7,9 +7,9 @@ import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
 const options = [
-    { value: 'light', label: 'Terang', icon: Sun },
-    { value: 'dark', label: 'Gelap', icon: Moon },
-    { value: 'system', label: 'Ikuti perangkat', icon: Monitor },
+    { value: 'light', label: 'Light', icon: Sun },
+    { value: 'dark', label: 'Dark', icon: Moon },
+    { value: 'system', label: 'Use device setting', icon: Monitor },
 ] as const;
 
 export default function AppearanceToggleTab({
@@ -23,9 +23,9 @@ export default function AppearanceToggleTab({
     if (variant === 'menu') {
         return (
             <>
-                <DropdownMenuLabel className="px-3 py-2 text-xs font-medium text-muted-foreground">{t('Tampilan')}</DropdownMenuLabel>
+                <DropdownMenuLabel className="px-3 py-2 text-xs font-medium text-muted-foreground">{t('Appearance')}</DropdownMenuLabel>
                 <DropdownMenuRadioGroup
-                    aria-label={t('Tampilan')}
+                    aria-label={t('Appearance')}
                     value={appearance}
                     onValueChange={(value) => updateAppearance(value as Appearance)}
                 >

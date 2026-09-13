@@ -1,11 +1,13 @@
-import { englishOverrides } from './application';
-import { englishDynamicCatalog } from './dynamic';
-import { englishProductCatalog } from './product';
-import { landingEnglishOverrides } from './public';
+import { enAuthCatalog } from './auth';
+import { enCustomerCatalog } from './customer';
+import { enPlatformCatalog } from './platform';
+import { enPublicCatalog } from './public';
+import { enSharedCatalog } from './shared';
 
 export const englishCatalog: Record<string, string> = {
-    ...englishOverrides,
-    ...landingEnglishOverrides,
-    ...englishProductCatalog,
-    ...englishDynamicCatalog,
+    ...enAuthCatalog,
+    ...enCustomerCatalog,
+    ...enPlatformCatalog,
+    ...enPublicCatalog,
+    ...enSharedCatalog,
 };

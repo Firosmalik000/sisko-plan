@@ -32,21 +32,35 @@ type Plan = {
 
 type OfferCategory = 'store_capacity' | 'staff_capacity' | 'scan_capacity' | 'product_capacity' | 'general';
 
-const categoryCopy: Record<OfferCategory, { title: string; label: string; description: string }> = {
-    store_capacity: {
-        title: 'Tambah kapasitas toko',
-        label: 'Toko',
-        description: 'Buka ruang untuk toko berikutnya dalam akun yang sama.',
-    },
-    staff_capacity: { title: 'Tambah kapasitas staf', label: 'Staf', description: 'Perluas akses tim tanpa mengganti paket utama.' },
-    scan_capacity: { title: 'Tambah kuota scan AI', label: 'Scan AI', description: 'Tambah pengenalan produk dari foto untuk bulan ini.' },
-    product_capacity: {
-        title: 'Tambah kapasitas produk',
-        label: 'Produk',
-        description: 'Sediakan ruang untuk katalog produk yang terus bertambah.',
-    },
-    general: { title: 'Paket kapasitas gabungan', label: 'Gabungan', description: 'Tambahkan beberapa kapasitas akun dalam satu pilihan.' },
-};
+function localizedCategoryCopy(): Record<OfferCategory, { title: string; label: string; description: string }> {
+    return {
+        store_capacity: {
+            title: translate('Increase store capacity'),
+            label: translate('Store'),
+            description: translate('Add room for another store under the same account.'),
+        },
+        staff_capacity: {
+            title: translate('Increase staff capacity'),
+            label: translate('Staff'),
+            description: translate('Expand team access without changing the base plan.'),
+        },
+        scan_capacity: {
+            title: translate('Increase AI scan allowance'),
+            label: translate('AI scans'),
+            description: translate('Add product recognition from photos for this month.'),
+        },
+        product_capacity: {
+            title: translate('Increase product capacity'),
+            label: translate('Product'),
+            description: translate('Add room for a growing product catalog.'),
+        },
+        general: {
+            title: translate('Combined capacity'),
+            label: translate('Combined'),
+            description: translate('Bundle several capacity add-ons in one option.'),
+        },
+    };
+}
 
 type Account = {
     has_store: boolean;
@@ -67,6 +81,7 @@ export default function Pricing({
     focus_category: OfferCategory | null;
 }) {
     const { auth, branding } = usePage().props;
+    const categoryCopy = localizedCategoryCopy();
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
     const form = useForm({ plan_id: '' });
     const scheduled = Boolean(
@@ -77,8 +92,8 @@ export default function Pricing({
     const offerGroups = [
         {
             key: 'base',
-            title: 'Paket utama',
-            description: 'Pilih paket berjangka untuk kapasitas operasional yang lebih besar.',
+            title: 'Base plans',
+            description: 'Select plan fixed-term for capacity operations that more bulk.',
             plans: plans.filter((plan) => plan.kind === 'base'),
         },
         ...(['store_capacity', 'staff_capacity', 'scan_capacity', 'product_capacity', 'general'] as OfferCategory[]).map((category) => ({
@@ -104,42 +119,42 @@ export default function Pricing({
 
     return (
         <>
-            <Head title="Paket untuk Setiap Tahap Toko" />
+            <Head title="Plan for Every Stage Store" />
             <section className="pricing-hero">
                 <div className="ledger-container">
                     <m.div className="pricing-hero-copy" initial="hidden" animate="visible" variants={revealLeft}>
-                        <span className="scan-kicker">Paket {branding.brand_name}</span>
-                        <h1>{focusedCopy ? focusedCopy.title : 'Pilih ruang tumbuh untuk toko Anda.'}</h1>
+                        <span className="scan-kicker">Plans {branding.brand_name}</span>
+                        <h1>{focusedCopy ? focusedCopy.title : 'Choose the right capacity for your store.'}</h1>
                         <p>
                             {focusedCopy
                                 ? focusedCopy.description
-                                : 'Mulai dari kebutuhan hari ini. Tingkatkan kapasitas saat produk, anggota, dan toko bertambah.'}
+                                : 'Start with what you need today. Increase capacity as your products, team, and stores grow.'}
                         </p>
                     </m.div>
                     <m.div className="pricing-hero-aside" initial="hidden" animate="visible" variants={revealRight}>
-                        <span className="pricing-proof-label">Dalam satu akun</span>
+                        <span className="pricing-proof-label">In one account</span>
                         <m.div className="pricing-proof-flow" variants={staggerGroup}>
                             <m.span variants={staggerItem}>
-                                <ScanLine /> Scan
+                                <ScanLine /> Scans
                             </m.span>
                             <i />
                             <m.span variants={staggerItem}>
-                                <Store /> Toko
+                                <Store /> Store
                             </m.span>
                             <i />
                             <m.span variants={staggerItem}>
-                                <Users /> Tim
+                                <Users /> Team
                             </m.span>
                         </m.div>
                         <div className="pricing-proof-total">
-                            <span>Operasional terhubung</span>
-                            <strong>Kasir · Stok · Kas · Laporan</strong>
+                            <span>Connected operations</span>
+                            <strong>Checkout · Stock · Cash · Reports</strong>
                         </div>
                     </m.div>
                 </div>
             </section>
 
-            <section className="pricing-assurance" aria-label="Manfaat setiap paket">
+            <section className="pricing-assurance" aria-label="Benefits every plan">
                 <m.div
                     className="ledger-container"
                     initial="hidden"
@@ -148,13 +163,13 @@ export default function Pricing({
                     variants={staggerGroup}
                 >
                     <m.span variants={staggerItem}>
-                        <ScanLine /> Alur kasir cepat
+                        <ScanLine /> Flow checkout fast
                     </m.span>
                     <m.span variants={staggerItem}>
-                        <ShieldCheck /> Data toko terpisah
+                        <ShieldCheck /> Isolated store data
                     </m.span>
                     <m.span variants={staggerItem}>
-                        <CreditCard /> Kapasitas tertulis jelas
+                        <CreditCard /> Clearly stated capacity
                     </m.span>
                 </m.div>
             </section>
@@ -169,19 +184,19 @@ export default function Pricing({
                         variants={revealClip}
                     >
                         <div>
-                            <span className="scan-kicker">Pilihan paket</span>
+                            <span className="scan-kicker">Optional plan</span>
                             <h2 id="offers-title">
                                 {focusedCopy
-                                    ? `${translate('Pilihan untuk')} ${focusedCopy.label.toLowerCase()}`
-                                    : translate('Sesuai cara toko Anda berkembang.')}
+                                    ? `${translate('Options for')} ${focusedCopy.label.toLowerCase()}`
+                                    : translate('Designed to grow with your store.')}
                             </h2>
                         </div>
                         <span>
-                            {visibleChoiceCount} {translate('pilihan')}
+                            {visibleChoiceCount} {translate('options')}
                         </span>
                     </m.div>
                     {offerGroups.length > 1 && (
-                        <nav className="pricing-category-nav" aria-label="Kategori penawaran">
+                        <nav className="pricing-category-nav" aria-label="Category offer">
                             {offerGroups.map((group) => (
                                 <Link
                                     key={group.key}
@@ -192,7 +207,7 @@ export default function Pricing({
                                     }
                                     aria-current={focusCategory === group.key ? 'location' : undefined}
                                 >
-                                    {group.key === 'base' ? 'Paket utama' : categoryCopy[group.key as OfferCategory].label}
+                                    {group.key === 'base' ? 'Base plans' : categoryCopy[group.key as OfferCategory].label}
                                 </Link>
                             ))}
                         </nav>
@@ -211,7 +226,7 @@ export default function Pricing({
                                         <p>{translate(group.description)}</p>
                                     </div>
                                     <span>
-                                        {group.plans.length} {translate('pilihan')}
+                                        {group.plans.length} {translate('options')}
                                     </span>
                                 </header>
                                 <m.div
@@ -234,8 +249,8 @@ export default function Pricing({
                                         >
                                             <div className="pricing-card-head">
                                                 <div className="pricing-card-badges">
-                                                    {plan.is_trial && <span>Trial 30 hari</span>}
-                                                    {plan.is_current && <span>Paket saat ini</span>}
+                                                    {plan.is_trial && <span>Trial 30 day</span>}
+                                                    {plan.is_current && <span>Current plan</span>}
                                                     {plan.kind === 'addon' && (
                                                         <span>{categoryCopy[plan.offer_category ?? 'general'].label}</span>
                                                     )}
@@ -245,40 +260,40 @@ export default function Pricing({
                                             </div>
                                             <div className="pricing-card-price">
                                                 <strong>{priceLabel(plan)}</strong>
-                                                {Number(plan.monthly_price) > 0 && plan.billing_cycle === 'fixed' && <span>/ bulan</span>}
+                                                {Number(plan.monthly_price) > 0 && plan.billing_cycle === 'fixed' && <span>/ month</span>}
                                             </div>
-                                            <ul aria-label={`${translate('Kapasitas')} ${translate(plan.name)}`}>
+                                            <ul aria-label={`${translate('Capacity')} ${translate(plan.name)}`}>
                                                 <li>
                                                     <Clock3 />
                                                     <span>
-                                                        Masa aktif <strong>{planTerm(plan)}</strong>
+                                                        Active period <strong>{planTerm(plan)}</strong>
                                                     </span>
                                                 </li>
                                                 {(plan.kind === 'base' || plan.max_stores > 0) && (
                                                     <PlanLimit
                                                         value={plan.max_stores}
-                                                        label="toko per akun"
+                                                        label="store per account"
                                                         additional={plan.kind === 'addon'}
                                                     />
                                                 )}
                                                 {(plan.kind === 'base' || plan.max_products > 0) && (
                                                     <PlanLimit
                                                         value={plan.max_products}
-                                                        label="produk aktif"
+                                                        label="product active"
                                                         additional={plan.kind === 'addon'}
                                                     />
                                                 )}
                                                 {(plan.kind === 'base' || plan.max_members > 0) && (
                                                     <PlanLimit
                                                         value={plan.max_members}
-                                                        label="staf per akun"
+                                                        label="staff per account"
                                                         additional={plan.kind === 'addon'}
                                                     />
                                                 )}
                                                 {(plan.kind === 'base' || plan.max_scans > 0) && (
                                                     <PlanLimit
                                                         value={plan.max_scans}
-                                                        label="scan per bulan"
+                                                        label="scans per month"
                                                         additional={plan.kind === 'addon'}
                                                     />
                                                 )}
@@ -297,7 +312,7 @@ export default function Pricing({
                     </div>
                     {plans.length === 0 && (
                         <div className="pricing-empty">
-                            <p>Belum ada paket yang ditawarkan.</p>
+                            <p>No plans are currently available.</p>
                         </div>
                     )}
                 </div>
@@ -306,16 +321,16 @@ export default function Pricing({
             <section className="pricing-close">
                 <m.div className="ledger-container" initial="hidden" whileInView="visible" viewport={publicViewport} variants={revealClip}>
                     <div>
-                        <span className="scan-kicker">Mulai sesuai kebutuhan</span>
-                        <h2>Pakai yang gratis dulu. Tambah kapasitas saat toko membutuhkannya.</h2>
+                        <span className="scan-kicker">Start with what you need</span>
+                        <h2>Start with the free plan. Add more capacity when your store needs it.</h2>
                     </div>
                     {account.can_access_dashboard ? (
                         <Link className="ledger-button ledger-button-orange" href={dashboard()}>
-                            Buka dashboard <ArrowRight />
+                            Open dashboard <ArrowRight />
                         </Link>
                     ) : (
                         <a className="ledger-button ledger-button-orange" href="#offers">
-                            Lihat paket <ArrowRight />
+                            See plans <ArrowRight />
                         </a>
                     )}
                 </m.div>
@@ -331,13 +346,13 @@ export default function Pricing({
             >
                 <DialogContent className="w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-2xl border-[#d8cebb] bg-[#fffaf7] p-0 sm:max-w-md">
                     <DialogHeader className="border-b border-[#d8cebb] px-5 py-5 pr-12 text-left">
-                        <DialogTitle className="text-xl font-black tracking-[-0.03em] text-[#2d2928]">Konfirmasi berlangganan</DialogTitle>
+                        <DialogTitle className="text-xl font-black tracking-[-0.03em] text-[#2d2928]">Confirm subscribe</DialogTitle>
                         <DialogDescription className="text-[#5e6964]">
                             {selectedScheduled && account.next_period_start
-                                ? `${selectedPlan?.name} ${translate('akan dimulai')} ${date(account.next_period_start)} ${translate('setelah periode sebelumnya selesai.')}`
+                                ? `${selectedPlan?.name} ${translate('will start on')} ${date(account.next_period_start)} ${translate('after the previous period ends.')}`
                                 : selectedPlan?.kind === 'addon'
-                                  ? `${selectedPlan?.name} ${translate('akan menambah kapasitas akun mulai sekarang.')}`
-                                  : `${selectedPlan?.name} ${translate('akan aktif mulai sekarang.')}`}
+                                  ? `${selectedPlan?.name} ${translate('will increase account capacity immediately.')}`
+                                  : `${selectedPlan?.name} ${translate('will become active immediately.')}`}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={submit}>
@@ -350,12 +365,12 @@ export default function Pricing({
                             </div>
                             <p className="flex items-center gap-2 text-sm font-semibold text-[#5f5754]">
                                 <Clock3 className="size-4 text-[#ee4d2d]" />
-                                Masa aktif {selectedPlan ? planTerm(selectedPlan) : '—'}.
+                                Active period {selectedPlan ? planTerm(selectedPlan) : '—'}.
                             </p>
                             {selectedScheduled && account.next_period_start && (
                                 <p className="flex items-center gap-2 text-sm font-semibold text-[#5f5754]">
                                     <CalendarDays className="size-4 text-[#ee4d2d]" />
-                                    Mulai {date(account.next_period_start)}
+                                    Start {date(account.next_period_start)}
                                 </p>
                             )}
                             {form.errors.plan_id && (
@@ -371,18 +386,18 @@ export default function Pricing({
                                 disabled={form.processing}
                                 onClick={() => setSelectedPlan(null)}
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button className="ledger-button ledger-button-dark" type="submit" disabled={form.processing}>
                                 {form.processing
                                     ? selectedScheduled
-                                        ? 'Menjadwalkan...'
-                                        : 'Mengaktifkan...'
+                                        ? 'Scheduling...'
+                                        : 'Activating...'
                                     : selectedScheduled
-                                      ? 'Jadwalkan paket'
+                                      ? 'Schedule plan'
                                       : selectedPlan?.kind === 'addon'
-                                        ? 'Tambahkan add-on'
-                                        : 'Konfirmasi paket'}{' '}
+                                        ? 'Add add-on'
+                                        : 'Confirm plan'}{' '}
                                 <ArrowRight />
                             </button>
                         </DialogFooter>
@@ -407,7 +422,7 @@ function PlanAction({
     if (!signedIn) {
         return (
             <Link className="ledger-button ledger-button-dark" href={register()}>
-                Buat akun <ArrowRight />
+                Create account <ArrowRight />
             </Link>
         );
     }
@@ -415,7 +430,7 @@ function PlanAction({
     if (!account.has_store) {
         return (
             <Link className="ledger-button ledger-button-dark" href={stores.create()}>
-                Buat toko <ArrowRight />
+                Create store <ArrowRight />
             </Link>
         );
     }
@@ -423,7 +438,7 @@ function PlanAction({
     if (plan.is_current && account.can_access_dashboard && plan.billing_cycle === 'lifetime') {
         return (
             <Link className="ledger-button ledger-button-dark" href={dashboard()}>
-                Buka dashboard <ArrowRight />
+                Open dashboard <ArrowRight />
             </Link>
         );
     }
@@ -432,12 +447,12 @@ function PlanAction({
         return (
             <button className="ledger-button ledger-button-orange" type="button" onClick={() => openConfirmation(plan)}>
                 {plan.kind === 'addon'
-                    ? 'Tambah kapasitas'
+                    ? translate('Increase capacity')
                     : plan.is_current
-                      ? 'Perpanjang paket'
+                      ? 'Extend plan'
                       : account.can_access_dashboard
-                        ? 'Pilih paket'
-                        : 'Berlangganan'}{' '}
+                        ? 'Choose a plan'
+                        : 'Subscribe'}{' '}
                 <ArrowRight />
             </button>
         );
@@ -445,7 +460,7 @@ function PlanAction({
 
     return (
         <button className="ledger-button pricing-disabled-action" type="button" disabled>
-            <LockKeyhole /> {plan.disabled_reason ?? 'Tidak tersedia'}
+            <LockKeyhole /> {plan.disabled_reason ?? 'Unavailable'}
         </button>
     );
 }
@@ -467,22 +482,22 @@ function formatLimit(value: number) {
 
 function planTerm(plan: Pick<Plan, 'is_trial' | 'duration_months' | 'billing_cycle'>) {
     if (plan.billing_cycle === 'lifetime') {
-        return translate('Selamanya');
+        return translate('Forever');
     }
 
     if (plan.is_trial) {
-        return translate('30 hari');
+        return translate('30 day');
     }
 
-    return `${plan.duration_months} ${translate('bulan')}`;
+    return `${plan.duration_months} ${translate('months')}`;
 }
 
 function priceLabel(plan: Pick<Plan, 'monthly_price' | 'billing_cycle'>) {
     if (Number(plan.monthly_price) === 0) {
-        return translate('Gratis');
+        return translate('Free');
     }
 
-    return `${formatMoney(plan.monthly_price)}${plan.billing_cycle === 'lifetime' ? ` ${translate('sekali')}` : ''}`;
+    return `${formatMoney(plan.monthly_price)}${plan.billing_cycle === 'lifetime' ? ` ${translate('once')}` : ''}`;
 }
 
 function date(value: string) {

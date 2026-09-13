@@ -15,15 +15,15 @@ class DeleteUser
     public function handle(User $admin, User $user, ?string $ipAddress): void
     {
         if ($admin->is($user)) {
-            throw ValidationException::withMessages(['user' => 'Anda tidak dapat menghapus akun sendiri.']);
+            throw ValidationException::withMessages(['user' => __('You cannot delete your own account.')]);
         }
 
         if ($user->isPlatformAdmin()) {
-            throw ValidationException::withMessages(['user' => 'Akun admin platform harus dikelola dari menu Admin Platform.']);
+            throw ValidationException::withMessages(['user' => __('Platform admin accounts must be managed from the Platform Admin menu.')]);
         }
 
         if ($user->ownedStores()->exists()) {
-            throw ValidationException::withMessages(['user' => 'Akun pemilik toko tidak dapat dihapus. Alihkan kepemilikan toko terlebih dahulu.']);
+            throw ValidationException::withMessages(['user' => __("A store owner's account cannot be deleted. Transfer store ownership first.")]);
         }
 
         $avatarPath = $user->avatar_path;
@@ -37,7 +37,7 @@ class DeleteUser
             });
         } catch (QueryException) {
             throw ValidationException::withMessages([
-                'user' => 'Akun memiliki riwayat transaksi atau audit dan tidak dapat dihapus. Tangguhkan akun agar aksesnya berhenti.',
+                'user' => __('The account has transaction or audit history and cannot be deleted. Suspend the account to revoke access.'),
             ]);
         }
 

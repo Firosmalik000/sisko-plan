@@ -70,18 +70,18 @@ class PostSale
                     : $salesChannel === 'in_store'
                         && PaymentMethodCatalog::acceptsInStoreAccount($account, $resolvedPaymentMethod, $countryCode);
                 if (! $validPaymentAccount) {
-                    throw ValidationException::withMessages(['payment_method' => __('Metode bayar tidak sesuai dengan akun penerimaan.')]);
+                    throw ValidationException::withMessages(['payment_method' => __('The payment method does not match the receiving account.')]);
                 }
                 $productUnitIds = array_column($items, 'product_unit_id');
                 if (count($productUnitIds) !== count(array_unique($productUnitIds))) {
-                    throw ValidationException::withMessages(['items' => 'Satuan produk di keranjang tidak boleh duplikat.']);
+                    throw ValidationException::withMessages(['items' => __('Product units in the cart cannot be duplicated.')]);
                 }
                 $resolvedItems = [];
                 foreach ($items as $item) {
                     $productUnit = ProductUnit::query()->with(['product', 'productVariant', 'unit'])
                         ->where(['id' => $item['product_unit_id'], 'store_id' => $store->id, 'is_active' => true])->firstOrFail();
                     if (! $productUnit->product->is_active || ! $productUnit->unit->is_active || $productUnit->productVariant?->is_active === false) {
-                        throw ValidationException::withMessages(['items' => 'Produk dan satuan harus aktif.']);
+                        throw ValidationException::withMessages(['items' => __('The product and unit must be active.')]);
                     }
                     if ($productUnit->product->quantity_mode === 'fixed' && Decimal::compare($item['quantity'], Decimal::add($item['quantity'], '0', 0), Decimal::QUANTITY_SCALE) !== 0) {
                         throw ValidationException::withMessages(['items' => __('Fixed quantity products require whole quantities.')]);
@@ -103,14 +103,14 @@ class PostSale
                 $calculation = $this->calculator->calculate($resolvedItems, $transactionDiscount);
                 usort($calculation['items'], fn (array $left, array $right): int => [(int) $left['product_id'], (int) $left['product_unit_id']] <=> [(int) $right['product_id'], (int) $right['product_unit_id']]);
                 if (Decimal::compare($paidAmount, $calculation['total'], Decimal::MONEY_SCALE) < 0 || Decimal::compare($paidAmount, '999999999999999.9999', Decimal::MONEY_SCALE) > 0) {
-                    throw ValidationException::withMessages(['paid_amount' => 'Nominal dibayar tidak boleh kurang dari total atau melebihi kapasitas yang didukung.']);
+                    throw ValidationException::withMessages(['paid_amount' => __('The amount paid cannot be less than the total or exceed the supported capacity.')]);
                 }
                 $change = Decimal::subtract($paidAmount, $calculation['total'], Decimal::MONEY_SCALE);
                 if ($account->type !== FinancialAccountType::Cash && Decimal::compare($change, '0', Decimal::MONEY_SCALE) > 0) {
-                    throw ValidationException::withMessages(['paid_amount' => 'Pembayaran non-tunai harus sama dengan total penjualan.']);
+                    throw ValidationException::withMessages(['paid_amount' => __('A non-cash payment must equal the sale total.')]);
                 }
                 if (in_array($resolvedPaymentMethod, ['cash', 'marketplace'], true) && $paymentProof !== null) {
-                    throw ValidationException::withMessages(['payment_proof' => __('Bukti pembayaran hanya dapat ditambahkan untuk pembayaran non-tunai langsung.')]);
+                    throw ValidationException::withMessages(['payment_proof' => __('Payment proof can only be added to direct non-cash payments.')]);
                 }
                 if ($paymentProof !== null) {
                     $storedProofPath = $paymentProof->storeAs(
@@ -119,7 +119,7 @@ class PostSale
                         'local',
                     );
                     if (! is_string($storedProofPath)) {
-                        throw ValidationException::withMessages(['payment_proof' => __('Bukti pembayaran gagal disimpan. Coba unggah kembali.')]);
+                        throw ValidationException::withMessages(['payment_proof' => __('The payment proof could not be saved. Upload it again.')]);
                     }
                     $newProofPath = $storedProofPath;
                 }

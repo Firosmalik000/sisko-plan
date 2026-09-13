@@ -185,7 +185,7 @@ class SalesController extends Controller
 
         return Storage::disk('local')->response(
             $path,
-            "bukti-pembayaran-{$sale->document_number}.{$extension}",
+            "payment-proof-{$sale->document_number}.{$extension}",
             ['Cache-Control' => 'private, no-store'],
         );
     }
@@ -280,8 +280,8 @@ class SalesController extends Controller
             'receipt' => [
                 'store_name' => $store->name,
                 'address' => $storeSettings?->address,
-                'header' => $storeSettings->receipt_header ?? __('Bukti penjualan'),
-                'footer' => $storeSettings->receipt_footer ?? __('Terima kasih. Simpan struk ini untuk referensi retur.'),
+                'header' => $storeSettings->receipt_header ?? __('Sales receipt'),
+                'footer' => $storeSettings->receipt_footer ?? __('Thank you. Keep this receipt as a reference for returns.'),
                 'paper_size' => $storeSettings->receipt_paper_size ?? '58mm',
                 'show_address' => $storeSettings->receipt_show_address ?? true,
                 'show_cashier' => $storeSettings->receipt_show_cashier ?? true,

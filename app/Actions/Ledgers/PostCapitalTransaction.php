@@ -32,14 +32,14 @@ class PostCapitalTransaction
                     return $existing;
                 }
                 if (! in_array($type, ['cash_contribution', 'cash_withdrawal', 'inventory_contribution', 'inventory_withdrawal'], true)) {
-                    throw ValidationException::withMessages(['type' => __('Jenis transaksi modal tidak valid.')]);
+                    throw ValidationException::withMessages(['type' => __('The capital transaction type is invalid.')]);
                 }
                 $cashType = str_starts_with($type, 'cash_');
                 if ($cashType && ($accountId === null || $amount === null)) {
-                    throw ValidationException::withMessages(['amount' => 'Akun dan nominal wajib diisi untuk modal kas.']);
+                    throw ValidationException::withMessages(['amount' => __('An account and amount are required for cash capital.')]);
                 }
                 if (! $cashType && $items === []) {
-                    throw ValidationException::withMessages(['items' => 'Minimal satu produk wajib diisi untuk modal inventory.']);
+                    throw ValidationException::withMessages(['items' => __('At least one product is required for inventory capital.')]);
                 }
                 if ($accountId !== null) {
                     FinancialAccount::query()->where(['id' => $accountId, 'store_id' => $store->id])->firstOrFail();
@@ -58,7 +58,7 @@ class PostCapitalTransaction
                     $incoming = $type === 'inventory_contribution';
                     foreach ($items as $item) {
                         if (Decimal::compare($item['quantity'], '0', Decimal::QUANTITY_SCALE) <= 0) {
-                            throw ValidationException::withMessages(['items' => 'Kuantitas harus lebih besar dari nol.']);
+                            throw ValidationException::withMessages(['items' => __('The quantity must be greater than zero.')]);
                         }
                         Product::query()->where(['id' => $item['product_id'], 'store_id' => $store->id])->firstOrFail();
                         if (isset($item['product_variant_id'])) {

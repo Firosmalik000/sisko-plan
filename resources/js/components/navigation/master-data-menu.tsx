@@ -17,11 +17,11 @@ import { index as suppliersIndex } from '@/routes/master-data/suppliers';
 import { index as unitsIndex } from '@/routes/master-data/units';
 
 const supportingDataLinks = [
-    { label: 'Produk', href: productsIndex.url() },
-    { label: 'Kategori', href: categoriesIndex.url() },
-    { label: 'Satuan', href: unitsIndex.url() },
-    { label: 'Supplier', href: suppliersIndex.url() },
-    { label: 'Kas & rekening', href: financialAccountsIndex.url() },
+    { label: 'Product', href: productsIndex.url() },
+    { label: 'Category', href: categoriesIndex.url() },
+    { label: 'Unit', href: unitsIndex.url() },
+    { label: 'Suppliers', href: suppliersIndex.url() },
+    { label: 'Cash & bank account', href: financialAccountsIndex.url() },
 ];
 
 type MasterDataLink = (typeof supportingDataLinks)[number];
@@ -34,7 +34,7 @@ export function MasterDataMenu({ links: visibleLinks = supportingDataLinks }: { 
             <DropdownMenuTrigger asChild>
                 <Button type="button" variant="outline" className="h-11">
                     <Grid2X2 className="size-4" aria-hidden="true" />
-                    {translate('Data pendukung')}
+                    {translate('Supporting data')}
                     <ChevronDown className="size-3.5" aria-hidden="true" />
                 </Button>
             </DropdownMenuTrigger>

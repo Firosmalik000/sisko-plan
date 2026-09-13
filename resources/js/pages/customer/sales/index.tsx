@@ -52,21 +52,21 @@ type SalesFilters = {
 type Marketplace = { code: string; label: string };
 
 const periodOptions: Array<{ value: SalesFilters['period']; label: string }> = [
-    { value: 'today', label: 'Hari ini' },
-    { value: 'week', label: '7 hari terakhir' },
-    { value: 'month', label: 'Bulan ini' },
-    { value: 'all', label: 'Semua waktu' },
-    { value: 'custom', label: 'Pilih tanggal' },
+    { value: 'today', label: 'Today' },
+    { value: 'week', label: '7 day last' },
+    { value: 'month', label: 'This month' },
+    { value: 'all', label: 'All time' },
+    { value: 'custom', label: 'Choose dates' },
 ];
 
 function paymentLabel(method: Sale['payment_method']) {
     const labels: Record<Sale['payment_method'], string> = {
-        cash: 'Tunai',
+        cash: 'Cash',
         qris: 'QRIS',
-        qr_payment: 'Pembayaran QR',
-        bank_transfer: 'Transfer bank',
+        qr_payment: 'QR payment',
+        bank_transfer: 'Bank transfer',
         e_wallet: 'E-wallet',
-        marketplace: 'Marketplace',
+        marketplace: 'Marketplaces',
     };
 
     return translate(labels[method]);
@@ -128,18 +128,18 @@ export default function SalesIndex({
 
     return (
         <AppPage
-            title={translate(returnMode ? 'Pilih transaksi retur' : 'Riwayat transaksi')}
+            title={translate(returnMode ? 'Select a transaction to return' : 'Transaction history')}
             icon={ReceiptText}
             headerSurface
             description={
                 <>
-                    <strong>{sales.total}</strong> {translate('transaksi')}
+                    <strong>{sales.total}</strong> {translate('transactions')}
                 </>
             }
             actions={
                 <Button asChild size="touch">
                     <Link href={posIndex.url()}>
-                        <ShoppingCart className="size-4" aria-hidden="true" /> {translate('Buka kasir')}
+                        <ShoppingCart className="size-4" aria-hidden="true" /> {translate('Open checkout')}
                     </Link>
                 </Button>
             }
@@ -155,8 +155,8 @@ export default function SalesIndex({
                             />
                             <Input
                                 maxLength={120}
-                                placeholder={translate('Cari nota, pelanggan, email, atau pesanan')}
-                                aria-label={translate('Cari transaksi')}
+                                placeholder={translate('Search receipt, customer, email, or order')}
+                                aria-label={translate('Search transactions')}
                                 value={filter.data.search}
                                 onChange={(event) => filter.setData('search', event.target.value)}
                                 className="h-11 rounded-xl bg-background pl-9 text-base sm:text-sm"
@@ -169,7 +169,7 @@ export default function SalesIndex({
                                 value={filter.data.period}
                                 onChange={(event) => updatePeriod(event.target.value as SalesFilters['period'])}
                                 className={dataToolbarControlClass}
-                                aria-label={translate('Periode transaksi')}
+                                aria-label={translate('Transaction period')}
                             >
                                 {periodOptions.map((option) => (
                                     <option key={option.value} value={option.value}>
@@ -181,15 +181,15 @@ export default function SalesIndex({
                                 value={filter.data.payment_method}
                                 onChange={(event) => filter.setData('payment_method', event.target.value as SalesFilters['payment_method'])}
                                 className={dataToolbarControlClass}
-                                aria-label={translate('Metode bayar')}
+                                aria-label={translate('Payment method')}
                             >
-                                <option value="">{translate('Semua pembayaran')}</option>
-                                <option value="cash">{translate('Tunai')}</option>
+                                <option value="">{translate('All payment methods')}</option>
+                                <option value="cash">{translate('Cash')}</option>
                                 <option value="qris">QRIS</option>
-                                <option value="qr_payment">{translate('Pembayaran QR')}</option>
-                                <option value="bank_transfer">{translate('Transfer bank')}</option>
+                                <option value="qr_payment">{translate('QR payment')}</option>
+                                <option value="bank_transfer">{translate('Bank transfer')}</option>
                                 <option value="e_wallet">{translate('E-wallet')}</option>
-                                <option value="marketplace">Marketplace</option>
+                                <option value="marketplace">Marketplaces</option>
                             </select>
                             <select
                                 value={filter.data.sales_channel}
@@ -202,30 +202,30 @@ export default function SalesIndex({
                                     }));
                                 }}
                                 className={dataToolbarControlClass}
-                                aria-label={translate('Kanal penjualan')}
+                                aria-label={translate('Sales channel')}
                             >
-                                <option value="">{translate('Semua kanal')}</option>
-                                <option value="in_store">{translate('Di toko')}</option>
-                                <option value="marketplace">Marketplace</option>
+                                <option value="">{translate('All channels')}</option>
+                                <option value="in_store">{translate('In store')}</option>
+                                <option value="marketplace">Marketplaces</option>
                             </select>
                             <select
                                 value={filter.data.customer}
                                 onChange={(event) => filter.setData('customer', event.target.value as SalesFilters['customer'])}
                                 className={dataToolbarControlClass}
-                                aria-label={translate('Data pelanggan')}
+                                aria-label={translate('Customer details')}
                             >
-                                <option value="">{translate('Semua pelanggan')}</option>
-                                <option value="identified">{translate('Dengan data pelanggan')}</option>
-                                <option value="guest">{translate('Pembeli umum')}</option>
+                                <option value="">{translate('All customers')}</option>
+                                <option value="identified">{translate('With customer details')}</option>
+                                <option value="guest">{translate('Guest customer')}</option>
                             </select>
                             {filter.data.sales_channel === 'marketplace' && (
                                 <select
                                     value={filter.data.marketplace_code}
                                     onChange={(event) => filter.setData('marketplace_code', event.target.value)}
                                     className={dataToolbarControlClass}
-                                    aria-label="Marketplace"
+                                    aria-label="Marketplaces"
                                 >
-                                    <option value="">{translate('Semua marketplace')}</option>
+                                    <option value="">{translate('All marketplaces')}</option>
                                     {marketplaces.map((marketplace) => (
                                         <option key={marketplace.code} value={marketplace.code}>
                                             {translate(marketplace.label)}
@@ -236,7 +236,7 @@ export default function SalesIndex({
                             {filter.data.period === 'custom' && (
                                 <>
                                     <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                                        {translate('Dari tanggal')}
+                                        {translate('From date')}
                                         <input
                                             type="date"
                                             className={dataToolbarControlClass}
@@ -245,7 +245,7 @@ export default function SalesIndex({
                                         />
                                     </label>
                                     <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                                        {translate('Sampai tanggal')}
+                                        {translate('To date')}
                                         <input
                                             type="date"
                                             min={filter.data.start_date || undefined}
@@ -266,7 +266,7 @@ export default function SalesIndex({
                                 </Button>
                             )}
                             <Button type="submit" size="touch" variant="outline">
-                                {translate('Terapkan')}
+                                {translate('Apply')}
                             </Button>
                         </>
                     }
@@ -274,22 +274,22 @@ export default function SalesIndex({
 
                 {sales.data.length > 0 && (
                     <RecordListHeader className="grid-cols-[minmax(15rem,1.4fr)_10rem_12rem_10rem] gap-4">
-                        <span>{translate('Transaksi')}</span>
-                        <span className="text-right">{translate('Pendapatan neto')}</span>
-                        <span>{translate('HPP / laba kotor neto')}</span>
-                        <span className="sr-only">{translate('Aksi')}</span>
+                        <span>{translate('Transactions')}</span>
+                        <span className="text-right">{translate('Revenue net')}</span>
+                        <span>{translate('COGS / net gross profit')}</span>
+                        <span className="sr-only">{translate('Actions')}</span>
                     </RecordListHeader>
                 )}
 
                 {sales.data.length === 0 ? (
                     <EmptyState
                         icon={ReceiptText}
-                        title={translate('Transaksi tidak ditemukan')}
-                        description={translate('Coba ubah kata kunci atau filter yang digunakan.')}
+                        title={translate('No transactions found')}
+                        description={translate('Try change term keywords or filter that used.')}
                         action={
                             hasFilters ? (
                                 <Button type="button" size="touch" variant="outline" onClick={resetFilters}>
-                                    {translate('Reset filter')}
+                                    {translate('Reset filters')}
                                 </Button>
                             ) : undefined
                         }
@@ -312,7 +312,7 @@ export default function SalesIndex({
                                                 <CommerceBrandMark code={sale.marketplace_code} className="size-5 rounded-md" />
                                                 {translate(
                                                     marketplaces.find((item) => item.code === sale.marketplace_code)?.label ??
-                                                        'Marketplace',
+                                                        'Marketplaces',
                                                 )}
                                             </Badge>
                                         )}
@@ -323,7 +323,7 @@ export default function SalesIndex({
                                     <div className="mt-2 flex min-w-0 items-center gap-2 text-sm">
                                         <UserRound className="size-4 shrink-0 text-primary" aria-hidden="true" />
                                         <p className="min-w-0 truncate font-medium text-foreground">
-                                            {sale.customer_name ?? translate('Pembeli umum')}
+                                            {sale.customer_name ?? translate('Guest customer')}
                                             {sale.customer_phone && <span className="text-muted-foreground"> · {sale.customer_phone}</span>}
                                             {sale.customer_email && (
                                                 <span className="block truncate text-xs font-normal text-muted-foreground">
@@ -334,22 +334,22 @@ export default function SalesIndex({
                                     </div>
                                     {sale.external_order_number && (
                                         <p className="mt-1 truncate text-xs text-muted-foreground">
-                                            {translate('Pesanan')} · {sale.external_order_number}
+                                            {translate('Order')} · {sale.external_order_number}
                                         </p>
                                     )}
                                 </div>
                                 <div className="flex items-end justify-between gap-3 md:block md:text-right">
-                                    <p className="text-xs text-muted-foreground md:hidden">{translate('Pendapatan neto')}</p>
+                                    <p className="text-xs text-muted-foreground md:hidden">{translate('Revenue net')}</p>
                                     <div>
                                         <p className="font-semibold text-foreground tabular-nums">{money(sale.net_revenue)}</p>
                                         {Number(sale.refund_amount) > 0 && (
-                                            <p className="text-xs font-medium text-destructive">Refund {money(sale.refund_amount)}</p>
+                                            <p className="text-xs font-medium text-destructive">Refunds {money(sale.refund_amount)}</p>
                                         )}
                                     </div>
                                 </div>
                                 {canViewProfit ? (
                                     <div className="flex items-end justify-between gap-3 md:block">
-                                        <p className="text-xs text-muted-foreground md:hidden">{translate('HPP / laba kotor neto')}</p>
+                                        <p className="text-xs text-muted-foreground md:hidden">{translate('COGS / net gross profit')}</p>
                                         <p className="font-medium text-foreground tabular-nums">
                                             {money(sale.net_cogs ?? 0)} /{' '}
                                             <span className="text-primary">{money(sale.net_gross_profit ?? 0)}</span>
@@ -360,12 +360,12 @@ export default function SalesIndex({
                                 )}
                                 <div className={`grid gap-2 ${canReturn ? 'grid-cols-2' : 'grid-cols-1'} md:flex md:justify-end`}>
                                     <Button asChild size="touch" variant="outline">
-                                        <Link href={showSale.url(sale.public_id, { query: contextQuery })}>{translate('Invoice')}</Link>
+                                        <Link href={showSale.url(sale.public_id, { query: contextQuery })}>{translate('Invoices')}</Link>
                                     </Button>
                                     {canReturn && (
                                         <Button asChild size="touch">
                                             <Link href={createReturn.url(sale.public_id, { query: contextQuery })}>
-                                                {translate(returnMode ? 'Pilih' : 'Retur')}
+                                                {translate(returnMode ? 'Select' : 'Return')}
                                             </Link>
                                         </Button>
                                     )}

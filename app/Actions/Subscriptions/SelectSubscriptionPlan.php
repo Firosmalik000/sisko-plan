@@ -42,18 +42,18 @@ class SelectSubscriptionPlan
 
             if ($subscription === null) {
                 throw ValidationException::withMessages([
-                    'plan_id' => 'Subscription akun belum tersedia. Hubungi pengelola platform.',
+                    'plan_id' => __('The account subscription is not available yet. Contact the platform administrator.'),
                 ]);
             }
             $operational = $this->access->blockedReason($subscription) === null;
             if ($selectedPlan->is_trial && ($subscription->trial_used_at !== null || $subscription->trial_ends_at !== null)) {
                 throw ValidationException::withMessages([
-                    'plan_id' => 'Trial hanya dapat digunakan satu kali per akun.',
+                    'plan_id' => __('A trial can only be used once per account.'),
                 ]);
             }
             if ($selectedPlan->is_trial && $operational) {
                 throw ValidationException::withMessages([
-                    'plan_id' => 'Trial tidak dapat dijadwalkan saat subscription masih aktif.',
+                    'plan_id' => __('A trial cannot be scheduled while a subscription is active.'),
                 ]);
             }
 
@@ -69,7 +69,7 @@ class SelectSubscriptionPlan
                 : $this->periods->nextAvailableStart($subscription);
             if ($periodStart === null) {
                 throw ValidationException::withMessages([
-                    'plan_id' => 'Subscription tanpa batas periode tidak dapat diperpanjang.',
+                    'plan_id' => __('A subscription without a defined period cannot be extended.'),
                 ]);
             }
             $periodEnd = $selectedPlan->is_trial

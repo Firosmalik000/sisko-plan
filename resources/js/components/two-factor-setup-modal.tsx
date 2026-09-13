@@ -198,7 +198,7 @@ export default function TwoFactorSetupModal({
         if (twoFactorEnabled) {
             return {
                 title: 'Two-factor authentication enabled',
-                description: 'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
+                description: 'Two-factor authentication is now enabled.Scan the QR code or enter the setup key in your authenticator app.',
                 buttonText: 'Close',
             };
         }

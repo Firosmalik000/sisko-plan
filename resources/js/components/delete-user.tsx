@@ -13,23 +13,23 @@ export default function DeleteUser() {
 
     return (
         <div className="space-y-6">
-            <Heading variant="small" title="Hapus akun" description="Hapus akun dan seluruh data pribadi secara permanen" />
+            <Heading variant="small" title="Delete account" description="Permanently delete the account and all personal data" />
             <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
                 <div className="relative space-y-0.5 text-red-600 dark:text-red-100">
-                    <p className="font-medium">Tindakan permanen</p>
-                    <p className="text-sm">Akun yang sudah dihapus tidak dapat dipulihkan.</p>
+                    <p className="font-medium">Actions permanently</p>
+                    <p className="text-sm">Account that already deleted cannot recovered.</p>
                 </div>
 
                 <Dialog>
                     <DialogTrigger asChild>
                         <Button variant="destructive" data-test="delete-user-button">
-                            Hapus akun
+                            Delete account
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <DialogTitle>Yakin ingin menghapus akun?</DialogTitle>
+                        <DialogTitle>Are you sure you want to delete this account?</DialogTitle>
                         <DialogDescription>
-                            Seluruh data pribadi akan dihapus permanen. Masukkan password untuk mengonfirmasi penghapusan akun.
+                            All personal data will be permanently deleted. Enter your password to confirm account deletion.
                         </DialogDescription>
 
                         <Form
@@ -45,14 +45,14 @@ export default function DeleteUser() {
                                 <>
                                     <div className="grid gap-2">
                                         <Label htmlFor="password" className="sr-only">
-                                            Password saat ini
+                                            Current password
                                         </Label>
 
                                         <PasswordInput
                                             id="password"
                                             name="password"
                                             ref={passwordInput}
-                                            placeholder="Password saat ini"
+                                            placeholder="Current password"
                                             autoComplete="current-password"
                                         />
 
@@ -62,13 +62,13 @@ export default function DeleteUser() {
                                     <DialogFooter className="gap-2">
                                         <DialogClose asChild>
                                             <Button variant="secondary" onClick={() => resetAndClearErrors()}>
-                                                Batal
+                                                Cancel
                                             </Button>
                                         </DialogClose>
 
                                         <Button variant="destructive" disabled={processing} asChild>
                                             <button type="submit" data-test="confirm-delete-user-button">
-                                                Hapus akun
+                                                Delete account
                                             </button>
                                         </Button>
                                     </DialogFooter>

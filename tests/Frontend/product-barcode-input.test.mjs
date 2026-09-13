@@ -7,7 +7,7 @@ const fieldSource = readFileSync(new URL('../../resources/js/components/forms/fo
 
 test('product barcode supports manual entry alongside camera scanning', () => {
     assert.match(fieldSource, /label=\{label\}/);
-    assert.match(fieldSource, /placeholder=\{translate\('Ketik atau scan barcode'\)\}/);
+    assert.match(fieldSource, /placeholder=\{translate\('Type or scan barcode'\)\}/);
     assert.match(fieldSource, /onChange=\{\(event\) => onChange\(event\.target\.value\)\}/);
     assert.match(fieldSource, /onClick=\{onScan\}/);
     assert.match(source, /onChange=\{\(value\) => form\.setData\('barcode', value\)\}/);

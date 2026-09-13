@@ -6,15 +6,24 @@ type BarcodeScannerFeedback = {
     tone: 'active' | 'progress' | 'success' | 'warning';
 };
 
-const feedbackByStatus: Record<BarcodeScanStatus, BarcodeScannerFeedback> = {
-    scanning: { message: 'Mencari barcode…', tone: 'active' },
-    reading: { message: 'Barcode terbaca, mencari produk…', tone: 'progress' },
-    success: { message: 'Berhasil. Barcode ditemukan.', tone: 'success' },
-    not_found: { message: 'Kode terbaca, tetapi produk belum ada di katalog.', tone: 'warning' },
+const feedbackToneByStatus: Record<BarcodeScanStatus, BarcodeScannerFeedback['tone']> = {
+    scanning: 'active',
+    reading: 'progress',
+    success: 'success',
+    not_found: 'warning',
 };
 
 export function barcodeScannerFeedback(status: BarcodeScanStatus): BarcodeScannerFeedback {
-    return feedbackByStatus[status];
+    const message =
+        status === 'scanning'
+            ? 'Searching for a barcode…'
+            : status === 'reading'
+              ? 'Barcode detected. Searching for the product…'
+              : status === 'success'
+                ? 'Barcode found.'
+                : 'The code was read, but no matching product was found.';
+
+    return { message, tone: feedbackToneByStatus[status] };
 }
 
 export function barcodeStatusResetDelay(status: BarcodeScanStatus): number | null {
@@ -29,14 +38,22 @@ export function barcodeStatusResetDelay(status: BarcodeScanStatus): number | nul
     return null;
 }
 
-const autoFeedbackByStatus: Record<AutoCaptureStatus, BarcodeScannerFeedback> = {
-    idle: { message: 'Arahkan ke satu barang', tone: 'active' },
-    positioning: { message: 'Posisikan barang lalu tahan stabil', tone: 'active' },
-    stabilizing: { message: 'Tahan stabil…', tone: 'progress' },
-    captured: { message: 'Foto berhasil diambil', tone: 'success' },
-    processing: { message: 'Mengenali produk…', tone: 'progress' },
-};
-
 export function autoCaptureFeedback(status: AutoCaptureStatus): BarcodeScannerFeedback {
-    return autoFeedbackByStatus[status];
+    if (status === 'idle') {
+        return { message: 'Point to one item', tone: 'active' };
+    }
+
+    if (status === 'positioning') {
+        return { message: 'Position the item and hold steady', tone: 'active' };
+    }
+
+    if (status === 'stabilizing') {
+        return { message: 'Hold steady…', tone: 'progress' };
+    }
+
+    if (status === 'captured') {
+        return { message: 'Photo captured.', tone: 'success' };
+    }
+
+    return { message: 'Recognizing product…', tone: 'progress' };
 }

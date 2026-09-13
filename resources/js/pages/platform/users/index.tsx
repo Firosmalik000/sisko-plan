@@ -33,17 +33,17 @@ type Paginated<T> = {
 export default function AdminUsers({ users, filters }: { users: Paginated<UserItem>; filters: { search: string } }) {
     return (
         <>
-            <Head title="Kelola Pengguna" />
+            <Head title="Manage Users" />
             <div className="platform-enter flex flex-col justify-between gap-5 md:flex-row md:items-end">
                 <div>
                     <p className="platform-kicker">Identity management</p>
-                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">Pengguna platform</h1>
-                    <p className="mt-1 text-xs font-medium text-slate-500">{users.total} akun</p>
+                    <h1 className="mt-1 text-3xl font-black tracking-tight text-[#3b211b]">Users platform</h1>
+                    <p className="mt-1 text-xs font-medium text-slate-500">{users.total} account</p>
                 </div>
                 <Form action="/super-admin/users" method="get" className="flex w-full max-w-sm gap-2">
-                    <Input name="search" defaultValue={filters.search} placeholder="Cari nama atau email" className="bg-white/70" />
+                    <Input name="search" defaultValue={filters.search} placeholder="Search by name or email" className="bg-white/70" />
                     <Button variant="outline">
-                        <Search /> Cari
+                        <Search /> Search
                     </Button>
                 </Form>
             </div>
@@ -53,10 +53,10 @@ export default function AdminUsers({ users, filters }: { users: Paginated<UserIt
                         <thead className="platform-table-head">
                             <tr>
                                 <PlatformTableLeadHeader />
-                                <th className="px-5 py-4">Pengguna</th>
-                                <th className="px-5 py-4">Role</th>
-                                <th className="px-5 py-4">Toko</th>
-                                <th className="px-5 py-4">Terdaftar</th>
+                                <th className="px-5 py-4">Users</th>
+                                <th className="px-5 py-4">Roles</th>
+                                <th className="px-5 py-4">Store</th>
+                                <th className="px-5 py-4">Registered</th>
                                 <th className="px-5 py-4">Status</th>
                             </tr>
                         </thead>
@@ -73,8 +73,8 @@ export default function AdminUsers({ users, filters }: { users: Paginated<UserIt
                                             {user.platform_role === 'super_admin'
                                                 ? 'Super Admin'
                                                 : user.platform_role === 'admin'
-                                                  ? 'Admin Platform'
-                                                  : 'Pengguna Toko'}
+                                                  ? 'Platform Admin'
+                                                  : 'Users Store'}
                                         </Badge>
                                     </td>
                                     <td className="px-5 py-4">
@@ -86,7 +86,7 @@ export default function AdminUsers({ users, filters }: { users: Paginated<UserIt
                                     <td className="px-5 py-4 text-slate-600">{user.created_at}</td>
                                     <td className="px-5 py-4">
                                         <Badge variant={user.status === 'active' ? 'secondary' : 'destructive'}>
-                                            {user.status === 'active' ? 'Aktif' : 'Ditangguhkan'}
+                                            {user.status === 'active' ? 'Active' : 'Suspended'}
                                         </Badge>
                                     </td>
                                 </tr>
@@ -94,10 +94,10 @@ export default function AdminUsers({ users, filters }: { users: Paginated<UserIt
                         </tbody>
                     </table>
                 </div>
-                {users.data.length === 0 && <div className="py-14 text-center text-sm text-slate-500">Pengguna tidak ditemukan.</div>}
+                {users.data.length === 0 && <div className="py-14 text-center text-sm text-slate-500">User not found.</div>}
                 <div className="flex flex-col gap-3 border-t border-slate-900/8 px-5 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
                     <span>
-                        Halaman {users.current_page} dari {users.last_page}
+                        Page {users.current_page} of {users.last_page}
                     </span>
                     <Pagination links={users.links} />
                 </div>
@@ -112,7 +112,7 @@ function UserLeadCell({ user, index }: { user: UserItem; index: number }) {
 
     if (user.can_impersonate) {
         actions.push({
-            label: 'Masuk sebagai pengguna',
+            label: 'Incoming as users',
             icon: UserRoundCog,
             href: `/super-admin/users/${user.id}/impersonate`,
             method: 'post' as const,
@@ -121,7 +121,7 @@ function UserLeadCell({ user, index }: { user: UserItem; index: number }) {
 
     if (user.can_update_status) {
         actions.push({
-            label: user.status === 'active' ? 'Tangguhkan akun' : 'Aktifkan akun',
+            label: user.status === 'active' ? 'Suspend account' : 'Activate account',
             icon: Power,
             href: `/super-admin/users/${user.id}/status`,
             method: 'patch' as const,
@@ -134,7 +134,7 @@ function UserLeadCell({ user, index }: { user: UserItem; index: number }) {
 
     if (user.can_delete) {
         actions.push({
-            label: 'Hapus akun',
+            label: 'Delete account',
             icon: Trash2,
             destructive: true,
             onSelect: () => setOpen(true),
@@ -150,8 +150,10 @@ function UserLeadCell({ user, index }: { user: UserItem; index: number }) {
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogContent className="gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
                         <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 text-left">
-                            <DialogTitle>Hapus akun {user.name}?</DialogTitle>
-                            <DialogDescription className="mt-2">Akun tanpa histori transaksi akan dihapus permanen.</DialogDescription>
+                            <DialogTitle>Delete account {user.name}?</DialogTitle>
+                            <DialogDescription className="mt-2">
+                                Accounts with no transaction history will be permanently deleted.
+                            </DialogDescription>
                         </DialogHeader>
                         <Form action={`/super-admin/users/${user.id}`} method="delete" onSuccess={() => setOpen(false)}>
                             {({ processing, errors }) => (
@@ -166,10 +168,10 @@ function UserLeadCell({ user, index }: { user: UserItem; index: number }) {
                                     )}
                                     <DialogFooter className="px-5 py-4">
                                         <Button type="button" variant="outline" disabled={processing} onClick={() => setOpen(false)}>
-                                            Batal
+                                            Cancel
                                         </Button>
                                         <Button type="submit" variant="destructive" disabled={processing}>
-                                            {processing ? 'Menghapus...' : 'Hapus akun'}
+                                            {processing ? 'Deleting...' : 'Delete account'}
                                         </Button>
                                     </DialogFooter>
                                 </>

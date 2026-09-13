@@ -23,7 +23,7 @@ class GoogleAuthenticationController extends Controller
     public function redirect(): RedirectResponse
     {
         if (! $this->googleIsConfigured()) {
-            return to_route('login')->with('oauth_error', __('Login Google belum dikonfigurasi.'));
+            return to_route('login')->with('oauth_error', __('Google sign-in has not been configured.'));
         }
 
         return Socialite::driver('google')->redirect();
@@ -32,13 +32,13 @@ class GoogleAuthenticationController extends Controller
     public function callback(Request $request): RedirectResponse
     {
         if (! $this->googleIsConfigured()) {
-            return to_route('login')->with('oauth_error', __('Login Google belum dikonfigurasi.'));
+            return to_route('login')->with('oauth_error', __('Google sign-in has not been configured.'));
         }
 
         try {
             $googleUser = Socialite::driver('google')->user();
             if (! $googleUser instanceof SocialiteUser) {
-                throw new GoogleAuthenticationException(__('Respons akun Google tidak valid.'));
+                throw new GoogleAuthenticationException(__('The Google account response is invalid.'));
             }
             $user = $this->resolveUser($googleUser);
         } catch (GoogleAuthenticationException $exception) {
@@ -46,15 +46,15 @@ class GoogleAuthenticationController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return to_route('login')->with('oauth_error', __('Login Google tidak dapat diselesaikan. Silakan coba lagi.'));
+            return to_route('login')->with('oauth_error', __('Google sign-in could not be completed. Please try again.'));
         }
 
         if ($user->status !== UserStatus::Active) {
-            return to_route('login')->with('oauth_error', __('Akun Anda sedang dinonaktifkan.'));
+            return to_route('login')->with('oauth_error', __('Your account is currently deactivated.'));
         }
 
         if ($user->isPlatformAdmin()) {
-            return to_route('login')->with('oauth_error', __('Admin platform harus masuk menggunakan metode utama.'));
+            return to_route('login')->with('oauth_error', __('Platform administrators must sign in using the primary method.'));
         }
 
         if ($user->hasEnabledTwoFactorAuthentication()) {
@@ -81,7 +81,7 @@ class GoogleAuthenticationController extends Controller
         $verified = filter_var($raw['email_verified'] ?? $raw['verified_email'] ?? false, FILTER_VALIDATE_BOOL);
 
         if ($googleId === '' || $email === '' || ! $verified) {
-            throw new GoogleAuthenticationException(__('Google tidak memberikan email terverifikasi.'));
+            throw new GoogleAuthenticationException(__('Google did not provide a verified email address.'));
         }
 
         return DB::transaction(function () use ($googleUser, $googleId, $email): User {
@@ -102,15 +102,15 @@ class GoogleAuthenticationController extends Controller
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             if ($user->status !== UserStatus::Active) {
-                throw new GoogleAuthenticationException(__('Akun Anda sedang dinonaktifkan.'));
+                throw new GoogleAuthenticationException(__('Your account is currently deactivated.'));
             }
 
             if ($user->isPlatformAdmin()) {
-                throw new GoogleAuthenticationException(__('Admin platform harus masuk menggunakan metode utama.'));
+                throw new GoogleAuthenticationException(__('Platform administrators must sign in using the primary method.'));
             }
 
             if ($user->google_id !== null && $user->google_id !== $googleId) {
-                throw new GoogleAuthenticationException(__('Email ini sudah terhubung ke akun Google lain.'));
+                throw new GoogleAuthenticationException(__('This email address is already linked to another Google account.'));
             }
 
             $user->forceFill([

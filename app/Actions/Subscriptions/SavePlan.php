@@ -20,7 +20,7 @@ class SavePlan
             $locked = $plan === null ? null : Plan::query()->lockForUpdate()->findOrFail($plan->id);
             if ($locked !== null && $locked->kind !== $data['kind']
                 && ($locked->subscriptions()->exists() || $locked->subscriptionAddons()->exists())) {
-                throw ValidationException::withMessages(['kind' => __('Jenis penawaran tidak dapat diubah setelah digunakan.')]);
+                throw ValidationException::withMessages(['kind' => __('The offer type cannot be changed once used.')]);
             }
             if ($locked?->is_default) {
                 $data['kind'] = Plan::KIND_BASE;

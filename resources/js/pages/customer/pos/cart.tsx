@@ -18,7 +18,7 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
         return (
             <div className="grid place-items-center rounded-2xl border border-dashed border-input px-4 py-9 text-center">
                 <PackageOpen className="size-7 text-muted-foreground" aria-hidden="true" />
-                <p className="mt-2 text-sm text-muted-foreground">{translate('Pilih produk untuk mulai.')}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{translate('Select a product to start.')}</p>
             </div>
         );
     }
@@ -37,8 +37,8 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
                             </span>
                             <span>{formatMoney(item.selling_price)}</span>
                             <span className={`font-medium ${isCritical(item) ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                {isCritical(item) && `${translate('Kritis')} · `}
-                                {translate('Stok')} {formatQuantity(available(item))}
+                                {isCritical(item) && `${translate('Critical')} · `}
+                                {translate('Stock')} {formatQuantity(available(item))}
                             </span>
                         </div>
                     </div>
@@ -47,7 +47,7 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
                         <button
                             type="button"
                             onClick={() => onRemove(index)}
-                            aria-label={`${translate('Hapus')} ${item.catalog_product_name}`}
+                            aria-label={`${translate('Delete')} ${item.catalog_product_name}`}
                             className="grid size-10 place-items-center rounded-lg text-destructive transition hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive/40 focus-visible:outline-none"
                         >
                             <Trash2 className="size-4" aria-hidden="true" />
@@ -57,18 +57,18 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)]">
                     <div>
-                        <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">{translate('Jumlah')}</span>
+                        <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">{translate('Amount')}</span>
                         <div className="flex w-full items-center overflow-hidden rounded-xl border border-input bg-card sm:w-fit">
                             <button
                                 type="button"
-                                aria-label={`${translate('Kurangi')} ${item.catalog_product_name}`}
+                                aria-label={`${translate('Reduce')} ${item.catalog_product_name}`}
                                 className="grid size-11 shrink-0 place-items-center transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
                                 onClick={() => onUpdate(index, { quantity: String(Math.max(0.000001, Number(item.quantity) - 1)) })}
                             >
                                 <Minus className="size-4" aria-hidden="true" />
                             </button>
                             <input
-                                aria-label={`${translate('Jumlah')} ${item.catalog_product_name}`}
+                                aria-label={`${translate('Amount')} ${item.catalog_product_name}`}
                                 className="h-11 min-w-0 flex-1 border-x border-border bg-card px-1 text-center text-base outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:w-16 sm:flex-none sm:text-sm"
                                 type="number"
                                 min="0.000001"
@@ -79,7 +79,7 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
                             />
                             <button
                                 type="button"
-                                aria-label={`${translate('Tambah')} ${item.catalog_product_name}`}
+                                aria-label={`${translate('Add')} ${item.catalog_product_name}`}
                                 className="grid size-11 shrink-0 place-items-center transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
                                 onClick={() => onUpdate(index, { quantity: String(Math.min(available(item), Number(item.quantity) + 1)) })}
                             >
@@ -90,7 +90,7 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
                     <FormCurrencyInput
                         id={`item-discount-${index}`}
                         name={`items.${index}.discount_amount`}
-                        label={translate('Diskon item')}
+                        label={translate('Discount item')}
                         value={item.discount_amount}
                         onValueChange={(value) => onUpdate(index, { discount_amount: value })}
                         min="0"

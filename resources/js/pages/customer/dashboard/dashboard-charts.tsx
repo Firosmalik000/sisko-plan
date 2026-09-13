@@ -22,20 +22,20 @@ export function SalesChart({ data, periodLabel }: { data: SalesTrend[]; periodLa
 
     return (
         <PageSection
-            title={translate('Tren Penjualan')}
+            title={translate('Sales Trend')}
             description={periodLabel}
             actions={
                 <div className="text-right">
                     <p className="text-base font-semibold text-foreground sm:text-lg">{formatCompactMoney(total)}</p>
                     <p className="text-xs text-muted-foreground">
-                        {transactions} {translate('transaksi')}
+                        {transactions} {translate('transactions')}
                     </p>
                 </div>
             }
             contentClassName="px-4 pb-4 sm:px-6 sm:pb-6"
         >
             {data.length === 0 ? (
-                <EmptyState icon={BarChart3} title={translate('Belum ada transaksi pada periode ini')} />
+                <EmptyState icon={BarChart3} title={translate('No transactions in this period')} />
             ) : (
                 <>
                     <div className="h-48 w-full sm:h-56">
@@ -44,7 +44,7 @@ export function SalesChart({ data, periodLabel }: { data: SalesTrend[]; periodLa
                             preserveAspectRatio="none"
                             className="h-full w-full overflow-visible"
                             role="img"
-                            aria-label={`${translate('Tren Penjualan')} — ${periodLabel}`}
+                            aria-label={`${translate('Sales Trend')} — ${periodLabel}`}
                         >
                             {[top, (top + bottom) / 2, bottom].map((y) => (
                                 <line key={y} x1="0" x2={chartWidth} y1={y} y2={y} stroke="var(--border)" strokeDasharray="5 8" />
@@ -72,7 +72,7 @@ export function SalesChart({ data, periodLabel }: { data: SalesTrend[]; periodLa
                                         strokeWidth="3"
                                         vectorEffect="non-scaling-stroke"
                                     >
-                                        <title>{`${dateLabel(point.date)}: ${formatMoney(point.net_revenue)} (${point.transactions} ${translate('transaksi')})`}</title>
+                                        <title>{`${dateLabel(point.date)}: ${formatMoney(point.net_revenue)} (${point.transactions} ${translate('transactions')})`}</title>
                                     </circle>
                                 ))}
                         </svg>
@@ -92,9 +92,9 @@ export function CategoryBreakdown({ categories }: { categories: CategorySale[] }
     const total = categories.reduce((sum, item) => sum + Math.max(0, Number(item.net_revenue)), 0);
 
     return (
-        <PageSection title={translate('Komposisi Kategori')} contentClassName="p-4 sm:p-5">
+        <PageSection title={translate('Category breakdown')} contentClassName="p-4 sm:p-5">
             {categories.length === 0 ? (
-                <EmptyState icon={BarChart3} title={translate('Belum ada penjualan kategori')} />
+                <EmptyState icon={BarChart3} title={translate('No category sales yet')} />
             ) : (
                 <div className="space-y-4">
                     {categories.map((category) => {
@@ -106,7 +106,7 @@ export function CategoryBreakdown({ categories }: { categories: CategorySale[] }
                                     <div className="min-w-0">
                                         <p className="truncate text-sm font-medium">{category.category_name}</p>
                                         <p className="text-xs text-muted-foreground">
-                                            {formatQuantity(category.quantity_sold)} {translate('item')}
+                                            {formatQuantity(category.quantity_sold)} {translate('items')}
                                         </p>
                                     </div>
                                     <div className="shrink-0 text-right">

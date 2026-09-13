@@ -8,38 +8,38 @@ import {
 
 test('barcode scanner feedback gives every state explicit text and tone', () => {
     assert.deepEqual(barcodeScannerFeedback('scanning'), {
-        message: 'Mencari barcode…',
+        message: 'Searching for a barcode…',
         tone: 'active',
     });
     assert.deepEqual(barcodeScannerFeedback('reading'), {
-        message: 'Barcode terbaca, mencari produk…',
+        message: 'Barcode detected. Searching for the product…',
         tone: 'progress',
     });
     assert.deepEqual(barcodeScannerFeedback('success'), {
-        message: 'Berhasil. Barcode ditemukan.',
+        message: 'Barcode found.',
         tone: 'success',
     });
     assert.deepEqual(barcodeScannerFeedback('not_found'), {
-        message: 'Kode terbaca, tetapi produk belum ada di katalog.',
+        message: 'The code was read, but no matching product was found.',
         tone: 'warning',
     });
 });
 
 test('automatic photo feedback describes positioning, progress, capture, and processing', () => {
     assert.deepEqual(autoCaptureFeedback('positioning'), {
-        message: 'Posisikan barang lalu tahan stabil',
+        message: 'Position the item and hold steady',
         tone: 'active',
     });
     assert.deepEqual(autoCaptureFeedback('stabilizing'), {
-        message: 'Tahan stabil…',
+        message: 'Hold steady…',
         tone: 'progress',
     });
     assert.deepEqual(autoCaptureFeedback('captured'), {
-        message: 'Foto berhasil diambil',
+        message: 'Photo captured.',
         tone: 'success',
     });
     assert.deepEqual(autoCaptureFeedback('processing'), {
-        message: 'Mengenali produk…',
+        message: 'Recognizing product…',
         tone: 'progress',
     });
 });

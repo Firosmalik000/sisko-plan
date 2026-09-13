@@ -20,7 +20,7 @@ export function PlatformTableLeadHeader({ withActions = true }: { withActions?: 
     return (
         <th className="w-24 px-4 py-3.5">
             <span>No.</span>
-            {withActions && <span className="sr-only"> dan tindakan</span>}
+            {withActions && <span className="sr-only"> and actions</span>}
         </th>
     );
 }
@@ -48,7 +48,7 @@ export function PlatformTableLeadCell({
                             <button
                                 type="button"
                                 className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#0b292f] transition hover:border-[#0b292f]/25 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8a681e]"
-                                aria-label={`${translate('Buka tindakan untuk')} ${label}`}
+                                aria-label={`${translate('Open actions for')} ${label}`}
                             >
                                 <MoreHorizontal className="size-4" />
                             </button>

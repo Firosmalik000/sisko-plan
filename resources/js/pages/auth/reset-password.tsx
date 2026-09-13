@@ -19,7 +19,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 
     return (
         <>
-            <Head title={t('Atur ulang kata sandi')} />
+            <Head title={t('Reset password')} />
 
             <Form
                 {...update.form()}
@@ -43,27 +43,27 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password">{t('Kata sandi')}</Label>
+                            <Label htmlFor="password">{t('Password')}</Label>
                             <PasswordInput
                                 id="password"
                                 name="password"
                                 autoComplete="new-password"
                                 className="mt-1 block w-full"
                                 autoFocus
-                                placeholder={t('Kata sandi')}
+                                placeholder={t('Password')}
                                 passwordrules={passwordRules}
                             />
                             <InputError message={errors.password} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">{t('Konfirmasi kata sandi')}</Label>
+                            <Label htmlFor="password_confirmation">{t('Confirm password')}</Label>
                             <PasswordInput
                                 id="password_confirmation"
                                 name="password_confirmation"
                                 autoComplete="new-password"
                                 className="mt-1 block w-full"
-                                placeholder={t('Konfirmasi kata sandi')}
+                                placeholder={t('Confirm password')}
                                 passwordrules={passwordRules}
                             />
                             <InputError message={errors.password_confirmation} className="mt-2" />
@@ -71,7 +71,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 
                         <Button type="submit" className="mt-4 w-full" disabled={processing} data-test="reset-password-button">
                             {processing && <Spinner />}
-                            {t('Atur ulang kata sandi')}
+                            {t('Reset password')}
                         </Button>
                     </div>
                 )}

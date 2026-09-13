@@ -20,7 +20,7 @@ class EnsureUserIsActive
             $request->session()->regenerateToken();
 
             return to_route('login')->withErrors([
-                'email' => __('Akun Anda sedang dinonaktifkan.'),
+                'email' => __('Your account is currently deactivated.'),
             ]);
         }
 

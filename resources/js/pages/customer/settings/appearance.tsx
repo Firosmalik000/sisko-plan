@@ -9,13 +9,13 @@ export default function Appearance() {
 
     return (
         <>
-            <Head title={t('Tema tampilan')} />
+            <Head title={t('Theme display')} />
 
-            <h1 className="sr-only">{t('Tema tampilan')}</h1>
+            <h1 className="sr-only">{t('Theme display')}</h1>
 
             <PageSection
-                title={t('Tema tampilan')}
-                description={t('Pilih tampilan yang nyaman digunakan pada perangkat ini.')}
+                title={t('Theme display')}
+                description={t('Choose a comfortable appearance for this device.')}
                 contentClassName="p-4 sm:p-5"
             >
                 <AppearanceTabs />
@@ -27,7 +27,7 @@ export default function Appearance() {
 Appearance.layout = {
     breadcrumbs: [
         {
-            title: 'Tema tampilan',
+            title: 'Theme display',
             href: editAppearance(),
         },
     ],

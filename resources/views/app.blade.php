@@ -1,8 +1,19 @@
 <!DOCTYPE html>
-@php($market = $page['props']['market'] ?? 'id')
-@php($defaultCurrency = $market === 'ms' ? 'MYR' : ($market === 'vi' ? 'VND' : 'IDR'))
-@php($defaultCurrencySymbol = $market === 'ms' ? 'RM' : ($market === 'vi' ? '₫' : 'Rp'))
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light" style="color-scheme: light" data-market="{{ $market }}" data-currency="{{ $page['props']['activeStore']['currency_code'] ?? $defaultCurrency }}" data-currency-symbol="{{ $page['props']['activeStore']['currency_symbol'] ?? $defaultCurrencySymbol }}" data-currency-decimals="{{ $page['props']['activeStore']['currency_decimal_places'] ?? 0 }}" data-currency-position="{{ $page['props']['activeStore']['currency_symbol_position'] ?? 'before' }}" data-app-name="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
+@php($market = strtoupper($page['props']['market'] ?? 'ID'))
+@php($marketCurrency = [
+    'BN' => ['code' => 'BND', 'symbol' => 'B$', 'decimals' => 2, 'position' => 'before'],
+    'KH' => ['code' => 'KHR', 'symbol' => '៛', 'decimals' => 0, 'position' => 'after'],
+    'ID' => ['code' => 'IDR', 'symbol' => 'Rp', 'decimals' => 0, 'position' => 'before'],
+    'LA' => ['code' => 'LAK', 'symbol' => '₭', 'decimals' => 0, 'position' => 'after'],
+    'MY' => ['code' => 'MYR', 'symbol' => 'RM', 'decimals' => 2, 'position' => 'before'],
+    'MM' => ['code' => 'MMK', 'symbol' => 'K', 'decimals' => 0, 'position' => 'after'],
+    'PH' => ['code' => 'PHP', 'symbol' => '₱', 'decimals' => 2, 'position' => 'before'],
+    'SG' => ['code' => 'SGD', 'symbol' => 'S$', 'decimals' => 2, 'position' => 'before'],
+    'TH' => ['code' => 'THB', 'symbol' => '฿', 'decimals' => 2, 'position' => 'before'],
+    'TL' => ['code' => 'USD', 'symbol' => '$', 'decimals' => 2, 'position' => 'before'],
+    'VN' => ['code' => 'VND', 'symbol' => '₫', 'decimals' => 0, 'position' => 'after'],
+][$market] ?? ['code' => 'IDR', 'symbol' => 'Rp', 'decimals' => 0, 'position' => 'before'])
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light" style="color-scheme: light" data-market="{{ $market }}" data-currency="{{ $page['props']['activeStore']['currency_code'] ?? $marketCurrency['code'] }}" data-currency-symbol="{{ $page['props']['activeStore']['currency_symbol'] ?? $marketCurrency['symbol'] }}" data-currency-decimals="{{ $page['props']['activeStore']['currency_decimal_places'] ?? $marketCurrency['decimals'] }}" data-currency-position="{{ $page['props']['activeStore']['currency_symbol_position'] ?? $marketCurrency['position'] }}" data-app-name="{{ $page['props']['branding']['brand_name'] ?? config('app.name', 'Sisko Plan') }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -158,10 +169,10 @@
         <div id="app-boot" data-state="loading" aria-live="polite">
             <div class="app-boot__content">
                 <img class="app-boot__logo" src="/icons/icon-192.png" alt="" width="88" height="88">
-                <p class="app-boot__status">{{ __('Menyiapkan aplikasi…') }}</p>
+                <p class="app-boot__status">{{ __('Setting up the application…') }}</p>
                 <div class="app-boot__error" role="alert">
-                    <span>{{ __('Koneksi bermasalah') }}</span>
-                    <button id="app-boot-retry" class="app-boot__retry" type="button">{{ __('Coba lagi') }}</button>
+                    <span>{{ __('Connection problem') }}</span>
+                    <button id="app-boot-retry" class="app-boot__retry" type="button">{{ __('Try again') }}</button>
                 </div>
             </div>
         </div>

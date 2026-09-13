@@ -48,7 +48,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                     }
                 })
                 .catch((error: unknown) => {
-                    setScanError(error instanceof Error ? error.message : 'Kode belum terbaca. Coba lagi.');
+                    setScanError(error instanceof Error ? error.message : translate('The code could not be read. Try again.'));
                     setBarcodeStatus('not_found');
                     handledRef.current = false;
                 });
@@ -91,18 +91,18 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
 
         try {
             if (image.size > 20 * 1024 * 1024) {
-                throw new Error('Foto tidak dapat diproses. Pilih JPG, PNG, atau WebP di bawah 20 MB.');
+                throw new Error(translate('The photo could not be processed. Select a JPG, PNG, or WebP file under 20 MB.'));
             }
 
             const barcode = await decodeBarcodeImage(image);
 
             if (!barcode) {
-                throw new Error('Kode belum terbaca. Pastikan seluruh kode terlihat dan tidak buram.');
+                throw new Error(translate('The code could not be read. Make sure the entire code is visible and in focus.'));
             }
 
             handleDetected(barcode);
         } catch (error) {
-            setScanError(error instanceof Error ? error.message : 'Kode belum terbaca. Coba lagi.');
+            setScanError(error instanceof Error ? error.message : translate('The code could not be read. Try again.'));
             setBarcodeStatus('not_found');
         } finally {
             setProcessingPhoto(false);
@@ -126,7 +126,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                     muted
                     playsInline
                     className="absolute inset-0 size-full object-cover"
-                    aria-label={translate('Kamera pemindai barcode')}
+                    aria-label={translate('Camera scanner barcode')}
                 />
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,25,22,.86)_0%,rgba(5,25,22,.18)_32%,rgba(5,25,22,.18)_58%,rgba(5,25,22,.92)_100%)]" />
 
@@ -135,20 +135,22 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                         type="button"
                         onClick={() => changeOpen(false)}
                         className="grid size-12 place-items-center rounded-full bg-[#14201d]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                        aria-label={translate('Tutup scanner barcode')}
+                        aria-label={translate('Close barcode scanner')}
                     >
                         <X className="size-5" />
                     </button>
                     <div className="min-w-0 rounded-xl bg-[#14201d]/80 px-4 py-2 text-center backdrop-blur-sm">
                         <p className="truncate text-sm font-black">{translate(title)}</p>
-                        <p className="text-[11px] text-[var(--app-soft-strong)]">{translate('Barcode atau QR akan terbaca otomatis')}</p>
+                        <p className="text-[11px] text-[var(--app-soft-strong)]">
+                            {translate('Barcodes and QR codes are detected automatically')}
+                        </p>
                     </div>
                     <button
                         type="button"
                         onClick={() => void toggleTorch()}
                         disabled={!torchAvailable}
                         className="grid size-12 place-items-center rounded-full bg-[#14201d]/80 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
-                        aria-label={translate(torchOn ? 'Matikan lampu' : 'Nyalakan lampu')}
+                        aria-label={translate(torchOn ? 'Turn off the lights' : 'Turn on the lights')}
                     >
                         {torchOn ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
                     </button>
@@ -158,7 +160,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                     {cameraError ? (
                         <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center !text-[#14201d] shadow-[0_20px_60px_-24px_rgba(0,0,0,.8)]">
                             <Camera className="mx-auto size-8 text-[#c75d32]" />
-                            <p className="mt-3 font-black">{translate('Scanner belum tersedia')}</p>
+                            <p className="mt-3 font-black">{translate('Scanner unavailable')}</p>
                             <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{translate(cameraError)}</p>
                             <button
                                 type="button"
@@ -169,7 +171,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                                 }}
                                 className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] font-bold"
                             >
-                                <RefreshCw className="size-4" /> {translate('Coba lagi')}
+                                <RefreshCw className="size-4" /> {translate('Try again')}
                             </button>
                             {scanError && (
                                 <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
@@ -203,7 +205,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                                 </div>
                             </div>
                             <p className="mt-5 text-center text-sm font-bold text-[var(--app-soft-strong)]">
-                                {translate('Arahkan kode ke dalam bingkai')}
+                                {translate('Position the code inside the frame')}
                             </p>
                             {scanError && (
                                 <p
@@ -239,7 +241,7 @@ export default function BarcodeScannerDialog({ open, title, onOpenChange, onDete
                             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/40 bg-[var(--app-primary)]/90 px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-70"
                         >
                             {processingPhoto ? <LoaderCircle className="size-4 animate-spin" /> : <ImageUp className="size-4" />}
-                            {translate(processingPhoto ? 'Membaca foto…' : 'Pilih foto barcode')}
+                            {translate(processingPhoto ? 'Reading photo…' : 'Select photo barcode')}
                         </button>
                     </div>
                 </div>

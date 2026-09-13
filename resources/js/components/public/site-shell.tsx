@@ -12,7 +12,7 @@ export default function PublicSiteLayout({ children }: { children: React.ReactNo
     const { auth, name, branding } = page.props;
     const { t } = useTranslation();
     const portalHref = dashboard();
-    const portalLabel = t('Buka dashboard');
+    const portalLabel = t('Open dashboard');
     const menu = useRef<HTMLDetailsElement>(null);
     const [isScrolled, setIsScrolled] = useState(false);
     const closeMenu = () => menu.current?.removeAttribute('open');
@@ -36,10 +36,10 @@ export default function PublicSiteLayout({ children }: { children: React.ReactNo
                     <header className={`ledger-header${isScrolled ? 'is-scrolled' : ''}`}>
                         <div className="ledger-container ledger-nav">
                             <Brand name={name} logoUrl={branding.logo_url} />
-                            <nav className="ledger-desktop-nav" aria-label={t('Navigasi utama')}>
-                                <a href={sectionHref('fitur')}>{t('Fitur')}</a>
-                                <a href={sectionHref('cara-kerja')}>{t('Cara kerja')}</a>
-                                <a href={sectionHref('faq')}>{t('FAQ')}</a>
+                            <nav className="ledger-desktop-nav" aria-label={t('Main navigation')}>
+                                <a href={sectionHref('fitur')}>{t('Features')}</a>
+                                <a href={sectionHref('cara-kerja')}>{t('How it works')}</a>
+                                <a href={sectionHref('faq')}>{t('FAQs')}</a>
                             </nav>
                             <div className="ledger-nav-actions">
                                 <LanguageSwitcher />
@@ -50,10 +50,10 @@ export default function PublicSiteLayout({ children }: { children: React.ReactNo
                                 ) : (
                                     <>
                                         <Link className="ledger-login" href={login()}>
-                                            {t('Masuk')}
+                                            {t('Sign in')}
                                         </Link>
                                         <Link className="ledger-button ledger-button-dark" href={register()}>
-                                            {t('Buat akun')}
+                                            {t('Create account')}
                                         </Link>
                                     </>
                                 )}
@@ -62,26 +62,26 @@ export default function PublicSiteLayout({ children }: { children: React.ReactNo
                                 <summary>
                                     <Menu className="menu-open" />
                                     <X className="menu-close" />
-                                    <span className="menu-label-open sr-only">{t('Buka navigasi')}</span>
-                                    <span className="menu-label-close sr-only">{t('Tutup navigasi')}</span>
+                                    <span className="menu-label-open sr-only">{t('Open navigation')}</span>
+                                    <span className="menu-label-close sr-only">{t('Close navigation')}</span>
                                 </summary>
                                 <div>
                                     <LanguageSwitcher />
                                     <a href={sectionHref('fitur')} onClick={closeMenu}>
-                                        {t('Fitur')}
+                                        {t('Features')}
                                     </a>
                                     <a href={sectionHref('cara-kerja')} onClick={closeMenu}>
-                                        {t('Cara kerja')}
+                                        {t('How it works')}
                                     </a>
                                     <a href={sectionHref('faq')} onClick={closeMenu}>
-                                        {t('FAQ')}
+                                        {t('FAQs')}
                                     </a>
                                     <Link href={auth.user ? portalHref : login()} onClick={closeMenu}>
-                                        {auth.user ? portalLabel : t('Masuk')}
+                                        {auth.user ? portalLabel : t('Sign in')}
                                     </Link>
                                     {!auth.user && (
                                         <Link className="primary" href={register()} onClick={closeMenu}>
-                                            {t('Buat akun')}
+                                            {t('Create account')}
                                         </Link>
                                     )}
                                 </div>
@@ -95,11 +95,11 @@ export default function PublicSiteLayout({ children }: { children: React.ReactNo
                         <div className="ledger-container">
                             <div className="ledger-footer-brand">
                                 <Brand name={name} logoUrl={branding.logo_url} />
-                                <p>{t('Mulai gratis. Biar urusan toko lebih ringan.')}</p>
+                                <p>{t('Start for free. Make running your store feel lighter.')}</p>
                             </div>
-                            <nav aria-label="Navigasi footer" className="flex-wrap">
-                                <a href="/#fitur">{t('Fitur')}</a>
-                                <a href="/#faq">{t('FAQ')}</a>
+                            <nav aria-label="Footer navigation" className="flex-wrap">
+                                <a href="/#fitur">{t('Features')}</a>
+                                <a href="/#faq">{t('FAQs')}</a>
                                 {branding.social_links.map((social) => (
                                     <a key={`${social.platform}-${social.url}`} href={social.url} target="_blank" rel="noreferrer">
                                         {social.platform}

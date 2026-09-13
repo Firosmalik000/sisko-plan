@@ -78,40 +78,40 @@ final class PlatformPermission
     public static function groups(): array
     {
         return [
-            ['label' => 'Ringkasan', 'permissions' => [
-                ['name' => self::DASHBOARD_VIEW, 'label' => 'Lihat dashboard'],
+            ['label' => 'Overview', 'permissions' => [
+                ['name' => self::DASHBOARD_VIEW, 'label' => 'View dashboard'],
             ]],
-            ['label' => 'Pengguna', 'permissions' => [
-                ['name' => self::USERS_VIEW, 'label' => 'Lihat pengguna'],
-                ['name' => self::USERS_STATUS_UPDATE, 'label' => 'Ubah status pengguna'],
-                ['name' => self::USERS_IMPERSONATE, 'label' => 'Masuk sebagai pengguna'],
-                ['name' => self::USERS_DELETE, 'label' => 'Hapus pengguna'],
+            ['label' => 'Users', 'permissions' => [
+                ['name' => self::USERS_VIEW, 'label' => 'View users'],
+                ['name' => self::USERS_STATUS_UPDATE, 'label' => 'Change user status'],
+                ['name' => self::USERS_IMPERSONATE, 'label' => 'Sign in as user'],
+                ['name' => self::USERS_DELETE, 'label' => 'Delete users'],
             ]],
-            ['label' => 'Toko', 'permissions' => [
-                ['name' => self::STORES_VIEW, 'label' => 'Lihat toko'],
-                ['name' => self::STORES_STATUS_UPDATE, 'label' => 'Ubah status toko'],
+            ['label' => 'Stores', 'permissions' => [
+                ['name' => self::STORES_VIEW, 'label' => 'View stores'],
+                ['name' => self::STORES_STATUS_UPDATE, 'label' => 'Change store status'],
             ]],
-            ['label' => 'Subscription', 'permissions' => [
-                ['name' => self::SUBSCRIPTIONS_VIEW, 'label' => 'Lihat subscription'],
-                ['name' => self::PLANS_MANAGE, 'label' => 'Kelola paket'],
-                ['name' => self::SUBSCRIPTIONS_MANAGE, 'label' => 'Kelola subscription'],
-                ['name' => self::PAYMENTS_CREATE, 'label' => 'Catat pembayaran'],
-                ['name' => self::SUBSCRIPTIONS_ACTIVATE_ALL, 'label' => 'Aktifkan semua subscription'],
+            ['label' => 'Subscriptions', 'permissions' => [
+                ['name' => self::SUBSCRIPTIONS_VIEW, 'label' => 'View subscriptions'],
+                ['name' => self::PLANS_MANAGE, 'label' => 'Manage plans'],
+                ['name' => self::SUBSCRIPTIONS_MANAGE, 'label' => 'Manage subscriptions'],
+                ['name' => self::PAYMENTS_CREATE, 'label' => 'Record payments'],
+                ['name' => self::SUBSCRIPTIONS_ACTIVATE_ALL, 'label' => 'Activate all subscriptions'],
             ]],
-            ['label' => 'Pembayaran', 'permissions' => [
-                ['name' => self::PAYMENTS_VIEW, 'label' => 'Lihat riwayat pembayaran'],
+            ['label' => 'Payments', 'permissions' => [
+                ['name' => self::PAYMENTS_VIEW, 'label' => 'View payment history'],
             ]],
-            ['label' => 'Admin Platform', 'permissions' => [
-                ['name' => self::ADMINS_VIEW, 'label' => 'Lihat admin platform'],
-                ['name' => self::ADMINS_MANAGE, 'label' => 'Kelola admin dan akses'],
+            ['label' => 'Platform Admins', 'permissions' => [
+                ['name' => self::ADMINS_VIEW, 'label' => 'View platform admins'],
+                ['name' => self::ADMINS_MANAGE, 'label' => 'Manage admins and access'],
             ]],
             ['label' => 'Brand & SEO', 'permissions' => [
-                ['name' => self::BRANDING_VIEW, 'label' => 'Lihat pengaturan brand & SEO'],
-                ['name' => self::BRANDING_MANAGE, 'label' => 'Kelola brand & SEO'],
+                ['name' => self::BRANDING_VIEW, 'label' => 'View brand and SEO settings'],
+                ['name' => self::BRANDING_MANAGE, 'label' => 'Manage brand and SEO'],
             ]],
-            ['label' => 'Negara & Mata Uang', 'permissions' => [
-                ['name' => self::GEOGRAPHY_VIEW, 'label' => 'Lihat negara dan mata uang'],
-                ['name' => self::GEOGRAPHY_MANAGE, 'label' => 'Kelola negara dan mata uang'],
+            ['label' => 'Countries & Currencies', 'permissions' => [
+                ['name' => self::GEOGRAPHY_VIEW, 'label' => 'View countries and currencies'],
+                ['name' => self::GEOGRAPHY_MANAGE, 'label' => 'Manage countries and currencies'],
             ]],
         ];
     }

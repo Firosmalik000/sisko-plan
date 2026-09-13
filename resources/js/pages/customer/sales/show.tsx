@@ -181,22 +181,22 @@ export default function SaleShow({
         <>
             <style>{receiptPrintStyles(receipt.paper_size)}</style>
             <AppPage
-                title={translate(showReturnForm ? 'Retur penjualan' : 'Detail transaksi')}
+                title={translate(showReturnForm ? 'Return sales' : 'Details transactions')}
                 description={sale.document_number}
                 icon={showReturnForm ? RotateCcw : ReceiptText}
-                back={{ href: salesIndexUrl, label: translate('Daftar transaksi') }}
+                back={{ href: salesIndexUrl, label: translate('Transaction list') }}
                 size="wide"
                 className="print:bg-card print:p-0 [&>div>header]:print:hidden"
                 actions={
                     <>
                         {printPreferences.mode === 'android-direct' && (
                             <Button type="button" size="touch" variant="outline" onClick={() => window.print()}>
-                                {translate('Cetak sistem')}
+                                {translate('System print')}
                             </Button>
                         )}
                         <Button type="button" size="touch" onClick={printReceipt}>
                             <Printer className="size-4" />
-                            {translate(printPreferences.mode === 'android-direct' ? 'Cetak langsung' : 'Cetak struk')}
+                            {translate(printPreferences.mode === 'android-direct' ? 'Print directly' : 'Print receipt')}
                         </Button>
                     </>
                 }
@@ -213,18 +213,18 @@ export default function SaleShow({
                                 <h1 className="mt-2 font-sans text-3xl text-foreground">{sale.document_number}</h1>
                                 <p className="mt-2 text-sm text-muted-foreground">
                                     {ledgerDateTime(sale.occurred_at, timezone)}
-                                    {receipt.show_cashier && ` · Kasir ${sale.cashier_name}`}
+                                    {receipt.show_cashier && `· Checkout${sale.cashier_name}`}
                                 </p>
                                 {sale.sales_channel === 'marketplace' && (
                                     <p className="mt-1 text-xs font-bold text-primary">
-                                        {sale.marketplace_label ?? 'Marketplace'}
-                                        {sale.external_order_number && ` · ${translate('Pesanan')} ${sale.external_order_number}`}
+                                        {sale.marketplace_label ?? 'Marketplaces'}
+                                        {sale.external_order_number && ` · ${translate('Order')} ${sale.external_order_number}`}
                                     </p>
                                 )}
                                 {sale.customer_name && sale.customer_phone && (
                                     <div className="mt-1 text-xs font-semibold text-muted-foreground">
                                         <p>
-                                            Pelanggan {sale.customer_name} · {sale.customer_phone}
+                                            Customer {sale.customer_name} · {sale.customer_phone}
                                         </p>
                                         {sale.customer_email && <p>{sale.customer_email}</p>}
                                     </div>
@@ -237,7 +237,7 @@ export default function SaleShow({
                                             <p className="font-bold text-foreground">{item.product_name}</p>
                                             <p className="text-xs text-muted-foreground">
                                                 {quantity(item.quantity)} {item.unit_symbol} × {money(item.unit_price)}
-                                                {Number(item.returned_quantity) > 0 ? ` · diretur ${quantity(item.returned_quantity)}` : ''}
+                                                {Number(item.returned_quantity) > 0 ? `· returned${quantity(item.returned_quantity)}` : ''}
                                             </p>
                                         </div>
                                         <p className="font-semibold">{money(item.net_total)}</p>
@@ -250,11 +250,11 @@ export default function SaleShow({
                                     <span>{money(sale.subtotal)}</span>
                                 </div>
                                 <div className="flex justify-between text-muted-foreground">
-                                    <span>Diskon item</span>
+                                    <span>Discount item</span>
                                     <span>-{money(sale.item_discount_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-muted-foreground">
-                                    <span>Diskon transaksi</span>
+                                    <span>Transaction discount</span>
                                     <span>-{money(sale.transaction_discount_amount)}</span>
                                 </div>
                                 <div className="flex justify-between pt-2 text-xl font-bold text-[var(--app-ink)]">
@@ -262,22 +262,22 @@ export default function SaleShow({
                                     <span>{money(sale.total_amount)}</span>
                                 </div>
                                 <div className="flex justify-between text-muted-foreground">
-                                    <span>Dibayar via {payment.account_name}</span>
+                                    <span>Paid via {payment.account_name}</span>
                                     <span>{money(payment.tendered_amount)}</span>
                                 </div>
                                 <div className="flex justify-between font-bold text-primary">
-                                    <span>Kembalian</span>
+                                    <span>Change</span>
                                     <span>{money(payment.change_amount)}</span>
                                 </div>
                             </div>
                             {sale.notes && (
-                                <p className="mt-5 rounded-xl bg-muted p-3 text-xs text-muted-foreground">Catatan: {sale.notes}</p>
+                                <p className="mt-5 rounded-xl bg-muted p-3 text-xs text-muted-foreground">Notes: {sale.notes}</p>
                             )}
                             {payment.proof_url && (
                                 <Button asChild size="touch" variant="outline" className="mt-4 w-full print:hidden">
                                     <a href={payment.proof_url} target="_blank" rel="noreferrer">
                                         <FileCheck2 className="size-4" />
-                                        {translate('Lihat bukti pembayaran')}
+                                        {translate('View payment proof')}
                                     </a>
                                 </Button>
                             )}
@@ -286,18 +286,18 @@ export default function SaleShow({
                         {canViewProfit && (
                             <section className="grid gap-3 sm:grid-cols-2 print:hidden">
                                 <div className="rounded-2xl bg-[var(--app-primary)] p-5 text-[var(--app-primary-foreground)]">
-                                    <p className="text-xs text-[var(--app-primary-foreground)]/70">HPP penjualan</p>
+                                    <p className="text-xs text-[var(--app-primary-foreground)]/70">Cost of goods sold</p>
                                     <p className="mt-1 text-2xl font-bold">{money(cogs)}</p>
                                 </div>
                                 <div className="rounded-2xl bg-secondary p-5 text-secondary-foreground">
-                                    <p className="text-xs text-muted-foreground">Laba kotor</p>
+                                    <p className="text-xs text-muted-foreground">Gross profit</p>
                                     <p className="mt-1 text-2xl font-bold">{money(profit)}</p>
                                 </div>
                             </section>
                         )}
                         {returns.length > 0 && (
                             <section className="rounded-2xl border border-border bg-card p-6 print:hidden">
-                                <h2 className="font-sans text-2xl">Riwayat retur</h2>
+                                <h2 className="font-sans text-2xl">Return history</h2>
                                 <div className="mt-4 divide-y divide-border">
                                     {returns.map((entry) => (
                                         <div key={entry.public_id} className="flex justify-between gap-4 py-3">
@@ -324,10 +324,8 @@ export default function SaleShow({
                                     <RotateCcw className="size-5" />
                                 </span>
                                 <div>
-                                    <h2 className="font-sans text-2xl">Retur penjualan</h2>
-                                    <p className="text-xs leading-5 text-muted-foreground">
-                                        Refund dan pemulihan stok diposting bersamaan.
-                                    </p>
+                                    <h2 className="font-sans text-2xl">Return sales</h2>
+                                    <p className="text-xs leading-5 text-muted-foreground">Refund and recovery stock posted together.</p>
                                 </div>
                             </div>
                             {returnableItems.length > 0 ? (
@@ -338,7 +336,7 @@ export default function SaleShow({
                                                 <span className="flex justify-between gap-3">
                                                     <span>{item.product_name}</span>
                                                     <span className="text-xs text-muted-foreground">
-                                                        Maks. {quantity(item.returnable_quantity)} {item.unit_symbol}
+                                                        Max. {quantity(item.returnable_quantity)} {item.unit_symbol}
                                                     </span>
                                                 </span>
                                                 <input
@@ -379,11 +377,11 @@ export default function SaleShow({
                                             )
                                         }
                                     >
-                                        Pilih semua sisa untuk retur penuh
+                                        Select all remaining for return full
                                     </Button>
                                     <div className="mt-5 grid gap-3">
                                         <label className="text-sm font-semibold">
-                                            Akun refund
+                                            Account refund
                                             <select
                                                 className={`${fieldClass} mt-1`}
                                                 value={returnForm.data.account_id}
@@ -397,7 +395,7 @@ export default function SaleShow({
                                             </select>
                                         </label>
                                         <label className="text-sm font-semibold">
-                                            Waktu retur
+                                            Time return
                                             <input
                                                 className={`${fieldClass} mt-1`}
                                                 type="datetime-local"
@@ -407,19 +405,19 @@ export default function SaleShow({
                                         </label>
                                         <input
                                             className={fieldClass}
-                                            placeholder="Alasan / catatan retur"
+                                            placeholder="Reason / notes return"
                                             value={returnForm.data.notes}
                                             onChange={(event) => returnForm.setData('notes', event.target.value)}
                                             maxLength={500}
                                         />
                                     </div>
                                     <div className="mt-5 flex justify-between rounded-2xl bg-destructive/10 p-4 font-bold text-destructive">
-                                        <span>Estimasi refund</span>
+                                        <span>Estimated refund</span>
                                         <span>{money(estimatedRefund)}</span>
                                     </div>
                                     {Object.keys(returnForm.errors).length > 0 && (
                                         <p className="mt-3 text-sm text-destructive">
-                                            Retur gagal. Periksa quantity, akun refund, saldo, dan waktu transaksi.
+                                            Return failed. Check the quantity, refund account, balance, and transaction time.
                                         </p>
                                     )}
                                     <Button
@@ -433,12 +431,12 @@ export default function SaleShow({
                                         }
                                         className="mt-4 w-full"
                                     >
-                                        Posting retur
+                                        Post return
                                     </Button>
                                 </>
                             ) : (
                                 <p className="mt-6 rounded-2xl bg-muted p-5 text-sm text-muted-foreground">
-                                    Semua item pada penjualan ini sudah diretur.
+                                    Every item in this sale has already been returned.
                                 </p>
                             )}
                         </form>

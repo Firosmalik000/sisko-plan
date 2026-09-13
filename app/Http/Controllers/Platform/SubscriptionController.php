@@ -193,7 +193,7 @@ class SubscriptionController extends Controller
                 $existingAddon = isset($addon['public_id']) ? $existingAddons->get($addon['public_id']) : null;
                 if ($selectedPlan === null || (! $selectedPlan->is_active && $existingAddon?->plan_id !== $selectedPlan->id)) {
                     throw ValidationException::withMessages([
-                        "addons.{$index}.plan_id" => __('Pilih add-on yang masih aktif.'),
+                        "addons.{$index}.plan_id" => __('Select an active add-on.'),
                     ]);
                 }
 
@@ -285,7 +285,7 @@ class SubscriptionController extends Controller
             && collect(['max_stores', 'max_products', 'max_members', 'max_scans'])
                 ->every(fn (string $field): bool => (int) $validated[$field] === 0)) {
             throw ValidationException::withMessages([
-                'max_scans' => __('Add-on harus menambah sedikitnya satu kapasitas.'),
+                'max_scans' => __('An add-on must increase at least one capacity.'),
             ]);
         }
         if ($validated['kind'] === Plan::KIND_ADDON) {
@@ -302,7 +302,7 @@ class SubscriptionController extends Controller
                 if ((int) $validated[$primaryField] === 0
                     || collect($otherFields)->contains(fn (string $field): bool => (int) $validated[$field] > 0)) {
                     throw ValidationException::withMessages([
-                        'offer_category' => __('Kategori add-on harus sesuai dengan satu jenis kapasitas yang ditambahkan.'),
+                        'offer_category' => __('The add-on category must correspond to one type of capacity being added.'),
                     ]);
                 }
             }

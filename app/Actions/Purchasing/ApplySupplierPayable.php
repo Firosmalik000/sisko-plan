@@ -17,7 +17,7 @@ class ApplySupplierPayable
     public function handle(int $storeId, int $supplierId, string $direction, string $amount, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes): SupplierPayableTransaction
     {
         if (! in_array($direction, ['increase', 'decrease'], true) || Decimal::compare($amount, '0', Decimal::MONEY_SCALE) <= 0) {
-            throw ValidationException::withMessages(['amount' => 'Nilai utang harus lebih besar dari nol.']);
+            throw ValidationException::withMessages(['amount' => __('The debt amount must be greater than zero.')]);
         }
         DB::table('supplier_payable_balances')->insertOrIgnore([
             'store_id' => $storeId, 'supplier_id' => $supplierId, 'balance' => 0,
@@ -27,12 +27,12 @@ class ApplySupplierPayable
         $latest = SupplierPayableTransaction::query()->where(['store_id' => $storeId, 'supplier_id' => $supplierId])
             ->latest('occurred_at')->latest('id')->lockForUpdate()->first(['occurred_at']);
         if ($latest !== null && $occurredAt->lt(CarbonImmutable::parse((string) $latest->occurred_at))) {
-            throw ValidationException::withMessages(['occurred_at' => 'Waktu transaksi tidak boleh mendahului transaksi utang supplier terakhir.']);
+            throw ValidationException::withMessages(['occurred_at' => __("The transaction time cannot be earlier than the supplier's latest debt transaction.")]);
         }
         $signed = $direction === 'increase' ? $amount : Decimal::subtract('0', $amount, Decimal::MONEY_SCALE);
         $newBalance = Decimal::add($balance->balance, $signed, Decimal::MONEY_SCALE);
         if (Decimal::compare($newBalance, '0', Decimal::MONEY_SCALE) < 0) {
-            throw ValidationException::withMessages(['amount' => 'Pembayaran melebihi utang supplier.']);
+            throw ValidationException::withMessages(['amount' => __('The payment exceeds the supplier debt.')]);
         }
         $balance->update(['balance' => $newBalance]);
 

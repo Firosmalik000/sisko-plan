@@ -109,31 +109,31 @@ export default function ExpensesPage({
     return (
         <>
             <AppPage
-                title={translate('Biaya toko')}
+                title={translate('Expense store')}
                 icon={ReceiptText}
                 headerSurface
-                description={translate('Catat pengeluaran dan pantau penggunaan saldo toko.')}
+                description={translate('Record expenses and monitor the store balance.')}
                 actions={
                     <>
                         <Button size="touch" variant="outline" onClick={() => setCategoryOpen(true)}>
-                            <Tags className="size-4" aria-hidden="true" /> {translate('Kategori')}
+                            <Tags className="size-4" aria-hidden="true" /> {translate('Category')}
                         </Button>
                         <Button size="touch" disabled={!canPost} onClick={() => setExpenseOpen(true)}>
-                            <Plus className="size-4" aria-hidden="true" /> {translate('Catat biaya')}
+                            <Plus className="size-4" aria-hidden="true" /> {translate('Record expense')}
                         </Button>
                     </>
                 }
             >
                 <section className="grid grid-cols-2 overflow-hidden rounded-2xl bg-secondary text-secondary-foreground lg:grid-cols-4">
-                    <SummaryItem icon={CircleDollarSign} label="Total terfilter" value={money(summary.total)} />
-                    <SummaryItem icon={ReceiptText} label="Transaksi" value={summary.count.toLocaleString(localeTag())} />
+                    <SummaryItem icon={CircleDollarSign} label="Filtered total" value={money(summary.total)} />
+                    <SummaryItem icon={ReceiptText} label="Transactions" value={summary.count.toLocaleString(localeTag())} />
                     <SummaryItem
                         icon={Tags}
-                        label="Kategori terbesar"
+                        label="Category largest"
                         value={summary.largest_category?.name ?? '-'}
                         meta={summary.largest_category ? money(summary.largest_category.total) : undefined}
                     />
-                    <SummaryItem icon={WalletCards} label="Saldo akun aktif" value={money(summary.account_balance)} />
+                    <SummaryItem icon={WalletCards} label="Balance account active" value={money(summary.account_balance)} />
                 </section>
 
                 <RecordList className="-mx-3 rounded-none border-y border-border min-[375px]:-mx-4 sm:mx-0 sm:rounded-2xl sm:border-0">
@@ -146,8 +146,8 @@ export default function ExpensesPage({
                                     aria-hidden="true"
                                 />
                                 <Input
-                                    placeholder={translate('Cari dokumen atau catatan')}
-                                    aria-label={translate('Cari biaya')}
+                                    placeholder={translate('Search document or notes')}
+                                    aria-label={translate('Search expense')}
                                     value={filter.data.search}
                                     onChange={(event) => filter.setData('search', event.target.value)}
                                     className="h-11 rounded-xl bg-background pl-9 text-base sm:text-sm"
@@ -160,9 +160,9 @@ export default function ExpensesPage({
                                     className={dataToolbarControlClass}
                                     value={filter.data.category}
                                     onChange={(event) => filter.setData('category', event.target.value)}
-                                    aria-label={translate('Kategori')}
+                                    aria-label={translate('Category')}
                                 >
-                                    <option value="">{translate('Semua kategori')}</option>
+                                    <option value="">{translate('All category')}</option>
                                     {categories.map((item) => (
                                         <option key={item.public_id} value={item.public_id}>
                                             {item.name}
@@ -170,7 +170,7 @@ export default function ExpensesPage({
                                     ))}
                                 </select>
                                 <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                                    {translate('Dari')}
+                                    {translate('From')}
                                     <input
                                         className={dataToolbarControlClass}
                                         type="date"
@@ -179,7 +179,7 @@ export default function ExpensesPage({
                                     />
                                 </label>
                                 <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                                    {translate('Sampai')}
+                                    {translate('To')}
                                     <input
                                         className={dataToolbarControlClass}
                                         type="date"
@@ -198,7 +198,7 @@ export default function ExpensesPage({
                                     </Button>
                                 )}
                                 <Button type="submit" size="touch" variant="outline">
-                                    {translate('Terapkan')}
+                                    {translate('Apply')}
                                 </Button>
                             </>
                         }
@@ -206,22 +206,22 @@ export default function ExpensesPage({
 
                     {expenses.data.length > 0 && (
                         <RecordListHeader className="grid-cols-[minmax(14rem,1fr)_11rem_11rem_9rem] gap-4">
-                            <span>{translate('Dokumen')}</span>
-                            <span>{translate('Akun')}</span>
-                            <span>{translate('Waktu')}</span>
-                            <span className="text-right">{translate('Nominal')}</span>
+                            <span>{translate('Document')}</span>
+                            <span>{translate('Account')}</span>
+                            <span>{translate('Time')}</span>
+                            <span className="text-right">{translate('Amount')}</span>
                         </RecordListHeader>
                     )}
 
                     {expenses.data.length === 0 ? (
                         <EmptyState
                             icon={ReceiptText}
-                            title={translate('Belum ada biaya pada filter ini')}
-                            description={hasFilters ? translate('Coba ubah kata kunci atau filter yang digunakan.') : undefined}
+                            title={translate('No expenses match this filter')}
+                            description={hasFilters ? translate('Try change term keywords or filter that used.') : undefined}
                             action={
                                 hasFilters ? (
                                     <Button type="button" size="touch" variant="outline" onClick={resetFilters}>
-                                        {translate('Reset filter')}
+                                        {translate('Reset filters')}
                                     </Button>
                                 ) : undefined
                             }
@@ -239,15 +239,15 @@ export default function ExpensesPage({
                                         {item.notes && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.notes}</p>}
                                     </div>
                                     <div className="flex justify-between gap-3 text-sm md:block">
-                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Akun')}</span>
+                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Account')}</span>
                                         <span className="text-foreground">{item.account_name}</span>
                                     </div>
                                     <div className="flex justify-between gap-3 text-sm md:block">
-                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Waktu')}</span>
+                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Time')}</span>
                                         <span className="text-muted-foreground">{ledgerDateTime(item.occurred_at, timezone)}</span>
                                     </div>
                                     <div className="flex items-center justify-between gap-3 md:block md:text-right">
-                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Nominal')}</span>
+                                        <span className="text-xs text-muted-foreground md:hidden">{translate('Amount')}</span>
                                         <span className="font-semibold text-destructive tabular-nums">-{money(item.amount)}</span>
                                     </div>
                                 </RecordListRow>
@@ -266,15 +266,15 @@ export default function ExpensesPage({
             <ResponsiveDialog
                 open={expenseOpen}
                 onOpenChange={setExpenseOpen}
-                title={translate('Catat biaya')}
+                title={translate('Record expense')}
                 size="md"
                 footer={
                     <>
                         <Button type="button" size="touch" variant="outline" onClick={() => setExpenseOpen(false)}>
-                            {translate('Batal')}
+                            {translate('Cancel')}
                         </Button>
                         <Button type="submit" form="expense-form" disabled={expense.processing || remainingBalance < 0} size="touch">
-                            {translate(expense.processing ? 'Menyimpan...' : 'Simpan biaya')}
+                            {translate(expense.processing ? 'Saving...' : 'Save expense')}
                         </Button>
                     </>
                 }
@@ -283,7 +283,7 @@ export default function ExpensesPage({
                     <FormCurrencyInput
                         id="expense-amount"
                         name="amount"
-                        label={translate('Nominal')}
+                        label={translate('Amount')}
                         value={expense.data.amount}
                         onValueChange={(value) => expense.setData('amount', value)}
                         min="0.0001"
@@ -294,7 +294,7 @@ export default function ExpensesPage({
                     <FormSelect
                         id="expense-category"
                         name="category_id"
-                        label={translate('Kategori')}
+                        label={translate('Category')}
                         required
                         value={expense.data.category_id}
                         onChange={(event) => expense.setData('category_id', event.target.value)}
@@ -309,7 +309,7 @@ export default function ExpensesPage({
                     <FormSelect
                         id="expense-account"
                         name="account_id"
-                        label={translate('Bayar dari akun')}
+                        label={translate('Pay from account')}
                         required
                         value={expense.data.account_id}
                         onChange={(event) => expense.setData('account_id', event.target.value)}
@@ -325,7 +325,7 @@ export default function ExpensesPage({
                         id="expense-occurred-at"
                         name="occurred_at"
                         type="datetime-local"
-                        label={translate('Waktu')}
+                        label={translate('Time')}
                         required
                         value={expense.data.occurred_at}
                         onChange={(event) => expense.setData('occurred_at', event.target.value)}
@@ -334,19 +334,19 @@ export default function ExpensesPage({
                     <FormTextarea
                         id="expense-notes"
                         name="notes"
-                        label={translate('Catatan')}
-                        description={translate('Opsional')}
+                        label={translate('Notes')}
+                        description={translate('Optional')}
                         maxLength={500}
-                        placeholder={translate('Contoh: tagihan listrik Agustus')}
+                        placeholder={translate('Sample: bill electricity August')}
                         value={expense.data.notes}
                         onChange={(event) => expense.setData('notes', event.target.value)}
                         error={expense.errors.notes}
                         className="min-h-20"
                     />
                     <div className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-xl bg-secondary sm:col-span-2">
-                        <Calculation label="Saldo awal" value={money(selectedAccount?.balance ?? 0)} />
-                        <Calculation label="Biaya" value={`-${money(amount)}`} />
-                        <Calculation label="Saldo akhir" value={money(remainingBalance)} danger={remainingBalance < 0} />
+                        <Calculation label="Balance opening" value={money(selectedAccount?.balance ?? 0)} />
+                        <Calculation label="Expenses" value={`-${money(amount)}`} />
+                        <Calculation label="Balance ending" value={money(remainingBalance)} danger={remainingBalance < 0} />
                     </div>
                     <div className="sm:col-span-2">
                         <AlertError errors={Object.values(expense.errors)} />
@@ -354,23 +354,23 @@ export default function ExpensesPage({
                 </form>
             </ResponsiveDialog>
 
-            <ResponsiveDialog open={categoryOpen} onOpenChange={setCategoryOpen} title={translate('Kategori biaya')} size="sm">
+            <ResponsiveDialog open={categoryOpen} onOpenChange={setCategoryOpen} title={translate('Category expense')} size="sm">
                 <form onSubmit={submitCategory} className="flex items-end gap-2 border-b border-border pb-5">
                     <div className="min-w-0 flex-1">
                         <FormInput
                             id="expense-category-name"
                             name="name"
-                            label={translate('Nama kategori')}
+                            label={translate('Category name')}
                             required
                             maxLength={120}
-                            placeholder={translate('Contoh: Listrik')}
+                            placeholder={translate('Sample: Electricity')}
                             value={category.data.name}
                             onChange={(event) => category.setData('name', event.target.value)}
                             error={category.errors.name}
                         />
                     </div>
                     <Button size="touch" disabled={category.processing} className="shrink-0">
-                        <Plus className="size-4" aria-hidden="true" /> {translate('Tambah')}
+                        <Plus className="size-4" aria-hidden="true" /> {translate('Add')}
                     </Button>
                 </form>
                 <div className="divide-y divide-border">
@@ -390,12 +390,12 @@ export default function ExpensesPage({
                                     )
                                 }
                             >
-                                {translate(item.is_active ? 'Aktif' : 'Nonaktif')}
+                                {translate(item.is_active ? 'Active' : 'Inactive')}
                             </Button>
                         </div>
                     ))}
                     {categories.length === 0 && (
-                        <p className="py-10 text-center text-sm text-muted-foreground">{translate('Belum ada kategori')}</p>
+                        <p className="py-10 text-center text-sm text-muted-foreground">{translate('No categories yet')}</p>
                     )}
                 </div>
             </ResponsiveDialog>

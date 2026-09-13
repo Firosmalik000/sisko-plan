@@ -98,7 +98,7 @@ function SkuField({
                     id={id}
                     name={name}
                     value={value}
-                    placeholder={translate('Contoh: KOPI-250')}
+                    placeholder={translate('Example: COFFEE-250')}
                     onChange={(event) => onChange(event.target.value)}
                     aria-invalid={Boolean(error)}
                     className="h-full rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0"
@@ -108,12 +108,12 @@ function SkuField({
                     variant="ghost"
                     disabled={!productName.trim()}
                     onClick={() => onChange(generateProductSku(productName))}
-                    aria-label={translate('Buat SKU otomatis')}
-                    title={translate('Buat SKU otomatis')}
+                    aria-label={translate('Create SKU otomatis')}
+                    title={translate('Create SKU otomatis')}
                     className="h-full shrink-0 rounded-none border-l px-3"
                 >
                     <RefreshCw className="size-4" />
-                    <span>{translate('Buat otomatis')}</span>
+                    <span>{translate('Generate')}</span>
                 </Button>
             </div>
         </FormField>
@@ -154,13 +154,13 @@ function ProductPhotoInput({
                 <img
                     ref={attachPhoto}
                     src={photoUrl ?? undefined}
-                    alt={translate(`Foto ${variantName || 'varian'}`)}
+                    alt={translate(':name photo', { name: variantName || translate('variant') })}
                     className="size-12 rounded-lg object-cover"
                 />
             ) : (
                 <ProductPhoto
                     src={photoUrl}
-                    alt={translate(`Foto ${variantName || 'varian'}`)}
+                    alt={translate(':name photo', { name: variantName || translate('variant') })}
                     className="size-12 rounded-lg object-cover"
                     fallbackClassName="grid size-12 place-items-center rounded-lg bg-secondary text-primary"
                 />
@@ -173,15 +173,15 @@ function ProductPhotoInput({
                     className="min-h-11 min-w-0 flex-1 gap-1 px-2 text-xs text-primary"
                 >
                     <Camera className="size-4" />
-                    {translate('Ambil foto')}
+                    {translate('Take photo')}
                 </Button>
                 {hasPhoto && (
                     <button
                         type="button"
                         onClick={onRemove}
 
-                        aria-label={translate('Hapus foto')}
-                        title={translate('Hapus foto')}
+                        aria-label={translate('Delete photo')}
+                        title={translate('Delete photo')}
                         className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:outline-none"
                     >
                         <Trash2 className="size-4" />
@@ -300,9 +300,9 @@ export default function ProductsIndex({
                 const url = event.detail.visit.url;
 
                 void confirm({
-                    title: 'Tinggalkan halaman?',
-                    description: 'Perubahan produk yang belum disimpan akan hilang.',
-                    confirmLabel: 'Tinggalkan',
+                    title: 'Leave this page?',
+                    description: 'Unsaved product changes will be lost.',
+                    confirmLabel: 'Leave',
                     variant: 'destructive',
                 }).then((confirmed) => {
                     if (confirmed) {
@@ -318,9 +318,9 @@ export default function ProductsIndex({
 
     const requestDelete = async (product: Product) => {
         const confirmed = await confirm({
-            title: `${translate('Hapus produk')} ${product.name}?`,
-            description: 'Produk yang sudah dipakai dalam transaksi atau stok tidak bisa dihapus.',
-            confirmLabel: 'Hapus produk',
+            title: `${translate('Delete product')} ${product.name}?`,
+            description: 'Products used in transactions or inventory cannot be deleted.',
+            confirmLabel: 'Delete product',
             variant: 'destructive',
         });
 
@@ -332,7 +332,7 @@ export default function ProductsIndex({
             preserveScroll: true,
             onError: (errors) => {
                 setDeleting(product);
-                setDeleteError(errors.product ?? translate('Produk belum dapat dihapus. Silakan coba lagi.'));
+                setDeleteError(errors.product ?? translate('The product could not be deleted. Try again.'));
             },
         });
     };
@@ -350,7 +350,7 @@ export default function ProductsIndex({
                 preserveScroll: true,
                 onSuccess: () => setDeleting(null),
                 onError: (errors) => {
-                    setDeleteError(errors.product ?? translate('Produk belum dapat dinonaktifkan. Silakan coba lagi.'));
+                    setDeleteError(errors.product ?? translate('The product could not be deactivated. Try again.'));
                 },
                 onFinish: () => setDeleteProcessing(false),
             },
@@ -725,7 +725,7 @@ export default function ProductsIndex({
         );
 
         if (form.data.variant_mode !== 'none' && duplicateVariant) {
-            throw new Error(translate('Kode ini digunakan lebih dari sekali pada produk yang sama.'));
+            throw new Error(translate('This code is used more than once on the same product.'));
         }
 
         const response = await apiClient.post<{
@@ -739,7 +739,7 @@ export default function ProductsIndex({
         });
 
         if (!response.ok) {
-            throw new Error(response.body.message || translate('Barcode belum dapat diperiksa. Coba lagi.'));
+            throw new Error(response.body.message || translate('The barcode could not be checked. Try again.'));
         }
 
         const match = response.body.data?.find((item) => item.status === 'found')?.match;
@@ -827,27 +827,27 @@ export default function ProductsIndex({
     return (
         <>
             <AppPage
-                title={translate('Produk')}
+                title={translate('Product')}
                 icon={Barcode}
                 headerSurface
                 description={
                     <>
-                        <strong>{products.total}</strong> {translate('produk')}
+                        <strong>{products.total}</strong> {translate('products')}
                     </>
                 }
                 actions={
                     canManage && !productLimitReached ? (
                         <>
                             <Button onClick={() => openManualCreate()} variant="outline" className="min-h-11 font-semibold">
-                                <Plus className="size-4" aria-hidden="true" /> {translate('Isi manual')}
+                                <Plus className="size-4" aria-hidden="true" /> {translate('Manual entry')}
                             </Button>
                             <Button onClick={openCreate} className="min-h-11 font-semibold">
-                                <Camera className="size-4" aria-hidden="true" /> {translate('Scan produk')}
+                                <Camera className="size-4" aria-hidden="true" /> {translate('Scan product')}
                             </Button>
                         </>
                     ) : canManage && productLimitReached ? (
                         <Button type="button" variant="outline" className="min-h-11" onClick={() => setProductLimitOpen(true)}>
-                            <PackagePlus className="size-4" aria-hidden="true" /> {translate('Tambah kapasitas produk')}
+                            <PackagePlus className="size-4" aria-hidden="true" /> {translate('Increase product capacity')}
                         </Button>
                     ) : undefined
                 }
@@ -867,8 +867,8 @@ export default function ProductsIndex({
                                 <Input
                                     value={search}
                                     onChange={(event) => setSearch(event.target.value)}
-                                    placeholder={translate('Cari produk')}
-                                    aria-label={translate('Cari produk')}
+                                    placeholder={translate('Search product')}
+                                    aria-label={translate('Search product')}
                                     className="h-11 bg-background pl-9"
                                 />
                             </div>
@@ -879,9 +879,9 @@ export default function ProductsIndex({
                                     value={category}
                                     onChange={(event) => setCategory(event.target.value)}
                                     className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-40 sm:flex-none"
-                                    aria-label={translate('Filter kategori')}
+                                    aria-label={translate('Filter category')}
                                 >
-                                    <option value="">{translate('Semua kategori')}</option>
+                                    <option value="">{translate('All category')}</option>
                                     {categories.map((item) => (
                                         <option key={item.public_id} value={item.public_id}>
                                             {item.name}
@@ -892,11 +892,11 @@ export default function ProductsIndex({
                                     value={status}
                                     onChange={(event) => setStatus(event.target.value)}
                                     className="h-11 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-36 sm:flex-none"
-                                    aria-label={translate('Filter status')}
+                                    aria-label={translate('Status filters')}
                                 >
-                                    <option value="">{translate('Semua status')}</option>
-                                    <option value="active">{translate('Aktif')}</option>
-                                    <option value="inactive">{translate('Nonaktif')}</option>
+                                    <option value="">{translate('All status')}</option>
+                                    <option value="active">{translate('Active')}</option>
+                                    <option value="inactive">{translate('Inactive')}</option>
                                 </select>
                             </>
                         }
@@ -909,7 +909,7 @@ export default function ProductsIndex({
                                     </Button>
                                 )}
                                 <Button type="submit" variant="outline" className="h-11">
-                                    {translate('Terapkan')}
+                                    {translate('Apply')}
                                 </Button>
                             </>
                         }
@@ -917,40 +917,40 @@ export default function ProductsIndex({
 
                     {products.data.length > 0 && (
                         <RecordListHeader className="grid-cols-[minmax(15rem,1fr)_9rem_7rem_9rem_5rem] gap-4">
-                            <span>{translate('Produk')}</span>
-                            <span className="text-right">{translate('Harga jual')}</span>
-                            <span className="text-right">{translate('Stok')}</span>
-                            <span>{translate('Kategori')}</span>
-                            <span className="sr-only">{translate('Aksi')}</span>
+                            <span>{translate('Product')}</span>
+                            <span className="text-right">{translate('Selling price')}</span>
+                            <span className="text-right">{translate('Stock')}</span>
+                            <span>{translate('Category')}</span>
+                            <span className="sr-only">{translate('Actions')}</span>
                         </RecordListHeader>
                     )}
 
                     {products.data.length === 0 ? (
                         <EmptyState
                             icon={hasFilters ? Search : Boxes}
-                            title={hasFilters ? translate('Produk tidak ditemukan') : translate('Belum ada produk')}
+                            title={hasFilters ? translate('Product not found') : translate('No products yet')}
                             description={
                                 hasFilters
-                                    ? translate('Coba ubah kata kunci atau filter yang digunakan.')
-                                    : translate('Tambahkan produk pertama untuk mulai menjual melalui kasir.')
+                                    ? translate('Try change term keywords or filter that used.')
+                                    : translate('Add your first product to start selling at checkout.')
                             }
                             action={
                                 hasFilters ? (
                                     <Button type="button" variant="outline" onClick={resetFilters}>
-                                        {translate('Reset filter')}
+                                        {translate('Reset filters')}
                                     </Button>
                                 ) : canManage && !productLimitReached ? (
                                     <div className="flex flex-wrap justify-center gap-2">
                                         <Button type="button" onClick={() => openManualCreate()} variant="outline">
-                                            {translate('Isi manual')}
+                                            {translate('Manual entry')}
                                         </Button>
                                         <Button type="button" onClick={openCreate}>
-                                            <Camera className="size-4" aria-hidden="true" /> {translate('Scan produk')}
+                                            <Camera className="size-4" aria-hidden="true" /> {translate('Scan product')}
                                         </Button>
                                     </div>
                                 ) : canManage && productLimitReached ? (
                                     <Button type="button" onClick={() => setProductLimitOpen(true)}>
-                                        {translate('Tambah kapasitas produk')}
+                                        {translate('Increase product capacity')}
                                     </Button>
                                 ) : undefined
                             }
@@ -989,7 +989,7 @@ export default function ProductsIndex({
 
                     closeForm();
                 }}
-                title={editing ? editing.name : translate('Tambah produk')}
+                title={editing ? editing.name : translate('Add product')}
                 mobile="fullscreen"
                 size="xl"
                 contentStyle={{ height: mobileFormHeight }}
@@ -1004,7 +1004,7 @@ export default function ProductsIndex({
                             onClick={closeForm}
                             className="h-auto min-h-11 px-5 font-semibold sm:min-w-28"
                         >
-                            {translate('Batal')}
+                            {translate('Cancel')}
                         </Button>
                         <Button
                             type="submit"
@@ -1014,12 +1014,12 @@ export default function ProductsIndex({
                         >
                             {translate(
                                 form.processing
-                                    ? 'Menyimpan...'
+                                    ? 'Saving...'
                                     : editing
-                                      ? 'Simpan perubahan'
+                                      ? 'Save changes'
                                       : productDrafts.drafts.length > 1 && activeDraftIndex >= 0
-                                        ? 'Simpan & lanjut'
-                                        : 'Tambah produk',
+                                        ? 'Save & continue'
+                                        : 'Add product',
                             )}
                             {!form.processing && <ChevronRight className="size-4" />}
                         </Button>
@@ -1032,12 +1032,12 @@ export default function ProductsIndex({
                             <div className="mb-3 flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-bold text-foreground">
-                                        {productDrafts.drafts.length} {translate('produk dalam antrean')}
+                                        {productDrafts.drafts.length} {translate('product in the queue')}
                                     </p>
                                     {analyzingDrafts > 0 && (
                                         <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">
-                                            {translate('Menganalisis')} {analyzingDrafts} {translate('dari')} {productDrafts.drafts.length}{' '}
-                                            {translate('foto')}
+                                            {translate('Analyze')} {analyzingDrafts} {translate('of')} {productDrafts.drafts.length}{' '}
+                                            {translate('photo')}
                                         </p>
                                     )}
                                 </div>
@@ -1053,7 +1053,7 @@ export default function ProductsIndex({
                                     }}
                                     className="border-input text-primary"
                                 >
-                                    <Camera className="size-4" /> {translate('Tambah produk lain')}
+                                    <Camera className="size-4" /> {translate('Add another product')}
                                 </Button>
                             </div>
                             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -1082,7 +1082,7 @@ export default function ProductsIndex({
                                                 <span className="block truncate text-xs font-bold text-foreground">
                                                     {draft.suggestion && draft.suggestion.identity.display_name
                                                         ? draft.suggestion.identity.display_name
-                                                        : `Produk ${index + 1}`}
+                                                        : `Product${index + 1}`}
                                                 </span>
                                                 <span
                                                     className={cn(
@@ -1099,12 +1099,12 @@ export default function ProductsIndex({
                                                         draft.status === 'retry_wait') && <LoaderCircle className="size-3 animate-spin" />}
                                                     {translate(
                                                         draft.status === 'analyzing'
-                                                            ? 'Mencari data…'
+                                                            ? 'Searching data…'
                                                             : draft.status === 'ready'
-                                                              ? 'Data ditemukan'
+                                                              ? 'Data found'
                                                               : draft.status === 'failed'
-                                                                ? 'Perlu diisi manual'
-                                                                : 'Menunggu giliran',
+                                                                ? 'Need filled in manual'
+                                                                : 'Waiting turn',
                                                     )}
                                                 </span>
                                             </span>
@@ -1112,7 +1112,7 @@ export default function ProductsIndex({
                                         <button
                                             type="button"
                                             onClick={() => removeDraft(draft.id)}
-                                            aria-label={`Hapus Produk ${index + 1} dari antrean`}
+                                            aria-label={`Delete product${index + 1}from queue`}
                                             className="grid size-11 shrink-0 place-items-center rounded-lg text-destructive hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:outline-none"
                                         >
                                             <Trash2 className="size-4" />
@@ -1125,13 +1125,13 @@ export default function ProductsIndex({
                     {activeDraft && ['waiting', 'analyzing', 'retry_wait'].includes(activeDraft.status) && (
                         <div className="flex items-center gap-2 border-b border-border bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground sm:rounded-xl sm:border">
                             <LoaderCircle className="size-4 shrink-0 animate-spin" />
-                            {translate('Membaca foto produk…')}
+                            {translate('Reading photo product…')}
                         </div>
                     )}
                     {activeDraft?.status === 'failed' && (
                         <div className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
                             <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                            <p className="flex-1">{translate(activeDraft.error || 'Foto belum berhasil dibaca.')}</p>
+                            <p className="flex-1">{translate(activeDraft.error || 'The photo could not be read.')}</p>
                             <Button
                                 type="button"
                                 size="sm"
@@ -1139,7 +1139,7 @@ export default function ProductsIndex({
                                 onClick={() => productDrafts.retry(activeDraft.id)}
                                 className="border-destructive/30 bg-card text-destructive"
                             >
-                                <RefreshCw className="size-4" /> {translate('Coba lagi')}
+                                <RefreshCw className="size-4" /> {translate('Try again')}
                             </Button>
                         </div>
                     )}
@@ -1147,33 +1147,33 @@ export default function ProductsIndex({
                     {relatedDraft && form.data.variant_mode === 'none' && (
                         <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-foreground">
                             <p className="font-semibold">
-                                Mungkin produk yang sama atau varian dari {relatedDraft.suggestion?.identity.display_name}.
+                                Possibly the same product or a variant of {relatedDraft.suggestion?.identity.display_name}.
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 <Button type="button" variant="outline" onClick={() => combineDraft(relatedDraft, false)}>
-                                    {translate('Produk sama, hapus duplikat')}
+                                    {translate('Same product, remove duplicate')}
                                 </Button>
                                 <Button type="button" variant="outline" onClick={() => combineDraft(relatedDraft, true)}>
-                                    {translate('Gabungkan sebagai varian')}
+                                    {translate('Merge as a variant')}
                                 </Button>
                             </div>
                         </div>
                     )}
-                    <Section title="Informasi Produk">
+                    <Section title="Product information">
                         <div className="grid gap-5">
                             <div className="min-w-0 space-y-4">
                                 <FormInput
                                     id="product-name"
                                     name="name"
-                                    label={translate('Nama produk')}
+                                    label={translate('Product name')}
                                     error={form.errors.name}
                                     value={form.data.name}
                                     onChange={(event) => form.setData('name', event.target.value)}
-                                    placeholder={translate('Contoh: Kopi Arabika 250 g')}
+                                    placeholder={translate('Example: Arabica Coffee 250 g')}
                                     className="h-11 bg-card"
                                     required
                                 />
-                                <Field label="Foto produk" error={form.errors.photo}>
+                                <Field label="Product photo" error={form.errors.photo}>
                                     <ProductPhotoInput
                                         photo={form.data.photo}
                                         photoUrl={form.data.remove_photo ? null : editing?.photo_url}
@@ -1185,11 +1185,11 @@ export default function ProductsIndex({
                                 <FormTextarea
                                     id="product-description"
                                     name="description"
-                                    label={translate('Deskripsi')}
+                                    label={translate('Description')}
                                     error={form.errors.description}
                                     value={form.data.description}
                                     onChange={(event) => form.setData('description', event.target.value)}
-                                    placeholder={translate('Tambahkan merek, ukuran, atau catatan produk')}
+                                    placeholder={translate('Add the brand, size, or product notes')}
                                     rows={3}
                                     className="resize-y bg-card text-base sm:text-sm"
                                 />
@@ -1206,14 +1206,14 @@ export default function ProductsIndex({
                                         <FormBarcodeInput
                                             id="product-barcode"
                                             name="barcode"
-                                            label={translate('Barcode / QR')}
+                                            label={translate('Barcodes / QR')}
                                             value={form.data.barcode}
                                             error={form.errors.barcode}
                                             onScan={() => {
                                                 cameraFormScroll.current = formBodyRef.current?.scrollTop ?? 0;
                                                 setBarcodeTarget({
                                                     kind: 'product',
-                                                    label: form.data.name || 'produk',
+                                                    label: form.data.name || translate('product'),
                                                 });
                                             }}
                                             onChange={(value) => form.setData('barcode', value)}
@@ -1225,14 +1225,14 @@ export default function ProductsIndex({
                                     <FormSelect
                                         id="product-category"
                                         name="category_public_id"
-                                        label={translate('Kategori')}
+                                        label={translate('Category')}
                                         error={form.errors.category_public_id}
                                         value={form.data.category_public_id}
                                         onChange={(event) => form.setData('category_public_id', event.target.value)}
                                         className="h-11 bg-card text-base sm:text-sm"
                                         required
                                     >
-                                        <option value="">{translate('Pilih kategori')}</option>
+                                        <option value="">{translate('Select category')}</option>
                                         {categories.map((category) => (
                                             <option key={category.public_id} value={category.public_id} disabled={!category.is_active}>
                                                 {translate(category.name)}
@@ -1240,7 +1240,7 @@ export default function ProductsIndex({
                                         ))}
                                     </FormSelect>
                                     <Button asChild variant="outline" className="size-11 shrink-0 border-input text-primary">
-                                        <Link href={categoriesIndex.url()} aria-label={translate('Kelola kategori')}>
+                                        <Link href={categoriesIndex.url()} aria-label={translate('Manage categories')}>
                                             <Settings2 className="size-4" />
                                         </Link>
                                     </Button>
@@ -1250,12 +1250,12 @@ export default function ProductsIndex({
                     </Section>
 
                     <Section
-                        title="Satuan Penjualan"
+                        title="Sales units"
                         action={
                             <Button asChild size="sm" variant="ghost" className="text-primary">
                                 <Link href={unitsIndex.url()}>
                                     <Settings2 className="size-4" />
-                                    <span className="hidden sm:inline">{translate('Kelola satuan')}</span>
+                                    <span className="hidden sm:inline">{translate('Manage units')}</span>
                                 </Link>
                             </Button>
                         }
@@ -1264,14 +1264,14 @@ export default function ProductsIndex({
                             <FormSelect
                                 id="product-large-unit"
                                 name="large_unit_public_id"
-                                label={translate('Satuan besar')}
+                                label={translate('Bulk unit')}
                                 error={form.errors.large_unit_public_id}
                                 value={form.data.large_unit_public_id}
                                 onChange={(event) => form.setData('large_unit_public_id', event.target.value)}
                                 className="h-11 bg-card text-base sm:text-sm"
                             >
                                 <option value="">
-                                    {translate(form.data.variant_mode === 'shared' ? 'Pilih satuan besar' : 'Tanpa satuan besar')}
+                                    {translate(form.data.variant_mode === 'shared' ? 'Select bulk unit' : 'No bulk unit')}
                                 </option>
                                 {largeUnits.map((unit) => (
                                     <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
@@ -1282,14 +1282,14 @@ export default function ProductsIndex({
                             <FormSelect
                                 id="product-retail-unit"
                                 name="retail_unit_public_id"
-                                label={translate('Satuan ecer')}
+                                label={translate('Retail unit')}
                                 error={form.errors.retail_unit_public_id}
                                 value={form.data.retail_unit_public_id}
                                 onChange={(event) => form.setData('retail_unit_public_id', event.target.value)}
                                 className="h-11 bg-card text-base sm:text-sm"
                                 required
                             >
-                                <option value="">{translate('Pilih satuan ecer')}</option>
+                                <option value="">{translate('Select retail unit')}</option>
                                 {retailUnits.map((unit) => (
                                     <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
                                         {translate(unit.name)} ({unit.symbol})
@@ -1301,50 +1301,50 @@ export default function ProductsIndex({
                             <FormSelect
                                 id="product-quantity-mode"
                                 name="quantity_mode"
-                                label={translate('Penjualan pecahan')}
+                                label={translate('Fractional sales')}
                                 error={form.errors.quantity_mode}
                                 value={form.data.quantity_mode}
                                 onChange={(event) => form.setData('quantity_mode', event.target.value as 'fixed' | 'variable')}
                                 className="h-11 bg-card text-base sm:text-sm"
                             >
-                                <option value="fixed">{translate('Jumlah bulat')}</option>
-                                <option value="variable">{translate('Boleh pecahan')}</option>
+                                <option value="fixed">{translate('Whole quantities')}</option>
+                                <option value="variable">{translate('Can be fractional')}</option>
                             </FormSelect>
                         </div>
                         {activeDraft?.suggestion && !form.data.retail_unit_public_id && (
                             <div role="status" className="mt-3 flex flex-wrap items-center gap-2 text-sm text-primary">
                                 <span>
                                     {activeDraft.suggestion.quantity.sale_unit_code
-                                        ? translate('Satuan dikenali, pilih satuan toko.')
-                                        : translate('Satuan belum dikenali')}
+                                        ? translate('Unit recognized, select unit store.')
+                                        : translate('Unit not recognized')}
                                 </span>
                                 <Button asChild variant="outline" size="sm">
                                     <Link href={unitsIndex.url()}>
-                                        <Plus className="size-4" /> {translate('Tambah satuan')}
+                                        <Plus className="size-4" /> {translate('Add unit')}
                                     </Link>
                                 </Button>
                             </div>
                         )}
                         {activeDraft?.suggestion?.quantity.larger_unit_code && !form.data.large_unit_public_id && (
                             <div role="status" className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                                <span>{translate('Satuan besar')}</span>:{' '}
+                                <span>{translate('Bulk unit')}</span>:{' '}
                                 {translate(`units.${activeDraft.suggestion.quantity.larger_unit_code}`)}
                                 <Button asChild variant="outline" size="sm">
                                     <Link href={unitsIndex.url()}>
-                                        <Plus className="size-4" /> {translate('Tambah satuan')}
+                                        <Plus className="size-4" /> {translate('Add unit')}
                                     </Link>
                                 </Button>
                             </div>
                         )}
                         {activeDraft?.suggestion?.quantity.net_content && (
                             <p className="mt-3 text-sm text-muted-foreground">
-                                <span>{translate('Isi bersih')}</span>: {activeDraft.suggestion.quantity.net_content.value}{' '}
+                                <span>{translate('Net content')}</span>: {activeDraft.suggestion.quantity.net_content.value}{' '}
                                 {translate(`units.${activeDraft.suggestion.quantity.net_content.unit_code}`)}
                             </p>
                         )}
                     </Section>
 
-                    <Section title="Harga dan Stok">
+                    <Section title="Price and stock">
                         <button
                             type="button"
                             role="switch"
@@ -1353,9 +1353,9 @@ export default function ProductsIndex({
                             className="flex min-h-14 w-full items-center justify-between gap-4 rounded-xl border border-border bg-muted/50 p-3 text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         >
                             <span>
-                                <span className="block text-sm font-bold text-foreground">{translate('Varian ukuran / jenis')}</span>
+                                <span className="block text-sm font-bold text-foreground">{translate('Size / type variants')}</span>
                                 <span className="text-xs text-muted-foreground">
-                                    {translate(form.data.variant_mode === 'none' ? 'Tidak aktif' : 'Aktif')}
+                                    {translate(form.data.variant_mode === 'none' ? 'Inactive' : 'Active')}
                                 </span>
                             </span>
                             <span
@@ -1378,7 +1378,7 @@ export default function ProductsIndex({
                                 <FormCurrencyInput
                                     id="purchase_price"
                                     name="purchase_price"
-                                    label={translate(discoveryPrefill ? 'Estimasi harga modal' : 'Harga modal')}
+                                    label={translate(discoveryPrefill ? 'Estimated cost price' : 'Cost price')}
                                     value={form.data.purchase_price}
                                     onValueChange={(value) => {
                                         setDiscoveryPrefill(false);
@@ -1391,7 +1391,7 @@ export default function ProductsIndex({
                                 <FormCurrencyInput
                                     id="selling_price"
                                     name="selling_price"
-                                    label={translate(discoveryPrefill ? 'Rekomendasi harga jual' : 'Harga jual')}
+                                    label={translate(discoveryPrefill ? 'Rekomendasi price sell' : 'Selling price')}
                                     value={form.data.selling_price}
                                     onValueChange={(value) => {
                                         setDiscoveryPrefill(false);
@@ -1401,7 +1401,7 @@ export default function ProductsIndex({
                                     min="0"
                                     className="h-11"
                                 />
-                                <Field label="Stok awal" error={form.errors.current_stock}>
+                                <Field label="Initial stock" error={form.errors.current_stock}>
                                     <Input
                                         inputMode="decimal"
                                         step="0.01"
@@ -1413,7 +1413,7 @@ export default function ProductsIndex({
                                         className="h-11 border-input bg-card"
                                     />
                                 </Field>
-                                <Field label="Batas stok minimum" error={form.errors.minimum_stock}>
+                                <Field label="Minimum stock level" error={form.errors.minimum_stock}>
                                     <Input
                                         inputMode="decimal"
                                         step="0.01"
@@ -1449,10 +1449,12 @@ export default function ProductsIndex({
                                             />
                                             <span>
                                                 <span className="block text-sm font-bold">
-                                                    {translate(mode === 'separate' ? 'Beda rasa / jenis' : 'Beda satuan / grosir')}
+                                                    {translate(
+                                                        mode === 'separate' ? 'Different flavor / type' : 'Different unit / wholesale',
+                                                    )}
                                                 </span>
                                                 <span className="text-xs opacity-70">
-                                                    {translate(mode === 'separate' ? 'Stok terpisah' : 'Stok gabungan')}
+                                                    {translate(mode === 'separate' ? 'Separate stock' : 'Shared stock')}
                                                 </span>
                                             </span>
                                         </button>
@@ -1467,7 +1469,7 @@ export default function ProductsIndex({
                                             className="rounded-xl border border-border bg-card p-3 sm:p-4"
                                         >
                                             <div className="mb-3 flex items-center justify-between">
-                                                <p className="font-bold text-foreground">Varian {index + 1}</p>
+                                                <p className="font-bold text-foreground">Variant {index + 1}</p>
                                                 <Button
                                                     type="button"
                                                     size="icon"
@@ -1480,14 +1482,14 @@ export default function ProductsIndex({
                                             </div>
                                             <div className="grid gap-4 sm:grid-cols-2">
                                                 <Field
-                                                    label="Nama varian"
+                                                    label="Variant name"
                                                     error={errorFor(`variants.${index}.name`)}
                                                     className="sm:col-span-2"
                                                 >
                                                     <Input
                                                         id={`variant-name-${variant.public_id ?? variant.client_id ?? index}`}
                                                         value={variant.name}
-                                                        placeholder={translate('Contoh: 250 g')}
+                                                        placeholder={translate('Example: 250 g')}
                                                         onChange={(event) => updateVariant(index, 'name', event.target.value)}
                                                         className="h-11 rounded-xl border-input bg-card"
                                                     />
@@ -1503,7 +1505,7 @@ export default function ProductsIndex({
                                                 <FormBarcodeInput
                                                     id={`variant-${index}-barcode`}
                                                     name={`variants.${index}.barcode`}
-                                                    label={translate('Barcode / QR')}
+                                                    label={translate('Barcodes / QR')}
                                                     value={variant.barcode}
                                                     error={errorFor(`variants.${index}.barcode`)}
                                                     onScan={() => {
@@ -1518,7 +1520,7 @@ export default function ProductsIndex({
                                                     onGenerate={() => updateVariant(index, 'barcode', generateInternalBarcode())}
                                                 />
                                                 <Field
-                                                    label="Foto varian"
+                                                    label="Photo: varian"
                                                     error={errorFor(`variants.${index}.photo`)}
                                                     className="sm:col-span-2"
                                                 >
@@ -1544,7 +1546,7 @@ export default function ProductsIndex({
                                                 <FormCurrencyInput
                                                     id={`variant-${index}-purchase-price`}
                                                     name={`variants.${index}.purchase_price`}
-                                                    label={translate('Harga modal')}
+                                                    label={translate('Cost price')}
                                                     value={variant.purchase_price}
                                                     onValueChange={(value) => updateVariant(index, 'purchase_price', value)}
                                                     error={errorFor(`variants.${index}.purchase_price`)}
@@ -1553,7 +1555,7 @@ export default function ProductsIndex({
                                                 <FormCurrencyInput
                                                     id={`variant-${index}-selling-price`}
                                                     name={`variants.${index}.selling_price`}
-                                                    label={translate('Harga jual')}
+                                                    label={translate('Selling price')}
                                                     value={variant.selling_price}
                                                     onValueChange={(value) => updateVariant(index, 'selling_price', value)}
                                                     error={errorFor(`variants.${index}.selling_price`)}
@@ -1561,7 +1563,7 @@ export default function ProductsIndex({
                                                 />
                                                 {form.data.variant_mode === 'separate' ? (
                                                     <>
-                                                        <Field label="Stok awal" error={errorFor(`variants.${index}.current_stock`)}>
+                                                        <Field label="Initial stock" error={errorFor(`variants.${index}.current_stock`)}>
                                                             <Input
                                                                 inputMode="decimal"
                                                                 step="0.01"
@@ -1582,7 +1584,7 @@ export default function ProductsIndex({
                                                             />
                                                         </Field>
                                                         <Field
-                                                            label="Batas stok minimum"
+                                                            label="Minimum stock level"
                                                             error={errorFor(`variants.${index}.minimum_stock`)}
                                                         >
                                                             <Input
@@ -1619,7 +1621,7 @@ export default function ProductsIndex({
                                                             (form.data.variants.length === 1 ||
                                                                 variant.name === activeDraft.suggestion.identity.variant) && (
                                                                 <div className="text-sm text-muted-foreground">
-                                                                    <span>{translate('Saran konversi')}</span>:{' '}
+                                                                    <span>{translate('Conversion suggestions')}</span>:{' '}
                                                                     {activeDraft.suggestion.quantity.conversion_factor}
                                                                     <Button
                                                                         type="button"
@@ -1634,18 +1636,18 @@ export default function ProductsIndex({
                                                                             )
                                                                         }
                                                                     >
-                                                                        {translate('Gunakan konversi')}
+                                                                        {translate('Use conversion')}
                                                                     </Button>
                                                                 </div>
                                                             )}
                                                         <Field
-                                                            label="Isi per kemasan"
+                                                            label="Units per package"
                                                             error={errorFor(`variants.${index}.conversion_factor`)}
                                                         >
                                                             <Input
                                                                 inputMode="decimal"
                                                                 value={variant.conversion_factor}
-                                                                placeholder={translate('Contoh: 12')}
+                                                                placeholder={translate('Example: 12')}
                                                                 onChange={(event) =>
                                                                     updateVariant(index, 'conversion_factor', event.target.value)
                                                                 }
@@ -1671,13 +1673,13 @@ export default function ProductsIndex({
                                     onClick={addVariant}
                                     className="w-full border-dashed border-primary text-primary"
                                 >
-                                    <Plus className="size-4" /> Tambah varian
+                                    <Plus className="size-4" /> Add variant
                                 </Button>
                                 <InputError message={form.errors.variants} />
 
                                 {form.data.variant_mode === 'shared' && (
                                     <div className="grid gap-4 rounded-xl border border-border bg-secondary p-4 sm:grid-cols-2">
-                                        <Field label="Stok gabungan awal" error={form.errors.current_stock}>
+                                        <Field label="Initial shared stock" error={form.errors.current_stock}>
                                             <Input
                                                 inputMode="decimal"
                                                 value={form.data.current_stock}
@@ -1686,7 +1688,7 @@ export default function ProductsIndex({
                                                 className="h-11 rounded-xl border-input bg-card"
                                             />
                                         </Field>
-                                        <Field label="Batas stok minimum" error={form.errors.minimum_stock}>
+                                        <Field label="Minimum stock level" error={form.errors.minimum_stock}>
                                             <Input
                                                 inputMode="decimal"
                                                 value={form.data.minimum_stock}
@@ -1703,7 +1705,7 @@ export default function ProductsIndex({
 
                     {editing && (
                         <label className="flex min-h-12 cursor-pointer items-center justify-between border-b border-border bg-card px-4 text-sm font-semibold text-foreground sm:rounded-xl sm:border">
-                            {translate('Produk aktif')}
+                            {translate('Active product')}
                             <input
                                 type="checkbox"
                                 checked={form.data.is_active}
@@ -1723,22 +1725,22 @@ export default function ProductsIndex({
                         setDeleteError('');
                     }
                 }}
-                title={translate('Produk tidak dapat dihapus')}
+                title={translate('Product cannot deleted')}
                 description={deleteError}
                 size="sm"
                 footer={
                     <>
                         <Button type="button" variant="outline" disabled={deleteProcessing} onClick={() => setDeleting(null)}>
-                            {translate('Tutup')}
+                            {translate('Close')}
                         </Button>
                         <Button type="button" variant="destructive" disabled={deleteProcessing} onClick={deactivateProduct}>
-                            {translate(deleteProcessing ? 'Menonaktifkan...' : 'Nonaktifkan produk')}
+                            {translate(deleteProcessing ? 'Deactivating...' : 'Deactivate product')}
                         </Button>
                     </>
                 }
             >
                 <p className="text-sm leading-6 text-muted-foreground">
-                    {translate('Produk tetap tersimpan sebagai riwayat, tetapi tidak muncul untuk transaksi baru.')}
+                    {translate('The product remains in your history but will not appear in new transactions.')}
                 </p>
             </ResponsiveDialog>
 
@@ -1749,26 +1751,25 @@ export default function ProductsIndex({
                         setExistingBarcodeProduct(null);
                     }
                 }}
-                title={translate('Barcode sudah terdaftar')}
+                title={translate('Barcode already registered')}
                 size="sm"
                 footer={
                     <Button asChild>
                         <Link href={productsIndex.url({ query: { search: existingBarcodeProduct?.barcode ?? '' } })}>
-                            {translate('Buka produk')}
+                            {translate('Open product')}
                         </Link>
                     </Button>
                 }
             >
                 <p className="text-sm leading-6 text-muted-foreground">
-                    <strong className="text-foreground">{existingBarcodeProduct?.name}</strong>{' '}
-                    {translate('sudah menggunakan barcode ini.')}
+                    <strong className="text-foreground">{existingBarcodeProduct?.name}</strong> {translate('already uses this barcode.')}
                 </p>
             </ResponsiveDialog>
             <SubscriptionLimitContactDialog kind="product" open={productLimitOpen} onOpenChange={setProductLimitOpen} />
             {barcodeTarget && (
                 <BarcodeScannerDialog
                     open
-                    title={`${translate('Scan barcode')} ${translate(barcodeTarget.label)}`}
+                    title={`${translate('Scan barcodes')} ${translate(barcodeTarget.label)}`}
                     onOpenChange={(open) => {
                         if (!open) {
                             setBarcodeTarget(null);
@@ -1785,7 +1786,7 @@ export default function ProductsIndex({
             <Suspense
                 fallback={
                     <div role="status" className="fixed inset-0 z-[90] grid place-items-center bg-black/80 text-white">
-                        {translate('Membuka kamera…')}
+                        {translate('Opening camera…')}
                     </div>
                 }
             >
@@ -1793,8 +1794,8 @@ export default function ProductsIndex({
                     purpose="product"
                     title={
                         scannerFlow === 'form-photo'
-                            ? `${translate('Foto')} ${form.data.name || translate('produk')}`
-                            : translate('Foto produk baru')
+                            ? `${translate('Photo')} ${form.data.name || translate('products')}`
+                            : translate('New product photo')
                     }
                     open={scannerOpen}
                     onOpenChange={handleScannerOpenChange}
@@ -1815,7 +1816,7 @@ export default function ProductsIndex({
                     productCanCapture={scannerFlow !== 'create' || productDrafts.pendingPhotos < 10}
                     onRemoveProductPhoto={removeDraft}
                     singleCapture={scannerFlow !== 'create' || !aiDiscoveryAvailable}
-                    manualActionLabel={scannerFlow !== 'create' ? translate('Lanjut tanpa ganti foto') : undefined}
+                    manualActionLabel={scannerFlow !== 'create' ? translate('Continue without replacing the photo') : undefined}
                     onManualSearch={() => {
                         setScannerOpen(false);
 

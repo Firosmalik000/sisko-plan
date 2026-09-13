@@ -102,64 +102,64 @@ export default function StoreSubscriptionPage({
 
     return (
         <AppPage
-            title={translate('Paket & langganan')}
+            title={translate('Plan & subscription')}
             description={translate(subscription.plan.name)}
             icon={CreditCard}
             headerSurface
             actions={
                 <Button asChild size="touch" variant="outline">
-                    <Link href={pricing.url()}>{translate('Lihat paket')}</Link>
+                    <Link href={pricing.url()}>{translate('See plans')}</Link>
                 </Button>
             }
         >
             <MetricStrip>
                 <MetricItem label={translate('Status')} value={translate(statusLabel(subscription.status))} />
-                <MetricItem label={translate('Harga per bulan')} value={money(subscription.plan.monthly_price)} />
+                <MetricItem label={translate('Price per month')} value={money(subscription.plan.monthly_price)} />
                 <MetricItem
-                    label={translate('Periode aktif')}
+                    label={translate('Period active')}
                     value={
                         subscription.current_period_end
                             ? date(subscription.current_period_end)
                             : subscription.trial_ends_at
                               ? date(subscription.trial_ends_at)
-                              : translate('Tanpa batas')
+                              : translate('Unlimited')
                     }
                 />
-                <MetricItem label={translate('Pembayaran')} value={String(payments.total)} />
+                <MetricItem label={translate('Payment')} value={String(payments.total)} />
             </MetricStrip>
 
             {!usage.can_write && (
                 <section className="rounded-2xl border border-amber-300 bg-amber-100 p-5 text-amber-950">
-                    <h2 className="font-bold">Akses portal toko dinonaktifkan</h2>
+                    <h2 className="font-bold">Access portal store deactivated</h2>
                     <p className="mt-1 text-sm">{usage.reason}</p>
                     <Link
                         className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--app-primary)] px-4 text-sm font-bold text-[var(--app-primary-foreground)]"
                         href={pricing.url()}
                     >
-                        Lihat paket
+                        See plans
                     </Link>
                 </section>
             )}
 
-            <PageSection title={translate('Pemakaian paket')} contentClassName="grid sm:grid-cols-2 xl:grid-cols-4">
-                <UsageCard icon={Building2} title="Toko" used={usage.stores_used} limit={usage.max_stores} percentage={storePercentage} />
+            <PageSection title={translate('Pemakaian plan')} contentClassName="grid sm:grid-cols-2 xl:grid-cols-4">
+                <UsageCard icon={Building2} title="Store" used={usage.stores_used} limit={usage.max_stores} percentage={storePercentage} />
                 <UsageCard
                     icon={Boxes}
-                    title="Produk seluruh toko"
+                    title="Products across all stores"
                     used={usage.products_used}
                     limit={usage.max_products}
                     percentage={productPercentage}
                 />
                 <UsageCard
                     icon={Users}
-                    title="Staf aktif"
+                    title="Staff active"
                     used={usage.members_used}
                     limit={usage.max_members}
                     percentage={memberPercentage}
                 />
                 <UsageCard
                     icon={ScanLine}
-                    title="Scan AI bulan ini"
+                    title="AI scans this month"
                     used={usage.scans_used}
                     limit={usage.max_scans}
                     percentage={scanPercentage}
@@ -167,7 +167,7 @@ export default function StoreSubscriptionPage({
             </PageSection>
 
             {addons.length > 0 && (
-                <PageSection title={translate('Add-on aktif')}>
+                <PageSection title={translate('Active add-on')}>
                     <div className="divide-y divide-slate-900/8">
                         {addons.map((addon) => (
                             <article
@@ -181,7 +181,7 @@ export default function StoreSubscriptionPage({
                                 <div className="text-sm font-bold text-slate-700 sm:text-right">
                                     <p>{money(addon.price)}</p>
                                     <p className="mt-1 text-xs text-slate-500">
-                                        {date(addon.starts_on)} – {addon.ends_on ? date(addon.ends_on) : 'Selamanya'}
+                                        {date(addon.starts_on)} – {addon.ends_on ? date(addon.ends_on) : 'Forever'}
                                     </p>
                                 </div>
                             </article>
@@ -190,7 +190,7 @@ export default function StoreSubscriptionPage({
                 </PageSection>
             )}
 
-            <PageSection title={translate('Riwayat langganan')} description={`${history.total} ${translate('periode')}`}>
+            <PageSection title={translate('Subscription history')} description={`${history.total} ${translate('period')}`}>
                 <div className="divide-y divide-slate-900/8">
                     {history.data.map((period) => (
                         <article
@@ -203,19 +203,19 @@ export default function StoreSubscriptionPage({
                                     <PeriodStatus status={period.status} />
                                 </div>
                                 <p className="mt-1 text-sm font-semibold text-slate-500">
-                                    {period.is_trial ? `30 ${translate('hari trial')}` : `${period.duration_months} ${translate('bulan')}`}
+                                    {period.is_trial ? `30 ${translate('trial days')}` : `${period.duration_months} ${translate('months')}`}
                                 </p>
                             </div>
                             <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-slate-700">
                                 <CalendarDays className="size-4 shrink-0 text-[var(--app-primary)]" />
                                 <span className="break-words">
-                                    {date(period.period_start)} – {period.period_end ? date(period.period_end) : 'Tanpa batas'}
+                                    {date(period.period_start)} – {period.period_end ? date(period.period_end) : 'Unlimited'}
                                 </span>
                             </div>
                             <p className="font-black text-[var(--app-ink)] tabular-nums md:text-right">{money(period.monthly_price)}</p>
                         </article>
                     ))}
-                    {history.data.length === 0 && <EmptyState icon={History} title={translate('Belum ada riwayat langganan')} />}
+                    {history.data.length === 0 && <EmptyState icon={History} title={translate('No subscription history yet')} />}
                 </div>
                 {history.links.length > 3 && (
                     <div className="border-t border-slate-900/8 p-4 sm:p-5">
@@ -224,16 +224,16 @@ export default function StoreSubscriptionPage({
                 )}
             </PageSection>
 
-            <PageSection title={translate('Riwayat pembayaran')} description={`${payments.total} ${translate('pembayaran')}`}>
+            <PageSection title={translate('Payment history')} description={`${payments.total} ${translate('payments')}`}>
                 <div className="overflow-x-auto px-4 sm:px-5">
                     <table className="w-full min-w-[720px] text-left text-sm">
                         <thead className="border-b text-xs tracking-wide text-slate-500 uppercase">
                             <tr>
                                 <th className="px-3 py-3">Receipt</th>
-                                <th className="px-3 py-3">Dibayar</th>
-                                <th className="px-3 py-3">Periode</th>
-                                <th className="px-3 py-3">Metode</th>
-                                <th className="px-3 py-3 text-right">Nominal</th>
+                                <th className="px-3 py-3">Paid</th>
+                                <th className="px-3 py-3">Period</th>
+                                <th className="px-3 py-3">Method</th>
+                                <th className="px-3 py-3 text-right">Amount</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-900/8">
@@ -250,7 +250,7 @@ export default function StoreSubscriptionPage({
                             ))}
                         </tbody>
                     </table>
-                    {payments.data.length === 0 && <EmptyState icon={CreditCard} title={translate('Belum ada pembayaran tercatat')} />}
+                    {payments.data.length === 0 && <EmptyState icon={CreditCard} title={translate('No payments recorded yet')} />}
                 </div>
                 <div className="border-t border-border p-4 sm:p-5">
                     <Pagination links={payments.links} />
@@ -267,9 +267,9 @@ function PeriodStatus({ status }: { status: SubscriptionPeriod['status'] }) {
         completed: 'bg-slate-100 text-slate-600',
     };
     const labels = {
-        scheduled: 'Terjadwal',
-        active: 'Berjalan',
-        completed: 'Selesai',
+        scheduled: 'Scheduled',
+        active: 'Walk',
+        completed: 'Completed',
     };
 
     return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${styles[status]}`}>{labels[status]}</span>;
@@ -297,7 +297,7 @@ function UsageCard({
                 <div>
                     <h3 className="text-sm font-bold text-foreground">{translate(title)}</h3>
                     <p className="text-sm text-slate-500">
-                        {used} {translate('dari')} {limit === 0 ? translate('tak terbatas') : limit}
+                        {used} {translate('of')} {limit === 0 ? translate('unlimited') : limit}
                     </p>
                 </div>
             </div>
@@ -322,21 +322,21 @@ function date(value: string) {
 function statusLabel(status: string) {
     return (
         {
-            trialing: 'Masa trial',
-            active: 'Aktif',
-            past_due: 'Jatuh tempo',
-            suspended: 'Ditangguhkan',
-            cancelled: 'Dibatalkan',
+            trialing: 'Trial period',
+            active: 'Active',
+            past_due: 'Past due',
+            suspended: 'Suspended',
+            cancelled: 'Cancelled',
         }[status] ?? status
     );
 }
 
 function addonCapacity(addon: SubscriptionAddon) {
     return [
-        addon.stores > 0 ? `+${addon.stores} ${translate('toko')}` : null,
-        addon.products > 0 ? `+${addon.products} ${translate('produk')}` : null,
-        addon.members > 0 ? `+${addon.members} ${translate('staf')}` : null,
-        addon.scans > 0 ? `+${addon.scans} ${translate('scan/bulan')}` : null,
+        addon.stores > 0 ? `+${addon.stores} ${translate('stores')}` : null,
+        addon.products > 0 ? `+${addon.products} ${translate('products')}` : null,
+        addon.members > 0 ? `+${addon.members} ${translate('staff')}` : null,
+        addon.scans > 0 ? `+${addon.scans} ${translate('scans/month')}` : null,
     ]
         .filter(Boolean)
         .join(' · ');

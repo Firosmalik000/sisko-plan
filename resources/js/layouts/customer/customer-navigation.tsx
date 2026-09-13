@@ -30,7 +30,7 @@ export function CustomerNavigation() {
     return (
         <>
             <nav
-                aria-label="Navigasi utama"
+                aria-label="Main navigation"
                 className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:inset-y-[75px] md:right-auto md:w-20 md:border-t-0 md:border-r md:pb-0"
             >
                 <div className="grid h-16 grid-cols-5 items-stretch px-1 md:flex md:h-full md:flex-col md:gap-1 md:px-2 md:py-3">
@@ -85,7 +85,7 @@ function QuickActionTrigger({ onClick, disabled }: { onClick: () => void; disabl
             <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_10px_22px_-14px_var(--app-shadow)] transition group-hover:bg-primary/90 dark:shadow-none">
                 <ScanLine className="size-5" />
             </span>
-            <span className="truncate">{t('Aksi')}</span>
+            <span className="truncate">{t('Actions')}</span>
         </button>
     );
 }
@@ -130,12 +130,12 @@ function QuickActions({
         <ResponsiveDialog
             open={open}
             onOpenChange={onOpenChange}
-            title={t('Aksi cepat')}
-            description={t('Pilih cara input, lalu pekerjaan yang ingin dilakukan.')}
+            title={t('Quick actions')}
+            description={t('Choose an input method, then select a task.')}
             size="sm"
             bodyClassName="space-y-5"
         >
-            <div role="tablist" aria-label={t('Cara input')} className="grid grid-cols-2 rounded-xl bg-secondary p-1">
+            <div role="tablist" aria-label={t('Input method')} className="grid grid-cols-2 rounded-xl bg-secondary p-1">
                 {(['scan', 'manual'] as const).map((value) => (
                     <button
                         key={value}
@@ -186,8 +186,8 @@ function MoreMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (open: 
         <ResponsiveDialog
             open={open}
             onOpenChange={onOpenChange}
-            title={t('Menu lainnya')}
-            description={t('Operasional, keuangan, master data, dan pengaturan toko.')}
+            title={t('More menu')}
+            description={t('Operations, finance, master data, and store settings.')}
             size="lg"
             bodyClassName="grid gap-6 sm:grid-cols-2"
         >

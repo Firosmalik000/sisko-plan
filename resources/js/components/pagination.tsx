@@ -13,18 +13,18 @@ export function Pagination({ links }: { links: PaginationLink[] }) {
     }
 
     return (
-        <nav aria-label="Navigasi halaman" className="flex flex-wrap items-center justify-center gap-1">
+        <nav aria-label="Page navigation" className="flex flex-wrap items-center justify-center gap-1">
             {links.map((link, index) => {
                 const isPrevious = index === 0;
                 const isNext = index === links.length - 1;
                 const content = isPrevious ? (
                     <>
                         <ChevronLeft className="size-4" />
-                        <span className="sr-only sm:not-sr-only">Sebelumnya</span>
+                        <span className="sr-only sm:not-sr-only">Previous</span>
                     </>
                 ) : isNext ? (
                     <>
-                        <span className="sr-only sm:not-sr-only">Berikutnya</span>
+                        <span className="sr-only sm:not-sr-only">Next</span>
                         <ChevronRight className="size-4" />
                     </>
                 ) : (

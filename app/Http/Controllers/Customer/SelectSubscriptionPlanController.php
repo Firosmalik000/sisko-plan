@@ -39,7 +39,7 @@ class SelectSubscriptionPlanController extends Controller
 
         if ($plan->kind === Plan::KIND_ADDON) {
             $addons->handle($user, $plan, $request->ip());
-            Inertia::flash('toast', ['type' => 'success', 'message' => __('Add-on :name berhasil ditambahkan.', ['name' => $plan->name])]);
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('The :name add-on was added successfully.', ['name' => $plan->name])]);
 
             return to_route('subscription.index');
         }

@@ -6,6 +6,7 @@ use App\Models\Plan;
 use App\Models\User;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -14,13 +15,21 @@ class LocaleTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const LOCALE_ORDER = ['en', 'id', 'ms', 'vi', 'th', 'fil', 'km', 'lo', 'my', 'tet'];
+
     public function test_first_visit_locale_follows_the_ip_country_header(): void
     {
         foreach ([
             'ID' => 'id',
             'MY' => 'ms',
             'VN' => 'vi',
+            'KH' => 'km',
+            'LA' => 'lo',
+            'MM' => 'my',
+            'PH' => 'fil',
             'SG' => 'en',
+            'TH' => 'th',
+            'TL' => 'tet',
             'XX' => 'en',
         ] as $country => $locale) {
             $this->withHeader('CF-IPCountry', $country)
@@ -40,6 +49,17 @@ class LocaleTest extends TestCase
                 ->where('locale', 'en'));
     }
 
+    public function test_first_html_response_uses_the_detected_market_currency_metadata(): void
+    {
+        $this->withHeader('CF-IPCountry', 'SG')
+            ->get(route('login'))
+            ->assertSee('data-market="SG"', false)
+            ->assertSee('data-currency="SGD"', false)
+            ->assertSee('data-currency-symbol="S$"', false)
+            ->assertSee('data-currency-decimals="2"', false)
+            ->assertSee('data-currency-position="before"', false);
+    }
+
     public function test_explicit_locale_selection_overrides_the_ip_country(): void
     {
         $this->withSession(['locale' => 'ms'])
@@ -52,17 +72,48 @@ class LocaleTest extends TestCase
 
     public function test_every_server_translation_has_the_required_market_outputs(): void
     {
-        $indonesian = json_decode(file_get_contents(lang_path('id.json')), true, flags: JSON_THROW_ON_ERROR);
-        $malay = json_decode(file_get_contents(lang_path('ms.json')), true, flags: JSON_THROW_ON_ERROR);
+        $locales = ['en', 'fil', 'id', 'km', 'lo', 'ms', 'my', 'tet', 'th', 'vi'];
         $english = json_decode(file_get_contents(lang_path('en.json')), true, flags: JSON_THROW_ON_ERROR);
-        $vietnamese = json_decode(file_get_contents(lang_path('vi.json')), true, flags: JSON_THROW_ON_ERROR);
 
-        $this->assertSame([], array_values(array_diff(array_keys($indonesian), array_keys($malay))));
-        $this->assertSame([], array_values(array_diff(array_keys($malay), array_keys($indonesian), array_keys($english))));
-        $this->assertSame([], array_values(array_diff(array_keys($english), array_keys($malay))));
-
-        foreach ([$indonesian, $malay, $english, $vietnamese] as $translations) {
+        foreach ($locales as $locale) {
+            $translations = json_decode(file_get_contents(lang_path("{$locale}.json")), true, flags: JSON_THROW_ON_ERROR);
+            $this->assertSame(array_keys($english), array_keys($translations), "JSON message keys differ for {$locale}.");
             $this->assertNotContains('', array_values($translations));
+
+            foreach ($english as $key => $message) {
+                preg_match_all('/:([A-Za-z_][A-Za-z0-9_]*)/', $message, $expectedParameters);
+                preg_match_all('/:([A-Za-z_][A-Za-z0-9_]*)/', $translations[$key], $actualParameters);
+                sort($expectedParameters[1]);
+                sort($actualParameters[1]);
+                $this->assertSame($expectedParameters[1], $actualParameters[1], "Placeholder mismatch for {$locale}: {$key}");
+            }
+        }
+    }
+
+    public function test_laravel_language_groups_are_complete_for_every_supported_locale(): void
+    {
+        $locales = ['en', 'fil', 'id', 'km', 'lo', 'ms', 'my', 'tet', 'th', 'vi'];
+
+        foreach (['auth', 'pagination', 'passwords', 'validation', 'countries'] as $group) {
+            $english = Arr::dot(require lang_path("en/{$group}.php"));
+
+            foreach ($locales as $locale) {
+                $translations = Arr::dot(require lang_path("{$locale}/{$group}.php"));
+                $this->assertSame(array_keys($english), array_keys($translations), "{$group} keys differ for {$locale}.");
+                $this->assertNotContains('', array_values($translations));
+
+                foreach ($english as $key => $message) {
+                    if (! is_string($message) || ! is_string($translations[$key])) {
+                        continue;
+                    }
+
+                    preg_match_all('/:([A-Za-z_][A-Za-z0-9_]*)/', $message, $expectedParameters);
+                    preg_match_all('/:([A-Za-z_][A-Za-z0-9_]*)/', $translations[$key], $actualParameters);
+                    sort($expectedParameters[1]);
+                    sort($actualParameters[1]);
+                    $this->assertSame($expectedParameters[1], $actualParameters[1], "Placeholder mismatch for {$locale} {$group}.{$key}");
+                }
+            }
         }
     }
 
@@ -71,27 +122,27 @@ class LocaleTest extends TestCase
         App::setLocale('id');
         $this->assertSame(
             'Batas 3 toko pada paket Usaha sudah tercapai.',
-            __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Usaha']),
+            __('The limit of :limit stores for the :plan plan has been reached.', ['limit' => 3, 'plan' => 'Usaha']),
         );
 
         App::setLocale('ms');
         $this->assertSame(
             'Had 3 kedai bagi pelan Usaha telah dicapai.',
-            __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Usaha']),
+            __('The limit of :limit stores for the :plan plan has been reached.', ['limit' => 3, 'plan' => 'Usaha']),
         );
         $this->assertSame(
             'Selesaikan SO-001 sebelum memulakan kiraan stok baharu.',
-            __('Selesaikan :document sebelum memulai opname baru.', ['document' => 'SO-001']),
+            __('Complete :document before starting a new stock count.', ['document' => 'SO-001']),
         );
 
         App::setLocale('en');
         $this->assertSame(
             'The limit of 3 stores for the Business plan has been reached.',
-            __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Business']),
+            __('The limit of :limit stores for the :plan plan has been reached.', ['limit' => 3, 'plan' => 'Business']),
         );
 
         App::setLocale('vi');
-        $this->assertSame('Đã đạt giới hạn 3 cửa hàng của gói Business.', __('Batas :limit toko pada paket :plan sudah tercapai.', ['limit' => 3, 'plan' => 'Business']));
+        $this->assertSame('Đã đạt giới hạn 3 cửa hàng của gói Business.', __('The limit of :limit stores for the :plan plan has been reached.', ['limit' => 3, 'plan' => 'Business']));
         $this->assertSame('Trường tên là bắt buộc.', __('The name field is required.'));
     }
 
@@ -117,7 +168,7 @@ class LocaleTest extends TestCase
         $admin = User::factory()->superAdmin()->create();
 
         $this->actingAs($admin)
-            ->withSession(['market' => 'ms', 'locale' => 'ms'])
+            ->withSession(['market' => 'MY', 'locale' => 'ms'])
             ->get(route('pricing'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('public/pricing')
@@ -147,16 +198,14 @@ class LocaleTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->withSession(['market' => 'ms', 'locale' => 'en'])
+            ->withSession(['market' => 'MY', 'locale' => 'en'])
             ->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('public/welcome')
-                ->where('market', 'ms')
+                ->where('market', 'MY')
                 ->where('locale', 'en')
-                ->where('locales.0.code', 'en')
-                ->where('locales.1.code', 'ms')
-                ->where('locales.2.code', 'id')
-                ->where('locales.3.code', 'vi'));
+                ->has('locales', 10)
+                ->where('locales', fn ($locales) => $locales->pluck('code')->all() === self::LOCALE_ORDER));
 
         $this->from(route('login'))
             ->post(route('locale.update'), ['locale' => 'en'])
@@ -169,22 +218,20 @@ class LocaleTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->withSession(['market' => 'id', 'locale' => 'id'])
+            ->withSession(['market' => 'ID', 'locale' => 'id'])
             ->get(route('stores.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('market', 'id')
+                ->where('market', 'ID')
                 ->where('locale', 'id')
-                ->where('locales.0.code', 'en')
-                ->where('locales.1.code', 'ms')
-                ->where('locales.2.code', 'id')
-                ->where('locales.3.code', 'vi'));
+                ->has('locales', 10)
+                ->where('locales', fn ($locales) => $locales->pluck('code')->all() === self::LOCALE_ORDER));
 
         $this->actingAs($user)
-            ->withSession(['market' => 'id', 'locale' => 'id'])
+            ->withSession(['market' => 'ID', 'locale' => 'id'])
             ->from(route('stores.index'))
             ->post(route('locale.update'), ['locale' => 'vi'])
             ->assertRedirect(route('stores.index'))
-            ->assertSessionHas('market', 'id')
+            ->assertSessionHas('market', 'ID')
             ->assertSessionHas('locale', 'vi');
     }
 
@@ -193,22 +240,20 @@ class LocaleTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->withSession(['market' => 'ms', 'locale' => 'en'])
+            ->withSession(['market' => 'MY', 'locale' => 'en'])
             ->get(route('stores.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('market', 'ms')
+                ->where('market', 'MY')
                 ->where('locale', 'en')
-                ->where('locales.0.code', 'en')
-                ->where('locales.1.code', 'ms')
-                ->where('locales.2.code', 'id')
-                ->where('locales.3.code', 'vi'));
+                ->has('locales', 10)
+                ->where('locales', fn ($locales) => $locales->pluck('code')->all() === self::LOCALE_ORDER));
 
         $this->actingAs($user)
-            ->withSession(['market' => 'ms', 'locale' => 'en'])
+            ->withSession(['market' => 'MY', 'locale' => 'en'])
             ->from(route('stores.index'))
             ->post(route('locale.update'), ['locale' => 'id'])
             ->assertRedirect(route('stores.index'))
-            ->assertSessionHas('market', 'ms')
+            ->assertSessionHas('market', 'MY')
             ->assertSessionHas('locale', 'id');
     }
 
@@ -217,15 +262,13 @@ class LocaleTest extends TestCase
         $admin = User::factory()->superAdmin()->create();
 
         $this->actingAs($admin)
-            ->withSession(['market' => 'id', 'locale' => 'id'])
+            ->withSession(['market' => 'ID', 'locale' => 'id'])
             ->get(route('super-admin.security.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('market', 'id')
+                ->where('market', 'ID')
                 ->where('locale', 'id')
-                ->where('locales.0.code', 'en')
-                ->where('locales.1.code', 'ms')
-                ->where('locales.2.code', 'id')
-                ->where('locales.3.code', 'vi'));
+                ->has('locales', 10)
+                ->where('locales', fn ($locales) => $locales->pluck('code')->all() === self::LOCALE_ORDER));
     }
 
     public function test_customer_validation_messages_use_english(): void
@@ -233,7 +276,7 @@ class LocaleTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->withSession(['market' => 'id', 'locale' => 'en'])
+            ->withSession(['market' => 'ID', 'locale' => 'en'])
             ->from(route('stores.create'))
             ->post(route('stores.store'), [])
             ->assertRedirect(route('stores.create'))
@@ -244,7 +287,7 @@ class LocaleTest extends TestCase
 
     public function test_malay_locale_uses_malay_validation_messages(): void
     {
-        $this->withSession(['market' => 'ms', 'locale' => 'ms'])
+        $this->withSession(['market' => 'MY', 'locale' => 'ms'])
             ->from(route('login'))
             ->post(route('login.store'), [
                 'email' => 'alamat-tidak-sah',

@@ -19,7 +19,7 @@ class ApplyCashTransaction
     public function handle(int $storeId, int $accountId, string $direction, string $amount, string $reason, ?Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes, ?string $idempotencyKey = null, ?string $requestHash = null, bool $requireEmptyAccount = false): CashTransaction
     {
         if (! in_array($direction, ['in', 'out'], true) || Decimal::compare($amount, '0', Decimal::MONEY_SCALE) <= 0) {
-            throw ValidationException::withMessages(['amount' => 'Nominal transaksi harus lebih besar dari nol.']);
+            throw ValidationException::withMessages(['amount' => __('The transaction amount must be greater than zero.')]);
         }
         DB::table('financial_account_balances')->insertOrIgnore([
             'store_id' => $storeId, 'financial_account_id' => $accountId, 'balance' => 0,
@@ -29,18 +29,18 @@ class ApplyCashTransaction
         $latestTransaction = CashTransaction::query()->where(['store_id' => $storeId, 'financial_account_id' => $accountId])
             ->latest('occurred_at')->latest('id')->lockForUpdate()->first(['occurred_at']);
         if ($requireEmptyAccount && $latestTransaction !== null) {
-            throw ValidationException::withMessages(['account' => 'Saldo awal hanya dapat diposting sebelum akun memiliki transaksi.']);
+            throw ValidationException::withMessages(['account' => __('An opening balance can only be posted before the account has transactions.')]);
         }
         if ($latestTransaction !== null && $occurredAt->lt(CarbonImmutable::parse((string) $latestTransaction->occurred_at))) {
-            throw ValidationException::withMessages(['occurred_at' => 'Waktu transaksi tidak boleh mendahului transaksi terakhir akun.']);
+            throw ValidationException::withMessages(['occurred_at' => __("The transaction time cannot be earlier than the account's latest transaction.")]);
         }
         $signedAmount = $direction === 'in' ? $amount : Decimal::subtract('0', $amount, Decimal::MONEY_SCALE);
         $newBalance = Decimal::add($balance->balance, $signedAmount, Decimal::MONEY_SCALE);
         if (Decimal::compare($newBalance, '0', Decimal::MONEY_SCALE) < 0) {
-            throw ValidationException::withMessages(['amount' => 'Saldo akun tidak mencukupi.']);
+            throw ValidationException::withMessages(['amount' => __('The account balance is insufficient.')]);
         }
         if (Decimal::compare($newBalance, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0) {
-            throw ValidationException::withMessages(['amount' => 'Saldo akun melebihi kapasitas nominal yang didukung.']);
+            throw ValidationException::withMessages(['amount' => __('The account balance exceeds the supported amount capacity.')]);
         }
         $balance->update(['balance' => $newBalance]);
 

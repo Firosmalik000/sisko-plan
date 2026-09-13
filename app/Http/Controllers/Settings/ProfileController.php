@@ -128,7 +128,7 @@ class ProfileController extends Controller
 
         if ($user->ownedStores()->exists()) {
             throw ValidationException::withMessages([
-                'password' => 'Akun pemilik toko tidak dapat dihapus. Alihkan atau tutup kepemilikan toko terlebih dahulu.',
+                'password' => __("A store owner's account cannot be deleted. Transfer or close the store ownership first."),
             ]);
         }
 

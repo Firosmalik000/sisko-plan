@@ -9,18 +9,25 @@ import { Spinner } from '@/components/ui/spinner';
 import { translate } from '@/lib/i18n';
 import storesRoutes from '@/routes/stores';
 
-type CountryOption = { code: string; name: string; currency: { code: string; name: string; symbol: string } };
+type CountryOption = {
+    code: string;
+    name: string;
+    currency: { code: string; name: string; symbol: string };
+    default_timezone: string;
+    timezones: string[];
+};
 
 export default function CreateStore({ countries, defaultCountry }: { countries: CountryOption[]; defaultCountry: string }) {
     const [countryCode, setCountryCode] = useState(defaultCountry);
-    const currency = countries.find((country) => country.code === countryCode)?.currency;
+    const country = countries.find((option) => option.code === countryCode);
+    const currency = country?.currency;
 
     return (
         <AppPage
-            title={translate('Buat toko')}
-            description={translate('Lengkapi identitas dasar toko.')}
+            title={translate('Create store')}
+            description={translate('Lengkapi identity dasar store.')}
             icon={Building2}
-            back={{ href: storesRoutes.index.url(), label: translate('Daftar toko') }}
+            back={{ href: storesRoutes.index.url(), label: translate('List store') }}
             size="form"
         >
             <PageSection>
@@ -30,8 +37,8 @@ export default function CreateStore({ countries, defaultCountry }: { countries: 
                             <FormInput
                                 id="name"
                                 name="name"
-                                label={translate('Nama toko')}
-                                placeholder={translate('Contoh: Toko Berkah Utama')}
+                                label={translate('Store name')}
+                                placeholder={translate('Sample: Store Berkah Main')}
                                 autoFocus
                                 required
                                 maxLength={120}
@@ -40,17 +47,17 @@ export default function CreateStore({ countries, defaultCountry }: { countries: 
                             <FormTextarea
                                 id="address"
                                 name="address"
-                                label={translate('Alamat toko')}
+                                label={translate('Store address')}
                                 rows={3}
                                 maxLength={500}
-                                placeholder={translate('Contoh: Jalan Utama No. 10')}
+                                placeholder={translate('Example: 10 Main Street')}
                                 error={errors.address}
                             />
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <FormSelect
                                     id="country"
                                     name="country"
-                                    label={translate('Negara toko')}
+                                    label={translate('Store country')}
                                     value={countryCode}
                                     onChange={(event) => setCountryCode(event.target.value)}
                                     required
@@ -63,16 +70,31 @@ export default function CreateStore({ countries, defaultCountry }: { countries: 
                                     ))}
                                 </FormSelect>
                                 <div>
-                                    <p className="mb-2 text-sm font-medium">{translate('Mata uang')}</p>
+                                    <p className="mb-2 text-sm font-medium">{translate('Currency')}</p>
                                     <div className="flex h-11 items-center gap-2 rounded-xl border border-input bg-muted/40 px-3 text-sm font-semibold">
                                         <Coins className="size-4 text-muted-foreground" />
                                         {currency ? `${currency.code} (${currency.symbol})` : '-'}
                                     </div>
                                 </div>
                             </div>
+                            <FormSelect
+                                key={countryCode}
+                                id="timezone"
+                                name="timezone"
+                                label={translate('Time zone')}
+                                defaultValue={country?.default_timezone}
+                                required
+                                error={errors.timezone}
+                            >
+                                {(country?.timezones ?? []).map((timezone) => (
+                                    <option key={timezone} value={timezone}>
+                                        {timezone.replace('Asia/', '').replaceAll('_', ' ')}
+                                    </option>
+                                ))}
+                            </FormSelect>
                             <Button disabled={processing} size="touch" className="w-full">
                                 {processing && <Spinner />}
-                                {translate('Buat toko dan lanjutkan')}
+                                {translate('Create store and continue')}
                             </Button>
                         </>
                     )}
@@ -82,4 +104,4 @@ export default function CreateStore({ countries, defaultCountry }: { countries: 
     );
 }
 
-CreateStore.layout = { breadcrumbs: [{ title: 'Buat toko', href: storesRoutes.create.url() }] };
+CreateStore.layout = { breadcrumbs: [{ title: 'Create store', href: storesRoutes.create.url() }] };

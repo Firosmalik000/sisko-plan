@@ -18,7 +18,7 @@ final class LocaleContext
     /** @return list<string> */
     public static function allowedLocales(Request $request, ?bool $customerPortal = null): array
     {
-        return [self::ENGLISH, self::MALAYSIA, self::INDONESIA, self::VIETNAM];
+        return ['en', 'id', 'ms', 'vi', 'th', 'fil', 'km', 'lo', 'my', 'tet'];
     }
 
     public static function locale(Request $request): string
@@ -32,31 +32,19 @@ final class LocaleContext
 
     public static function localeFromCountry(Request $request): string
     {
-        $header = (string) config('localization.country_header', 'CF-IPCountry');
-        $country = strtoupper(trim((string) $request->header($header)));
-
-        return match ($country) {
-            'ID' => self::INDONESIA,
-            'MY' => self::MALAYSIA,
-            'VN' => self::VIETNAM,
-            default => self::ENGLISH,
-        };
+        return (string) (config('localization.countries.'.self::countryFromRequest($request).'.locale') ?? self::ENGLISH);
     }
 
     public static function market(Request $request): string
     {
-        $market = $request->session()->get('market');
-        if (in_array($market, [self::INDONESIA, self::MALAYSIA, self::VIETNAM], true)) {
+        $market = strtoupper(trim((string) $request->session()->get('market')));
+        if (array_key_exists($market, config('localization.countries', []))) {
             return $market;
         }
 
-        $locale = $request->session()->get('locale', config('app.locale', self::INDONESIA));
+        $country = self::countryFromRequest($request);
 
-        return match ($locale) {
-            self::MALAYSIA => self::MALAYSIA,
-            self::VIETNAM => self::VIETNAM,
-            default => self::INDONESIA,
-        };
+        return array_key_exists($country, config('localization.countries', [])) ? $country : 'ID';
     }
 
     /** @return list<array{code:string,label:string}> */
@@ -64,9 +52,15 @@ final class LocaleContext
     {
         return [
             ['code' => self::ENGLISH, 'label' => 'English'],
-            ['code' => self::MALAYSIA, 'label' => 'Bahasa Melayu'],
             ['code' => self::INDONESIA, 'label' => 'Bahasa Indonesia'],
+            ['code' => self::MALAYSIA, 'label' => 'Bahasa Melayu'],
             ['code' => self::VIETNAM, 'label' => 'Tiếng Việt'],
+            ['code' => 'th', 'label' => 'ไทย'],
+            ['code' => 'fil', 'label' => 'Filipino'],
+            ['code' => 'km', 'label' => 'ភាសាខ្មែរ'],
+            ['code' => 'lo', 'label' => 'ພາສາລາວ'],
+            ['code' => 'my', 'label' => 'မြန်မာဘာသာ'],
+            ['code' => 'tet', 'label' => 'Tetum'],
         ];
     }
 
@@ -84,5 +78,12 @@ final class LocaleContext
         $user = $request->user();
 
         return $user instanceof User && ! $user->isPlatformAdmin();
+    }
+
+    private static function countryFromRequest(Request $request): string
+    {
+        $header = (string) config('localization.country_header', 'CF-IPCountry');
+
+        return strtoupper(trim((string) $request->header($header)));
     }
 }

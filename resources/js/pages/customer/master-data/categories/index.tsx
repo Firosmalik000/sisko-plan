@@ -24,10 +24,10 @@ export default function CategoriesIndex({
 }) {
     return (
         <ReferenceDataPage
-            title="Kategori produk"
+            title="Category product"
             icon={Tags}
             routes={{ index: index.url(), store: store.url(), update: update.url }}
-            singular="Kategori"
+            singular="Category"
             items={categories}
             search={search}
             status={status}
@@ -37,10 +37,10 @@ export default function CategoriesIndex({
             fields={[
                 {
                     name: 'reference_code',
-                    label: 'Referensi kategori',
+                    label: 'Reference category',
                     type: 'select',
                     options: (values) => [
-                        { value: '', label: translate('Kategori custom') },
+                        { value: '', label: translate('User-defined category') },
                         ...categoryReferences
                             .filter((item) => item.is_active || item.code === values.reference_code)
                             .map((item) => ({
@@ -61,17 +61,17 @@ export default function CategoriesIndex({
                 },
                 {
                     name: 'name',
-                    label: 'Nama kategori',
-                    placeholder: 'Minuman dingin',
+                    label: 'Category name',
+                    placeholder: 'Cold drink',
                     change: () => ({ name_is_custom: true }),
                 },
                 {
                     name: 'name_is_custom',
-                    label: 'Nama khusus',
+                    label: 'Custom name',
                     type: 'select',
                     options: [
-                        { value: 'true', label: translate('Nama khusus') },
-                        { value: 'false', label: translate('Gunakan nama standar') },
+                        { value: 'true', label: translate('Custom name') },
+                        { value: 'false', label: translate('Use the standard name') },
                     ],
                     change: (value) => ({ name_is_custom: value === 'true' }),
                 },

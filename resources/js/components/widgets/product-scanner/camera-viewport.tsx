@@ -108,7 +108,7 @@ export function CameraViewport({
                 muted
                 playsInline
                 className="absolute inset-0 size-full object-cover"
-                aria-label={translate('Pratinjau kamera')}
+                aria-label={translate('Preview camera')}
             />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,28,24,.7)_0%,transparent_25%,transparent_62%,rgba(8,28,24,.9)_100%)]" />
 
@@ -117,21 +117,19 @@ export function CameraViewport({
                     type="button"
                     onClick={onClose}
                     className="grid size-12 place-items-center rounded-full bg-[#14201d]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                    aria-label={translate('Tutup kamera')}
+                    aria-label={translate('Close camera')}
                 >
                     <X className="size-5" />
                 </button>
                 <div className="min-w-0 rounded-xl bg-[#14201d]/75 px-2 py-2 text-center backdrop-blur-sm sm:px-3">
-                    <p className="text-sm font-black">
-                        {translate(scanMode === 'photo' ? 'Arahkan ke satu barang' : 'Arahkan ke barcode')}
-                    </p>
+                    <p className="text-sm font-black">{translate(scanMode === 'photo' ? 'Point to one item' : 'Point to barcode')}</p>
                     <p className="text-[11px] text-[var(--app-soft-strong)]">
                         {translate(
                             scanMode === 'photo'
                                 ? autoActive
-                                    ? 'Foto otomatis setelah kamera stabil'
-                                    : 'Tekan tombol untuk mengambil foto'
-                                : 'Barcode terbaca otomatis tanpa menekan tombol',
+                                    ? 'Photo is taken automatically when the camera is steady'
+                                    : 'Press the button to take a photo'
+                                : 'Barcode is detected automatically without pressing a button',
                         )}
                     </p>
                 </div>
@@ -140,7 +138,7 @@ export function CameraViewport({
                     onClick={onToggleTorch}
                     disabled={!torchAvailable}
                     className="grid size-12 place-items-center rounded-full bg-[#14201d]/75 text-white backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-35"
-                    aria-label={translate(torchOn ? 'Matikan lampu' : 'Nyalakan lampu')}
+                    aria-label={translate(torchOn ? 'Turn off the lights' : 'Turn on the lights')}
                 >
                     {torchOn ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
                 </button>
@@ -154,14 +152,14 @@ export function CameraViewport({
                         aria-live="polite"
                     >
                         <Camera className="mx-auto size-8 text-[#d66a35]" />
-                        <p className="mt-3 text-base font-black">{translate('Kamera belum tersedia')}</p>
+                        <p className="mt-3 text-base font-black">{translate('Camera unavailable')}</p>
                         <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">{translate(error)}</p>
                         <button
                             type="button"
                             onClick={onRetry}
                             className="mt-4 min-h-11 w-full rounded-xl border border-[var(--border)] bg-white px-4 text-sm font-black text-[#14201d] focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
                         >
-                            {translate('Coba lagi')}
+                            {translate('Try again')}
                         </button>
                         {onManualSearch && (
                             <button
@@ -169,7 +167,7 @@ export function CameraViewport({
                                 onClick={onManualSearch}
                                 className="mt-2 min-h-11 w-full rounded-xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[#e2793c] focus-visible:outline-none"
                             >
-                                {translate(manualActionLabel ?? 'Cari manual')}
+                                {translate(manualActionLabel ?? 'Search manual')}
                             </button>
                         )}
                     </div>
@@ -248,9 +246,9 @@ export function CameraViewport({
                                     )}
                                     {translate(
                                         barcodeStatus === 'success'
-                                            ? 'Berhasil. Produk masuk ke hasil scan.'
+                                            ? 'Product added to scan results.'
                                             : barcodeStatus === 'not_found'
-                                              ? 'Produk belum terdaftar'
+                                              ? 'Product not registered'
                                               : barcodeFeedback.message,
                                     )}
                                 </div>
@@ -273,10 +271,10 @@ export function CameraViewport({
                                     type="button"
                                     onClick={() => onReviewPhoto(photo.id)}
                                     className="size-full"
-                                    aria-label={translate('Lihat hasil')}
+                                    aria-label={translate('View results')}
                                 >
                                     {photo.previewUrl ? (
-                                        <img src={photo.previewUrl} alt={translate('Foto produk')} className="size-full object-cover" />
+                                        <img src={photo.previewUrl} alt={translate('Product photo')} className="size-full object-cover" />
                                     ) : (
                                         <Camera className="m-auto size-6" />
                                     )}
@@ -293,7 +291,7 @@ export function CameraViewport({
                                 <button
                                     type="button"
                                     onClick={() => onRemoveProductPhoto?.(photo.id)}
-                                    aria-label={translate('Hapus foto produk')}
+                                    aria-label={translate('Delete product photo')}
                                     className="absolute top-0 right-0 grid size-8 place-items-center rounded-full bg-black/70 text-white"
                                 >
                                     <X className="size-4" />
@@ -304,7 +302,7 @@ export function CameraViewport({
                 )}
                 {pendingCount >= 10 && (
                     <p role="status" className="mb-2 text-center text-xs text-white">
-                        {translate('Antrean penuh. Periksa hasil atau tunggu foto selesai.')}
+                        {translate('Queue full. Review the results or wait for photo processing to finish.')}
                     </p>
                 )}
                 <div className="mx-auto mb-3 flex w-full max-w-sm items-center gap-2 px-4">
@@ -321,7 +319,7 @@ export function CameraViewport({
                                 className={`min-h-12 min-w-0 flex-1 rounded-full px-2 text-xs font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${scanMode === 'photo' ? 'bg-white !text-[#14201d]' : 'text-white/70'}`}
                                 aria-pressed={scanMode === 'photo'}
                             >
-                                {translate('Foto barang')}
+                                {translate('Item photo')}
                             </button>
                             <button
                                 type="button"
@@ -333,7 +331,7 @@ export function CameraViewport({
                                 className={`min-h-12 min-w-0 flex-1 rounded-full px-2 text-xs font-black transition ${scanMode === 'barcode' ? 'bg-white !text-[#14201d]' : 'text-white/70'}`}
                                 aria-pressed={scanMode === 'barcode'}
                             >
-                                {translate('Barcode')}
+                                {translate('Barcodes')}
                             </button>
                         </div>
                     )}
@@ -345,7 +343,7 @@ export function CameraViewport({
                             className="flex min-h-12 items-center gap-2 rounded-full bg-black/50 px-3 text-xs font-bold text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:opacity-50"
                         >
                             {autoActive ? <Pause className="size-4" /> : <Play className="size-4" />}
-                            {translate(autoActive && canCapture ? 'Auto aktif' : 'Auto jeda')}
+                            {translate(autoActive && canCapture ? 'Auto active' : 'Auto paused')}
                         </button>
                     )}
                 </div>
@@ -355,22 +353,24 @@ export function CameraViewport({
                             {translate(
                                 manualPhotoFallback
                                     ? aiQuotaExhausted
-                                        ? 'Kuota foto AI habis. Foto ini tetap bisa dipakai untuk isi produk manual.'
-                                        : 'Foto AI sedang tidak tersedia. Foto ini tetap bisa dipakai untuk isi produk manual.'
+                                        ? 'AI photo quota is exhausted. You can still use this photo to enter the product manually.'
+                                        : 'AI photo recognition is currently unavailable. You can still use this photo to enter the product manually.'
                                     : aiQuotaExhausted
-                                      ? 'Kuota foto AI bulan ini habis. Barcode tetap bisa digunakan.'
-                                      : 'Foto AI sedang tidak tersedia. Barcode tetap bisa digunakan.',
+                                      ? 'The monthly AI photo quota has been reached. You can still use barcodes.'
+                                      : 'AI photo recognition is unavailable. You can still use barcodes.',
                             )}
                         </p>
                         {!manualPhotoFallback && aiQuotaExhausted && (
                             <>
-                                <p className="mt-1 font-medium">{translate('Tambah kuota AI untuk mengenali produk dari foto.')}</p>
+                                <p className="mt-1 font-medium">
+                                    {translate('Increase the AI scan allowance to recognize products from photos.')}
+                                </p>
                                 <button
                                     type="button"
                                     onClick={onScanLimitContact}
                                     className="mt-2 inline-flex min-h-10 items-center justify-center rounded-lg bg-[#14201d] px-4 font-black text-white"
                                 >
-                                    {translate('Tambah kuota scan AI')}
+                                    {translate('Add kuota scan AI')}
                                 </button>
                             </>
                         )}
@@ -385,14 +385,14 @@ export function CameraViewport({
                                 onClick={onScanLimitContact}
                                 className="mt-2 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-[var(--app-ink)] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-red-950 focus-visible:outline-none"
                             >
-                                Hubungi admin
+                                Contact admin
                             </button>
                         )}
                     </div>
                 )}
                 {scanMode === 'photo' && photoStatus === 'failed' && (
                     <p role="alert" className="mx-5 mb-3 rounded-xl bg-red-950/90 px-3 py-2 text-center text-xs font-bold text-white">
-                        {translate(photoError || 'Foto gagal diproses. Coba lagi.')}
+                        {translate(photoError || 'The photo could not be processed. Try again.')}
                     </p>
                 )}
                 {scanMode === 'barcode' && barcodeStatus === 'not_found' && onManualSearch && !barcodeError && (
@@ -402,14 +402,14 @@ export function CameraViewport({
                             onClick={onManualSearch}
                             className="min-h-11 rounded-xl bg-white px-4 text-sm font-black text-[#14201d] focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                         >
-                            {translate(manualActionLabel ?? 'Cari manual')}
+                            {translate(manualActionLabel ?? 'Search manual')}
                         </button>
                     </div>
                 )}
                 <div className="flex w-full items-center justify-between gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:gap-4 sm:px-5">
                     <label className="grid size-12 cursor-pointer place-items-center rounded-2xl bg-white/12 text-white focus-within:ring-2 focus-within:ring-white">
                         <Images className="size-5" />
-                        <span className="sr-only">{translate('Pilih dari galeri')}</span>
+                        <span className="sr-only">{translate('Select from gallery')}</span>
                         <input type="file" accept="image/*" multiple onChange={onGallery} className="sr-only" />
                     </label>
                     {scanMode === 'photo' && (
@@ -418,7 +418,7 @@ export function CameraViewport({
                             onClick={onCapture}
                             disabled={!ready || !canCapture}
                             className="grid size-[4.5rem] place-items-center rounded-full border-[5px] border-white bg-[#e2793c] shadow-[0_12px_30px_-12px_rgba(226,121,60,.8)] transition focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none active:scale-95 disabled:opacity-70 motion-reduce:transition-none"
-                            aria-label={translate('Ambil foto')}
+                            aria-label={translate('Take photo')}
                         >
                             <span className="size-10 rounded-full border-2 border-white/80" />
                         </button>
@@ -429,7 +429,7 @@ export function CameraViewport({
                         disabled={captures.length === 0 && productPhotos.length === 0 && productDraftCount === 0}
                         className="min-h-12 min-w-20 rounded-2xl bg-white px-3 text-sm font-black !text-[#14201d] disabled:opacity-70 sm:min-w-24"
                     >
-                        {translate('Hasil')} ({captures.length || productDraftCount || productPhotos.length})
+                        {translate('Results')} ({captures.length || productDraftCount || productPhotos.length})
                     </button>
                 </div>
             </div>

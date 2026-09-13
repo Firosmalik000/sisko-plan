@@ -17,11 +17,11 @@ import { CategoryBreakdown, SalesChart } from './dashboard-charts';
 import type { BusinessDashboardProps, PeriodKey, Position, RevenueComparison, TopProduct } from './types';
 
 const periodOptions: Array<{ key: PeriodKey; label: string; description: string }> = [
-    { key: 'day', label: 'Harian', description: 'Hari ini' },
-    { key: 'month', label: 'Bulanan', description: 'Bulan ini' },
-    { key: 'quarter', label: '3 Bulan', description: '3 bulan terakhir' },
-    { key: 'semester', label: '6 Bulan', description: '6 bulan terakhir' },
-    { key: 'year', label: 'Tahunan', description: '12 bulan terakhir' },
+    { key: 'day', label: 'Daily', description: 'Today' },
+    { key: 'month', label: 'Monthly', description: 'This month' },
+    { key: 'quarter', label: '3 Month', description: '3 month last' },
+    { key: 'semester', label: '6 Month', description: '6 month last' },
+    { key: 'year', label: 'Annual', description: '12 month last' },
 ];
 
 export function BusinessDashboard({
@@ -40,7 +40,7 @@ export function BusinessDashboard({
 
     return (
         <AppPage
-            title={translate('Ringkasan Bisnis')}
+            title={translate('Business overview')}
             description={periodLabel}
             icon={BarChart3}
             headerSurface
@@ -53,7 +53,7 @@ export function BusinessDashboard({
                         }
                     >
                         <SelectTrigger className="h-11 w-full min-w-0 rounded-xl bg-background shadow-none sm:min-w-40">
-                            <SelectValue placeholder={translate('Pilih periode')} />
+                            <SelectValue placeholder={translate('Select period')} />
                         </SelectTrigger>
                         <SelectContent>
                             {periodOptions.map((option) => (
@@ -66,7 +66,7 @@ export function BusinessDashboard({
                     <Button asChild size="touch">
                         <Link href={posIndex.url()}>
                             <ShoppingCart />
-                            {translate('Buka kasir')}
+                            {translate('Open checkout')}
                         </Link>
                     </Button>
                 </>
@@ -74,13 +74,13 @@ export function BusinessDashboard({
         >
             <MetricStrip>
                 <MetricItem
-                    label={translate('Penjualan bersih')}
+                    label={translate('Net sales')}
                     value={formatCompactMoney(performance.net_revenue)}
                     detail={<ChangeBadge comparison={comparison} />}
                 />
-                <MetricItem label={translate('Laba kotor')} value={formatCompactMoney(performance.gross_profit)} />
-                <MetricItem label={translate('Transaksi')} value={String(transactions)} />
-                <MetricItem label={translate('Kas & bank')} value={formatCompactMoney(position.cash_balance)} />
+                <MetricItem label={translate('Gross profit')} value={formatCompactMoney(performance.gross_profit)} />
+                <MetricItem label={translate('Transactions')} value={String(transactions)} />
+                <MetricItem label={translate('Cash & bank')} value={formatCompactMoney(position.cash_balance)} />
             </MetricStrip>
 
             <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(18rem,.75fr)]">
@@ -101,7 +101,7 @@ export function BusinessDashboard({
 
 function ChangeBadge({ comparison }: { comparison: RevenueComparison }) {
     const Icon = comparison.direction === 'up' ? ArrowUpRight : comparison.direction === 'down' ? ArrowDownRight : Clock3;
-    const label = comparison.direction === 'up' ? 'Naik' : comparison.direction === 'down' ? 'Turun' : 'Tetap';
+    const label = comparison.direction === 'up' ? 'Up' : comparison.direction === 'down' ? 'Down' : 'Unchanged';
     const variant = comparison.direction === 'down' ? 'destructive' : comparison.direction === 'flat' ? 'outline' : 'secondary';
 
     return (
@@ -116,20 +116,20 @@ function ChangeBadge({ comparison }: { comparison: RevenueComparison }) {
 function BusinessPosition({ position }: { position: Position }) {
     return (
         <PageSection
-            title={translate('Posisi Usaha')}
+            title={translate('Business Position')}
             actions={
                 <Button asChild variant="ghost" size="sm">
                     <Link href={reportsIndex.url()}>
-                        {translate('Laporan lengkap')}
+                        {translate('View report')}
                         <ArrowUpRight />
                     </Link>
                 </Button>
             }
             contentClassName="px-4 pb-4 sm:px-5 sm:pb-5"
         >
-            <PositionRow label="Kas & bank" value={position.cash_balance} />
-            <PositionRow label="Nilai persediaan" value={position.inventory_value} />
-            <PositionRow label="Utang supplier" value={position.supplier_payable} />
+            <PositionRow label="Cash & bank" value={position.cash_balance} />
+            <PositionRow label="Inventory value" value={position.inventory_value} />
+            <PositionRow label="Supplier debt" value={position.supplier_payable} />
         </PageSection>
     );
 }
@@ -145,9 +145,9 @@ function PositionRow({ label, value }: { label: string; value: string }) {
 
 function TopProducts({ products }: { products: TopProduct[] }) {
     return (
-        <PageSection title={translate('Top 3 Produk')} contentClassName="p-4 sm:p-5">
+        <PageSection title={translate('Top 3 Products')} contentClassName="p-4 sm:p-5">
             {products.length === 0 ? (
-                <EmptyState icon={Boxes} title={translate('Belum ada produk terjual')} />
+                <EmptyState icon={Boxes} title={translate('No products sold yet')} />
             ) : (
                 <div className="space-y-3">
                     {products.map((product, index) => (
@@ -159,13 +159,13 @@ function TopProducts({ products }: { products: TopProduct[] }) {
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-medium">{product.product_name}</p>
                                 <p className="truncate text-xs text-muted-foreground">
-                                    {formatQuantity(product.net_quantity_sold)} {translate('terjual')}
+                                    {formatQuantity(product.net_quantity_sold)} {translate('sold')}
                                 </p>
                             </div>
                             <div className="text-right">
                                 <p className="text-sm font-medium">{formatCompactMoney(product.net_revenue)}</p>
                                 <p className="text-xs text-muted-foreground">
-                                    {formatCompactMoney(product.gross_profit)} {translate('laba')}
+                                    {formatCompactMoney(product.gross_profit)} {translate('profit')}
                                 </p>
                             </div>
                         </div>
@@ -179,16 +179,16 @@ function TopProducts({ products }: { products: TopProduct[] }) {
 function LowStockPanel({ items }: { items: BusinessDashboardProps['lowStock'] }) {
     return (
         <PageSection
-            title={translate('Stok Kritis')}
+            title={translate('Stock Critical')}
             actions={
                 <Button asChild variant="outline" size="sm">
-                    <Link href={inventory.url()}>{translate('Kelola stok')}</Link>
+                    <Link href={inventory.url()}>{translate('Manage stock')}</Link>
                 </Button>
             }
             contentClassName="p-4 sm:p-5"
         >
             {items.length === 0 ? (
-                <EmptyState icon={Boxes} title={translate('Stok dalam kondisi aman')} />
+                <EmptyState icon={Boxes} title={translate('Stock levels are safe')} />
             ) : (
                 <div className="space-y-2">
                     {items.map((item, index) => (

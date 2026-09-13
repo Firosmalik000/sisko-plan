@@ -91,7 +91,7 @@ const decodeWithZxingWasm = async (images: Blob[]): Promise<string> => {
     const values = new Set(results.map((result) => result.text.trim()).filter(Boolean));
 
     if (values.size > 1) {
-        throw new Error('Ada beberapa kode. Foto satu barcode saja.');
+        throw new Error(translate('Multiple codes were found. Photograph only one barcode.'));
     }
 
     if (values.size === 1) {
@@ -107,7 +107,7 @@ const decodeWithZxingWasm = async (images: Blob[]): Promise<string> => {
         });
 
         if (values.size > 1) {
-            throw new Error('Ada beberapa kode. Foto satu barcode saja.');
+            throw new Error(translate('Multiple codes were found. Photograph only one barcode.'));
         }
     }
 
@@ -125,3 +125,4 @@ export async function decodeBarcodeImage(image: Blob): Promise<string> {
 
     return Promise.race([decodeWithZxingWasm(images), new Promise<string>((resolve) => window.setTimeout(() => resolve(''), 12000))]);
 }
+import { translate } from '@/lib/i18n';

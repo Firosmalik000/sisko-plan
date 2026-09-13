@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { decodeBarcodeImage } from '@/components/widgets/product-scanner/decode-barcode-image';
+import { translate } from '@/lib/i18n';
 
 type BarcodeDetectorResult = { rawValue: string };
 type BarcodeDetectorInstance = {
@@ -97,13 +98,15 @@ export function useCamera(open: boolean, onBarcode: (value: string) => boolean |
             setError(null);
 
             if (!window.isSecureContext) {
-                setError('Akses kamera memerlukan HTTPS. Buka halaman ini melalui alamat HTTPS.');
+                setError(translate('Camera access requires HTTPS. Open this page using an HTTPS address.'));
 
                 return;
             }
 
             if (!navigator.mediaDevices?.getUserMedia) {
-                setError('Browser ini tidak menyediakan akses kamera. Gunakan browser terbaru atau pilih foto dari galeri.');
+                setError(
+                    translate('This browser does not support camera access. Use a current browser or select a photo from the gallery.'),
+                );
 
                 return;
             }
@@ -279,16 +282,16 @@ function cameraErrorMessage(reason: unknown): string {
     const name = reason instanceof DOMException ? reason.name : '';
 
     if (name === 'NotAllowedError' || name === 'SecurityError') {
-        return 'Izin kamera ditolak. Izinkan kamera di pengaturan situs, lalu coba lagi.';
+        return translate('Camera access was denied. Allow camera access in site settings, then try again.');
     }
 
     if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
-        return 'Kamera tidak ditemukan pada perangkat ini. Pilih foto dari galeri untuk melanjutkan.';
+        return translate('No camera was found on this device. Select a photo from the gallery to continue.');
     }
 
     if (name === 'NotReadableError' || name === 'TrackStartError' || name === 'AbortError') {
-        return 'Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut, lalu coba lagi.';
+        return translate('The camera is being used by another application. Close it, then try again.');
     }
 
-    return 'Kamera tidak dapat dibuka. Periksa izin kamera, lalu coba lagi atau pilih foto dari galeri.';
+    return translate('The camera could not be opened. Check camera permissions, then try again or select a photo from the gallery.');
 }

@@ -15,7 +15,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
     return (
         <>
-            <Head title={t('Lupa kata sandi')} />
+            <Head title={t('Forgot password')} />
 
             {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{t(status)}</div>}
 
@@ -24,7 +24,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-2">
-                                <Label htmlFor="email">{t('Alamat email')}</Label>
+                                <Label htmlFor="email">{t('Email address')}</Label>
                                 <Input id="email" type="email" name="email" autoComplete="off" autoFocus placeholder="email@example.com" />
 
                                 <InputError message={errors.email} />
@@ -33,7 +33,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             <div className="my-6 flex items-center justify-start">
                                 <Button className="w-full" disabled={processing} data-test="email-password-reset-link-button">
                                     {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                                    {t('Kirim tautan reset kata sandi')}
+                                    {t('Send password reset link')}
                                 </Button>
                             </div>
                         </>
@@ -41,8 +41,8 @@ export default function ForgotPassword({ status }: { status?: string }) {
                 </Form>
 
                 <div className="space-x-1 text-center text-sm text-muted-foreground">
-                    <span>{t('Atau kembali ke')}</span>
-                    <TextLink href={login()}>{t('masuk')}</TextLink>
+                    <span>{t('Or return to')}</span>
+                    <TextLink href={login()}>{t('sign in')}</TextLink>
                 </div>
             </div>
         </>

@@ -54,7 +54,7 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
-                    <DialogTitle>Remove passkey</DialogTitle>
+                    <DialogTitle>Remove password</DialogTitle>
                     <DialogDescription>
                         {t(
                             `Are you sure you want to remove the "${passkey.name}" passkey? You will no longer be able to use it to sign in.`,
@@ -65,7 +65,7 @@ export default function PasskeyItem({ passkey, onDelete }: Props) {
                             <Button variant="secondary">Cancel</Button>
                         </DialogClose>
                         <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-                            {isDeleting ? 'Removing...' : 'Remove passkey'}
+                            {isDeleting ? 'Removing...' : 'Remove password'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

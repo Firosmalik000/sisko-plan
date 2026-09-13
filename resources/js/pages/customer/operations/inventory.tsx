@@ -41,22 +41,6 @@ type Movement = {
     occurred_at: string;
 };
 
-const reasons: Record<string, string> = {
-    opening_stock: 'Saldo awal',
-    adjustment_in: 'Stok masuk',
-    adjustment_out: 'Stok keluar',
-    stock_opname_in: 'Stock opname masuk',
-    stock_opname_out: 'Stock opname keluar',
-    damaged: 'Rusak',
-    lost: 'Hilang',
-    inventory_contribution: 'Setoran modal',
-    inventory_withdrawal: 'Penarikan modal',
-    sale: 'Penjualan',
-    sale_return: 'Retur penjualan',
-    purchase: 'Pembelian',
-    product_stock_update: 'Pembaruan stok produk',
-};
-
 export default function InventoryPage({
     products,
     movements,
@@ -67,6 +51,21 @@ export default function InventoryPage({
     timezone: string;
 }) {
     const { t } = useTranslation();
+    const reasons: Record<string, string> = {
+        opening_stock: t('Opening stock'),
+        adjustment_in: t('Stock adjustment in'),
+        adjustment_out: t('Stock adjustment out'),
+        stock_opname_in: t('Stock count increase'),
+        stock_opname_out: t('Stock count decrease'),
+        damaged: t('Damaged'),
+        lost: t('Lost'),
+        inventory_contribution: t('Inventory capital contribution'),
+        inventory_withdrawal: t('Inventory capital withdrawal'),
+        sale: t('Sale'),
+        sale_return: t('Sale return'),
+        purchase: t('Purchase'),
+        product_stock_update: t('Product stock update'),
+    };
     const [search, setSearch] = useState('');
     const [stockStatus, setStockStatus] = useState('all');
     const normalizedSearch = search.trim().toLocaleLowerCase(localeTag());
@@ -93,38 +92,38 @@ export default function InventoryPage({
     const lowStockCount = products.filter(isLowStock).length;
 
     return (
-        <OperationsShell active={inventoryIndex.url()} title="Persediaan" icon={Warehouse}>
+        <OperationsShell active={inventoryIndex.url()} title="Inventory" icon={Warehouse}>
             <MetricStrip className="[&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
-                <MetricItem label={translate('Item stok')} value={String(products.length)} />
+                <MetricItem label={translate('Item stock')} value={String(products.length)} />
                 <MetricItem
-                    label={translate('Stok kritis')}
+                    label={translate('Critical stock')}
                     value={<span className={lowStockCount > 0 ? 'text-destructive' : undefined}>{lowStockCount}</span>}
                 />
-                <MetricItem label={translate('Nilai persediaan')} value={formatCompactMoney(totalValue)} />
+                <MetricItem label={translate('Inventory value')} value={formatCompactMoney(totalValue)} />
             </MetricStrip>
 
-            <LedgerCard title="Daftar Persediaan">
+            <LedgerCard title="List Inventory">
                 <div className="mb-3 flex flex-col gap-2 sm:flex-row">
                     <label className="relative flex-1">
-                        <span className="sr-only">Cari persediaan</span>
+                        <span className="sr-only">Search inventory</span>
                         <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <input
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             className={`${fieldClass} pl-9`}
-                            placeholder="Cari produk, varian, atau SKU"
+                            placeholder="Search product, variant, or SKU"
                         />
                     </label>
                     <label>
-                        <span className="sr-only">Filter status stok</span>
+                        <span className="sr-only">Filter status stock</span>
                         <select
                             value={stockStatus}
                             onChange={(event) => setStockStatus(event.target.value)}
                             className={`${fieldClass} sm:w-40`}
                         >
-                            <option value="all">Semua stok</option>
-                            <option value="low">Stok kritis</option>
-                            <option value="safe">Stok aman</option>
+                            <option value="all">All stock</option>
+                            <option value="low">Critical stock</option>
+                            <option value="safe">Stock is healthy</option>
                         </select>
                     </label>
                 </div>
@@ -134,12 +133,12 @@ export default function InventoryPage({
                         <table className="w-full text-left text-sm">
                             <thead className="hidden bg-secondary text-[10px] font-bold tracking-[0.1em] text-[var(--muted-foreground)] uppercase md:table-header-group">
                                 <tr>
-                                    <th className="px-4 py-3">Produk</th>
+                                    <th className="px-4 py-3">Product</th>
                                     <th className="px-3 py-3">SKU</th>
-                                    <th className="px-3 py-3 text-right">Stok saat ini</th>
-                                    <th className="px-3 py-3 text-right">Batas minimum</th>
-                                    <th className="px-3 py-3 text-right">HPP rata-rata/unit</th>
-                                    <th className="px-3 py-3 text-right">Nilai persediaan</th>
+                                    <th className="px-3 py-3 text-right">Current stock</th>
+                                    <th className="px-3 py-3 text-right">Minimum stock</th>
+                                    <th className="px-3 py-3 text-right">Average unit cost</th>
+                                    <th className="px-3 py-3 text-right">Inventory value</th>
                                     <th className="px-4 py-3 text-right">Status</th>
                                 </tr>
                             </thead>
@@ -154,7 +153,7 @@ export default function InventoryPage({
                                                     </span>
                                                     <span className="font-bold text-[var(--app-ink)]">{group.name}</span>
                                                     <span className="rounded-md bg-card px-2 py-0.5 text-[10px] font-bold text-[var(--muted-foreground)] ring-1 ring-[var(--app-ink)]/8">
-                                                        {group.products.length} varian
+                                                        {group.products.length} variants
                                                     </span>
                                                 </div>
                                             </td>
@@ -178,7 +177,7 @@ export default function InventoryPage({
                                                                 {product.variant_name ?? product.name}
                                                             </span>
                                                             <span className="mt-0.5 block text-xs text-muted-foreground md:hidden">
-                                                                {product.sku || translate('Tanpa SKU')}
+                                                                {product.sku || translate('No SKU')}
                                                             </span>
                                                         </div>
                                                         <span className="md:hidden">
@@ -191,26 +190,26 @@ export default function InventoryPage({
                                                 </td>
                                                 <td className="p-0 font-bold text-[var(--app-primary)] tabular-nums md:table-cell md:px-3 md:py-3 md:text-right">
                                                     <span className="block text-[10px] font-medium text-muted-foreground md:hidden">
-                                                        {translate('Stok saat ini')}
+                                                        {translate('Current stock')}
                                                     </span>
                                                     {quantity(product.quantity)}{' '}
                                                     <span className="text-[10px] font-bold text-muted-foreground">{product.unit}</span>
                                                 </td>
                                                 <td className="p-0 text-right text-muted-foreground tabular-nums md:table-cell md:px-3 md:py-3">
                                                     <span className="block text-[10px] font-medium md:hidden">
-                                                        {translate('Batas minimum')}
+                                                        {translate('Minimum stock')}
                                                     </span>
                                                     {quantity(product.minimum_quantity)}
                                                 </td>
                                                 <td className="p-0 text-muted-foreground tabular-nums md:table-cell md:px-3 md:py-3 md:text-right">
                                                     <span className="block text-[10px] font-medium md:hidden">
-                                                        {translate('HPP rata-rata')}
+                                                        {translate('Average COGS')}
                                                     </span>
                                                     {money(product.average_cost)}
                                                 </td>
                                                 <td className="p-0 text-right font-bold text-foreground tabular-nums md:table-cell md:px-3 md:py-3">
                                                     <span className="block text-[10px] font-medium text-muted-foreground md:hidden">
-                                                        {translate('Nilai persediaan')}
+                                                        {translate('Inventory value')}
                                                     </span>
                                                     {money(product.inventory_value)}
                                                 </td>
@@ -227,24 +226,24 @@ export default function InventoryPage({
                     {visibleGroups.length === 0 && (
                         <div className="flex min-h-32 flex-col items-center justify-center px-4 text-center">
                             <Boxes className="size-5 text-muted-foreground" />
-                            <p className="mt-2 text-sm font-bold text-muted-foreground">Persediaan tidak ditemukan</p>
+                            <p className="mt-2 text-sm font-bold text-muted-foreground">Inventory not found</p>
                         </div>
                     )}
                 </div>
             </LedgerCard>
 
-            <LedgerCard title="Riwayat Stok">
+            <LedgerCard title="Stock history">
                 <div className="overflow-hidden rounded-xl border border-border">
                     <div>
                         <table className="w-full text-left text-sm">
                             <thead className="hidden bg-secondary text-[10px] font-bold tracking-[0.1em] text-[var(--muted-foreground)] uppercase md:table-header-group">
                                 <tr>
-                                    <th className="px-4 py-3">Produk</th>
-                                    <th className="px-3 py-3">Aktivitas</th>
-                                    <th className="px-3 py-3 text-right">Stok sebelum</th>
-                                    <th className="px-3 py-3 text-right">Perubahan</th>
-                                    <th className="px-3 py-3 text-right">Stok akhir</th>
-                                    <th className="px-4 py-3 text-right">Waktu</th>
+                                    <th className="px-4 py-3">Product</th>
+                                    <th className="px-3 py-3">Activity</th>
+                                    <th className="px-3 py-3 text-right">Stock before</th>
+                                    <th className="px-3 py-3 text-right">Changes</th>
+                                    <th className="px-3 py-3 text-right">Stock ending</th>
+                                    <th className="px-4 py-3 text-right">Time</th>
                                 </tr>
                             </thead>
                             <tbody className="block divide-y divide-border md:table-row-group">
@@ -259,14 +258,14 @@ export default function InventoryPage({
                                             <td className="col-span-2 p-0 font-bold text-foreground md:table-cell md:px-4 md:py-3">
                                                 {movement.product_name}
                                                 <span className="mt-0.5 block text-xs font-normal text-muted-foreground md:hidden">
-                                                    {t(reasons[movement.reason] ?? movement.reason)}
+                                                    {reasons[movement.reason] ?? movement.reason}
                                                 </span>
                                             </td>
                                             <td className="hidden px-3 py-3 text-muted-foreground md:table-cell">
-                                                {t(reasons[movement.reason] ?? movement.reason)}
+                                                {reasons[movement.reason] ?? movement.reason}
                                             </td>
                                             <td className="p-0 text-right text-xs text-muted-foreground md:table-cell md:px-3 md:py-3">
-                                                <span className="block text-[10px] md:hidden">{translate('Waktu')}</span>
+                                                <span className="block text-[10px] md:hidden">{translate('Time')}</span>
                                                 <span className="md:hidden">{ledgerDateTime(movement.occurred_at, timezone)}</span>
                                                 <span className="hidden tabular-nums md:inline">
                                                     {quantity(movement.quantity_before)}{' '}
@@ -275,7 +274,7 @@ export default function InventoryPage({
                                             </td>
                                             <td className="p-0 md:table-cell md:px-3 md:py-3 md:text-right">
                                                 <span className="block text-[10px] text-muted-foreground md:hidden">
-                                                    {translate('Perubahan')}
+                                                    {translate('Changes')}
                                                 </span>
                                                 <span
                                                     className={`inline-flex items-center gap-1 font-bold tabular-nums ${positive ? 'text-[var(--app-primary)]' : 'text-destructive'}`}
@@ -291,7 +290,7 @@ export default function InventoryPage({
                                             </td>
                                             <td className="p-0 font-bold tabular-nums md:table-cell md:px-3 md:py-3 md:text-right">
                                                 <span className="block text-[10px] font-medium text-muted-foreground md:hidden">
-                                                    {translate('Stok akhir')}
+                                                    {translate('Stock ending')}
                                                 </span>
                                                 {quantity(movement.quantity_after)}{' '}
                                                 <span className="text-[10px] font-bold text-muted-foreground">{movement.unit}</span>
@@ -306,7 +305,7 @@ export default function InventoryPage({
                         </table>
                     </div>
                     {movements.data.length === 0 && (
-                        <p className="py-10 text-center text-sm font-bold text-muted-foreground">Belum ada riwayat stok</p>
+                        <p className="py-10 text-center text-sm font-bold text-muted-foreground">No stock history yet</p>
                     )}
                 </div>
                 <div className="mt-4">
@@ -322,7 +321,7 @@ function StockBadge({ low }: { low: boolean }) {
         <span
             className={`inline-flex rounded-lg px-2 py-1 text-[10px] font-bold ${low ? 'bg-destructive/10 text-destructive' : 'bg-[var(--app-soft)] text-[var(--app-primary)]'}`}
         >
-            {low ? 'Kritis' : 'Aman'}
+            {low ? 'Critical' : 'Safe'}
         </span>
     );
 }

@@ -21,19 +21,19 @@ type StockCount = {
 
 const statuses = {
     draft: {
-        label: 'Sedang dihitung',
+        label: 'Counting',
         className: 'bg-amber-50 text-amber-700 ring-amber-200',
     },
     counted: {
-        label: 'Menunggu posting',
+        label: 'Waiting post',
         className: 'bg-sky-50 text-sky-700 ring-sky-200',
     },
     posted: {
-        label: 'Diposting',
+        label: 'Posted',
         className: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
     },
     cancelled: {
-        label: 'Dibatalkan',
+        label: 'Cancelled',
         className: 'bg-muted text-muted-foreground ring-border',
     },
 };
@@ -48,15 +48,20 @@ export default function StockOpnameIndex({
     timezone: string;
 }) {
     return (
-        <OperationsShell active={stockOpnamesIndex.url()} title="Stock Opname" icon={ClipboardList}>
+        <OperationsShell active={stockOpnamesIndex.url()} title="Stock Stock count" icon={ClipboardList}>
             {canManage && (
-                <LedgerCard title="Mulai Opname">
+                <LedgerCard title="Start Stock count">
                     <Form action={storeStockOpname.url()} method="post" className="flex flex-col gap-3 sm:flex-row sm:items-end">
                         {({ processing, errors }) => (
                             <>
                                 <label className="min-w-0 flex-1">
-                                    <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Catatan</span>
-                                    <input name="notes" maxLength={500} className={fieldClass} placeholder="Contoh: Opname akhir bulan" />
+                                    <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Notes</span>
+                                    <input
+                                        name="notes"
+                                        maxLength={500}
+                                        className={fieldClass}
+                                        placeholder="Sample: Stock count ending month"
+                                    />
                                     {errors.notes && (
                                         <span className="mt-1 block text-xs font-semibold text-destructive">{errors.notes}</span>
                                     )}
@@ -66,7 +71,7 @@ export default function StockOpnameIndex({
                                 </label>
                                 <Button type="submit" size="touch" disabled={processing}>
                                     <Plus className="size-4" />
-                                    Mulai opname
+                                    Start stock count
                                 </Button>
                             </>
                         )}
@@ -74,7 +79,7 @@ export default function StockOpnameIndex({
                 </LedgerCard>
             )}
 
-            <LedgerCard title={`${translate('Riwayat Opname')} (${counts.total.toLocaleString()})`}>
+            <LedgerCard title={`${translate('Stock count history')} (${counts.total.toLocaleString()})`}>
                 {counts.data.length > 0 ? (
                     <div className="grid gap-3 lg:grid-cols-2">
                         {counts.data.map((count) => {
@@ -106,10 +111,10 @@ export default function StockOpnameIndex({
                                     </div>
 
                                     <div className="mt-4 grid grid-cols-3 gap-2">
-                                        <Metric label="Produk" value={count.items_count} />
-                                        <Metric label="Dihitung" value={`${count.counted_items_count}/${count.items_count}`} />
+                                        <Metric label="Product" value={count.items_count} />
+                                        <Metric label="Counted" value={`${count.counted_items_count}/${count.items_count}`} />
                                         <Metric
-                                            label="Selisih"
+                                            label="Difference"
                                             value={count.discrepancy_items_count}
                                             danger={count.discrepancy_items_count > 0}
                                         />
@@ -128,7 +133,7 @@ export default function StockOpnameIndex({
                                         </div>
                                     )}
                                     <div className="mt-3 flex items-center justify-end gap-1 text-xs font-bold text-primary">
-                                        Buka <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+                                        Open <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
                                     </div>
                                 </Link>
                             );
@@ -139,7 +144,7 @@ export default function StockOpnameIndex({
                         <span className="flex size-12 items-center justify-center rounded-2xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                             <PackageCheck className="size-6" />
                         </span>
-                        <p className="mt-3 font-bold text-foreground">Belum ada stock opname</p>
+                        <p className="mt-3 font-bold text-foreground">No stock counts yet</p>
                     </div>
                 )}
                 <div className="mt-4">

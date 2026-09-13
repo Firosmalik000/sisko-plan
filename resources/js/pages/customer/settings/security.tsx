@@ -30,7 +30,7 @@ export default function Security(props: Props) {
             <h1 className="sr-only">{t('Security settings')}</h1>
 
             <div className="space-y-6">
-                <PageSection title={t('Ubah kata sandi')} contentClassName="p-4 sm:p-5">
+                <PageSection title={t('Change password')} contentClassName="p-4 sm:p-5">
                     <Form
                         {...SecurityController.update.form()}
                         options={{
@@ -52,7 +52,7 @@ export default function Security(props: Props) {
                         {({ errors, processing }) => (
                             <>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="current_password">{t('Kata sandi saat ini')}</Label>
+                                    <Label htmlFor="current_password">{t('Current password')}</Label>
 
                                     <PasswordInput
                                         id="current_password"
@@ -60,14 +60,14 @@ export default function Security(props: Props) {
                                         name="current_password"
                                         className="mt-1 block w-full"
                                         autoComplete="current-password"
-                                        placeholder={t('Kata sandi saat ini')}
+                                        placeholder={t('Current password')}
                                     />
 
                                     <InputError message={errors.current_password} />
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="password">{t('Kata sandi baru')}</Label>
+                                    <Label htmlFor="password">{t('Password new')}</Label>
 
                                     <PasswordInput
                                         id="password"
@@ -75,7 +75,7 @@ export default function Security(props: Props) {
                                         name="password"
                                         className="mt-1 block w-full"
                                         autoComplete="new-password"
-                                        placeholder={t('Kata sandi baru')}
+                                        placeholder={t('Password new')}
                                         passwordrules={props.passwordRules}
                                     />
 
@@ -83,14 +83,14 @@ export default function Security(props: Props) {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="password_confirmation">{t('Ulangi kata sandi baru')}</Label>
+                                    <Label htmlFor="password_confirmation">{t('Repeat new password')}</Label>
 
                                     <PasswordInput
                                         id="password_confirmation"
                                         name="password_confirmation"
                                         className="mt-1 block w-full"
                                         autoComplete="new-password"
-                                        placeholder={t('Ulangi kata sandi baru')}
+                                        placeholder={t('Repeat new password')}
                                         passwordrules={props.passwordRules}
                                     />
 
@@ -99,7 +99,7 @@ export default function Security(props: Props) {
 
                                 <div className="flex items-center gap-4">
                                     <Button size="touch" disabled={processing} data-test="update-password-button">
-                                        {t('Simpan kata sandi')}
+                                        {t('Save password')}
                                     </Button>
                                 </div>
                             </>

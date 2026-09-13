@@ -28,10 +28,10 @@ export default function UnitsIndex({
 }) {
     return (
         <ReferenceDataPage
-            title="Satuan barang"
+            title="Unit item"
             icon={Ruler}
             routes={{ index: index.url(), store: store.url(), update: update.url }}
-            singular="Satuan"
+            singular="Unit"
             items={units}
             search={search}
             status={status}
@@ -41,10 +41,10 @@ export default function UnitsIndex({
             fields={[
                 {
                     name: 'reference_code',
-                    label: 'Referensi satuan',
+                    label: 'Reference unit',
                     type: 'select',
                     options: (values) => [
-                        { value: '', label: translate('Satuan custom') },
+                        { value: '', label: translate('User-defined unit') },
                         ...unitReferences
                             .filter(
                                 (item) =>
@@ -70,38 +70,38 @@ export default function UnitsIndex({
                 },
                 {
                     name: 'name',
-                    label: 'Nama satuan',
-                    placeholder: 'Botol',
+                    label: 'Unit name',
+                    placeholder: 'Bottle',
                     change: () => ({ name_is_custom: true }),
                 },
                 {
                     name: 'name_is_custom',
-                    label: 'Nama khusus',
+                    label: 'Custom name',
                     type: 'select',
                     options: [
-                        { value: 'true', label: translate('Nama khusus') },
-                        { value: 'false', label: translate('Gunakan nama standar') },
+                        { value: 'true', label: translate('Custom name') },
+                        { value: 'false', label: translate('Use the standard name') },
                     ],
                     change: (value) => ({ name_is_custom: value === 'true' }),
                 },
                 {
                     name: 'symbol',
-                    label: 'Singkatan',
+                    label: 'Abbreviation',
                     placeholder: 'btl',
                 },
                 {
                     name: 'unit_type',
-                    label: 'Kelompok',
+                    label: 'Group',
                     type: 'select',
                     options: [
-                        { value: 'retail', label: 'Ecer' },
-                        { value: 'large', label: 'Besar' },
+                        { value: 'retail', label: 'Retail' },
+                        { value: 'large', label: 'Bulk' },
                     ],
                 },
             ]}
             details={[
-                { key: 'symbol', label: 'Singkatan' },
-                { key: 'unit_type_label', label: 'Kelompok' },
+                { key: 'symbol', label: 'Abbreviation' },
+                { key: 'unit_type_label', label: 'Group' },
             ]}
         />
     );

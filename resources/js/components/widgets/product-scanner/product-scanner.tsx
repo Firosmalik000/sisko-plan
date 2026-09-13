@@ -201,7 +201,7 @@ export default function ProductScanner({
                 })
                 .catch((error: unknown) => {
                     setBarcodeStatus('not_found');
-                    setBarcodeError(error instanceof Error ? error.message : 'Pencarian barcode gagal. Coba lagi.');
+                    setBarcodeError(error instanceof Error ? error.message : translate('Barcode lookup failed. Try again.'));
                 })
                 .finally(() => {
                     window.setTimeout(() => {
@@ -249,7 +249,7 @@ export default function ProductScanner({
 
                 if (!barcode) {
                     setBarcodeStatus('not_found');
-                    setBarcodeError('Barcode belum terbaca. Dekatkan dan ratakan kode.');
+                    setBarcodeError(translate('The barcode could not be read. Move closer and align the code.'));
 
                     return;
                 }
@@ -297,7 +297,7 @@ export default function ProductScanner({
                 await scanner.addBlobs([blob], false);
             }
         } catch (error) {
-            setBarcodeError(error instanceof Error ? error.message : 'Foto gagal disiapkan. Coba lagi.');
+            setBarcodeError(error instanceof Error ? error.message : translate('The photo could not be prepared. Try again.'));
         } finally {
             captureBusyRef.current = false;
         }
@@ -430,7 +430,7 @@ export default function ProductScanner({
         const files = selectedFiles.filter((file) => file.type.startsWith('image/') && file.size <= 20 * 1024 * 1024);
 
         if (files.length !== selectedFiles.length) {
-            setBarcodeError('Foto tidak dapat diproses. Pilih JPG, PNG, atau WebP di bawah 20 MB.');
+            setBarcodeError(translate('The photo could not be processed. Select a JPG, PNG, or WebP file under 20 MB.'));
         }
 
         event.target.value = '';
@@ -449,10 +449,12 @@ export default function ProductScanner({
                     if (barcode) {
                         handleBarcode(barcode);
                     } else {
-                        setBarcodeError('Barcode belum terbaca. Pilih foto yang menampilkan seluruh kode.');
+                        setBarcodeError(translate('The barcode could not be read. Select a photo that shows the entire code.'));
                     }
                 }
-            })().catch((error: unknown) => setBarcodeError(error instanceof Error ? error.message : 'Foto gagal disiapkan. Coba lagi.'));
+            })().catch((error: unknown) =>
+                setBarcodeError(error instanceof Error ? error.message : translate('The photo could not be prepared. Try again.')),
+            );
 
             return;
         }
@@ -461,7 +463,9 @@ export default function ProductScanner({
             void scanner
                 .replaceBlob(retakeCaptureId, files[0])
                 .then(() => setRetakeCaptureId(null))
-                .catch((error: unknown) => setBarcodeError(error instanceof Error ? error.message : 'Foto gagal disiapkan. Coba lagi.'));
+                .catch((error: unknown) =>
+                    setBarcodeError(error instanceof Error ? error.message : translate('The photo could not be prepared. Try again.')),
+                );
 
             return;
         }
@@ -478,7 +482,9 @@ export default function ProductScanner({
                         await onProductCapture(photo);
                     }
                 }
-            })().catch((error: unknown) => setBarcodeError(error instanceof Error ? error.message : 'Foto gagal disiapkan. Coba lagi.'));
+            })().catch((error: unknown) =>
+                setBarcodeError(error instanceof Error ? error.message : translate('The photo could not be prepared. Try again.')),
+            );
 
             return;
         }
@@ -493,7 +499,9 @@ export default function ProductScanner({
 
         void scanner
             .addBlobs(singleCapture ? files.slice(0, 1) : files)
-            .catch((error: unknown) => setBarcodeError(error instanceof Error ? error.message : 'Foto gagal disiapkan. Coba lagi.'));
+            .catch((error: unknown) =>
+                setBarcodeError(error instanceof Error ? error.message : translate('The photo could not be prepared. Try again.')),
+            );
     };
 
     const cameraCaptures = scanner.captures;
@@ -542,7 +550,7 @@ export default function ProductScanner({
                                     onClick={dismiss}
                                     className="min-h-11 rounded-xl border border-white px-5 text-white"
                                 >
-                                    {translate('Batal')}
+                                    {translate('Cancel')}
                                 </button>
                                 <button
                                     type="button"
@@ -553,7 +561,7 @@ export default function ProductScanner({
                                     }}
                                     className="min-h-11 rounded-xl border border-white px-5 text-white"
                                 >
-                                    {translate('Ulangi')}
+                                    {translate('Try again')}
                                 </button>
                                 <button
                                     type="button"
@@ -573,14 +581,14 @@ export default function ProductScanner({
                                             setPendingPhoto(null);
                                             onOpenChange(false);
                                         } catch {
-                                            setBarcodeError('Foto gagal disiapkan. Coba lagi.');
+                                            setBarcodeError(translate('The photo could not be prepared. Try again.'));
                                         } finally {
                                             applyingRef.current = false;
                                             setSavingPhoto(false);
                                         }
                                     }}
                                 >
-                                    {translate(savingPhoto ? 'Memproses foto…' : 'Gunakan foto')}
+                                    {translate(savingPhoto ? 'Processing photo…' : 'Use photo')}
                                 </button>
                             </div>
                         </div>
@@ -700,7 +708,9 @@ export default function ProductScanner({
                             onToggleTorch={() => void camera.toggleTorch()}
                             onRetry={camera.retry}
                             onManualSearch={scanner.captures.length === 0 ? onManualSearch : undefined}
-                            manualActionLabel={manualActionLabel ?? (purpose === 'product' ? 'Isi tanpa foto' : 'Cari manual')}
+                            manualActionLabel={
+                                manualActionLabel ?? translate(purpose === 'product' ? 'Continue without a photo' : 'Search manually')
+                            }
                             onScanLimitContact={openScanLimitContact}
                         />
                     )}

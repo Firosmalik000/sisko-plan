@@ -89,7 +89,7 @@ export function CustomerHeader() {
         <button
             type="button"
             onClick={isMobile ? () => handleStockNoticeOpen(true) : undefined}
-            aria-label={unreadCount > 0 ? `${unreadCount} ${t('notifikasi belum dibaca')}` : t('Buka notifikasi')}
+            aria-label={unreadCount > 0 ? `${unreadCount} ${t('unread notifications')}` : t('Open notifications')}
             className={cn(
                 'relative ml-auto grid size-11 shrink-0 place-items-center rounded-full transition focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none',
                 unreadCount > 0 ? 'bg-destructive/10 text-destructive hover:bg-destructive/15' : 'text-primary hover:bg-secondary',
@@ -124,9 +124,11 @@ export function CustomerHeader() {
                         <ResponsiveDialog
                             open={stockNoticeOpen}
                             onOpenChange={handleStockNoticeOpen}
-                            title={t('Notifikasi')}
+                            title={t('Notifications')}
                             description={
-                                stockAlertCount > 0 ? `${stockAlertCount} ${t('stok perlu perhatian')}` : t('Semua stok dalam kondisi aman')
+                                stockAlertCount > 0
+                                    ? `${stockAlertCount} ${t('stock items need attention')}`
+                                    : t('All stock levels are safe')
                             }
                             size="sm"
                             bodyClassName="p-0 sm:p-0"
@@ -149,11 +151,11 @@ export function CustomerHeader() {
                             className="w-[min(23rem,calc(100vw-1.25rem))] overflow-hidden rounded-2xl border-border bg-popover p-0 shadow-xl dark:shadow-none"
                         >
                             <div className="border-b border-border px-4 py-3.5">
-                                <p className="text-sm font-bold text-foreground">{t('Notifikasi')}</p>
+                                <p className="text-sm font-bold text-foreground">{t('Notifications')}</p>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
                                     {stockAlertCount > 0
-                                        ? `${stockAlertCount} ${t('stok perlu perhatian')}`
-                                        : t('Semua stok dalam kondisi aman')}
+                                        ? `${stockAlertCount} ${t('stock items need attention')}`
+                                        : t('All stock levels are safe')}
                                 </p>
                             </div>
                             <StockNotificationContent
@@ -176,7 +178,7 @@ export function CustomerHeader() {
                         <DropdownMenuTrigger asChild>
                             <button
                                 type="button"
-                                aria-label="Buka menu akun"
+                                aria-label="Open account menu"
                                 className="grid size-11 shrink-0 place-items-center rounded-full ring-[var(--app-primary)]/30 transition outline-none focus-visible:ring-4"
                             >
                                 <Avatar className="size-9">
@@ -202,23 +204,23 @@ export function CustomerHeader() {
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] font-semibold text-muted-foreground">
-                                        {t('Akun')}
+                                        {t('Account')}
                                     </DropdownMenuLabel>
                                     <DropdownMenuItem asChild className="rounded-xl p-3">
                                         <Link href={edit()}>
                                             <UserRound className="size-4" />
-                                            {t('Profil')}
+                                            {t('Profile')}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild className="rounded-xl p-3">
                                         <Link href={editSecurity()}>
                                             <ShieldCheck className="size-4" />
-                                            {t('Keamanan')}
+                                            {t('Security')}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] font-semibold text-muted-foreground">
-                                        {t('Preferensi')}
+                                        {t('Preferences')}
                                     </DropdownMenuLabel>
                                     <DropdownMenuItem
                                         onSelect={(event) => {
@@ -228,7 +230,7 @@ export function CustomerHeader() {
                                         className="min-h-11 gap-3 rounded-xl px-3"
                                     >
                                         <Globe2 className="size-4" />
-                                        <span>{t('Bahasa')}</span>
+                                        <span>{t('Language')}</span>
                                         <span className="ml-auto text-xs text-muted-foreground">{localeLabel}</span>
                                         <ChevronRight className="size-4" />
                                     </DropdownMenuItem>
@@ -240,27 +242,27 @@ export function CustomerHeader() {
                                         className="min-h-11 gap-3 rounded-xl px-3"
                                     >
                                         <Sun className="size-4" />
-                                        <span>{t('Tampilan')}</span>
+                                        <span>{t('Appearance')}</span>
                                         <span className="ml-auto text-xs text-muted-foreground">
-                                            {t(appearance === 'light' ? 'Terang' : appearance === 'dark' ? 'Gelap' : 'Sistem')}
+                                            {t(appearance === 'light' ? 'Light' : appearance === 'dark' ? 'Dark' : 'System')}
                                         </span>
                                         <ChevronRight className="size-4" />
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] font-semibold text-muted-foreground">
-                                        {t('Paket')}
+                                        {t('Plans')}
                                     </DropdownMenuLabel>
                                     <DropdownMenuItem asChild className="rounded-xl p-3">
                                         <Link href={subscriptionRoutes.index.url()}>
                                             <CreditCard className="size-4" />
-                                            {t('Langganan')}
+                                            {t('Subscriptions')}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild className="rounded-xl p-3 text-rose-700">
                                         <Link href={logout()} as="button" className="w-full" onClick={() => router.flushAll()}>
                                             <LogOut className="size-4" />
-                                            {t('Keluar')}
+                                            {t('Sign out')}
                                         </Link>
                                     </DropdownMenuItem>
                                 </>
@@ -274,7 +276,7 @@ export function CustomerHeader() {
                                         className="min-h-11 gap-3 rounded-xl px-3 font-medium"
                                     >
                                         <ArrowLeft className="size-4" />
-                                        {t('Kembali')}
+                                        {t('Back')}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     {profilePanel === 'language' ? (
@@ -312,8 +314,8 @@ function StockNotificationContent({
                 <span className="grid size-11 place-items-center rounded-xl bg-secondary text-primary">
                     <CheckCheck className="size-5" aria-hidden="true" />
                 </span>
-                <p className="mt-3 text-sm font-semibold text-foreground">{t('Stok aman')}</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('Tidak ada produk yang perlu diisi ulang.')}</p>
+                <p className="mt-3 text-sm font-semibold text-foreground">{t('Stock is healthy')}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{t('No products need restocking.')}</p>
             </div>
         );
     }
@@ -350,17 +352,14 @@ function StockNotificationContent({
                                         {item.variant_name && <p className="truncate text-xs text-muted-foreground">{item.variant_name}</p>}
                                     </div>
                                     {itemUnread && (
-                                        <span
-                                            aria-label={t('Belum dibaca')}
-                                            className="mt-1.5 size-2 shrink-0 rounded-full bg-destructive"
-                                        />
+                                        <span aria-label={t('Unread')} className="mt-1.5 size-2 shrink-0 rounded-full bg-destructive" />
                                     )}
                                 </div>
                                 <p className={cn('mt-1.5 text-xs font-medium', empty ? 'text-destructive' : 'text-primary')}>
-                                    {empty ? t('Stok habis') : `${t('Sisa')} ${formatQuantity(item.quantity)} ${item.unit}`}
+                                    {empty ? t('Out of stock') : `${t('Remaining')} ${formatQuantity(item.quantity)} ${item.unit}`}
                                     <span className="text-muted-foreground">
                                         {' '}
-                                        · {t('Batas')} {formatQuantity(item.minimum_quantity)} {item.unit}
+                                        · {t('Limits')} {formatQuantity(item.minimum_quantity)} {item.unit}
                                     </span>
                                 </p>
                             </div>
@@ -375,7 +374,7 @@ function StockNotificationContent({
                     onClick={onNavigate}
                     className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl text-xs font-semibold text-primary transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
-                    {t('Lihat inventori')}
+                    {t('View inventory')}
                     <ChevronRight className="size-3.5" aria-hidden="true" />
                 </Link>
             </div>

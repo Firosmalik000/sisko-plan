@@ -75,7 +75,7 @@ export default function ReportsPage({
 
     return (
         <AppPage
-            title={translate('Laporan usaha')}
+            title={translate('Reports usaha')}
             description={selectedPeriod}
             icon={BarChart3}
             size="wide"
@@ -85,7 +85,7 @@ export default function ReportsPage({
                     <FormInput
                         id="report-start-date"
                         name="start_date"
-                        label={translate('Mulai')}
+                        label={translate('Start')}
                         type="date"
                         value={startDate}
                         onChange={(event) => setStartDate(event.target.value)}
@@ -93,31 +93,31 @@ export default function ReportsPage({
                     <FormInput
                         id="report-end-date"
                         name="end_date"
-                        label={translate('Sampai')}
+                        label={translate('To')}
                         type="date"
                         value={endDate}
                         onChange={(event) => setEndDate(event.target.value)}
                     />
                     <Button type="submit" size="touch" className="col-span-2 self-end sm:col-span-1">
-                        {translate('Tampilkan')}
+                        {translate('Show')}
                     </Button>
                 </form>
             }
         >
             <MetricStrip className="[&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
-                <MetricItem label={translate('Penjualan bersih')} value={compactMoney(performance.net_revenue)} />
-                <MetricItem label={translate('HPP bersih')} value={compactMoney(performance.net_cogs)} />
-                <MetricItem label={translate('Laba kotor')} value={compactMoney(performance.gross_profit)} />
-                <MetricItem label={translate('Biaya toko')} value={compactMoney(performance.expenses)} />
-                <MetricItem label={translate('Estimasi laba usaha')} value={compactMoney(performance.estimated_profit)} />
+                <MetricItem label={translate('Net sales')} value={compactMoney(performance.net_revenue)} />
+                <MetricItem label={translate('HPP clean')} value={compactMoney(performance.net_cogs)} />
+                <MetricItem label={translate('Gross profit')} value={compactMoney(performance.gross_profit)} />
+                <MetricItem label={translate('Expense store')} value={compactMoney(performance.expenses)} />
+                <MetricItem label={translate('Estimated profit usaha')} value={compactMoney(performance.estimated_profit)} />
             </MetricStrip>
 
-            <PageSection title={translate('Posisi usaha')}>
+            <PageSection title={translate('Business position')}>
                 <MetricStrip className="rounded-none bg-card">
-                    <MetricItem label={translate('Kas & bank')} value={compactMoney(position.cash_balance)} />
-                    <MetricItem label={translate('Nilai persediaan')} value={compactMoney(position.inventory_value)} />
-                    <MetricItem label={translate('Utang supplier')} value={compactMoney(position.supplier_payable)} />
-                    <MetricItem label={translate('Stok menipis')} value={`${position.low_stock_count} ${translate('produk')}`} />
+                    <MetricItem label={translate('Cash & bank')} value={compactMoney(position.cash_balance)} />
+                    <MetricItem label={translate('Inventory value')} value={compactMoney(position.inventory_value)} />
+                    <MetricItem label={translate('Supplier debt')} value={compactMoney(position.supplier_payable)} />
+                    <MetricItem label={translate('Stock running low')} value={`${position.low_stock_count} ${translate('products')}`} />
                 </MetricStrip>
             </PageSection>
 
@@ -150,17 +150,17 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
 
     return (
         <PageSection
-            title={translate('Penjualan dan estimasi laba')}
+            title={translate('Sales and estimated profit')}
             description={period}
             actions={
                 <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
                         <span className="size-2 rounded-full bg-primary" />
-                        {translate('Penjualan')}
+                        {translate('Sales')}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                         <span className="size-2 rounded-full bg-muted-foreground" />
-                        {translate('Estimasi laba')}
+                        {translate('Estimated profit')}
                     </span>
                 </div>
             }
@@ -174,7 +174,7 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                             preserveAspectRatio="none"
                             className="h-full w-full overflow-visible"
                             role="img"
-                            aria-label="Grafik penjualan bersih dan estimasi laba"
+                            aria-label="Net sales and estimated profit chart"
                         >
                             {[top, (top + bottom) / 2, bottom].map((lineY) => (
                                 <line
@@ -220,7 +220,7 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                                         strokeWidth="2.5"
                                         vectorEffect="non-scaling-stroke"
                                     >
-                                        <title>{`${dateLabel(point.date)}: ${translate('penjualan')} ${money(point.net_revenue)}, ${translate('estimasi laba')} ${money(point.estimated_profit)}`}</title>
+                                        <title>{`${dateLabel(point.date)}: ${translate('sales')} ${money(point.net_revenue)}, ${translate('estimated profit')} ${money(point.estimated_profit)}`}</title>
                                     </circle>
                                 ))}
                         </svg>
@@ -232,7 +232,7 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
                     </div>
                 </>
             ) : (
-                <EmptyState icon={LineChart} title={translate('Belum ada transaksi pada periode ini')} />
+                <EmptyState icon={LineChart} title={translate('No transactions in this period')} />
             )}
         </PageSection>
     );
@@ -240,7 +240,7 @@ function TrendChart({ data, period }: { data: Daily[]; period: string }) {
 
 function ProductPerformance({ products }: { products: Product[] }) {
     return (
-        <PageSection title={translate('Produk terlaris')} description={translate('Maks. 20 produk')}>
+        <PageSection title={translate('Best-selling products')} description={translate('Maks. 20 product')}>
             {products.length > 0 ? (
                 <>
                     <div className="divide-y divide-[var(--app-ink)]/6 md:hidden">
@@ -251,9 +251,9 @@ function ProductPerformance({ products }: { products: Product[] }) {
                                     <p className="shrink-0 text-sm font-black text-[var(--app-primary)]">{money(item.gross_profit)}</p>
                                 </div>
                                 <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                                    <ProductStat label="Terjual" value={quantity(item.quantity_sold)} />
-                                    <ProductStat label="Retur" value={quantity(item.quantity_returned)} danger />
-                                    <ProductStat label="Penjualan" value={compactMoney(item.net_revenue)} />
+                                    <ProductStat label="Sold" value={quantity(item.quantity_sold)} />
+                                    <ProductStat label="Return" value={quantity(item.quantity_returned)} danger />
+                                    <ProductStat label="Sales" value={compactMoney(item.net_revenue)} />
                                 </div>
                             </div>
                         ))}
@@ -262,12 +262,12 @@ function ProductPerformance({ products }: { products: Product[] }) {
                         <table className="w-full min-w-[760px] text-left text-sm">
                             <thead className="bg-secondary/45 text-xs font-semibold text-muted-foreground">
                                 <tr>
-                                    <th className="px-5 py-3">Produk</th>
-                                    <th className="px-3 py-3 text-right">Terjual</th>
-                                    <th className="px-3 py-3 text-right">Retur</th>
-                                    <th className="px-3 py-3 text-right">Penjualan Bersih</th>
+                                    <th className="px-5 py-3">Product</th>
+                                    <th className="px-3 py-3 text-right">Sold</th>
+                                    <th className="px-3 py-3 text-right">Return</th>
+                                    <th className="px-3 py-3 text-right">Net Sales</th>
                                     <th className="px-3 py-3 text-right">HPP</th>
-                                    <th className="px-5 py-3 text-right">Laba Kotor</th>
+                                    <th className="px-5 py-3 text-right">Profit Gross</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[var(--app-ink)]/6">
@@ -290,7 +290,7 @@ function ProductPerformance({ products }: { products: Product[] }) {
                     </div>
                 </>
             ) : (
-                <EmptyState icon={PackageSearch} title={translate('Belum ada produk terjual pada periode ini')} />
+                <EmptyState icon={PackageSearch} title={translate('No products were sold in this period')} />
             )}
         </PageSection>
     );

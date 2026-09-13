@@ -27,7 +27,7 @@ export function ProductPhoto({
             <span
                 className={fallbackClassName}
                 role={src ? 'img' : undefined}
-                aria-label={src ? translate('Foto tidak dapat ditampilkan.') : undefined}
+                aria-label={src ? translate('The photo cannot be displayed.') : undefined}
                 aria-hidden={!src}
             >
                 <PackagePlus className="size-7 text-primary" />
@@ -49,7 +49,7 @@ function hasLowStock(product: Product) {
 }
 
 function modeLabel(mode: VariantMode) {
-    return translate(mode === 'none' ? 'Tanpa varian' : mode === 'separate' ? 'Stok terpisah' : 'Stok gabungan');
+    return translate(mode === 'none' ? 'No variants' : mode === 'separate' ? 'Separate stock' : 'Shared stock');
 }
 
 export function ProductRow({
@@ -79,8 +79,8 @@ export function ProductRow({
                 <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-2">
                         <h2 className="truncate font-bold text-foreground">{product.name}</h2>
-                        {!product.is_active && <Badge variant="outline">{translate('Nonaktif')}</Badge>}
-                        {lowStock && <Badge variant="destructive">{translate('Kritis')}</Badge>}
+                        {!product.is_active && <Badge variant="outline">{translate('Inactive')}</Badge>}
+                        {lowStock && <Badge variant="destructive">{translate('Critical')}</Badge>}
                     </div>
                     <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
                         <span className="shrink-0 font-semibold text-primary">{modeLabel(product.variant_mode)}</span>
@@ -95,12 +95,12 @@ export function ProductRow({
                         <span className="font-semibold text-foreground tabular-nums">
                             {product.variant_mode === 'none'
                                 ? formatMoney(product.selling_price)
-                                : `${product.variants.length} ${translate('harga')}`}
+                                : `${product.variants.length} ${translate('prices')}`}
                         </span>
                         <span className={cn('text-muted-foreground tabular-nums', lowStock && 'font-semibold text-destructive')}>
-                            {translate('Stok')}:{' '}
+                            {translate('Stock')}:{' '}
                             {product.variant_mode === 'separate'
-                                ? `${product.variants.length} ${translate('varian')}`
+                                ? `${product.variants.length} ${translate('variants')}`
                                 : formatQuantity(product.current_stock)}
                         </span>
                     </div>
@@ -108,15 +108,15 @@ export function ProductRow({
             </div>
 
             <span className="hidden text-right text-sm font-bold text-foreground tabular-nums md:block">
-                {product.variant_mode === 'none' ? formatMoney(product.selling_price) : `${product.variants.length} ${translate('harga')}`}
+                {product.variant_mode === 'none' ? formatMoney(product.selling_price) : `${product.variants.length} ${translate('prices')}`}
             </span>
             <span className={cn('hidden text-right text-sm tabular-nums md:block', lowStock && 'font-semibold text-destructive')}>
                 {product.variant_mode === 'separate'
-                    ? `${product.variants.length} ${translate('varian')}`
+                    ? `${product.variants.length} ${translate('variants')}`
                     : formatQuantity(product.current_stock)}
             </span>
             <span className="hidden truncate text-sm text-muted-foreground md:block">
-                {translate(product.category?.name ?? 'Tanpa kategori')}
+                {translate(product.category?.name ?? 'Uncategorized')}
             </span>
 
             {canManage && (
@@ -127,7 +127,7 @@ export function ProductRow({
                             size="icon"
                             variant="ghost"
                             className="size-11 justify-self-end"
-                            aria-label={`${translate('Aksi')} ${product.name}`}
+                            aria-label={`${translate('Actions')} ${product.name}`}
                         >
                             <MoreHorizontal className="size-5" aria-hidden="true" />
                         </Button>
@@ -135,7 +135,7 @@ export function ProductRow({
                     <DropdownMenuContent align="end" className="min-w-40">
                         <DropdownMenuItem onSelect={() => onEdit(product)}>{translate('Edit')}</DropdownMenuItem>
                         <DropdownMenuItem variant="destructive" onSelect={() => onDelete(product)}>
-                            {translate('Hapus produk')}
+                            {translate('Delete product')}
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

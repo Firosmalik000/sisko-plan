@@ -9,8 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int<0, max> $id
+ * @property string $code
+ * @property string $name
+ * @property string $currency_code
+ * @property string $default_timezone
+ * @property bool $is_active
  */
-#[Fillable(['code', 'name_id', 'name_ms', 'name_en', 'currency_code', 'is_active'])]
+#[Fillable(['code', 'name', 'currency_code', 'default_timezone', 'is_active'])]
 class Country extends Model
 {
     public function getRouteKeyName(): string
@@ -32,11 +37,17 @@ class Country extends Model
 
     public function localizedName(?string $locale = null): string
     {
-        return match ($locale ?? app()->getLocale()) {
-            'ms' => $this->name_ms,
-            'en' => $this->name_en,
-            default => $this->name_id,
-        };
+        $key = "countries.{$this->code}";
+        $translated = __($key, [], $locale ?? app()->getLocale());
+
+        return $translated === $key ? $this->name : $translated;
+    }
+
+    /** @return list<string> */
+    public function timezones(): array
+    {
+        return config("localization.countries.{$this->code}.timezones")
+            ?? [$this->default_timezone];
     }
 
     protected function casts(): array

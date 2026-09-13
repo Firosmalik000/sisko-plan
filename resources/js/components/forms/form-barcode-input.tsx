@@ -36,7 +36,7 @@ export function FormBarcodeInput({
                         name={name}
                         type="text"
                         value={value}
-                        placeholder={translate('Ketik atau scan barcode')}
+                        placeholder={translate('Type or scan barcode')}
                         aria-invalid={Boolean(error)}
                         aria-describedby={fieldMessageIds(id, undefined, error)}
                         className="h-full rounded-none border-0 bg-transparent pr-10 pl-9 text-base shadow-none focus-visible:ring-0 sm:text-sm"
@@ -46,8 +46,8 @@ export function FormBarcodeInput({
                         <button
                             type="button"
                             onClick={() => onChange('')}
-                            aria-label={translate('Hapus barcode')}
-                            title={translate('Hapus barcode')}
+                            aria-label={translate('Delete barcode')}
+                            title={translate('Delete barcode')}
                             className="absolute top-1/2 right-1 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         >
                             <X className="size-4" />
@@ -56,11 +56,11 @@ export function FormBarcodeInput({
                 </div>
                 <Button type="button" variant="ghost" onClick={onGenerate} className="h-full shrink-0 rounded-none border-l px-3">
                     <RefreshCw className="size-4" />
-                    <span className="hidden sm:inline">{translate('Buat otomatis')}</span>
+                    <span className="hidden sm:inline">{translate('Generate')}</span>
                 </Button>
                 <Button type="button" variant="ghost" onClick={onScan} className="h-full shrink-0 rounded-none border-l px-3 text-primary">
                     <Camera className="size-4" />
-                    <span className="hidden sm:inline">{translate(value ? 'Scan ulang' : 'Scan')}</span>
+                    <span className="hidden sm:inline">{translate(value ? 'Scan again' : 'Scans')}</span>
                 </Button>
             </div>
         </FormField>

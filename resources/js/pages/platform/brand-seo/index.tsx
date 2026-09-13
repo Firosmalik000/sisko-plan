@@ -138,7 +138,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
     };
 
     const removeLogo = () => {
-        if (!window.confirm(translate('Hapus logo platform?'))) {
+        if (!window.confirm(translate('Delete the platform logo?'))) {
             return;
         }
 
@@ -164,30 +164,34 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
 
     return (
         <div className="platform-enter pb-24 lg:pb-8">
-            <Head title="Brand & SEO" />
+            <Head title="Branding & SEO" />
 
             <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight text-[#3b211b] sm:text-3xl">Brand & SEO</h1>
-                    <p className="mt-2 text-sm text-slate-500">Identitas publik, kanal resmi, dan metadata pencarian.</p>
+                    <h1 className="text-2xl font-black tracking-tight text-[#3b211b] sm:text-3xl">Branding & SEO</h1>
+                    <p className="mt-2 text-sm text-slate-500">Identity public, channel official, and metadata search.</p>
                 </div>
                 <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
                     <Globe2 className="size-4" />
-                    Berlaku untuk seluruh platform
+                    Applies for all platform
                 </span>
             </header>
 
             <form onSubmit={submit} className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
                 <div className="space-y-5">
                     <section className="platform-panel overflow-hidden">
-                        <SectionHeader icon={Globe2} title="Identitas brand" description="Nama dan kontak utama yang tampil di platform." />
+                        <SectionHeader
+                            icon={Globe2}
+                            title="Identity brand"
+                            description="Primary name and contact details shown across the platform."
+                        />
                         <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6">
                             <div className="flex flex-col gap-4 rounded-xl bg-slate-50 p-4 sm:col-span-2 sm:flex-row sm:items-center">
                                 <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#ee4d2d] text-white">
                                     {selectedLogoPreview || settings.logo_url ? (
                                         <img
                                             src={selectedLogoPreview ?? settings.logo_url ?? undefined}
-                                            alt="Pratinjau logo"
+                                            alt="Preview logo"
                                             className="size-full object-contain"
                                         />
                                     ) : (
@@ -195,8 +199,8 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                     )}
                                 </span>
                                 <div className="min-w-0 flex-1">
-                                    <Label htmlFor="platform-logo">Logo</Label>
-                                    <p className="mt-1 text-xs text-slate-500">PNG, JPG, atau WebP, maksimal 2 MB.</p>
+                                    <Label htmlFor="platform-logo">Logos</Label>
+                                    <p className="mt-1 text-xs text-slate-500">PNG, JPG, or WebP, maximum 2 MB.</p>
                                     <InputError message={logoForm.errors.logo} className="mt-1" />
                                 </div>
                                 {can_manage && (
@@ -216,7 +220,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                             disabled={logoForm.processing}
                                         >
                                             <ImageUp className="size-4" />
-                                            Pilih logo
+                                            Select logo
                                         </Button>
                                         {logoForm.data.logo && (
                                             <Button
@@ -225,7 +229,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                                 disabled={logoForm.processing}
                                                 className="bg-[#d83f22] text-white hover:bg-[#b83219]"
                                             >
-                                                {logoForm.processing ? 'Mengunggah...' : 'Simpan logo'}
+                                                {logoForm.processing ? 'Uploading...' : 'Save logo'}
                                             </Button>
                                         )}
                                         {settings.logo_url && !logoForm.data.logo && (
@@ -237,13 +241,13 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                                 className="text-rose-700"
                                             >
                                                 <Trash2 className="size-4" />
-                                                Hapus
+                                                Delete
                                             </Button>
                                         )}
                                     </div>
                                 )}
                             </div>
-                            <Field label="Nama brand" error={errors.brand_name} className="sm:col-span-2">
+                            <Field label="Brand name" error={errors.brand_name} className="sm:col-span-2">
                                 <Input
                                     value={form.data.brand_name}
                                     onChange={(event) => form.setData('brand_name', event.target.value)}
@@ -259,7 +263,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                     disabled={!can_manage}
                                 />
                             </Field>
-                            <Field label="URL situs" error={errors.site_url}>
+                            <Field label="URL site" error={errors.site_url}>
                                 <Input
                                     type="url"
                                     inputMode="url"
@@ -269,16 +273,16 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                     disabled={!can_manage}
                                 />
                             </Field>
-                            <Field label="Email dukungan" error={errors.support_email}>
+                            <Field label="Email support" error={errors.support_email}>
                                 <Input
                                     type="email"
                                     value={form.data.support_email}
                                     onChange={(event) => form.setData('support_email', event.target.value)}
-                                    placeholder="halo@contoh.id"
+                                    placeholder="halo@sample.id"
                                     disabled={!can_manage}
                                 />
                             </Field>
-                            <Field label="WhatsApp dukungan" error={errors.support_phone} className="sm:col-span-2">
+                            <Field label="Support WhatsApp" error={errors.support_phone} className="sm:col-span-2">
                                 <Input
                                     type="tel"
                                     inputMode="tel"
@@ -295,8 +299,8 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                     <section className="platform-panel overflow-hidden">
                         <SectionHeader
                             icon={Share2}
-                            title="Sosial media"
-                            description="Tautan resmi yang tampil di footer publik."
+                            title="Social media"
+                            description="Link official that appear di footer public."
                             action={
                                 can_manage ? (
                                     <Button
@@ -308,7 +312,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                         className="min-h-10"
                                     >
                                         <Plus className="size-4" />
-                                        Tambah
+                                        Add
                                     </Button>
                                 ) : null
                             }
@@ -317,14 +321,14 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                             {form.data.social_links.length === 0 ? (
                                 <div className="flex min-h-28 flex-col items-center justify-center rounded-xl bg-slate-50 px-4 text-center">
                                     <Link2 className="size-5 text-slate-400" />
-                                    <p className="mt-2 text-sm font-bold text-slate-600">Belum ada sosial media.</p>
+                                    <p className="mt-2 text-sm font-bold text-slate-600">No social media links yet.</p>
                                     {can_manage && (
                                         <button
                                             type="button"
                                             onClick={addSocialLink}
                                             className="mt-2 text-xs font-bold text-[#b83219] underline-offset-4 hover:underline"
                                         >
-                                            Tambah tautan pertama
+                                            Add tautan pertama
                                         </button>
                                     )}
                                 </div>
@@ -337,7 +341,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                         >
                                             <div>
                                                 <Label htmlFor={`social-platform-${index}`} className="sr-only">
-                                                    Platform
+                                                    Platforms
                                                 </Label>
                                                 <Input
                                                     id={`social-platform-${index}`}
@@ -345,7 +349,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                                     value={link.platform}
                                                     onChange={(event) => updateSocialLink(index, 'platform', event.target.value)}
                                                     disabled={!can_manage}
-                                                    placeholder="Pilih atau ketik platform"
+                                                    placeholder="Select or type platform"
                                                     maxLength={40}
                                                     className="bg-white font-semibold"
                                                 />
@@ -376,7 +380,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                                     type="button"
                                                     onClick={() => removeSocialLink(index)}
                                                     className="flex size-10 items-center justify-center justify-self-end rounded-lg text-[#81716d] transition hover:bg-[#fff1f0] hover:text-[#c91c3a] focus-visible:ring-2 focus-visible:ring-[#e11d48] focus-visible:outline-none sm:justify-self-auto"
-                                                    aria-label={`Hapus ${link.platform}`}
+                                                    aria-label={`Delete${link.platform}`}
                                                 >
                                                     <Trash2 className="size-4" />
                                                 </button>
@@ -390,13 +394,9 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                     </section>
 
                     <section className="platform-panel overflow-hidden">
-                        <SectionHeader
-                            icon={Search}
-                            title="SEO default"
-                            description="Metadata utama untuk beranda dan saat tautan dibagikan."
-                        />
+                        <SectionHeader icon={Search} title="Default SEO" description="Metadata main for home and when link shared." />
                         <div className="grid gap-4 p-4 sm:p-6">
-                            <Field label="Judul beranda" error={errors.seo_title} count={`${form.data.seo_title.length}/60`}>
+                            <Field label="Title home" error={errors.seo_title} count={`${form.data.seo_title.length}/60`}>
                                 <Input
                                     value={form.data.seo_title}
                                     onChange={(event) => form.setData('seo_title', event.target.value)}
@@ -404,7 +404,7 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                     disabled={!can_manage}
                                 />
                             </Field>
-                            <Field label="Deskripsi" error={errors.seo_description} count={`${form.data.seo_description.length}/160`}>
+                            <Field label="Description" error={errors.seo_description} count={`${form.data.seo_description.length}/160`}>
                                 <textarea
                                     value={form.data.seo_description}
                                     onChange={(event) => form.setData('seo_description', event.target.value)}
@@ -414,16 +414,16 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                     className="flex min-h-24 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                                 />
                             </Field>
-                            <Field label="Kata kunci" error={errors.seo_keywords}>
+                            <Field label="Term keywords" error={errors.seo_keywords}>
                                 <Input
                                     value={form.data.seo_keywords}
                                     onChange={(event) => form.setData('seo_keywords', event.target.value)}
                                     maxLength={500}
-                                    placeholder="kasir, stok toko, laporan penjualan"
+                                    placeholder="checkout, stock store, reports sales"
                                     disabled={!can_manage}
                                 />
                             </Field>
-                            <Field label="URL gambar saat dibagikan" error={errors.social_image_url}>
+                            <Field label="URL image when shared" error={errors.social_image_url}>
                                 <Input
                                     type="url"
                                     inputMode="url"
@@ -442,9 +442,9 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                     className="mt-0.5 size-4 rounded border-slate-300 text-[#d83f22] focus:ring-[#ee4d2d]"
                                 />
                                 <span>
-                                    <span className="block text-sm font-bold text-slate-700">Izinkan mesin pencari mengindeks situs</span>
+                                    <span className="block text-sm font-bold text-slate-700">Allow engine search index site</span>
                                     <span className="mt-1 block text-xs leading-5 text-slate-500">
-                                        Nonaktifkan hanya saat situs belum siap ditampilkan di hasil pencarian.
+                                        Deactivate only while the site is not ready to appear in search results.
                                     </span>
                                 </span>
                             </label>
@@ -456,26 +456,26 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                 <aside className="space-y-5 xl:sticky xl:top-8">
                     <section className="overflow-hidden rounded-2xl bg-[#3b211b] text-white shadow-xl shadow-[#3b211b]/15">
                         <div className="border-b border-white/10 p-5">
-                            <p className="text-sm font-black">Pratinjau pencarian</p>
+                            <p className="text-sm font-black">Preview search</p>
                         </div>
                         <div className="p-5">
                             <p className="truncate text-xs text-emerald-300">{form.data.site_url || 'https://alamat-situs.id'}</p>
-                            <p className="mt-2 text-lg leading-snug font-bold text-[#ffb5a3]">{form.data.seo_title || 'Judul beranda'}</p>
+                            <p className="mt-2 text-lg leading-snug font-bold text-[#ffb5a3]">{form.data.seo_title || 'Title home'}</p>
                             <p className="mt-2 line-clamp-3 text-xs leading-5 text-white/65">
-                                {form.data.seo_description || 'Deskripsi halaman akan tampil di sini.'}
+                                {form.data.seo_description || 'Description page will appear di here.'}
                             </p>
                         </div>
                     </section>
 
                     <section className="platform-panel p-5">
-                        <p className="text-sm font-black text-[#3b211b]">Identitas aktif</p>
+                        <p className="text-sm font-black text-[#3b211b]">Identity active</p>
                         <div className="mt-4 flex items-center gap-3">
                             <span className="flex size-11 items-center justify-center overflow-hidden rounded-xl bg-[#ee4d2d] text-white">
                                 <BrandMark logoUrl={selectedLogoPreview ?? settings.logo_url} className="size-full object-contain" />
                             </span>
                             <div className="min-w-0">
-                                <p className="truncate text-sm font-black text-[#3b211b]">{form.data.brand_name || 'Nama brand'}</p>
-                                <p className="truncate text-xs text-slate-500">{form.data.tagline || 'Tanpa tagline'}</p>
+                                <p className="truncate text-sm font-black text-[#3b211b]">{form.data.brand_name || 'Brand name'}</p>
+                                <p className="truncate text-xs text-slate-500">{form.data.tagline || 'Without tagline'}</p>
                             </div>
                         </div>
                         <div className="mt-4 space-y-2 border-t border-slate-100 pt-4 text-xs text-slate-500">
@@ -493,11 +493,11 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                             )}
                             <p className="flex items-center gap-2">
                                 <Share2 className="size-3.5" />
-                                {form.data.social_links.length} kanal sosial
+                                {form.data.social_links.length} channel social
                             </p>
                             <p className="flex items-center gap-2">
                                 <ExternalLink className="size-3.5" />
-                                {form.data.robots_index ? 'Indeks pencarian aktif' : 'Indeks pencarian nonaktif'}
+                                {form.data.robots_index ? 'Index search active' : 'Index search inactive'}
                             </p>
                         </div>
                     </section>
@@ -512,14 +512,14 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                                 onClick={() => form.reset()}
                                 disabled={!form.isDirty || form.processing}
                             >
-                                Batalkan perubahan
+                                Cancel changes
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={!form.isDirty || form.processing}
                                 className="bg-[#d83f22] text-white hover:bg-[#b83219]"
                             >
-                                {form.processing ? 'Menyimpan...' : 'Simpan'}
+                                {form.processing ? 'Saving...' : 'Save'}
                             </Button>
                         </div>
                     </div>

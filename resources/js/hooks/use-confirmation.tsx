@@ -46,25 +46,25 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
             <ResponsiveDialog
                 open={pending !== null}
                 onOpenChange={(open) => !open && settle(false)}
-                title={translate(pending?.options.title ?? 'Konfirmasi')}
+                title={translate(pending?.options.title ?? 'Confirm')}
                 size="sm"
                 footer={
                     <>
                         <Button type="button" variant="outline" onClick={() => settle(false)}>
-                            {translate(pending?.options.cancelLabel ?? 'Batal')}
+                            {translate(pending?.options.cancelLabel ?? 'Cancel')}
                         </Button>
                         <Button
                             type="button"
                             variant={pending?.options.variant === 'destructive' ? 'destructive' : 'default'}
                             onClick={() => settle(true)}
                         >
-                            {translate(pending?.options.confirmLabel ?? 'Lanjutkan')}
+                            {translate(pending?.options.confirmLabel ?? 'Continue')}
                         </Button>
                     </>
                 }
             >
                 <p className="text-sm leading-6 text-muted-foreground">
-                    {translate(pending?.options.description ?? 'Pilih tindakan untuk melanjutkan.')}
+                    {translate(pending?.options.description ?? 'Choose an action to continue.')}
                 </p>
             </ResponsiveDialog>
         </ConfirmationContext.Provider>

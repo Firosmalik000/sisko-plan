@@ -253,7 +253,7 @@ export default function PosIndex({
             if (!option || !Number.isFinite(selection.quantity) || selection.quantity <= 0 || quantity > available(option)) {
                 result.failures.push({
                     ...identity,
-                    message: 'Produk tidak tersedia atau jumlah melebihi stok. Kurangi jumlah lalu coba lagi.',
+                    message: 'The product is unavailable or the quantity exceeds stock. Reduce the quantity and try again.',
                 });
                 continue;
             }
@@ -270,8 +270,8 @@ export default function PosIndex({
         sale.setData('items', items);
         setScannerSummary(
             result.failures.length > 0
-                ? `${result.applied.length} ${translate('produk ditambahkan')}, ${result.failures.length} ${translate('dilewati karena tidak tersedia atau stok habis.')}`
-                : `${result.applied.length} ${translate('produk ditambahkan ke keranjang.')}`,
+                ? `${result.applied.length} ${translate('products added')}, ${result.failures.length} ${translate('skipped because they are unavailable or out of stock.')}`
+                : `${result.applied.length} ${translate('products added to the cart.')}`,
         );
 
         return result;
@@ -302,13 +302,13 @@ export default function PosIndex({
         const exact = exactMatches.find((product) => Boolean(product.is_base_unit)) ?? exactMatches[0];
 
         if (exact && available(exact) <= 0) {
-            setSearchError(translate('Stok produk habis.'));
+            setSearchError(translate('Stock product out of stock.'));
         } else if (exact) {
             addProduct(exact);
         } else if (visibleProducts.length === 1) {
             chooseProduct(visibleProducts[0]);
         } else if (visibleProducts.length === 0) {
-            setSearchError(translate('Barcode atau produk tidak ditemukan.'));
+            setSearchError(translate('Barcode or product not found.'));
         }
     };
     const selectPaymentMethod = (method: PaymentMethod) => {
@@ -395,8 +395,8 @@ export default function PosIndex({
     return (
         <>
             <AppPage
-                title={translate('Kasir penjualan')}
-                description={`${translate('Transaksi baru')} · ${activeStore?.name ?? translate('Toko')}`}
+                title={translate('Checkout')}
+                description={`${translate('New transaction')} · ${activeStore?.name ?? translate('Store')}`}
                 icon={ShoppingCart}
                 headerSurface
                 size="wide"
@@ -411,7 +411,7 @@ export default function PosIndex({
                         }}
                     >
                         <Camera className="size-4" aria-hidden="true" />
-                        {translate(scannerSession.count ? 'Lanjut scan' : 'Scan barang')}
+                        {translate(scannerSession.count ? 'Continue scan' : 'Scan item')}
                     </Button>
                 }
             >
@@ -422,7 +422,7 @@ export default function PosIndex({
                         className="fixed right-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] left-3 z-30 flex min-h-12 items-center justify-between rounded-xl bg-[var(--app-primary)] px-4 text-sm font-bold text-[var(--app-primary-foreground)] shadow-lg min-[1100px]:hidden dark:shadow-none"
                     >
                         <span>
-                            {translate('Keranjang')} · {sale.data.items.length} {translate('barang')}
+                            {translate('Cart')} · {sale.data.items.length} {translate('items')}
                         </span>
                         <strong>{money(total)}</strong>
                     </button>
@@ -461,7 +461,7 @@ export default function PosIndex({
                     {!desktopCheckout && cartOpen && (
                         <button
                             type="button"
-                            aria-label={translate('Tutup keranjang')}
+                            aria-label={translate('Close cart')}
                             className="fixed inset-0 z-40 bg-black/55"
                             onClick={() => setCartOpen(false)}
                         />
@@ -486,8 +486,8 @@ export default function PosIndex({
                                     <ShoppingCart className="size-5" />
                                 </span>
                                 <div className="min-w-0">
-                                    <h2 className="text-xl font-bold text-foreground">Keranjang</h2>
-                                    <p className="text-xs text-muted-foreground">{sale.data.items.length} jenis barang</p>
+                                    <h2 className="text-xl font-bold text-foreground">Cart</h2>
+                                    <p className="text-xs text-muted-foreground">{sale.data.items.length} type item</p>
                                 </div>
                             </div>
                             {sale.data.items.length > 0 && (
@@ -496,14 +496,14 @@ export default function PosIndex({
                                     onClick={() => sale.setData('items', [])}
                                     className="min-h-11 shrink-0 px-2 text-xs font-bold text-destructive"
                                 >
-                                    Kosongkan
+                                    Clear it
                                 </button>
                             )}
                             {!desktopCheckout && (
                                 <button
                                     type="button"
                                     onClick={() => setCartOpen(false)}
-                                    aria-label={translate('Tutup keranjang')}
+                                    aria-label={translate('Close cart')}
                                     className="grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                 >
                                     <X className="size-5" aria-hidden="true" />
@@ -525,7 +525,7 @@ export default function PosIndex({
                             <ResponsiveDialog
                                 open={paymentOpen}
                                 onOpenChange={setPaymentOpen}
-                                title={translate('Pembayaran')}
+                                title={translate('Payment')}
                                 description={`${translate('Total')} ${money(total)}`}
                                 size="lg"
                                 bodyClassName="space-y-4"
@@ -539,7 +539,7 @@ export default function PosIndex({
                                         }
                                         className="w-full text-base font-bold"
                                     >
-                                        {sale.processing ? translate('Memproses...') : `${translate('Bayar')} ${money(total)}`}
+                                        {sale.processing ? translate('Processing...') : `${translate('Pay')} ${money(total)}`}
                                     </Button>
                                 }
                             >
@@ -555,9 +555,9 @@ export default function PosIndex({
                                             <UserRound className="size-4.5" />
                                         </span>
                                         <span className="min-w-0 flex-1">
-                                            <span className="block text-sm font-bold text-foreground">Data pelanggan</span>
+                                            <span className="block text-sm font-bold text-foreground">Customer details</span>
                                             <span className="block truncate text-xs text-muted-foreground">
-                                                {sale.data.customer_name || 'Opsional'}
+                                                {sale.data.customer_name || 'Optional'}
                                             </span>
                                         </span>
                                         <ChevronDown
@@ -571,8 +571,8 @@ export default function PosIndex({
                                             <FormInput
                                                 id="customer_name"
                                                 name="customer_name"
-                                                label={translate('Nama pelanggan')}
-                                                placeholder={translate('Contoh: Budi Santoso')}
+                                                label={translate('Customer name')}
+                                                placeholder={translate('Sample: Budi Santoso')}
                                                 autoComplete="name"
                                                 value={sale.data.customer_name}
                                                 onChange={(event) => sale.setData('customer_name', event.target.value)}
@@ -582,8 +582,8 @@ export default function PosIndex({
                                             <FormPhoneInput
                                                 id="customer_phone"
                                                 name="customer_phone"
-                                                label={translate('Nomor telepon')}
-                                                placeholder={translate('Contoh: 0812 3456 7890')}
+                                                label={translate('Phone number')}
+                                                placeholder={translate('Sample: 0812 3456 7890')}
                                                 value={sale.data.customer_phone}
                                                 onChange={(event) => sale.setData('customer_phone', event.target.value)}
                                                 maxLength={30}
@@ -594,7 +594,7 @@ export default function PosIndex({
                                                     id="customer_email"
                                                     name="customer_email"
                                                     label="Email"
-                                                    placeholder={translate('Contoh: budi@email.com')}
+                                                    placeholder={translate('Sample: budi@email.com')}
                                                     type="email"
                                                     inputMode="email"
                                                     autoComplete="email"
@@ -618,7 +618,7 @@ export default function PosIndex({
                                                     }}
                                                     className="min-h-10 justify-self-start text-sm font-bold text-[var(--app-primary)] underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:col-span-2"
                                                 >
-                                                    Hapus data pelanggan
+                                                    Clear customer details
                                                 </button>
                                             )}
                                         </div>
@@ -632,7 +632,7 @@ export default function PosIndex({
                                     </div>
                                     {itemDiscount > 0 && (
                                         <div className="flex justify-between text-sm text-muted-foreground">
-                                            <span>Diskon item</span>
+                                            <span>Discount item</span>
                                             <span>-{money(itemDiscount)}</span>
                                         </div>
                                     )}
@@ -640,7 +640,7 @@ export default function PosIndex({
                                         <FormCurrencyInput
                                             id="transaction_discount_amount"
                                             name="transaction_discount_amount"
-                                            label={translate('Diskon transaksi')}
+                                            label={translate('Transaction discount')}
                                             value={sale.data.transaction_discount_amount}
                                             onValueChange={(value) => sale.setData('transaction_discount_amount', value)}
                                             min="0"
@@ -652,13 +652,11 @@ export default function PosIndex({
                                     </div>
 
                                     <fieldset>
-                                        <legend className="mb-2 text-sm font-semibold text-foreground">
-                                            {translate('Kanal penjualan')}
-                                        </legend>
+                                        <legend className="mb-2 text-sm font-semibold text-foreground">{translate('Sales channel')}</legend>
                                         <div className="grid grid-cols-2 gap-2">
                                             {[
-                                                { channel: 'in_store' as const, label: translate('Di toko'), icon: Store },
-                                                { channel: 'marketplace' as const, label: 'Marketplace', icon: ShoppingBag },
+                                                { channel: 'in_store' as const, label: translate('In store'), icon: Store },
+                                                { channel: 'marketplace' as const, label: 'Marketplaces', icon: ShoppingBag },
                                             ].map(({ channel, label, icon: Icon }) => {
                                                 const active = sale.data.sales_channel === channel;
 
@@ -685,7 +683,7 @@ export default function PosIndex({
                                     {isMarketplace ? (
                                         <div className="grid gap-3 rounded-xl border border-border bg-[var(--app-soft)]/35 p-3.5 sm:grid-cols-2">
                                             <fieldset className="sm:col-span-2">
-                                                <legend className="mb-1.5 text-sm font-semibold text-foreground">Marketplace</legend>
+                                                <legend className="mb-1.5 text-sm font-semibold text-foreground">Marketplaces</legend>
                                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                                                     {marketplaces.map((marketplace) => {
                                                         const active = sale.data.marketplace_code === marketplace.code;
@@ -715,8 +713,8 @@ export default function PosIndex({
                                                 <FormInput
                                                     id="external_order_number"
                                                     name="external_order_number"
-                                                    label={translate('Nomor pesanan')}
-                                                    placeholder={translate('Contoh: INV-2026-00125')}
+                                                    label={translate('Order number')}
+                                                    placeholder={translate('Sample: INV-2026-00125')}
                                                     value={sale.data.external_order_number}
                                                     onChange={(event) => sale.setData('external_order_number', event.target.value)}
                                                     maxLength={100}
@@ -725,7 +723,7 @@ export default function PosIndex({
                                             </div>
                                             <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-sm sm:col-span-2">
                                                 <span className="font-semibold text-muted-foreground">
-                                                    {translate('Masuk ke saldo marketplace')}
+                                                    {translate('Added to marketplace balance')}
                                                 </span>
                                                 <strong className="text-base text-foreground">{money(total)}</strong>
                                             </div>
@@ -742,7 +740,7 @@ export default function PosIndex({
                                     ) : (
                                         <>
                                             <fieldset>
-                                                <legend className="mb-2 text-sm font-semibold text-foreground">Metode bayar</legend>
+                                                <legend className="mb-2 text-sm font-semibold text-foreground">Payment method</legend>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {primaryPaymentMethods.map((method) => {
                                                         const active = method.account_id === sale.data.account_id;
@@ -776,7 +774,7 @@ export default function PosIndex({
                                                         className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm font-bold text-foreground transition hover:bg-[var(--app-soft)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
                                                     >
                                                         <CreditCard className="size-4" />
-                                                        <span className="flex-1">{translate('Pembayaran lainnya')}</span>
+                                                        <span className="flex-1">{translate('Other payment methods')}</span>
                                                         <ChevronDown
                                                             className={`size-4 transition-transform ${otherPaymentsExpanded ? 'rotate-180' : ''}`}
                                                         />
@@ -786,7 +784,7 @@ export default function PosIndex({
                                                             <FormSelect
                                                                 id="payment_account"
                                                                 name="account_id"
-                                                                label={translate('Akun penerimaan')}
+                                                                label={translate('Receiving account')}
                                                                 error={sale.errors.account_id}
                                                                 value={
                                                                     selectedMethod &&
@@ -806,12 +804,12 @@ export default function PosIndex({
                                                                     }
                                                                 }}
                                                             >
-                                                                <option value="">{translate('Pilih akun')}</option>
+                                                                <option value="">{translate('Choose an account')}</option>
                                                                 {otherPaymentMethods.map((method) => (
                                                                     <option key={method.account_id} value={method.account_id}>
                                                                         {translate(
                                                                             method.method === 'bank_transfer'
-                                                                                ? 'Transfer bank'
+                                                                                ? 'Bank transfer'
                                                                                 : 'E-wallet',
                                                                         )}{' '}
                                                                         · {method.label}
@@ -837,7 +835,7 @@ export default function PosIndex({
                                                     <FormCurrencyInput
                                                         id="paid_amount"
                                                         name="paid_amount"
-                                                        label={translate('Uang diterima')}
+                                                        label={translate('Amount received')}
                                                         value={sale.data.paid_amount}
                                                         onValueChange={(value) => sale.setData('paid_amount', value)}
                                                         min={String(total)}
@@ -860,7 +858,7 @@ export default function PosIndex({
                                                         </div>
                                                     )}
                                                     <div className="flex justify-between text-sm font-bold text-[var(--app-primary)]">
-                                                        <span>Kembalian</span>
+                                                        <span>Change</span>
                                                         <span>{money(change)}</span>
                                                     </div>
                                                 </div>
@@ -872,7 +870,7 @@ export default function PosIndex({
                                                                 ? selectedMethod.label
                                                                 : translate(
                                                                       selectedMethod.method === 'bank_transfer'
-                                                                          ? 'Transfer bank'
+                                                                          ? 'Bank transfer'
                                                                           : 'E-wallet',
                                                                   )}
                                                         </span>
@@ -898,7 +896,7 @@ export default function PosIndex({
                                                                         sale.setData('payment_proof', null);
                                                                         sale.clearErrors('payment_proof');
                                                                     }}
-                                                                    aria-label="Hapus bukti pembayaran"
+                                                                    aria-label="Remove payment proof"
                                                                     className="grid size-10 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                                                 >
                                                                     <X className="size-4" />
@@ -907,7 +905,7 @@ export default function PosIndex({
                                                         ) : (
                                                             <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--app-primary)]/50 bg-background px-3 text-sm font-bold text-[var(--app-primary)] transition focus-within:ring-2 focus-within:ring-ring hover:border-[var(--app-primary)] hover:bg-[var(--app-soft)]">
                                                                 <Upload className="size-4" />
-                                                                Tambah bukti pembayaran
+                                                                Add payment proof
                                                                 <input
                                                                     type="file"
                                                                     accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -919,7 +917,7 @@ export default function PosIndex({
                                                                             sale.setData('payment_proof', null);
                                                                             sale.setError(
                                                                                 'payment_proof',
-                                                                                translate('Ukuran bukti pembayaran maksimal 5 MB.'),
+                                                                                translate('The payment proof must not exceed 5 MB.'),
                                                                             );
                                                                             event.target.value = '';
 
@@ -934,7 +932,7 @@ export default function PosIndex({
                                                             </label>
                                                         )}
                                                         <p className="mt-2 text-xs text-muted-foreground">
-                                                            JPG, PNG, WebP, atau PDF · maksimal 5 MB
+                                                            JPG, PNG, WebP, or PDF · maximum 5 MB
                                                         </p>
                                                         {sale.errors.payment_proof && (
                                                             <p role="alert" className="mt-2 text-xs font-bold text-destructive">
@@ -945,7 +943,7 @@ export default function PosIndex({
                                                 </div>
                                             ) : (
                                                 <p className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
-                                                    Metode bayar belum tersedia.
+                                                    No payment methods are available.
                                                 </p>
                                             )}
                                         </>
@@ -954,8 +952,8 @@ export default function PosIndex({
                                     <FormInput
                                         id="sale_notes"
                                         name="notes"
-                                        label={translate('Catatan')}
-                                        placeholder={translate('Contoh: Pesanan dibungkus terpisah')}
+                                        label={translate('Notes')}
+                                        placeholder={translate('Sample: Pesanan dibungkus separate')}
                                         value={sale.data.notes}
                                         onChange={(event) => sale.setData('notes', event.target.value)}
                                         maxLength={500}
@@ -978,7 +976,7 @@ export default function PosIndex({
                                 </div>
                                 {itemDiscount > 0 && (
                                     <div className="flex justify-between text-sm text-muted-foreground">
-                                        <span>{translate('Diskon')}</span>
+                                        <span>{translate('Discount')}</span>
                                         <span>-{money(itemDiscount)}</span>
                                     </div>
                                 )}
@@ -996,7 +994,7 @@ export default function PosIndex({
                                     disabled={sale.data.items.length === 0}
                                     className="w-full text-base font-bold"
                                 >
-                                    {translate('Lanjut pembayaran')}
+                                    {translate('Continue to payment')}
                                 </Button>
                             </div>
                         </div>
@@ -1006,13 +1004,13 @@ export default function PosIndex({
             <Suspense
                 fallback={
                     <div role="status" className="fixed inset-0 z-[90] grid place-items-center bg-black/80 text-white">
-                        Membuka kamera…
+                        Opening camera…
                     </div>
                 }
             >
                 <ProductScanner
                     purpose="sale"
-                    title="Scan produk untuk penjualan"
+                    title="Scan product for sales"
                     open={scannerOpen}
                     onOpenChange={setScannerOpen}
                     onConfirm={addScannerSelections}
@@ -1035,7 +1033,7 @@ export default function PosIndex({
                         restoreEntry();
                     }
                 }}
-                title={selectedProduct?.name ?? translate('Pilih produk')}
+                title={selectedProduct?.name ?? translate('Select product')}
                 description={[selectedProduct?.sku ? `SKU ${selectedProduct.sku}` : '', selectedProduct?.barcode ?? '']
                     .filter(Boolean)
                     .join(' · ')}
@@ -1056,7 +1054,9 @@ export default function PosIndex({
                             <div className="min-w-0">
                                 <p className="font-bold text-foreground">{option.variant_name || option.unit_name}</p>
                                 <p className={`mt-1 text-xs font-bold ${stock > 0 ? 'text-[var(--app-primary)]' : 'text-destructive'}`}>
-                                    {stock > 0 ? `${translate('Stok')} ${quantity(stock)} ${option.unit_symbol}` : translate('Stok habis')}
+                                    {stock > 0
+                                        ? `${translate('Stock')} ${quantity(stock)} ${option.unit_symbol}`
+                                        : translate('Out of stock')}
                                 </p>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">

@@ -27,11 +27,11 @@ class PostAccountTransfer
                     return $existing;
                 }
                 if ($fromId === $toId) {
-                    throw ValidationException::withMessages(['to_account' => 'Akun tujuan harus berbeda.']);
+                    throw ValidationException::withMessages(['to_account' => __('The destination account must be different.')]);
                 }
                 $count = FinancialAccount::query()->where('store_id', $store->id)->whereIn('id', [$fromId, $toId])->count();
                 if ($count !== 2) {
-                    throw ValidationException::withMessages(['account' => 'Akun tidak tersedia pada toko aktif.']);
+                    throw ValidationException::withMessages(['account' => __('The account is not available in the active store.')]);
                 }
                 $transfer = AccountTransfer::create([
                     'store_id' => $store->id, 'document_number' => $this->numbers->handle($store->id, 'trf', $date),

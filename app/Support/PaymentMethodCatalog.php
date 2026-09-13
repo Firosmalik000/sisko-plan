@@ -7,12 +7,12 @@ use App\Models\FinancialAccount;
 
 class PaymentMethodCatalog
 {
-    /** @return array{code:string, method:string, label:string} */
-    public static function qrForCountry(?string $countryCode): array
+    /** @return array{code:string, method:string, label:string}|null */
+    public static function qrForCountry(?string $countryCode): ?array
     {
         $payments = config('sales.qr_payments', []);
 
-        return $payments[strtoupper((string) $countryCode)] ?? $payments['default'];
+        return $payments[strtoupper((string) $countryCode)] ?? null;
     }
 
     /** @return array<int, array{code:string, label:string}> */
@@ -68,11 +68,12 @@ class PaymentMethodCatalog
         $walletCodes = self::walletCodes();
         $countryWalletCodes = self::walletCodesForCountry($countryCode);
         $isQrAccount = $account->type !== FinancialAccountType::Cash
+            && $qrPayment !== null
             && $account->payment_code === $qrPayment['code'];
 
         return match ($paymentMethod) {
             'cash' => $account->type === FinancialAccountType::Cash && $account->payment_code === null,
-            'qris', 'qr_payment' => $paymentMethod === $qrPayment['method'] && $isQrAccount,
+            'qris', 'qr_payment' => $qrPayment !== null && $paymentMethod === $qrPayment['method'] && $isQrAccount,
             'bank_transfer' => $account->type === FinancialAccountType::Bank
                 && ! in_array($account->payment_code, $qrCodes, true)
                 && ! in_array($account->payment_code, $walletCodes, true),

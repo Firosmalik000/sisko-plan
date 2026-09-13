@@ -38,7 +38,7 @@ class PostPurchasePayment
                 }
                 $outstanding = Decimal::subtract($purchase->total_amount, $paid, Decimal::MONEY_SCALE);
                 if (Decimal::compare($amount, '0', Decimal::MONEY_SCALE) <= 0 || Decimal::compare($amount, $outstanding, Decimal::MONEY_SCALE) > 0) {
-                    throw ValidationException::withMessages(['amount' => 'Pembayaran harus positif dan tidak boleh melebihi sisa tagihan.']);
+                    throw ValidationException::withMessages(['amount' => __('The payment must be positive and cannot exceed the outstanding balance.')]);
                 }
                 $payment = $this->payments->handle($purchase, $accountId, $amount, $date, $actor, $notes, $idempotencyKey, $requestHash);
                 $this->audit->handle($actor, 'purchase_payment.posted', $payment, $store, $ipAddress, ['purchase_document' => $purchase->document_number, 'amount' => $amount]);

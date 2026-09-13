@@ -150,7 +150,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
             actions={
                 canManage ? (
                     <Button onClick={openCreate} className="min-h-11 rounded-xl px-4 font-semibold">
-                        <Plus className="size-4" /> {translate('Tambah')}
+                        <Plus className="size-4" /> {translate('Add')}
                     </Button>
                 ) : undefined
             }
@@ -168,8 +168,8 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
                                 className="h-11 rounded-xl bg-background pl-9 text-base sm:text-sm"
-                                placeholder={translate(`Cari ${singular.toLowerCase()}...`)}
-                                aria-label={translate(`Cari ${singular.toLowerCase()}`)}
+                                placeholder={translate('Search :item...', { item: singular.toLowerCase() })}
+                                aria-label={translate('Search :item', { item: singular.toLowerCase() })}
                             />
                         </div>
                     }
@@ -178,11 +178,11 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                             value={status}
                             onChange={(event) => setStatus(event.target.value)}
                             className={dataToolbarControlClass}
-                            aria-label={translate('Filter status')}
+                            aria-label={translate('Status filters')}
                         >
-                            <option value="">{translate('Semua status')}</option>
-                            <option value="active">{translate('Aktif')}</option>
-                            <option value="inactive">{translate('Nonaktif')}</option>
+                            <option value="">{translate('All status')}</option>
+                            <option value="active">{translate('Active')}</option>
+                            <option value="inactive">{translate('Inactive')}</option>
                         </select>
                     }
                     actions={
@@ -195,7 +195,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                 </Button>
                             )}
                             <Button type="submit" variant="outline" className="h-11 rounded-xl">
-                                {translate('Terapkan')}
+                                {translate('Apply')}
                             </Button>
                         </>
                     }
@@ -204,21 +204,21 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                 {items.data.length === 0 ? (
                     <EmptyState
                         icon={hasFilters ? Search : Plus}
-                        title={hasFilters ? translate('Data tidak ditemukan') : translate(`Belum ada ${singular.toLowerCase()}`)}
+                        title={hasFilters ? translate('No data found') : translate('No :item yet', { item: singular.toLowerCase() })}
                         description={
                             hasFilters
-                                ? translate('Coba ubah kata kunci atau filter yang digunakan.')
-                                : translate(`Tambahkan ${singular.toLowerCase()} pertama untuk mulai mengelola data ini.`)
+                                ? translate('Try change term keywords or filter that used.')
+                                : translate('Add your first :item to start managing this data.', { item: singular.toLowerCase() })
                         }
                         action={
                             hasFilters ? (
                                 <Button type="button" variant="outline" onClick={resetFilters}>
-                                    {translate('Reset filter')}
+                                    {translate('Reset filters')}
                                 </Button>
                             ) : canManage ? (
                                 <Button type="button" onClick={openCreate}>
                                     <Plus className="size-4" aria-hidden="true" />
-                                    {translate('Tambah')} {translate(singular)}
+                                    {translate('Add')} {translate(singular)}
                                 </Button>
                             ) : undefined
                         }
@@ -238,7 +238,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <h2 className="truncate font-semibold text-foreground">{displayName(item)}</h2>
-                                        {!item.is_active && <Badge variant="outline">{translate('Nonaktif')}</Badge>}
+                                        {!item.is_active && <Badge variant="outline">{translate('Inactive')}</Badge>}
                                     </div>
                                     {details.length > 0 && (
                                         <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
@@ -284,7 +284,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                             closeForm();
                         }
                     }}
-                    title={editing ? `${translate('Edit')} ${translate(singular)}` : `${translate('Tambah')} ${translate(singular)}`}
+                    title={editing ? `${translate('Edit')} ${translate(singular)}` : `${translate('Add')} ${translate(singular)}`}
                     size={fields.length === 1 ? 'sm' : 'md'}
                     bodyClassName="p-0"
                     footer={
@@ -296,14 +296,14 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                 disabled={form.processing}
                                 className="min-h-11 rounded-xl"
                             >
-                                {translate('Batal')}
+                                {translate('Cancel')}
                             </Button>
                             <Button type="submit" form="reference-data-form" disabled={form.processing} className="min-h-11 rounded-xl">
                                 {form.processing
-                                    ? translate('Menyimpan...')
+                                    ? translate('Saving...')
                                     : editing
-                                      ? translate('Simpan perubahan')
-                                      : `${translate('Tambah')} ${translate(singular)}`}
+                                      ? translate('Save changes')
+                                      : `${translate('Add')} ${translate(singular)}`}
                             </Button>
                         </>
                     }
@@ -393,7 +393,7 @@ export function ReferenceDataPage<T extends ReferenceRecord>({
                                 <FormCheckbox
                                     id="is_active"
                                     name="is_active"
-                                    label={translate('Aktif')}
+                                    label={translate('Active')}
                                     checked={Boolean(form.data.is_active)}
                                     onCheckedChange={(checked) => form.setData((data) => ({ ...data, is_active: checked === true }))}
                                 />

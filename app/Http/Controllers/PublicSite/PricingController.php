@@ -36,21 +36,21 @@ class PricingController extends Controller
                 $disabledReason = null;
 
                 if ($user instanceof User && $user->isPlatformAdmin()) {
-                    $disabledReason = __('Akun admin platform tidak menggunakan paket toko.');
+                    $disabledReason = __('Platform administrator accounts do not use store plans.');
                 } elseif ($user !== null && ! $accountOwner) {
-                    $disabledReason = __('Buat toko terlebih dahulu.');
+                    $disabledReason = __('Create a store first.');
                 } elseif ($user !== null && $subscription === null) {
-                    $disabledReason = __('Subscription akun belum tersedia.');
+                    $disabledReason = __('The account subscription is not available yet.');
                 } elseif ($plan->kind === Plan::KIND_ADDON && ! $operational) {
-                    $disabledReason = __('Add-on memerlukan subscription aktif.');
+                    $disabledReason = __('Add-ons require an active subscription.');
                 } elseif ($plan->is_trial && $trialUsed && ! ($current && $operational)) {
-                    $disabledReason = __('Trial sudah digunakan.');
+                    $disabledReason = __('The trial has already been used.');
                 } elseif ($current && $plan->billing_cycle === Plan::BILLING_LIFETIME) {
-                    $disabledReason = __('Paket ini sedang digunakan.');
+                    $disabledReason = __('This plan is currently in use.');
                 } elseif ($plan->kind === Plan::KIND_BASE && ! $plan->is_trial && $nextPeriodStart === null
                     && ! ($subscription?->plan->billing_cycle === Plan::BILLING_LIFETIME
                         && (float) $subscription->plan->monthly_price === 0.0)) {
-                    $disabledReason = __('Paket aktif tidak memiliki batas periode.');
+                    $disabledReason = __('The active plan does not have a defined period.');
                 }
 
                 return [

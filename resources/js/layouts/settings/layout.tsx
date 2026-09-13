@@ -13,17 +13,17 @@ import type { NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
     {
-        title: 'Akun & toko',
+        title: 'Account & store',
         href: edit(),
         icon: CircleUserRound,
     },
     {
-        title: 'Keamanan',
+        title: 'Security',
         href: editSecurity(),
         icon: ShieldCheck,
     },
     {
-        title: 'Tampilan',
+        title: 'Appearance',
         href: editAppearance(),
         icon: MonitorCog,
     },
@@ -35,7 +35,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
     return (
         <div className="mx-auto w-full max-w-[1296px] px-3 py-6 min-[375px]:px-4 sm:px-6 sm:py-8 lg:px-7 lg:py-9">
-            <h1 className="text-2xl font-bold tracking-[-0.035em] text-foreground">{t('Pengaturan')}</h1>
+            <h1 className="text-2xl font-bold tracking-[-0.035em] text-foreground">{t('Settings')}</h1>
 
             <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start">
                 <aside className="w-full lg:sticky lg:top-24 lg:w-56 lg:shrink-0">

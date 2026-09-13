@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\PlatformPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -20,12 +21,118 @@ class CountryCurrencyTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_country_names_use_one_canonical_column_with_locale_catalog_fallbacks(): void
+    {
+        $this->assertTrue(Schema::hasColumn('countries', 'name'));
+        $this->assertFalse(Schema::hasColumn('countries', 'name_id'));
+        $this->assertFalse(Schema::hasColumn('countries', 'name_ms'));
+        $this->assertFalse(Schema::hasColumn('countries', 'name_en'));
+        $timezoneColumn = collect(Schema::getColumns('countries'))->firstWhere('name', 'default_timezone');
+        $this->assertFalse($timezoneColumn['nullable']);
+
+        $cambodia = Country::query()->where('code', 'KH')->firstOrFail();
+        $this->assertSame('Cambodia', $cambodia->name);
+        $this->assertSame('Kamboja', $cambodia->localizedName('id'));
+        $this->assertSame('Kemboja', $cambodia->localizedName('ms'));
+        $this->assertSame('Campuchia', $cambodia->localizedName('vi'));
+
+        $customCountry = Country::query()->create([
+            'code' => 'AU',
+            'name' => 'Australia',
+            'currency_code' => 'USD',
+            'default_timezone' => 'Australia/Sydney',
+            'is_active' => true,
+        ]);
+        $this->assertSame('Australia', $customCountry->localizedName('id'));
+        $this->assertSame(['Australia/Sydney'], $customCountry->timezones());
+    }
+
+    public function test_every_southeast_asian_country_has_its_currency_and_default_timezone(): void
+    {
+        $expected = [
+            'BN' => ['BND', 'Asia/Brunei'],
+            'KH' => ['KHR', 'Asia/Phnom_Penh'],
+            'ID' => ['IDR', 'Asia/Jakarta'],
+            'LA' => ['LAK', 'Asia/Vientiane'],
+            'MY' => ['MYR', 'Asia/Kuala_Lumpur'],
+            'MM' => ['MMK', 'Asia/Yangon'],
+            'PH' => ['PHP', 'Asia/Manila'],
+            'SG' => ['SGD', 'Asia/Singapore'],
+            'TH' => ['THB', 'Asia/Bangkok'],
+            'TL' => ['USD', 'Asia/Dili'],
+            'VN' => ['VND', 'Asia/Ho_Chi_Minh'],
+        ];
+
+        $countries = Country::query()->orderBy('code')->get()->keyBy('code');
+
+        $this->assertCount(11, $countries);
+        foreach ($expected as $code => [$currency, $timezone]) {
+            $this->assertSame($currency, $countries[$code]->currency_code);
+            $this->assertSame($timezone, $countries[$code]->default_timezone);
+        }
+    }
+
+    public function test_store_snapshots_country_currency_and_default_timezone(): void
+    {
+        $owner = User::factory()->create();
+
+        $this->actingAs($owner)->post(route('stores.store'), [
+            'name' => 'Singapore Store',
+            'country' => 'SG',
+        ])->assertRedirect(route('dashboard'))->assertSessionHasNoErrors();
+
+        $store = Store::query()->with(['country', 'settings'])->sole();
+        $this->assertSame('SG', $store->country->code);
+        $this->assertSame('SGD', $store->settings->currency);
+        $this->assertSame('Asia/Singapore', $store->settings->timezone);
+    }
+
+    public function test_store_country_choices_follow_the_market_priority_order(): void
+    {
+        $owner = User::factory()->create();
+
+        $this->actingAs($owner)->get(route('stores.create'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('customer/stores/create')
+                ->where('countries', fn ($countries) => $countries->pluck('code')->all() === [
+                    'ID', 'MY', 'VN', 'TH', 'SG', 'PH', 'BN', 'KH', 'LA', 'MM', 'TL',
+                ]));
+    }
+
+    public function test_store_without_an_explicit_country_uses_the_detected_market(): void
+    {
+        $owner = User::factory()->create();
+
+        $this->actingAs($owner)
+            ->withHeader('CF-IPCountry', 'SG')
+            ->post(route('stores.store'), ['name' => 'Detected Singapore Store'])
+            ->assertSessionHasNoErrors();
+
+        $store = Store::query()->with(['country', 'settings'])->sole();
+        $this->assertSame('SG', $store->country->code);
+        $this->assertSame('SGD', $store->settings->currency);
+        $this->assertSame('Asia/Singapore', $store->settings->timezone);
+    }
+
+    public function test_store_timezone_must_belong_to_the_selected_country(): void
+    {
+        $owner = User::factory()->create();
+
+        $this->actingAs($owner)->post(route('stores.store'), [
+            'name' => 'Singapore Store',
+            'country' => 'SG',
+            'timezone' => 'Asia/Jakarta',
+        ])->assertSessionHasErrors('timezone');
+
+        $this->assertDatabaseCount('stores', 0);
+    }
+
     public function test_store_country_is_freely_selected_and_currency_is_snapshotted(): void
     {
         $owner = User::factory()->create();
 
         $this->actingAs($owner)
-            ->withSession(['market' => 'id', 'locale' => 'id'])
+            ->withSession(['market' => 'ID', 'locale' => 'id'])
             ->post(route('stores.store'), ['name' => 'Toko Vietnam', 'country' => 'VN'])
             ->assertRedirect(route('dashboard'))
             ->assertSessionHasNoErrors();
@@ -35,7 +142,7 @@ class CountryCurrencyTest extends TestCase
         $this->assertSame('VND', $store->settings->currency);
 
         $this->actingAs($owner)
-            ->withSession(['active_store_id' => $store->id, 'market' => 'id', 'locale' => 'en'])
+            ->withSession(['active_store_id' => $store->id, 'market' => 'ID', 'locale' => 'en'])
             ->get(route('dashboard'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('locale', 'en')
@@ -72,14 +179,14 @@ class CountryCurrencyTest extends TestCase
         $owner = User::factory()->create();
 
         $this->actingAs($owner)
-            ->withSession(['market' => 'ms', 'locale' => 'ms'])
+            ->withSession(['market' => 'MY', 'locale' => 'ms'])
             ->get(route('stores.create'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('customer/stores/create')
                 ->where('defaultCountry', 'MY')
-                ->has('countries', 4)
-                ->where('countries.3.code', 'VN')
-                ->where('countries.3.currency.code', 'VND'));
+                ->has('countries', 11)
+                ->where('countries.2.code', 'VN')
+                ->where('countries.2.currency.code', 'VND'));
     }
 
     public function test_store_form_falls_back_when_the_market_country_is_inactive(): void
@@ -88,11 +195,11 @@ class CountryCurrencyTest extends TestCase
         Country::query()->where('code', 'MY')->update(['is_active' => false]);
 
         $this->actingAs($owner)
-            ->withSession(['market' => 'ms', 'locale' => 'ms'])
+            ->withSession(['market' => 'MY', 'locale' => 'ms'])
             ->get(route('stores.create'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('defaultCountry', 'ID')
-                ->has('countries', 3));
+                ->has('countries', 10));
     }
 
     public function test_super_admin_can_manage_country_and_currency_masters_safely(): void
@@ -100,23 +207,23 @@ class CountryCurrencyTest extends TestCase
         $admin = User::factory()->superAdmin()->create();
 
         $this->actingAs($admin)->post(route('super-admin.geography.currencies.store'), [
-            'code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$',
+            'code' => 'AUD', 'name' => 'Australian Dollar', 'symbol' => 'A$',
             'decimal_places' => 2, 'symbol_position' => 'before',
         ])->assertSessionHasNoErrors();
         $this->actingAs($admin)->post(route('super-admin.geography.countries.store'), [
-            'code' => 'US', 'name_id' => 'Amerika Serikat', 'name_ms' => 'Amerika Syarikat',
-            'name_en' => 'United States', 'currency_code' => 'USD',
+            'code' => 'AU', 'name' => 'Australia', 'currency_code' => 'AUD',
+            'default_timezone' => 'Australia/Sydney',
         ])->assertSessionHasNoErrors();
 
-        $this->assertDatabaseHas('countries', ['code' => 'US', 'currency_code' => 'USD']);
+        $this->assertDatabaseHas('countries', ['code' => 'AU', 'currency_code' => 'AUD']);
         $this->assertDatabaseHas('admin_audit_logs', ['user_id' => $admin->id, 'action' => 'country.created']);
 
-        $usd = Currency::query()->findOrFail('USD');
-        $this->actingAs($admin)->patch(route('super-admin.geography.currencies.update', $usd), [
-            'name' => 'US Dollar', 'symbol' => '$', 'decimal_places' => 2,
+        $aud = Currency::query()->findOrFail('AUD');
+        $this->actingAs($admin)->patch(route('super-admin.geography.currencies.update', $aud), [
+            'name' => 'Australian Dollar', 'symbol' => 'A$', 'decimal_places' => 2,
             'symbol_position' => 'before', 'is_active' => false,
         ])->assertSessionHasErrors('is_active');
-        $this->assertTrue($usd->fresh()->is_active);
+        $this->assertTrue($aud->fresh()->is_active);
     }
 
     public function test_platform_admin_needs_manage_permission_to_change_geography(): void
@@ -130,14 +237,14 @@ class CountryCurrencyTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('can_manage', false));
 
         $this->actingAs($admin)->post(route('super-admin.geography.currencies.store'), [
-            'code' => 'USD',
-            'name' => 'US Dollar',
-            'symbol' => '$',
+            'code' => 'AUD',
+            'name' => 'Australian Dollar',
+            'symbol' => 'A$',
             'decimal_places' => 2,
             'symbol_position' => 'before',
         ])->assertForbidden();
 
-        $this->assertDatabaseMissing('currencies', ['code' => 'USD']);
+        $this->assertDatabaseMissing('currencies', ['code' => 'AUD']);
     }
 
     public function test_inactive_country_cannot_be_used_for_a_new_store(): void
@@ -158,10 +265,9 @@ class CountryCurrencyTest extends TestCase
         $country = Country::query()->where('code', 'ID')->firstOrFail();
 
         $this->actingAs($admin)->patch(route('super-admin.geography.countries.update', $country), [
-            'name_id' => $country->name_id,
-            'name_ms' => $country->name_ms,
-            'name_en' => $country->name_en,
+            'name' => $country->name,
             'currency_code' => $country->currency_code,
+            'default_timezone' => $country->default_timezone,
             'is_active' => false,
         ])->assertSessionHasErrors('is_active');
 

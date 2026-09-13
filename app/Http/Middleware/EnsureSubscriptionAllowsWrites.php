@@ -26,7 +26,7 @@ class EnsureSubscriptionAllowsWrites
         }
 
         $isOwner = $request->user()?->id === $store->owner_user_id;
-        $hasSubscription = $reason !== 'Akun belum memiliki subscription.';
+        $hasSubscription = $reason !== 'The account does not have a subscription yet.';
         if ($request->routeIs('subscription.index') && $isOwner && $hasSubscription) {
             return $next($request);
         }

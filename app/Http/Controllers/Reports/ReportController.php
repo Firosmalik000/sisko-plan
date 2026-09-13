@@ -29,7 +29,7 @@ class ReportController extends Controller
         $localStart = CarbonImmutable::parse($startDate, $timezone);
         $localEnd = CarbonImmutable::parse($endDate, $timezone);
         if ($localStart->gt($localEnd)) {
-            throw ValidationException::withMessages(['end_date' => 'Tanggal akhir tidak boleh mendahului tanggal awal.']);
+            throw ValidationException::withMessages(['end_date' => __('The end date cannot be earlier than the start date.')]);
         }
         if ($localStart->diffInDays($localEnd) > 365) {
             throw ValidationException::withMessages(['end_date' => 'Rentang laporan maksimal 366 hari.']);

@@ -39,7 +39,7 @@ class PostPurchase
                 Supplier::query()->where(['id' => $supplierId, 'store_id' => $store->id])->firstOrFail();
                 $productUnitIds = array_column($items, 'product_unit_id');
                 if (count($productUnitIds) !== count(array_unique($productUnitIds))) {
-                    throw ValidationException::withMessages(['items' => 'Satuan produk tidak boleh duplikat.']);
+                    throw ValidationException::withMessages(['items' => __('Product units cannot be duplicated.')]);
                 }
                 $resolvedItems = [];
                 foreach ($items as $item) {
@@ -59,11 +59,11 @@ class PostPurchase
                 $calculation = $this->calculator->calculate($resolvedItems, $discount, $additionalCost);
                 usort($calculation['items'], fn (array $left, array $right): int => [(int) $left['product_id'], (int) $left['product_unit_id']] <=> [(int) $right['product_id'], (int) $right['product_unit_id']]);
                 if (Decimal::compare($paidAmount, '0', Decimal::MONEY_SCALE) < 0 || Decimal::compare($paidAmount, $calculation['total'], Decimal::MONEY_SCALE) > 0) {
-                    throw ValidationException::withMessages(['paid_amount' => 'Pembayaran awal tidak boleh negatif atau melebihi total pembelian.']);
+                    throw ValidationException::withMessages(['paid_amount' => __('The initial payment cannot be negative or exceed the purchase total.')]);
                 }
                 if (Decimal::compare($paidAmount, '0', Decimal::MONEY_SCALE) > 0) {
                     if ($accountId === null) {
-                        throw ValidationException::withMessages(['account_id' => 'Akun pembayaran wajib dipilih.']);
+                        throw ValidationException::withMessages(['account_id' => __('A payment account must be selected.')]);
                     }
                     FinancialAccount::query()->where(['id' => $accountId, 'store_id' => $store->id])->firstOrFail();
                 }

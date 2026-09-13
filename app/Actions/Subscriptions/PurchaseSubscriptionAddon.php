@@ -35,7 +35,7 @@ class PurchaseSubscriptionAddon
 
             if ($this->access->blockedReason($subscription) !== null) {
                 throw ValidationException::withMessages([
-                    'plan_id' => __('Add-on hanya dapat ditambahkan pada subscription yang aktif.'),
+                    'plan_id' => __('Add-ons can only be added to an active subscription.'),
                 ]);
             }
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { translate } from '@/lib/i18n';
 import { discover as discoverCatalogItem } from '@/routes/scanner/catalog-items';
 
 export type DiscoverySuggestion = {
@@ -152,7 +153,7 @@ export function useProductDrafts() {
                         return;
                     }
 
-                    throw new Error(payload.message || 'Analisis gagal. Isi manual atau coba lagi.');
+                    throw new Error(payload.message || translate('Analysis failed. Enter the product manually or try again.'));
                 }
 
                 const recognized =
@@ -166,7 +167,7 @@ export function useProductDrafts() {
                                   ...item,
                                   status: recognized ? 'ready' : 'failed',
                                   suggestion: recognized ? payload.data! : null,
-                                  error: recognized ? null : 'Produk belum dikenali. Foto ulang atau isi manual.',
+                                  error: recognized ? null : translate('Product not recognized. Take another photo or enter it manually.'),
                               }
                             : item,
                     ),
@@ -176,7 +177,11 @@ export function useProductDrafts() {
                     update((current) =>
                         current.map((item) =>
                             item.id === draft.id
-                                ? { ...item, status: 'failed', error: error instanceof Error ? error.message : 'Analisis gagal.' }
+                                ? {
+                                      ...item,
+                                      status: 'failed',
+                                      error: error instanceof Error ? error.message : translate('Analysis failed.'),
+                                  }
                                 : item,
                         ),
                     );

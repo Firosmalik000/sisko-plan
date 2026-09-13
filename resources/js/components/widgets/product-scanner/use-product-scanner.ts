@@ -11,6 +11,7 @@ import type {
 } from '@/components/widgets/product-scanner/types';
 import { normalizeImage } from '@/components/widgets/product-scanner/use-camera';
 import { apiClient } from '@/lib/api-client';
+import { translate } from '@/lib/i18n';
 import { lookup as lookupCatalogItem, recognize as recognizeCatalogItems } from '@/routes/scanner/catalog-items';
 
 export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig) {
@@ -81,7 +82,7 @@ export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig
                         blob,
                         previewUrl: URL.createObjectURL(thumbnail),
                         status: config.visual_recognition_enabled ? 'queued' : 'failed',
-                        error: config.visual_recognition_enabled ? null : 'Layanan scanner belum terhubung.',
+                        error: config.visual_recognition_enabled ? null : translate('The scanner service is not connected.'),
                         errorCode: config.visual_recognition_enabled ? null : 'SCANNER_DISABLED',
                         retryable: config.visual_recognition_enabled,
                         results: [],
@@ -383,7 +384,7 @@ export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig
             const original = capturesRef.current.find((capture) => capture.id === id);
 
             if (!original || (!original.blob && capturesRef.current.filter(isPending).length + reservations.current >= 10)) {
-                throw new Error('Antrean penuh. Periksa hasil atau tunggu foto selesai.');
+                throw new Error(translate('The queue is full. Review the results or wait for photo processing to finish.'));
             }
 
             const session = generation.current;
@@ -414,7 +415,9 @@ export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig
                         blob: normalized,
                         previewUrl,
                         status: config.visual_recognition_enabled ? 'queued' : 'failed',
-                        error: config.visual_recognition_enabled ? null : 'Layanan scanner belum terhubung. Hubungi administrator.',
+                        error: config.visual_recognition_enabled
+                            ? null
+                            : translate('The scanner service is not connected. Contact an administrator.'),
                         errorCode: config.visual_recognition_enabled ? null : 'SCANNER_DISABLED',
                         retryable: config.visual_recognition_enabled,
                         results: [],
@@ -614,41 +617,45 @@ function scannerFailure(code: string | null | undefined): {
     switch (code) {
         case 'SCANNER_SETUP_PENDING':
             return {
-                error: 'Scanner toko sedang disiapkan. Coba lagi sebentar.',
+                error: translate('The store scanner is being configured. Try again shortly.'),
                 errorCode: code,
                 retryable: true,
             };
         case 'SCANNER_NOT_CONNECTED':
             return {
-                error: 'Layanan scanner belum terhubung. Hubungi administrator.',
+                error: translate('The scanner service is not connected. Contact an administrator.'),
                 errorCode: code,
                 retryable: false,
             };
         case 'SCANNER_BUSY':
             return {
-                error: 'Scanner sedang sibuk. Coba lagi sebentar.',
+                error: translate('The scanner is busy. Try again shortly.'),
                 errorCode: code,
                 retryable: true,
             };
         case 'SCANNER_UNAVAILABLE':
             return {
-                error: 'Pengenalan sedang terganggu. Coba lagi atau cari manual.',
+                error: translate('Recognition is temporarily unavailable. Try again or search manually.'),
                 errorCode: code,
                 retryable: true,
             };
         case 'SCANNER_RATE_LIMITED':
         case 'DISCOVERY_QUOTA_EXCEEDED':
         case 'DISCOVERY_SPEND_LIMIT_EXCEEDED':
-            return { error: 'Batas layanan tercapai. Coba lagi nanti atau hubungi administrator.', errorCode: code, retryable: false };
+            return {
+                error: translate('The service limit has been reached. Try again later or contact an administrator.'),
+                errorCode: code,
+                retryable: false,
+            };
         case 'SCAN_LIMIT_REACHED':
             return {
-                error: 'Kuota foto AI bulan ini habis. Barcode tetap bisa digunakan.',
+                error: translate('The monthly AI photo quota has been reached. You can still use barcodes.'),
                 errorCode: code,
                 retryable: false,
             };
         default:
             return {
-                error: 'Foto belum berhasil diproses. Coba lagi atau cari manual.',
+                error: 'The photo could not be processed. Try again or search manually.',
                 errorCode: 'SCANNER_REQUEST_FAILED',
                 retryable: true,
             };

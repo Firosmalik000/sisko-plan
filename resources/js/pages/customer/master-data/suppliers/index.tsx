@@ -24,7 +24,7 @@ export default function SuppliersIndex({
 }) {
     return (
         <ReferenceDataPage
-            title="Supplier"
+            title="Suppliers"
             icon={Truck}
             recordIcon={Contact}
             routes={{ index: index.url(), store: store.url(), update: update.url }}
@@ -41,15 +41,15 @@ export default function SuppliersIndex({
                 address: '',
             }}
             fields={[
-                { name: 'name', label: 'Nama supplier' },
-                { name: 'contact_person', label: 'Kontak utama' },
-                { name: 'phone', label: 'Nomor telepon', type: 'tel' },
+                { name: 'name', label: 'Supplier name' },
+                { name: 'contact_person', label: 'Primary contact' },
+                { name: 'phone', label: 'Phone number', type: 'tel' },
                 { name: 'email', label: 'Email', type: 'email' },
-                { name: 'address', label: 'Alamat', type: 'textarea' },
+                { name: 'address', label: 'Address', type: 'textarea' },
             ]}
             details={[
-                { key: 'contact_person', label: 'Kontak' },
-                { key: 'phone', label: 'Telepon' },
+                { key: 'contact_person', label: 'Contact' },
+                { key: 'phone', label: 'Telephone' },
                 { key: 'email', label: 'Email' },
             ]}
         />

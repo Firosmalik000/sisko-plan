@@ -1,5 +1,6 @@
-export type AppLocale = 'en' | 'id' | 'ms' | 'vi';
-export type MarketCode = 'id' | 'ms' | 'vi';
+import { normalizeLocale } from './locales.ts';
+import type { AppLocale } from './locales.ts';
+export type MarketCode = 'BN' | 'KH' | 'ID' | 'LA' | 'MY' | 'MM' | 'PH' | 'SG' | 'TH' | 'TL' | 'VN';
 
 type CurrencyConfiguration = {
     currency_code?: string;
@@ -8,48 +9,57 @@ type CurrencyConfiguration = {
     currency_symbol_position?: 'before' | 'after';
 } | null;
 
+const marketDefaults: Record<MarketCode, { currency: string; symbol: string; decimals: number; position: 'before' | 'after' }> = {
+    BN: { currency: 'BND', symbol: 'B$', decimals: 2, position: 'before' },
+    KH: { currency: 'KHR', symbol: '៛', decimals: 0, position: 'after' },
+    ID: { currency: 'IDR', symbol: 'Rp', decimals: 0, position: 'before' },
+    LA: { currency: 'LAK', symbol: '₭', decimals: 0, position: 'after' },
+    MY: { currency: 'MYR', symbol: 'RM', decimals: 2, position: 'before' },
+    MM: { currency: 'MMK', symbol: 'K', decimals: 0, position: 'after' },
+    PH: { currency: 'PHP', symbol: '₱', decimals: 2, position: 'before' },
+    SG: { currency: 'SGD', symbol: 'S$', decimals: 2, position: 'before' },
+    TH: { currency: 'THB', symbol: '฿', decimals: 2, position: 'before' },
+    TL: { currency: 'USD', symbol: '$', decimals: 2, position: 'before' },
+    VN: { currency: 'VND', symbol: '₫', decimals: 0, position: 'after' },
+};
+
 export function applyStoreCurrency(activeStore: CurrencyConfiguration, market: MarketCode) {
     if (typeof document === 'undefined') {
         return;
     }
 
-    document.documentElement.dataset.currency = activeStore?.currency_code ?? (market === 'ms' ? 'MYR' : market === 'vi' ? 'VND' : 'IDR');
-    document.documentElement.dataset.currencySymbol =
-        activeStore?.currency_symbol ?? (market === 'ms' ? 'RM' : market === 'vi' ? '₫' : 'Rp');
-    document.documentElement.dataset.currencyDecimals = String(activeStore?.currency_decimal_places ?? 0);
-    document.documentElement.dataset.currencyPosition = activeStore?.currency_symbol_position === 'after' ? 'after' : 'before';
+    document.documentElement.dataset.currency = activeStore?.currency_code ?? marketDefaults[market].currency;
+    document.documentElement.dataset.currencySymbol = activeStore?.currency_symbol ?? marketDefaults[market].symbol;
+    document.documentElement.dataset.currencyDecimals = String(activeStore?.currency_decimal_places ?? marketDefaults[market].decimals);
+    document.documentElement.dataset.currencyPosition = activeStore?.currency_symbol_position ?? marketDefaults[market].position;
 }
 
 export function currentLocale(): AppLocale {
     const locale = typeof document !== 'undefined' ? document.documentElement.lang : 'id';
 
-    return locale === 'en' || locale === 'ms' || locale === 'vi' ? locale : 'id';
+    return normalizeLocale(locale);
 }
 
 export function currentMarket(): MarketCode {
     const market = typeof document !== 'undefined' ? document.documentElement.dataset.market : undefined;
 
-    return market === 'ms' || market === 'vi' ? market : 'id';
+    return market && market in marketDefaults ? (market as MarketCode) : 'ID';
 }
 
 export function currencyCode(market = currentMarket()) {
     const configured = typeof document !== 'undefined' ? document.documentElement.dataset.currency : undefined;
 
-    return configured || (market === 'ms' ? 'MYR' : market === 'vi' ? 'VND' : 'IDR');
+    return configured || marketDefaults[market].currency;
 }
 
 export function localeTag(locale = currentLocale(), market = currentMarket()) {
-    if (locale === 'en') {
-        return market === 'ms' ? 'en-MY' : market === 'vi' ? 'en-VN' : 'en-ID';
-    }
-
-    return locale === 'ms' ? 'ms-MY' : locale === 'vi' ? 'vi-VN' : 'id-ID';
+    return `${locale}-${market}`;
 }
 
 export function currencySymbol(market = currentMarket()) {
     const configured = typeof document !== 'undefined' ? document.documentElement.dataset.currencySymbol : undefined;
 
-    return configured || (market === 'ms' ? 'RM' : market === 'vi' ? '₫' : 'Rp');
+    return configured || marketDefaults[market].symbol;
 }
 
 const highDenominationCurrencies = new Set(['IDR', 'VND']);

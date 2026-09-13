@@ -26,10 +26,10 @@ export default function PlatformSecurity({ twoFactorEnabled, twoFactorRequired, 
 
     return (
         <>
-            <Head title="Pengaturan Akun" />
+            <Head title="Settings Account" />
             <div className="platform-enter mx-auto max-w-6xl">
                 <header className="mb-5">
-                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">Pengaturan akun</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">Settings account</h1>
                 </header>
 
                 <div className="grid items-start gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
@@ -45,23 +45,23 @@ export default function PlatformSecurity({ twoFactorEnabled, twoFactorRequired, 
                                 </div>
                             </div>
                         </div>
-                        <nav aria-label="Pengaturan akun" className="flex gap-1 overflow-x-auto p-2 lg:block lg:space-y-1">
+                        <nav aria-label="Settings account" className="flex gap-1 overflow-x-auto p-2 lg:block lg:space-y-1">
                             <SettingsNavItem
                                 active={section === 'profile'}
                                 icon={UserRound}
-                                label="Profil akun"
+                                label="Profile account"
                                 onClick={() => setSection('profile')}
                             />
                             <SettingsNavItem
                                 active={section === 'password'}
                                 icon={KeyRound}
-                                label="Kata sandi"
+                                label="Passwords"
                                 onClick={() => setSection('password')}
                             />
                             <SettingsNavItem
                                 active={section === 'security'}
                                 icon={LockKeyhole}
-                                label="Keamanan"
+                                label="Security"
                                 onClick={() => setSection('security')}
                             />
                         </nav>
@@ -113,11 +113,11 @@ function SettingsNavItem({
 
 function ProfileSettings({ admin, role }: { admin: PlatformAdmin; role: string }) {
     return (
-        <SettingsPanel icon={UserRound} title="Profil akun" status={role}>
+        <SettingsPanel icon={UserRound} title="Profile account" status={role}>
             <Form action="/super-admin/security/profile" method="patch" className="grid gap-4 p-4 sm:max-w-xl sm:p-5">
                 {({ processing, errors, recentlySuccessful }) => (
                     <>
-                        <FormField htmlFor="profile_name" label="Nama lengkap" error={errors.name}>
+                        <FormField htmlFor="profile_name" label="Full name" error={errors.name}>
                             <Input id="profile_name" name="name" defaultValue={admin.name} autoComplete="name" required />
                         </FormField>
                         <FormField htmlFor="profile_email" label="Email" error={errors.email}>
@@ -126,9 +126,9 @@ function ProfileSettings({ admin, role }: { admin: PlatformAdmin; role: string }
                         <div className="flex flex-wrap items-center gap-3 pt-1">
                             <Button disabled={processing} className="bg-[#d83f22] text-white hover:bg-[#b83219]">
                                 {processing ? <Spinner /> : null}
-                                Simpan profil
+                                Save profile
                             </Button>
-                            {recentlySuccessful && <span className="text-sm font-bold text-emerald-700">Tersimpan</span>}
+                            {recentlySuccessful && <span className="text-sm font-bold text-emerald-700">Saved</span>}
                         </div>
                     </>
                 )}
@@ -139,11 +139,11 @@ function ProfileSettings({ admin, role }: { admin: PlatformAdmin; role: string }
 
 function PasswordSettings() {
     return (
-        <SettingsPanel icon={KeyRound} title="Kata sandi">
+        <SettingsPanel icon={KeyRound} title="Passwords">
             <Form action="/super-admin/security/password" method="put" resetOnSuccess className="grid gap-4 p-4 sm:max-w-xl sm:p-5">
                 {({ processing, errors, recentlySuccessful }) => (
                     <>
-                        <FormField htmlFor="account_current_password" label="Kata sandi saat ini" error={errors.current_password}>
+                        <FormField htmlFor="account_current_password" label="Current password" error={errors.current_password}>
                             <Input
                                 id="account_current_password"
                                 name="current_password"
@@ -152,10 +152,10 @@ function PasswordSettings() {
                                 required
                             />
                         </FormField>
-                        <FormField htmlFor="account_new_password" label="Kata sandi baru" error={errors.password}>
+                        <FormField htmlFor="account_new_password" label="Password new" error={errors.password}>
                             <Input id="account_new_password" name="password" type="password" autoComplete="new-password" required />
                         </FormField>
-                        <FormField htmlFor="account_password_confirmation" label="Konfirmasi kata sandi baru">
+                        <FormField htmlFor="account_password_confirmation" label="Confirm password new">
                             <Input
                                 id="account_password_confirmation"
                                 name="password_confirmation"
@@ -167,9 +167,9 @@ function PasswordSettings() {
                         <div className="flex flex-wrap items-center gap-3 pt-1">
                             <Button disabled={processing} className="bg-[#d83f22] text-white hover:bg-[#b83219]">
                                 {processing ? <Spinner /> : null}
-                                Perbarui kata sandi
+                                Update password
                             </Button>
-                            {recentlySuccessful && <span className="text-sm font-bold text-emerald-700">Diperbarui</span>}
+                            {recentlySuccessful && <span className="text-sm font-bold text-emerald-700">Updated</span>}
                         </div>
                     </>
                 )}
@@ -195,16 +195,16 @@ function SecuritySettings({
 }) {
     return (
         <>
-            <SettingsPanel icon={ShieldCheck} title="Keamanan akun" status={role} badge={<StatusBadge active={twoFactorEnabled} />}>
+            <SettingsPanel icon={ShieldCheck} title="Security account" status={role} badge={<StatusBadge active={twoFactorEnabled} />}>
                 <div className="grid gap-5 p-4 sm:p-5 md:grid-cols-[minmax(170px,220px)_minmax(0,1fr)] md:gap-8">
                     <div className="flex items-start gap-3">
                         <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#3b211b]">
                             <KeyRound className="size-4" />
                         </span>
                         <div>
-                            <h3 className="text-sm font-black text-[#3b211b]">Autentikasi dua langkah</h3>
+                            <h3 className="text-sm font-black text-[#3b211b]">Authentication two steps</h3>
                             <p className="mt-1 text-xs font-semibold text-slate-500">
-                                {twoFactorRequired ? 'Wajib untuk akun ini' : 'Proteksi login tambahan'}
+                                {twoFactorRequired ? 'Required for this account' : 'Protection login additional'}
                             </p>
                         </div>
                     </div>
@@ -270,12 +270,12 @@ function TwoFactorControl({ enabled, setupPending, qrCodeSvg }: { enabled: boole
                     <>
                         <div className="flex gap-3 rounded-xl bg-amber-50 p-3 text-sm leading-5 text-amber-950">
                             <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-                            <p>Setelah aktivasi, pindai QR lalu masukkan kode dari aplikasi authenticator.</p>
+                            <p>After activation, scan the QR code and enter the code from your authenticator app.</p>
                         </div>
                         <PasswordField error={errors.current_password} />
                         <Button disabled={processing} className="w-full bg-[#d83f22] text-white hover:bg-[#b83219] sm:w-fit">
                             {processing ? <Spinner /> : <KeyRound />}
-                            Aktifkan 2FA
+                            Activate 2FA
                         </Button>
                     </>
                 )}
@@ -291,8 +291,8 @@ function TwoFactorControl({ enabled, setupPending, qrCodeSvg }: { enabled: boole
                     dangerouslySetInnerHTML={{ __html: qrCodeSvg }}
                 />
                 <div>
-                    <h4 className="text-sm font-black text-[#3b211b]">Pindai dan konfirmasi</h4>
-                    <p className="mt-1 text-sm leading-5 text-slate-600">Masukkan kode enam digit yang muncul di authenticator.</p>
+                    <h4 className="text-sm font-black text-[#3b211b]">Scan and confirm</h4>
+                    <p className="mt-1 text-sm leading-5 text-slate-600">Enter code six digit that appears di authenticator.</p>
                     <Form
                         action="/super-admin/security/two-factor/confirm"
                         method="post"
@@ -307,7 +307,7 @@ function TwoFactorControl({ enabled, setupPending, qrCodeSvg }: { enabled: boole
                                         autoComplete="one-time-code"
                                         required
                                         autoFocus
-                                        aria-label="Kode autentikasi"
+                                        aria-label="Authentication code"
                                         placeholder="123456"
                                         className="font-mono tracking-[0.2em]"
                                     />
@@ -315,7 +315,7 @@ function TwoFactorControl({ enabled, setupPending, qrCodeSvg }: { enabled: boole
                                 </div>
                                 <Button disabled={processing} className="bg-[#d83f22] text-white hover:bg-[#b83219]">
                                     {processing ? <Spinner /> : <CheckCircle2 />}
-                                    Konfirmasi
+                                    Confirm
                                 </Button>
                             </>
                         )}
@@ -330,21 +330,21 @@ function TwoFactorControl({ enabled, setupPending, qrCodeSvg }: { enabled: boole
             <div className="flex items-start gap-3 rounded-xl bg-emerald-50 p-3 text-emerald-950">
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
                 <div>
-                    <p className="text-sm font-black">2FA aktif</p>
-                    <p className="mt-0.5 text-sm leading-5">Login memerlukan authenticator atau satu recovery code.</p>
+                    <p className="text-sm font-black">2FA active</p>
+                    <p className="mt-0.5 text-sm leading-5">Login requires authenticator or one recovery code.</p>
                 </div>
             </div>
             <Form action="/super-admin/security/recovery-codes" method="post" className="grid max-w-md gap-4">
                 {({ processing, errors }) => (
                     <>
                         <div>
-                            <h4 className="text-sm font-black text-[#3b211b]">Recovery code</h4>
-                            <p className="mt-1 text-sm text-slate-600">Membuat kode baru akan membatalkan seluruh kode lama.</p>
+                            <h4 className="text-sm font-black text-[#3b211b]">Recovery codes</h4>
+                            <p className="mt-1 text-sm text-slate-600">Make code new will cancel all code long.</p>
                         </div>
                         <PasswordField error={errors.current_password} />
                         <Button variant="outline" disabled={processing} className="w-full sm:w-fit">
                             {processing ? <Spinner /> : <RefreshCw />}
-                            Buat kode baru
+                            Create code new
                         </Button>
                     </>
                 )}
@@ -360,8 +360,8 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
                 <div className="flex items-center gap-3">
                     <ShieldAlert className="size-5 text-[#ffd5ca]" />
                     <div>
-                        <h2 className="font-black">Simpan recovery code</h2>
-                        <p className="mt-0.5 text-xs text-slate-300">Kode hanya ditampilkan satu kali.</p>
+                        <h2 className="font-black">Save recovery code</h2>
+                        <p className="mt-0.5 text-xs text-slate-300">Code only displayed one once.</p>
                     </div>
                 </div>
             </div>
@@ -381,7 +381,7 @@ function StatusBadge({ active }: { active: boolean }) {
         <span
             className={`rounded-md px-2.5 py-1 text-xs font-black ${active ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-100 text-amber-900'}`}
         >
-            2FA {active ? 'aktif' : 'belum aktif'}
+            2FA {active ? 'active' : 'not active yet'}
         </span>
     );
 }
@@ -389,7 +389,7 @@ function StatusBadge({ active }: { active: boolean }) {
 function PasswordField({ error }: { error?: string }) {
     return (
         <div className="grid gap-1.5">
-            <Label htmlFor="current_password">Kata sandi saat ini</Label>
+            <Label htmlFor="current_password">Current password</Label>
             <Input id="current_password" name="current_password" type="password" autoComplete="current-password" required />
             <InputError message={error} />
         </div>

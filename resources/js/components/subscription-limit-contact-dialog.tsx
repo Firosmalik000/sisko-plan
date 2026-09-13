@@ -7,8 +7,6 @@ import { useTranslation } from '@/lib/i18n';
 
 export type SubscriptionLimitKind = 'store' | 'product' | 'staff' | 'scan';
 
-type Locale = 'id' | 'en' | 'ms' | 'vi';
-
 type LocalizedCopy = {
     title: string;
     description: string;
@@ -20,36 +18,36 @@ type LocalizedCopy = {
 
 const copy: Record<SubscriptionLimitKind, LocalizedCopy> = {
     store: {
-        title: 'Kapasitas toko sudah penuh',
-        description: 'Hubungi admin untuk menambah kapasitas toko pada akun Anda.',
-        request: 'saya ingin mengajukan penambahan kapasitas toko untuk akun saya',
-        action: 'Hubungi admin via WhatsApp',
-        cancel: 'Nanti saja',
-        unavailable: 'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.',
+        title: 'Store capacity reached',
+        description: 'Contact the administrator to add store capacity to your account.',
+        request: 'I would like to request additional store capacity for my account',
+        action: 'Contact admin via WhatsApp',
+        cancel: 'Maybe later',
+        unavailable: 'The support WhatsApp number is not available yet. Please contact the platform administrator.',
     },
     product: {
-        title: 'Kapasitas produk sudah penuh',
-        description: 'Hubungi admin untuk menambah kapasitas produk pada akun Anda.',
-        request: 'saya ingin mengajukan penambahan kapasitas produk untuk akun saya',
-        action: 'Hubungi admin via WhatsApp',
-        cancel: 'Nanti saja',
-        unavailable: 'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.',
+        title: 'Product capacity reached',
+        description: 'Contact the administrator to add product capacity to your account.',
+        request: 'I would like to request additional product capacity for my account',
+        action: 'Contact admin via WhatsApp',
+        cancel: 'Maybe later',
+        unavailable: 'The support WhatsApp number is not available yet. Please contact the platform administrator.',
     },
     staff: {
-        title: 'Kapasitas staf sudah penuh',
-        description: 'Hubungi admin untuk menambah kapasitas staf pada akun Anda.',
-        request: 'saya ingin mengajukan penambahan kapasitas staf untuk akun saya',
-        action: 'Hubungi admin via WhatsApp',
-        cancel: 'Nanti saja',
-        unavailable: 'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.',
+        title: 'Staff capacity reached',
+        description: 'Contact the administrator to add staff capacity to your account.',
+        request: 'I would like to request additional staff capacity for my account',
+        action: 'Contact admin via WhatsApp',
+        cancel: 'Maybe later',
+        unavailable: 'The support WhatsApp number is not available yet. Please contact the platform administrator.',
     },
     scan: {
-        title: 'Kuota scan sudah habis',
-        description: 'Hubungi admin untuk menambah kuota scan pada akun Anda.',
-        request: 'saya ingin mengajukan penambahan kuota scan untuk akun saya',
-        action: 'Hubungi admin via WhatsApp',
-        cancel: 'Nanti saja',
-        unavailable: 'Nomor WhatsApp dukungan belum tersedia. Silakan hubungi admin platform.',
+        title: 'Scan quota reached',
+        description: 'Contact the administrator to add scan quota to your account.',
+        request: 'I would like to request additional scan quota for my account',
+        action: 'Contact admin via WhatsApp',
+        cancel: 'Maybe later',
+        unavailable: 'The support WhatsApp number is not available yet. Please contact the platform administrator.',
     },
 };
 
@@ -70,11 +68,14 @@ export function SubscriptionLimitContactDialog({
     onOpenChange: (open: boolean) => void;
 }) {
     const { branding } = usePage().props;
-    const { locale, t } = useTranslation();
+    const { t } = useTranslation();
     const content = copy[kind];
     const Icon = icons[kind];
     const phone = normalizeWhatsAppNumber(branding.support_phone);
-    const message = createMessage(locale, branding.brand_name, t(content.request));
+    const message = t('Hello :brand Admin, :request. Please share the available options and next steps. Thank you.', {
+        brand: branding.brand_name,
+        request: t(content.request),
+    });
     const whatsappUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : null;
 
     return (
@@ -129,20 +130,4 @@ export function normalizeWhatsAppNumber(value: string | null): string | null {
     }
 
     return /^[1-9]\d{7,14}$/u.test(digits) ? digits : null;
-}
-
-function createMessage(locale: Locale, brandName: string, request: string): string {
-    if (locale === 'en') {
-        return `Hello ${brandName} Admin, ${request}. Please share the available options and the next steps. Thank you.`;
-    }
-
-    if (locale === 'ms') {
-        return `Salam Pentadbir ${brandName}, ${request}. Mohon maklumat tentang pilihan yang tersedia dan proses seterusnya. Terima kasih.`;
-    }
-
-    if (locale === 'vi') {
-        return `Xin chào Quản trị viên ${brandName}, ${request}. Vui lòng cho tôi biết các lựa chọn hiện có và hướng dẫn bước tiếp theo. Xin cảm ơn.`;
-    }
-
-    return `Halo Admin ${brandName}, ${request}. Mohon informasi mengenai pilihan yang tersedia dan proses selanjutnya. Terima kasih.`;
 }

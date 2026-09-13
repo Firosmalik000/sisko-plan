@@ -24,7 +24,7 @@ class ProductionCheck extends Command
         );
 
         if (collect($checks)->contains(fn (array $check): bool => $check['critical'] && ! $check['passed'])) {
-            $this->error('Production preflight gagal. Perbaiki seluruh check kritis sebelum deploy.');
+            $this->error('Production preflight failed. Fix every critical check before deployment.');
 
             return self::FAILURE;
         }

@@ -35,10 +35,10 @@ export default function DashboardIndex(props: DashboardProps) {
 
 function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
     const shortcuts = [
-        { href: posIndex.url(), label: 'Buka Kasir', icon: ShoppingCart },
-        { href: salesIndex.url(), label: 'Penjualan', icon: ReceiptText },
-        { href: inventory.url(), label: 'Persediaan', icon: Boxes },
-        { href: cash.url(), label: 'Kas & Bank', icon: CreditCard },
+        { href: posIndex.url(), label: 'Open Checkout', icon: ShoppingCart },
+        { href: salesIndex.url(), label: 'Sales', icon: ReceiptText },
+        { href: inventory.url(), label: 'Inventory', icon: Boxes },
+        { href: cash.url(), label: 'Cash & Bank', icon: CreditCard },
     ];
 
     return (
@@ -49,7 +49,7 @@ function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
             actions={
                 <Button asChild size="touch">
                     <Link href={posIndex.url()}>
-                        {translate('Transaksi baru')}
+                        {translate('New transaction')}
                         <ArrowUpRight />
                     </Link>
                 </Button>

@@ -47,31 +47,31 @@ const transactionTypes: Array<{
 }> = [
     {
         value: 'cash_contribution',
-        label: 'Tambah kas',
+        label: 'Add cash',
         icon: <ArrowDownLeft className="size-4" />,
     },
     {
         value: 'cash_withdrawal',
-        label: 'Ambil kas',
+        label: 'Withdraw cash',
         icon: <ArrowUpRight className="size-4" />,
     },
     {
         value: 'inventory_contribution',
-        label: 'Tambah barang',
+        label: 'Contribute inventory',
         icon: <Boxes className="size-4" />,
     },
     {
         value: 'inventory_withdrawal',
-        label: 'Ambil barang',
+        label: 'Withdraw inventory',
         icon: <Boxes className="size-4" />,
     },
 ];
 
 const labels: Record<CapitalType, string> = {
-    cash_contribution: 'Tambah modal kas',
-    cash_withdrawal: 'Ambil modal kas',
-    inventory_contribution: 'Tambah modal barang',
-    inventory_withdrawal: 'Ambil modal barang',
+    cash_contribution: 'Contribute cash as capital',
+    cash_withdrawal: 'Withdraw capital cash',
+    inventory_contribution: 'Contribute inventory as capital',
+    inventory_withdrawal: 'Withdraw capital inventory',
 };
 
 export default function CapitalPage({
@@ -165,30 +165,30 @@ export default function CapitalPage({
 
     return (
         <>
-            <OperationsShell active={capitalIndex.url()} title="Modal Pemilik" icon={CircleDollarSign}>
+            <OperationsShell active={capitalIndex.url()} title="Owner capital" icon={CircleDollarSign}>
                 <section className="overflow-hidden rounded-2xl bg-[var(--app-ink)] text-white shadow-[0_14px_34px_-24px_var(--app-shadow)]">
                     <div className="relative px-4 py-5 sm:px-6">
                         <div className="absolute -top-20 right-0 size-52 rounded-full bg-[var(--app-primary)]/15 blur-3xl" />
                         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                             <div>
                                 <div className="flex items-center gap-2 text-xs font-bold tracking-[0.16em] text-amber-300 uppercase">
-                                    <CircleDollarSign className="size-4" /> Modal bersih
+                                    <CircleDollarSign className="size-4" /> Net capital
                                 </div>
                                 <p className="mt-2 text-3xl font-bold tracking-[-0.05em] sm:text-4xl">{money(capitalBalance)}</p>
                             </div>
                             {canManage && (
                                 <Button type="button" size="touch" className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
-                                    <Plus className="size-4" /> Catat modal
+                                    <Plus className="size-4" /> Record capital
                                 </Button>
                             )}
                         </div>
                     </div>
                     <div className="grid border-t border-white/10 bg-white/5 sm:grid-cols-3">
-                        <HeroMetric icon={<ArrowDownLeft className="size-4" />} label="Total ditambah" value={money(contributionTotal)} />
-                        <HeroMetric icon={<ArrowUpRight className="size-4" />} label="Total diambil" value={money(withdrawalTotal)} />
+                        <HeroMetric icon={<ArrowDownLeft className="size-4" />} label="Total added" value={money(contributionTotal)} />
+                        <HeroMetric icon={<ArrowUpRight className="size-4" />} label="Total withdrawn" value={money(withdrawalTotal)} />
                         <HeroMetric
                             icon={<ReceiptText className="size-4" />}
-                            label="Dokumen"
+                            label="Document"
                             value={transactions.total.toLocaleString(localeTag())}
                         />
                     </div>
@@ -197,9 +197,9 @@ export default function CapitalPage({
                 <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                     <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
                         <div>
-                            <h2 className="text-lg font-bold tracking-[-0.025em] text-foreground">Riwayat modal</h2>
+                            <h2 className="text-lg font-bold tracking-[-0.025em] text-foreground">Capital history</h2>
                             <p className="text-xs font-semibold text-muted-foreground">
-                                {transactions.total.toLocaleString(localeTag())} dokumen
+                                {transactions.total.toLocaleString(localeTag())} document
                             </p>
                         </div>
                         <WalletCards className="size-5 text-primary" />
@@ -215,12 +215,12 @@ export default function CapitalPage({
                         <table className="w-full text-left text-sm">
                             <thead className="border-b border-border bg-muted/80 text-xs font-bold tracking-wider text-muted-foreground uppercase">
                                 <tr>
-                                    <th className="px-5 py-3">Dokumen</th>
-                                    <th className="px-3 py-3">Jenis</th>
-                                    <th className="px-3 py-3">Aset</th>
-                                    <th className="px-3 py-3 text-right">Nilai</th>
-                                    <th className="px-3 py-3">Waktu</th>
-                                    <th className="px-5 py-3">Catatan</th>
+                                    <th className="px-5 py-3">Document</th>
+                                    <th className="px-3 py-3">Type</th>
+                                    <th className="px-3 py-3">Assets</th>
+                                    <th className="px-3 py-3 text-right">Value</th>
+                                    <th className="px-3 py-3">Time</th>
+                                    <th className="px-5 py-3">Notes</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
@@ -235,7 +235,7 @@ export default function CapitalPage({
                                             <td className="px-3 py-3">
                                                 <TypeBadge type={item.type} />
                                             </td>
-                                            <td className="px-3 py-3 text-muted-foreground">{item.account_name || 'Barang'}</td>
+                                            <td className="px-3 py-3 text-muted-foreground">{item.account_name || 'Item'}</td>
                                             <td
                                                 className={`px-3 py-3 text-right font-bold ${withdrawal ? 'text-destructive' : 'text-primary'}`}
                                             >
@@ -260,10 +260,10 @@ export default function CapitalPage({
                             <div className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-[var(--app-soft)] text-primary">
                                 <WalletCards className="size-5" />
                             </div>
-                            <p className="mt-3 text-sm font-bold text-foreground">Belum ada transaksi modal</p>
+                            <p className="mt-3 text-sm font-bold text-foreground">No capital transactions yet</p>
                             {canManage && (
                                 <Button type="button" variant="link" className="mt-3" onClick={() => setDialogOpen(true)}>
-                                    Catat modal pertama
+                                    Record first capital entry
                                 </Button>
                             )}
                         </div>
@@ -280,12 +280,12 @@ export default function CapitalPage({
             <ResponsiveDialog
                 open={dialogOpen}
                 onOpenChange={changeDialog}
-                title={translate('Catat modal')}
-                description={translate('Catat penambahan atau pengambilan modal pemilik.')}
+                title={translate('Record capital')}
+                description={translate('Record addition or withdrawal capital owner.')}
                 footer={
                     <>
                         <Button type="button" size="touch" variant="outline" onClick={() => changeDialog(false)}>
-                            {translate('Batal')}
+                            {translate('Cancel')}
                         </Button>
                         <Button
                             type="submit"
@@ -293,14 +293,14 @@ export default function CapitalPage({
                             form="capital-form"
                             disabled={form.processing || insufficientBalance || !hasReferenceOptions}
                         >
-                            {translate(form.processing ? 'Menyimpan...' : 'Simpan modal')}
+                            {translate(form.processing ? 'Saving...' : 'Save capital')}
                         </Button>
                     </>
                 }
             >
                 <form id="capital-form" onSubmit={submit} className="space-y-4">
                     <fieldset>
-                        <legend className="mb-2 text-sm font-bold text-foreground">Jenis transaksi</legend>
+                        <legend className="mb-2 text-sm font-bold text-foreground">Transaction type</legend>
                         <div className="grid grid-cols-2 gap-2">
                             {transactionTypes.map((option) => (
                                 <button
@@ -323,7 +323,7 @@ export default function CapitalPage({
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         {isCash ? (
-                            <Field label="Akun kas/bank">
+                            <Field label="Account cash/bank">
                                 <select
                                     className={fieldClass}
                                     value={form.data.account_id}
@@ -338,7 +338,7 @@ export default function CapitalPage({
                                 </select>
                             </Field>
                         ) : (
-                            <Field label="Barang">
+                            <Field label="Item">
                                 <select
                                     className={fieldClass}
                                     value={form.data.items[0].product_id}
@@ -354,7 +354,7 @@ export default function CapitalPage({
                                 >
                                     {products.map((product) => (
                                         <option key={product.public_id} value={product.public_id}>
-                                            {product.name} · stok {quantity(product.quantity)}
+                                            {product.name} · stock {quantity(product.quantity)}
                                         </option>
                                     ))}
                                 </select>
@@ -365,14 +365,14 @@ export default function CapitalPage({
                             <FormCurrencyInput
                                 id="capital-amount"
                                 name="amount"
-                                label={translate('Nominal')}
+                                label={translate('Amount')}
                                 value={form.data.amount}
                                 onValueChange={(value) => form.setData('amount', value)}
                                 min="0.0001"
                                 required
                             />
                         ) : (
-                            <Field label="Jumlah barang">
+                            <Field label="Item quantity">
                                 <input
                                     className={fieldClass}
                                     type="number"
@@ -399,7 +399,7 @@ export default function CapitalPage({
                             <FormCurrencyInput
                                 id="capital-unit-cost"
                                 name="unit_cost"
-                                label={translate('Biaya per barang')}
+                                label={translate('Expense per item')}
                                 value={form.data.items[0].unit_cost}
                                 onValueChange={(value) => form.setData('items', [{ ...form.data.items[0], unit_cost: value }])}
                                 min="0"
@@ -407,7 +407,7 @@ export default function CapitalPage({
                             />
                         )}
 
-                        <Field label="Waktu">
+                        <Field label="Time">
                             <input
                                 className={fieldClass}
                                 type="datetime-local"
@@ -418,7 +418,7 @@ export default function CapitalPage({
                         </Field>
 
                         <label className="space-y-1 text-sm font-bold text-foreground sm:col-span-2">
-                            Catatan <span className="font-normal text-muted-foreground">(opsional)</span>
+                            Notes <span className="font-normal text-muted-foreground">(optional)</span>
                             <textarea
                                 className={`${fieldClass} min-h-20 resize-y py-2.5`}
                                 maxLength={500}
@@ -431,11 +431,11 @@ export default function CapitalPage({
                     {hasReferenceOptions && (
                         <div className="grid grid-cols-2 divide-x divide-border rounded-xl border border-border bg-secondary py-3 text-[var(--app-ink)]">
                             <Calculation
-                                label={isCash ? 'Saldo saat ini' : 'Stok saat ini'}
+                                label={isCash ? 'Current balance' : 'Current stock'}
                                 value={isCash ? money(currentAssetValue) : quantity(currentAssetValue)}
                             />
                             <Calculation
-                                label={isCash ? 'Saldo setelahnya' : 'Stok setelahnya'}
+                                label={isCash ? 'Balance setelahnya' : 'Stock setelahnya'}
                                 value={isCash ? money(projectedAssetValue) : quantity(projectedAssetValue)}
                                 danger={insufficientBalance}
                             />
@@ -444,7 +444,9 @@ export default function CapitalPage({
 
                     {insufficientBalance && (
                         <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2.5 text-sm font-bold text-destructive">
-                            {isCash ? 'Saldo akun tidak cukup untuk penarikan ini.' : 'Stok tidak cukup untuk pengambilan ini.'}
+                            {isCash
+                                ? 'The account balance is too low for this withdrawal.'
+                                : 'There is not enough stock for this withdrawal.'}
                         </p>
                     )}
 
@@ -487,7 +489,7 @@ function CapitalCard({ item, timezone }: { item: Capital; timezone: string }) {
                 </p>
             </div>
             <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                <span className="truncate font-semibold">{item.account_name || 'Barang'}</span>
+                <span className="truncate font-semibold">{item.account_name || 'Item'}</span>
                 <span className="shrink-0">{ledgerDateTime(item.occurred_at, timezone)}</span>
             </div>
             {item.notes && <p className="truncate text-xs text-muted-foreground">{item.notes}</p>}

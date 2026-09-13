@@ -25,10 +25,10 @@ import { formatMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
 
 const actionLabels: Record<ScannerPurpose, string> = {
-    sale: 'Tambahkan ke keranjang',
-    purchase: 'Tambahkan ke pembelian',
-    stock_count: 'Gunakan untuk opname',
-    product: 'Periksa produk',
+    sale: 'Add to cart',
+    purchase: 'Add to purchases',
+    stock_count: 'Use for stock count',
+    product: 'Check product',
 };
 
 const money = { format: formatMoney };
@@ -127,16 +127,16 @@ export function ScanReview({
                     type="button"
                     onClick={onBack}
                     className="grid size-11 place-items-center rounded-xl bg-[var(--app-soft)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
-                    aria-label="Tutup hasil scan"
+                    aria-label="Close results scan"
                 >
                     <ChevronLeft className="size-5" />
                 </button>
                 <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-black tracking-[-0.03em]">Periksa hasil</h2>
+                    <h2 className="text-xl font-black tracking-[-0.03em]">Review results</h2>
                     <p className="text-xs font-semibold text-[var(--muted-foreground)]">
-                        {confirmed.length} {translate('siap')}
-                        {unresolved > 0 ? ` · ${unresolved} ${translate('perlu dipilih')}` : ''}
-                        {skipped > 0 ? ` · ${skipped} ${translate('dilewati')}` : ''}
+                        {confirmed.length} {translate('ready')}
+                        {unresolved > 0 ? ` · ${unresolved} ${translate('need selection')}` : ''}
+                        {skipped > 0 ? ` · ${skipped} ${translate('skipped')}` : ''}
                     </p>
                 </div>
                 <button
@@ -145,7 +145,7 @@ export function ScanReview({
                     className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                     <Camera className="size-4" />
-                    Tambah foto
+                    {translate('Add photo')}
                 </button>
             </header>
 
@@ -157,10 +157,10 @@ export function ScanReview({
                                 <CaptureImage previewUrl={capture.previewUrl} loading />
                                 <div className="min-w-0 flex-1">
                                     <p className="font-black">
-                                        {capture.status === 'retry_wait' ? 'Server sibuk, menunggu giliran…' : 'Mencari produk…'}
+                                        {capture.status === 'retry_wait' ? 'Service is busy, waiting for a slot…' : 'Searching product…'}
                                     </p>
                                     <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                                        Foto {captureIndex + 1} sedang dicocokkan dengan katalog.
+                                        Photo {captureIndex + 1} currently matched with catalog.
                                     </p>
                                 </div>
                                 <RemoveButton onClick={() => onRemove(capture.id)} />
@@ -174,9 +174,9 @@ export function ScanReview({
                                 <div className="flex gap-3">
                                     <AlertCircle className="mt-0.5 size-5 shrink-0 text-[#bd572f]" />
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-black">Foto belum berhasil diproses</p>
+                                        <p className="font-black">We could not process the photo</p>
                                         <p className="mt-1 text-sm text-[#795f55]">
-                                            {translate(capture.error ?? 'Foto belum berhasil diproses. Coba lagi atau cari manual.')}
+                                            {translate(capture.error ?? 'The photo could not be processed. Try again or search manually.')}
                                         </p>
                                     </div>
                                 </div>
@@ -187,7 +187,7 @@ export function ScanReview({
                                             onClick={onScanLimitContact}
                                             className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none"
                                         >
-                                            Hubungi admin
+                                            Contact admin
                                         </button>
                                     )}
                                     {capture.retryable && (
@@ -197,7 +197,7 @@ export function ScanReview({
                                             className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)]"
                                         >
                                             <RefreshCw className="size-4" />
-                                            Coba lagi
+                                            Try again
                                         </button>
                                     )}
                                     <button
@@ -206,7 +206,7 @@ export function ScanReview({
                                         className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-ink)]/15 px-3 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                     >
                                         <RotateCcw className="size-4" />
-                                        Foto ulang
+                                        Photo: ulang
                                     </button>
                                     <RemoveButton onClick={() => onRemove(capture.id)} />
                                 </div>
@@ -224,9 +224,9 @@ export function ScanReview({
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-black">
                                         {result.skipped
-                                            ? result.match?.name || 'Produk dilewati'
+                                            ? result.match?.name || 'Product skipped'
                                             : result.match?.name ||
-                                              (result.status === 'uncertain' ? 'Pilih produk' : 'Tidak ditemukan di katalog')}
+                                              (result.status === 'uncertain' ? 'Select product' : 'Not found in catalog')}
                                     </p>
                                     <ResultStatus skipped={result.skipped === true} ready={result.selectedOption !== null} />
                                 </div>
@@ -250,7 +250,7 @@ export function ScanReview({
                                     onClick={() => onScanBarcode(capture.id, result.itemIndex)}
                                     className="mt-2 min-h-11 text-sm font-bold text-[var(--app-primary)]"
                                 >
-                                    Pastikan dengan barcode
+                                    Ensure with barcode
                                 </button>
                             )}
                             {result.skipped ? (
@@ -259,7 +259,7 @@ export function ScanReview({
                                     onClick={() => onSetSkipped(capture.id, result.itemIndex, false)}
                                     className="mt-2 min-h-11 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                                 >
-                                    Batalkan lewati
+                                    Cancel skip
                                 </button>
                             ) : (
                                 <div className="mt-3 border-t border-[var(--app-ink)]/10 pt-3">
@@ -306,7 +306,7 @@ export function ScanReview({
             <footer className="border-t border-[var(--app-ink)]/10 bg-[#fffdfc] px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+.75rem)]">
                 {purpose === 'purchase' && confirmed.length > 0 && (
                     <div className="mb-3 flex items-center justify-between rounded-xl bg-[var(--app-soft)] px-3 py-2.5">
-                        <span className="text-xs font-bold text-[var(--muted-foreground)]">Estimasi total beli</span>
+                        <span className="text-xs font-bold text-[var(--muted-foreground)]">Estimated total purchase</span>
                         <strong className="text-base font-black text-[var(--app-ink)]">{money.format(estimatedTotal)}</strong>
                     </div>
                 )}
@@ -317,11 +317,11 @@ export function ScanReview({
                     className="min-h-12 w-full rounded-2xl bg-[var(--app-primary)] px-4 text-sm font-black text-[var(--app-primary-foreground)] shadow-[0_10px_24px_-14px_var(--app-shadow)] disabled:opacity-40"
                 >
                     {pending
-                        ? 'Menunggu hasil…'
+                        ? 'Waiting results…'
                         : unresolved > 0
-                          ? `${unresolved} ${translate('produk perlu dipilih')}`
+                          ? `${unresolved} ${translate('product need selected')}`
                           : confirmed.length === 0
-                            ? 'Selesai'
+                            ? 'Completed'
                             : translate(actionLabels[purpose])}
                     {canConfirm && confirmed.length > 0 ? ` · ${confirmed.length}` : ''}
                 </button>
@@ -377,13 +377,13 @@ function MatchedProduct({
             {selectedOption && !editingOptions && (
                 <div className="flex items-center justify-between gap-3">
                     <p className="min-w-0 truncate text-sm font-bold text-[var(--muted-foreground)]">{optionName(selectedOption)}</p>
-                    <span className="shrink-0 text-sm font-black text-[var(--app-ink)]">{money.format(unitPrice)} / unit</span>
+                    <span className="shrink-0 text-sm font-black text-[var(--app-ink)]">{money.format(unitPrice)} / units</span>
                 </div>
             )}
 
             {product.options.length > 1 && (selectedOption === null || editingOptions) && (
                 <fieldset className="mt-3">
-                    <legend className="text-xs font-black text-[var(--muted-foreground)]">Pilih ukuran/satuan</legend>
+                    <legend className="text-xs font-black text-[var(--muted-foreground)]">Select size/unit</legend>
                     <div className="mt-2 space-y-2">
                         {product.options.map((option) => {
                             const checked = selectedOption?.id === option.id;
@@ -411,7 +411,7 @@ function MatchedProduct({
                                         <span className="block text-sm font-black">{optionName(option)}</span>
                                         {purpose === 'sale' && (
                                             <span className="block text-xs text-[var(--muted-foreground)]">
-                                                Stok {Number(option.stockQuantity).toLocaleString(localeTag())}
+                                                Stock {Number(option.stockQuantity).toLocaleString(localeTag())}
                                             </span>
                                         )}
                                     </span>
@@ -431,14 +431,14 @@ function MatchedProduct({
                     onClick={() => setEditingOptions(true)}
                     className="mt-2 min-h-10 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                 >
-                    Ubah ukuran/satuan
+                    Change size/unit
                 </button>
             )}
 
             {selectedOption && (
                 <div className="mt-3 space-y-2">
                     <label className="flex items-center justify-between gap-3 text-xs font-bold text-[var(--muted-foreground)]">
-                        Jumlah
+                        Amount
                         <input
                             type="number"
                             min="0.000001"
@@ -450,7 +450,7 @@ function MatchedProduct({
                     </label>
                     <div className="flex items-center justify-between rounded-xl bg-[#fffaf7] px-3 py-2 text-xs">
                         <span className="font-bold text-[var(--muted-foreground)]">
-                            {purpose === 'purchase' ? 'Subtotal beli' : 'Subtotal'}
+                            {purpose === 'purchase' ? 'Subtotal purchase' : 'Subtotal'}
                         </span>
                         <strong className="text-sm font-black text-[var(--app-ink)]">{money.format(subtotal)}</strong>
                     </div>
@@ -463,7 +463,7 @@ function MatchedProduct({
                     onClick={() => onClearProduct(captureId, itemIndex)}
                     className="mt-2 min-h-10 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                 >
-                    Ganti produk
+                    Replace product
                 </button>
             )}
 
@@ -474,7 +474,7 @@ function MatchedProduct({
                     className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 text-sm font-black text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                 >
                     <SkipForward className="size-4" />
-                    Lewati produk ini
+                    Skip this product
                 </button>
             )}
         </>
@@ -502,7 +502,7 @@ function UncertainProduct({
 }) {
     return (
         <>
-            <p className="font-black">Produk mana yang difoto?</p>
+            <p className="font-black">Product which that photographed?</p>
             <div className="mt-2 space-y-2">
                 {candidates.map((candidate, index) => (
                     <button
@@ -514,7 +514,7 @@ function UncertainProduct({
                         {candidate.photoUrl && <img src={candidate.photoUrl} alt="" className="size-9 shrink-0 rounded-lg object-cover" />}
                         <span className="min-w-0 flex-1">
                             {index === 0 && (
-                                <span className="block text-[11px] font-bold text-[var(--muted-foreground)]">Paling cocok</span>
+                                <span className="block text-[11px] font-bold text-[var(--muted-foreground)]">Most suitable</span>
                             )}
                             <span className="block truncate text-sm font-black">{candidate.name}</span>
                         </span>
@@ -539,7 +539,7 @@ function UnknownProduct({
 }) {
     return (
         <>
-            <p className="font-black">Tidak ditemukan di katalog</p>
+            <p className="font-black">Not found in catalog</p>
             <RecoveryActions canSearchManual={canSearchManual} onManualSearch={onManualSearch} onRetake={onRetake} onSkip={onSkip} />
         </>
     );
@@ -565,7 +565,7 @@ function RecoveryActions({
                 className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-ink)]/15 px-3 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
             >
                 <RotateCcw className="size-4" />
-                Foto ulang
+                Photo: ulang
             </button>
             <button
                 type="button"
@@ -573,7 +573,7 @@ function RecoveryActions({
                 className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-black text-[var(--muted-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
             >
                 <SkipForward className="size-4" />
-                Lewati produk ini
+                Skip this product
             </button>
         </div>
     );
@@ -587,7 +587,7 @@ function ManualButton({ onClick }: { onClick: () => void }) {
             className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--app-ink)]/15 px-3 text-sm font-black text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
         >
             <PackageSearch className="size-4" />
-            Cari manual
+            Search manual
         </button>
     );
 }
@@ -597,7 +597,7 @@ function ResultStatus({ skipped, ready }: { skipped: boolean; ready: boolean }) 
         return (
             <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[var(--muted-foreground)]">
                 <SkipForward className="size-3.5" />
-                Dilewati
+                Skipped
             </span>
         );
     }
@@ -606,12 +606,12 @@ function ResultStatus({ skipped, ready }: { skipped: boolean; ready: boolean }) 
         return (
             <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[var(--app-primary)]">
                 <Check className="size-3.5" />
-                Siap
+                Ready
             </span>
         );
     }
 
-    return <span className="mt-1 inline-flex text-xs font-bold text-[#a55a38]">Perlu dipilih</span>;
+    return <span className="mt-1 inline-flex text-xs font-bold text-[#a55a38]">Need selected</span>;
 }
 
 function ManualProductPicker({
@@ -634,19 +634,19 @@ function ManualProductPicker({
                     type="button"
                     onClick={onClose}
                     className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--app-soft)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
-                    aria-label="Kembali ke hasil scan"
+                    aria-label="Back to results scan"
                 >
                     <ChevronLeft className="size-5" />
                 </button>
                 <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-black tracking-[-0.03em]">Cari produk</h2>
-                    <p className="text-xs font-semibold text-[var(--muted-foreground)]">Pilih untuk foto ini</p>
+                    <h2 className="text-xl font-black tracking-[-0.03em]">Search product</h2>
+                    <p className="text-xs font-semibold text-[var(--muted-foreground)]">Select for this photo</p>
                 </div>
                 <button
                     type="button"
                     onClick={onClose}
                     className="grid size-11 shrink-0 place-items-center rounded-xl focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
-                    aria-label="Tutup pencarian"
+                    aria-label="Close search"
                 >
                     <X className="size-5" />
                 </button>
@@ -654,13 +654,13 @@ function ManualProductPicker({
 
             <div className="border-b border-[var(--app-ink)]/10 bg-[#fffdfc] p-3 sm:p-4">
                 <label className="relative block">
-                    <span className="sr-only">Cari nama produk</span>
+                    <span className="sr-only">Search by product name</span>
                     <Search className="absolute top-1/2 left-3 size-5 -translate-y-1/2 text-[var(--muted-foreground)]" />
                     <input
                         autoFocus
                         value={query}
                         onChange={(event) => onQueryChange(event.target.value)}
-                        placeholder="Cari nama produk atau varian"
+                        placeholder="Search by product or variant name"
                         className="h-12 w-full rounded-xl border border-[var(--app-ink)]/15 bg-white pr-3 pl-11 text-base outline-none focus:border-[var(--app-primary)] focus:ring-2 focus:ring-[var(--app-primary)]/15"
                     />
                 </label>
@@ -679,7 +679,7 @@ function ManualProductPicker({
                             <span className="line-clamp-2 text-sm font-black">{product.name}</span>
                             <span className="mt-1 block text-xs font-semibold text-[var(--muted-foreground)]">
                                 {product.options.length > 1
-                                    ? `${product.options.length} ${translate('pilihan')}`
+                                    ? `${product.options.length} ${translate('options')}`
                                     : optionName(product.options[0])}
                             </span>
                         </span>
@@ -690,8 +690,8 @@ function ManualProductPicker({
                     <div className="grid min-h-40 place-items-center px-6 text-center">
                         <div>
                             <PackageSearch className="mx-auto size-7 text-[var(--muted-foreground)]" />
-                            <p className="mt-2 text-sm font-black">Produk tidak ditemukan</p>
-                            <p className="mt-1 text-xs text-[var(--muted-foreground)]">Coba kata pencarian lain.</p>
+                            <p className="mt-2 text-sm font-black">Product not found</p>
+                            <p className="mt-1 text-xs text-[var(--muted-foreground)]">Try term search other.</p>
                         </div>
                     </div>
                 )}
@@ -719,7 +719,7 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
             type="button"
             onClick={onClick}
             className="grid size-11 shrink-0 place-items-center rounded-xl text-[#9a4d38] hover:bg-[#fff1eb] focus-visible:ring-2 focus-visible:ring-[#b85b3b] focus-visible:outline-none"
-            aria-label="Hapus hasil"
+            aria-label={translate('Clear results')}
         >
             <Trash2 className="size-4" />
         </button>

@@ -1,18 +1,13 @@
-import { malayCore } from './common';
-import { malayDynamicCatalog } from './dynamic';
-import { malayProductCatalog } from './product';
-import { landingMalayOverrides } from './public';
-import { reviewedMalayOverrides } from './reviewed';
+import { msAuthCatalog } from './auth';
+import { msCustomerCatalog } from './customer';
+import { msPlatformCatalog } from './platform';
+import { msPublicCatalog } from './public';
+import { msSharedCatalog } from './shared';
 
 export const malayCatalog: Record<string, string> = {
-    'Preferensi aplikasi': 'Pilihan aplikasi',
-    ...malayCore,
-    ...reviewedMalayOverrides,
-    ...landingMalayOverrides,
-    ...malayProductCatalog,
-    ...malayDynamicCatalog,
-    Tampilan: 'Paparan',
-    Terang: 'Terang',
-    Gelap: 'Gelap',
-    'Ikuti perangkat': 'Ikut peranti',
+    ...msAuthCatalog,
+    ...msCustomerCatalog,
+    ...msPlatformCatalog,
+    ...msPublicCatalog,
+    ...msSharedCatalog,
 };

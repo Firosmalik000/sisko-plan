@@ -69,8 +69,7 @@ export default function ManageTwoFactor(props: Props) {
             ) : (
                 <div className="flex flex-col items-start justify-start space-y-4">
                     <p className="text-sm text-muted-foreground">
-                        When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be
-                        retrieved from a TOTP-supported application on your phone.
+                        When two-factor authentication is enabled, enter the secure code from your authenticator app when signing in.
                     </p>
 
                     <div>

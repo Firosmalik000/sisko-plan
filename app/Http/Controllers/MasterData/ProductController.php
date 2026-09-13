@@ -107,7 +107,7 @@ class ProductController extends Controller
             report($exception);
 
             throw ValidationException::withMessages([
-                'product' => 'Produk tidak dapat dihapus karena sudah dipakai dalam transaksi atau data stok. Nonaktifkan produk jika masih diperlukan.',
+                'product' => __('The product cannot be deleted because it is used in transactions or stock data. Deactivate it instead if needed.'),
             ]);
         }
 

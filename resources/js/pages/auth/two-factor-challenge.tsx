@@ -16,14 +16,14 @@ export default function TwoFactorChallenge() {
 
     const authConfigContent = showRecoveryInput
         ? {
-              title: t('Kode pemulihan'),
-              description: t('Konfirmasi akses akun dengan memasukkan salah satu kode pemulihan darurat.'),
-              toggleText: t('masuk menggunakan kode autentikasi'),
+              title: t('Recovery codes'),
+              description: t('Confirm account access by entering one of the emergency recovery codes.'),
+              toggleText: t('log in using the authentication code'),
           }
         : {
-              title: t('Kode autentikasi'),
-              description: t('Masukkan kode autentikasi dari aplikasi autentikator Anda.'),
-              toggleText: t('masuk menggunakan kode pemulihan'),
+              title: t('Authentication code'),
+              description: t('Enter the authentication code from your authenticator app.'),
+              toggleText: t('log in using the recovery code'),
           };
 
     setLayoutProps({
@@ -39,7 +39,7 @@ export default function TwoFactorChallenge() {
 
     return (
         <>
-            <Head title={t('Autentikasi dua faktor')} />
+            <Head title={t('Authentication two faktor')} />
 
             <div className="space-y-6">
                 <Form {...store.form()} className="space-y-4" resetOnError resetOnSuccess={!showRecoveryInput}>
@@ -50,7 +50,7 @@ export default function TwoFactorChallenge() {
                                     <Input
                                         name="recovery_code"
                                         type="text"
-                                        placeholder={t('Masukkan kode pemulihan')}
+                                        placeholder={t('Enter the recovery code')}
                                         autoFocus={showRecoveryInput}
                                         required
                                     />
@@ -80,11 +80,11 @@ export default function TwoFactorChallenge() {
                             )}
 
                             <Button type="submit" className="w-full" disabled={processing}>
-                                {t('Lanjutkan')}
+                                {t('Continue')}
                             </Button>
 
                             <div className="text-center text-sm text-muted-foreground">
-                                <span>{t('atau Anda dapat')} </span>
+                                <span>{t('or you can')} </span>
                                 <button
                                     type="button"
                                     className="cursor-pointer text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
