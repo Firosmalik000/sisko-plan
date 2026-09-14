@@ -38,7 +38,7 @@ export function PromotionCarousel({ promotions }: { promotions: CustomerPromotio
     return (
         <section
             aria-label={t('Gambar promosi')}
-            className="group relative overflow-hidden rounded-[1.4rem] border border-[var(--app-ink)]/10 bg-white shadow-sm"
+            className="group relative mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-[var(--app-ink)]/10 bg-white shadow-sm"
             onPointerEnter={() => setPaused(true)}
             onPointerLeave={() => setPaused(false)}
             onFocusCapture={() => setPaused(true)}
@@ -80,7 +80,7 @@ export function PromotionCarousel({ promotions }: { promotions: CustomerPromotio
                         type="button"
                         onClick={() => goTo(active - 1)}
                         aria-label={t('Gambar sebelumnya')}
-                        className="absolute top-1/2 left-3 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md ring-1 ring-black/5 transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none md:flex"
+                        className="absolute top-1/2 left-2 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md ring-1 ring-black/5 transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none md:flex"
                     >
                         <ChevronLeft className="size-5" />
                     </button>
@@ -88,12 +88,12 @@ export function PromotionCarousel({ promotions }: { promotions: CustomerPromotio
                         type="button"
                         onClick={() => goTo(active + 1)}
                         aria-label={t('Gambar berikutnya')}
-                        className="absolute top-1/2 right-3 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md ring-1 ring-black/5 transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none md:flex"
+                        className="absolute top-1/2 right-2 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-md ring-1 ring-black/5 transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none md:flex"
                     >
                         <ChevronRight className="size-5" />
                     </button>
                     <div
-                        className="absolute right-0 bottom-3 left-0 flex justify-center gap-1.5"
+                        className="absolute right-0 bottom-1.5 left-0 flex justify-center gap-1"
                         role="tablist"
                         aria-label={t('Pilih gambar promosi')}
                     >
@@ -105,11 +105,11 @@ export function PromotionCarousel({ promotions }: { promotions: CustomerPromotio
                                 aria-selected={active === index}
                                 aria-label={`${t('Gambar')} ${index + 1}`}
                                 onClick={() => goTo(index)}
-                                className="grid size-11 place-items-center rounded-full focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
+                                className="grid size-10 place-items-center rounded-full focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                             >
                                 <span
                                     className={cn(
-                                        'size-2.5 rounded-full shadow-sm ring-1 ring-black/10 transition',
+                                        'size-2 rounded-full shadow-sm ring-1 ring-black/10 transition',
                                         active === index ? 'bg-[var(--app-primary)]' : 'bg-white/85',
                                     )}
                                 />
