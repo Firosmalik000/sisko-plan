@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import {
     ArrowDownLeft,
     ArrowUpRight,
@@ -15,14 +15,23 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { buttonClass, currentDateTime, fieldClass, ledgerDateTime, money, postingToken, quantity } from '@/components/operations-shell';
+import { fieldClass } from '@/components/operations-shell';
+import { AppPage } from '@/components/page/app-page';
+import { EmptyState } from '@/components/page/empty-state';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
-import { prepareScannerTone } from '@/components/product-scanner/scanner-feedback';
-import type { ScannerApplyResult, ScannerSelection } from '@/components/product-scanner/types';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { prepareScannerTone } from '@/components/widgets/product-scanner/scanner-feedback';
+import type { ScannerApplyResult, ScannerSelection } from '@/components/widgets/product-scanner/types';
+import { formatMoney as money, formatQuantity as quantity } from '@/lib/currency';
+import { currentDateTime, ledgerDateTime } from '@/lib/date-time';
 import { decimalInput } from '@/lib/decimal-input';
-import { useTranslation } from '@/lib/i18n';
+import { translate, useTranslation } from '@/lib/i18n';
+import { postingToken } from '@/lib/posting-token';
+import { index as suppliersIndex } from '@/routes/master-data/suppliers';
+import { store as storePurchase } from '@/routes/purchasing';
+import { store as storePayment } from '@/routes/purchasing/payments';
 
 type Supplier = {
     public_id: string;
@@ -72,15 +81,15 @@ type PayableTransaction = {
 };
 type Page<T> = { data: T[]; links: PaginationLink[]; total: number };
 
-const cardClass = 'rounded-2xl bg-white shadow-[0_14px_40px_-32px_rgba(63,31,22,0.55)]';
-const labelClass = 'space-y-1 text-sm font-semibold text-stone-700';
+const cardClass = 'overflow-hidden rounded-2xl bg-card text-card-foreground shadow-[0_16px_36px_-32px_var(--app-shadow)]';
+const labelClass = 'space-y-1 text-sm font-semibold text-foreground';
 const defaultItem = (product?: ProductOption) => ({
     product_id: product?.product_id ?? '',
     unit_id: product?.unit_id ?? '',
     quantity: '1',
     unit_price: decimalInput(product?.purchase_price ?? '0'),
 });
-const ProductScanner = lazy(() => import('@/components/product-scanner/ProductScanner'));
+const ProductScanner = lazy(() => import('@/components/widgets/product-scanner/product-scanner'));
 
 type PurchasingView = 'purchases' | 'payables';
 
@@ -176,7 +185,7 @@ export default function PurchasingPage({
             const option = products.find((product) => product.product_id === selection.productId && product.unit_id === selection.unitId);
 
             if (!option || !Number.isFinite(selection.quantity) || selection.quantity <= 0) {
-                result.failures.push({ ...identity, message: 'Produk atau jumlah tidak tersedia untuk pembelian.' });
+                result.failures.push({ ...identity, message: 'Product or amount unavailable for purchases.' });
                 continue;
             }
 
@@ -223,7 +232,7 @@ export default function PurchasingPage({
     };
     const submitPurchase = (event: FormEvent) => {
         event.preventDefault();
-        purchase.post('/purchasing', {
+        purchase.post(storePurchase.url(), {
             preserveScroll: true,
             onSuccess: () => {
                 setPurchaseOpen(false);
@@ -239,7 +248,7 @@ export default function PurchasingPage({
             return;
         }
 
-        payment.post(`/purchasing/${payment.data.purchase_id}/payments`, {
+        payment.post(storePayment.url(payment.data.purchase_id), {
             preserveScroll: true,
             onSuccess: () => {
                 setPaymentOpen(false);
@@ -256,53 +265,48 @@ export default function PurchasingPage({
 
     return (
         <>
-            <Head title="Pembelian dan utang supplier" />
-            <div className="min-h-full bg-[linear-gradient(180deg,#fffaf7_0%,#fff3ef_100%)] px-3 py-4 sm:px-5 lg:px-8">
-                <div className="mx-auto max-w-7xl space-y-4">
-                    <header className="flex flex-col gap-3 rounded-2xl bg-white px-4 py-4 shadow-[0_14px_40px_-32px_rgba(63,31,22,0.55)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                        <div>
-                            <h1 className="text-2xl font-black tracking-[-0.03em] text-[var(--app-ink)]">Pembelian</h1>
-                            <p className="mt-0.5 text-sm text-stone-500">Catat barang masuk dan selesaikan utang supplier.</p>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
-                            {canManage && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            prepareScannerTone();
-                                            setScannerOpen(true);
-                                        }}
-                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 text-xs font-bold text-[var(--app-ink)] transition hover:border-orange-200 hover:bg-orange-50 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none sm:text-sm"
-                                    >
-                                        <Camera className="size-4 text-[var(--app-primary)]" /> Scan
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPaymentOpen(true)}
-                                        disabled={unpaidPurchases.length === 0}
-                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 text-xs font-bold text-[var(--app-ink)] transition hover:border-orange-200 hover:bg-orange-50 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45 sm:text-sm"
-                                    >
-                                        <CircleDollarSign className="size-4 text-emerald-600" />
-                                        Bayar
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPurchaseOpen(true)}
-                                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--app-primary)] px-3 text-xs font-black text-[var(--app-primary-foreground)] shadow-[0_10px_20px_-12px_var(--app-primary)] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:ring-offset-2 focus-visible:outline-none sm:text-sm"
-                                    >
-                                        <Plus className="size-4" /> Tambah
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </header>
+            <AppPage
+                title={t('Purchases')}
+                description={t('Record incoming stock and settle supplier payables.')}
+                icon={PackagePlus}
+                headerSurface
+                actions={
+                    canManage ? (
+                        <>
+                            <Button
+                                type="button"
+                                size="touch"
+                                variant="outline"
+                                onClick={() => {
+                                    prepareScannerTone();
+                                    setScannerOpen(true);
+                                }}
+                            >
+                                <Camera className="size-4" /> {t('Scans')}
+                            </Button>
+                            <Button
+                                type="button"
+                                size="touch"
+                                variant="outline"
+                                onClick={() => setPaymentOpen(true)}
+                                disabled={unpaidPurchases.length === 0}
+                            >
+                                <CircleDollarSign className="size-4" /> {t('Pay')}
+                            </Button>
+                            <Button type="button" size="touch" onClick={() => setPurchaseOpen(true)}>
+                                <Plus className="size-4" /> {t('Add')}
+                            </Button>
+                        </>
+                    ) : undefined
+                }
+            >
+                <div className="space-y-5">
                     {scannerSummary && (
                         <p role="status" className="rounded-xl bg-[var(--app-soft)] px-4 py-3 text-sm font-bold text-[var(--app-primary)]">
-                            {scannerSummary.added} {t('produk ditambahkan')}.
+                            {scannerSummary.added} {t('products added')}.
                             {scannerSummary.skipped > 0
-                                ? ` ${scannerSummary.skipped} ${t('tidak tersedia di daftar pembelian')}.`
-                                : ` ${t('Periksa jumlah dan harga sebelum simpan.')}`}
+                                ? ` ${scannerSummary.skipped} ${t('unavailable in the purchase list')}.`
+                                : ` ${t('Check the quantities and prices before saving.')}`}
                         </p>
                     )}
 
@@ -317,31 +321,31 @@ export default function PurchasingPage({
                                 }
                             }}
                         >
-                            <SheetContent className="w-full gap-0 overflow-hidden border-stone-200 bg-white p-0 sm:max-w-2xl lg:max-w-4xl">
+                            <SheetContent className="w-full gap-0 overflow-hidden border-border bg-card p-0 sm:max-w-2xl lg:max-w-4xl">
                                 <form onSubmit={submitPurchase} className="flex min-h-0 flex-1 flex-col">
-                                    <SheetHeader className="border-b border-stone-200 px-4 py-4 pr-12 sm:px-6">
-                                        <SheetTitle className="flex items-center gap-2 text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
+                                    <SheetHeader className="border-b border-border px-4 py-4 pr-12 sm:px-6">
+                                        <SheetTitle className="flex items-center gap-2 text-lg font-semibold tracking-[-0.03em] text-[var(--app-ink)]">
                                             <PackagePlus className="size-5" />
-                                            Tambah pembelian
+                                            Add purchase
                                         </SheetTitle>
                                     </SheetHeader>
                                     <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">
                                         <div className="mt-5 grid gap-4 md:grid-cols-3">
                                             <div className={labelClass}>
                                                 <div className="flex min-h-6 items-center justify-between gap-2">
-                                                    <label htmlFor="purchase-supplier">Supplier</label>
-                                                    <span className="flex items-center gap-2 text-xs font-black">
+                                                    <label htmlFor="purchase-supplier">Suppliers</label>
+                                                    <span className="flex items-center gap-2 text-xs font-semibold">
                                                         <Link
-                                                            href="/master-data/suppliers?create=1"
-                                                            className="text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-900 focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:outline-none"
+                                                            href={suppliersIndex.url({ query: { create: '1' } })}
+                                                            className="text-primary underline decoration-primary/30 underline-offset-4 hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                                         >
-                                                            Tambah
+                                                            Add
                                                         </Link>
                                                         <Link
-                                                            href="/master-data/suppliers"
-                                                            className="text-stone-500 underline decoration-stone-400/30 underline-offset-4 hover:text-stone-800 focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:outline-none"
+                                                            href={suppliersIndex.url()}
+                                                            className="text-muted-foreground underline decoration-stone-400/30 underline-offset-4 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                                         >
-                                                            Kelola
+                                                            Manage
                                                         </Link>
                                                     </span>
                                                 </div>
@@ -360,7 +364,7 @@ export default function PurchasingPage({
                                                 </select>
                                             </div>
                                             <label className={labelClass}>
-                                                Nomor invoice supplier
+                                                Supplier invoice number
                                                 <input
                                                     className={fieldClass}
                                                     value={purchase.data.supplier_invoice_number}
@@ -369,7 +373,7 @@ export default function PurchasingPage({
                                                 />
                                             </label>
                                             <label className={labelClass}>
-                                                Waktu transaksi
+                                                Transaction time
                                                 <input
                                                     className={fieldClass}
                                                     type="datetime-local"
@@ -383,10 +387,10 @@ export default function PurchasingPage({
                                             {purchase.data.items.map((item, index) => (
                                                 <div
                                                     key={index}
-                                                    className="grid gap-3 rounded-2xl border border-stone-200 bg-stone-50 p-3 md:grid-cols-[minmax(0,2fr)_1fr_1fr_auto]"
+                                                    className="grid gap-3 rounded-2xl border border-border bg-muted p-3 md:grid-cols-[minmax(0,2fr)_1fr_1fr_auto]"
                                                 >
                                                     <label className={labelClass}>
-                                                        Produk / satuan
+                                                        Product / unit
                                                         <select
                                                             className={fieldClass}
                                                             value={`${item.product_id}:${item.unit_id}`}
@@ -405,7 +409,7 @@ export default function PurchasingPage({
                                                         </select>
                                                     </label>
                                                     <label className={labelClass}>
-                                                        Jumlah
+                                                        Amount
                                                         <input
                                                             className={fieldClass}
                                                             type="number"
@@ -417,7 +421,7 @@ export default function PurchasingPage({
                                                         />
                                                     </label>
                                                     <label className={labelClass}>
-                                                        Harga / satuan
+                                                        Price / unit
                                                         <input
                                                             className={fieldClass}
                                                             type="number"
@@ -430,8 +434,8 @@ export default function PurchasingPage({
                                                     </label>
                                                     <button
                                                         type="button"
-                                                        aria-label="Hapus item"
-                                                        className="mt-6 grid size-11 place-items-center rounded-xl border border-red-200 text-red-700 disabled:opacity-30"
+                                                        aria-label="Delete item"
+                                                        className="mt-6 grid size-11 place-items-center rounded-xl border border-destructive/20 text-destructive disabled:opacity-30"
                                                         disabled={purchase.data.items.length === 1}
                                                         onClick={() =>
                                                             purchase.setData(
@@ -446,18 +450,18 @@ export default function PurchasingPage({
                                             ))}
                                             <button
                                                 type="button"
-                                                className="inline-flex items-center gap-2 rounded-xl border border-teal-700 px-4 py-2 text-sm font-bold text-teal-800"
+                                                className="inline-flex items-center gap-2 rounded-xl border border-primary px-4 py-2 text-sm font-bold text-primary"
                                                 onClick={() =>
                                                     purchase.setData('items', [...purchase.data.items, defaultItem(products[0])])
                                                 }
                                             >
                                                 <Plus className="size-4" />
-                                                Tambah item
+                                                Add item
                                             </button>
                                         </div>
                                         <div className="mt-6 grid gap-4 md:grid-cols-3">
                                             <label className={labelClass}>
-                                                Diskon transaksi
+                                                Transaction discount
                                                 <input
                                                     className={fieldClass}
                                                     type="number"
@@ -469,7 +473,7 @@ export default function PurchasingPage({
                                                 />
                                             </label>
                                             <label className={labelClass}>
-                                                Biaya tambahan
+                                                Expense additional
                                                 <input
                                                     className={fieldClass}
                                                     type="number"
@@ -481,11 +485,11 @@ export default function PurchasingPage({
                                                 />
                                             </label>
                                             <div className="rounded-2xl bg-[var(--app-ink)] px-4 py-3 text-white">
-                                                <p className="text-xs text-teal-100/70">Estimasi total</p>
+                                                <p className="text-xs text-[var(--app-primary-foreground)]/70">Estimated total</p>
                                                 <p className="mt-1 text-xl font-bold text-amber-300">{money(grandTotal)}</p>
                                             </div>
                                             <label className={labelClass}>
-                                                Bayar sekarang
+                                                Pay now
                                                 <input
                                                     className={fieldClass}
                                                     type="number"
@@ -497,7 +501,7 @@ export default function PurchasingPage({
                                                 />
                                             </label>
                                             <label className={labelClass}>
-                                                Akun pembayaran
+                                                Account payment
                                                 <select
                                                     className={fieldClass}
                                                     value={purchase.data.account_id}
@@ -512,7 +516,7 @@ export default function PurchasingPage({
                                                 </select>
                                             </label>
                                             <label className={labelClass}>
-                                                Catatan
+                                                Notes
                                                 <input
                                                     className={fieldClass}
                                                     value={purchase.data.notes}
@@ -522,16 +526,18 @@ export default function PurchasingPage({
                                             </label>
                                         </div>
                                         {Object.keys(purchase.errors).length > 0 && (
-                                            <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-                                                Periksa kembali input pembelian. Beberapa nilai belum valid.
+                                            <p className="mt-4 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                                                Review the purchase input. Some values are invalid.
                                             </p>
                                         )}
-                                        <button
-                                            className={`${buttonClass} mt-5`}
+                                        <Button
+                                            type="submit"
+                                            size="checkout"
+                                            className="mt-5 w-full"
                                             disabled={purchase.processing || products.length === 0 || activeSuppliers.length === 0}
                                         >
-                                            Posting pembelian
-                                        </button>
+                                            Post purchases
+                                        </Button>
                                     </div>
                                 </form>
                             </SheetContent>
@@ -540,57 +546,59 @@ export default function PurchasingPage({
 
                     <div className="grid gap-6">
                         <section className={cardClass}>
-                            <div className="flex items-center justify-between gap-3 border-b border-stone-100 px-4 py-4 sm:px-5">
+                            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
                                 <div className="flex min-w-0 items-center gap-3">
-                                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-[var(--app-primary)]">
+                                    <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-[var(--app-primary)]">
                                         <Building2 className="size-5" />
                                     </div>
                                     <div className="min-w-0">
-                                        <h2 className="truncate text-base font-black text-[var(--app-ink)]">Posisi utang supplier</h2>
-                                        <p className="text-xs text-stone-500">{suppliers.length} supplier terdaftar</p>
+                                        <h2 className="truncate text-base font-semibold text-[var(--app-ink)]">Supplier debt position</h2>
+                                        <p className="text-xs text-muted-foreground">{suppliers.length} registered suppliers</p>
                                     </div>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-2">
                                     <div className="hidden text-right sm:block">
-                                        <p className="text-[10px] font-bold tracking-wide text-stone-400 uppercase">Total utang</p>
-                                        <p className="text-sm font-black text-[var(--app-ink)] tabular-nums">{money(totalPayable)}</p>
+                                        <p className="text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
+                                            Total payables
+                                        </p>
+                                        <p className="text-sm font-semibold text-[var(--app-ink)] tabular-nums">{money(totalPayable)}</p>
                                     </div>
                                     <Link
-                                        href="/master-data/suppliers"
-                                        className="inline-flex min-h-10 shrink-0 items-center rounded-xl border border-stone-200 px-3 text-xs font-bold text-stone-700 transition hover:border-orange-200 hover:bg-orange-50 hover:text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none sm:text-sm"
+                                        href={suppliersIndex.url()}
+                                        className="inline-flex min-h-10 shrink-0 items-center rounded-xl border border-border px-3 text-xs font-bold text-foreground transition hover:border-primary/40 hover:bg-secondary hover:text-[var(--app-primary)] focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none sm:text-sm"
                                     >
-                                        Kelola supplier
+                                        Manage supplier
                                     </Link>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 divide-x divide-stone-100 border-b border-stone-100 sm:grid-cols-3">
+                            <div className="grid grid-cols-2 divide-x divide-border border-b border-border sm:grid-cols-3">
                                 <div className="px-4 py-3 sm:px-5">
-                                    <p className="text-xs font-medium text-stone-500">Total utang</p>
-                                    <p className="mt-1 truncate text-lg font-black text-[var(--app-ink)] tabular-nums">
+                                    <p className="text-xs font-medium text-muted-foreground">Total payables</p>
+                                    <p className="mt-1 truncate text-lg font-semibold text-[var(--app-ink)] tabular-nums">
                                         {money(totalPayable)}
                                     </p>
                                 </div>
                                 <div className="px-4 py-3 sm:px-5">
-                                    <p className="text-xs font-medium text-stone-500">Belum lunas</p>
-                                    <p className="mt-1 text-lg font-black text-amber-700 tabular-nums">{unpaidPurchases.length}</p>
+                                    <p className="text-xs font-medium text-muted-foreground">Outstanding</p>
+                                    <p className="mt-1 text-lg font-semibold text-amber-700 tabular-nums">{unpaidPurchases.length}</p>
                                 </div>
-                                <div className="col-span-2 border-t border-stone-100 px-4 py-3 sm:col-span-1 sm:border-t-0 sm:px-5">
-                                    <p className="text-xs font-medium text-stone-500">Dokumen pembelian</p>
-                                    <p className="mt-1 text-lg font-black text-[var(--app-ink)] tabular-nums">{purchases.total}</p>
+                                <div className="col-span-2 border-t border-border px-4 py-3 sm:col-span-1 sm:border-t-0 sm:px-5">
+                                    <p className="text-xs font-medium text-muted-foreground">Document purchases</p>
+                                    <p className="mt-1 text-lg font-semibold text-[var(--app-ink)] tabular-nums">{purchases.total}</p>
                                 </div>
                             </div>
-                            <div className="max-h-56 divide-y divide-stone-100 overflow-y-auto px-4 sm:px-5">
+                            <div className="max-h-56 divide-y divide-border overflow-y-auto px-4 sm:px-5">
                                 {suppliers.map((supplier) => (
                                     <div key={supplier.public_id} className="flex items-center justify-between gap-4 py-2.5">
                                         <div className="min-w-0">
-                                            <p className="truncate text-sm font-bold text-stone-800">{supplier.name}</p>
-                                            <p className="text-xs text-stone-500">{supplier.is_active ? 'Aktif' : 'Nonaktif'}</p>
+                                            <p className="truncate text-sm font-bold text-foreground">{supplier.name}</p>
+                                            <p className="text-xs text-muted-foreground">{supplier.is_active ? 'Active' : 'Inactive'}</p>
                                         </div>
                                         <p
                                             className={
                                                 Number(supplier.payable_balance) > 0
-                                                    ? 'shrink-0 text-sm font-black text-amber-700 tabular-nums'
-                                                    : 'shrink-0 text-sm font-semibold text-stone-400 tabular-nums'
+                                                    ? 'shrink-0 text-sm font-semibold text-amber-700 tabular-nums'
+                                                    : 'shrink-0 text-sm font-semibold text-muted-foreground tabular-nums'
                                             }
                                         >
                                             {money(supplier.payable_balance)}
@@ -600,13 +608,13 @@ export default function PurchasingPage({
                             </div>
                             {suppliers.length === 0 && (
                                 <div className="px-4 py-8 text-center">
-                                    <p className="text-sm font-semibold text-stone-600">Belum ada supplier.</p>
+                                    <p className="text-sm font-semibold text-muted-foreground">No suppliers yet.</p>
                                     {canManage && (
                                         <Link
-                                            href="/master-data/suppliers?create=1"
-                                            className="mt-3 inline-flex min-h-10 items-center rounded-xl bg-[var(--app-primary)] px-3 text-sm font-black text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none"
+                                            href={suppliersIndex.url({ query: { create: '1' } })}
+                                            className="mt-3 inline-flex min-h-10 items-center rounded-xl bg-[var(--app-primary)] px-3 text-sm font-semibold text-[var(--app-primary-foreground)] focus-visible:ring-2 focus-visible:ring-[var(--app-ink)] focus-visible:ring-offset-2 focus-visible:outline-none"
                                         >
-                                            Tambah supplier
+                                            Add supplier
                                         </Link>
                                     )}
                                 </div>
@@ -623,21 +631,21 @@ export default function PurchasingPage({
                                     }
                                 }}
                             >
-                                <SheetContent className="w-full gap-0 overflow-hidden border-stone-200 bg-white p-0 sm:max-w-xl">
+                                <SheetContent className="w-full gap-0 overflow-hidden border-border bg-card p-0 sm:max-w-xl">
                                     <form onSubmit={submitPayment} className="flex min-h-0 flex-1 flex-col">
-                                        <SheetHeader className="border-b border-stone-200 px-4 py-4 pr-12 sm:px-6">
-                                            <SheetTitle className="flex items-center gap-2 text-lg font-black tracking-[-0.03em] text-[var(--app-ink)]">
+                                        <SheetHeader className="border-b border-border px-4 py-4 pr-12 sm:px-6">
+                                            <SheetTitle className="flex items-center gap-2 text-lg font-semibold tracking-[-0.03em] text-[var(--app-ink)]">
                                                 <CircleDollarSign className="size-5" />
-                                                Bayar utang pembelian
+                                                Pay purchase debt
                                             </SheetTitle>
                                         </SheetHeader>
                                         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6">
-                                            <p className="mt-4 text-sm text-stone-600">
-                                                Nominal tidak boleh melebihi sisa utang atau saldo akun.
+                                            <p className="mt-4 text-sm text-muted-foreground">
+                                                Amount must not exceed remaining debt or balance account.
                                             </p>
                                             <div className="mt-5 grid gap-4 md:grid-cols-2">
                                                 <label className={`${labelClass} md:col-span-2`}>
-                                                    Dokumen
+                                                    Document
                                                     <select
                                                         className={fieldClass}
                                                         value={payment.data.purchase_id}
@@ -653,17 +661,17 @@ export default function PurchasingPage({
                                                         }}
                                                         required
                                                     >
-                                                        <option value="">Pilih dokumen</option>
+                                                        <option value="">Select document</option>
                                                         {unpaidPurchases.map((entry) => (
                                                             <option key={entry.public_id} value={entry.public_id}>
-                                                                {entry.document_number} · {entry.supplier_name} · sisa{' '}
+                                                                {entry.document_number} · {entry.supplier_name} · remaining{' '}
                                                                 {money(entry.outstanding_amount)}
                                                             </option>
                                                         ))}
                                                     </select>
                                                 </label>
                                                 <label className={labelClass}>
-                                                    Akun
+                                                    Account
                                                     <select
                                                         className={fieldClass}
                                                         value={payment.data.account_id}
@@ -678,7 +686,7 @@ export default function PurchasingPage({
                                                     </select>
                                                 </label>
                                                 <label className={labelClass}>
-                                                    Nominal
+                                                    Amount
                                                     <input
                                                         className={fieldClass}
                                                         type="number"
@@ -690,7 +698,7 @@ export default function PurchasingPage({
                                                     />
                                                 </label>
                                                 <label className={labelClass}>
-                                                    Waktu
+                                                    Time
                                                     <input
                                                         className={fieldClass}
                                                         type="datetime-local"
@@ -700,7 +708,7 @@ export default function PurchasingPage({
                                                     />
                                                 </label>
                                                 <label className={labelClass}>
-                                                    Catatan
+                                                    Notes
                                                     <input
                                                         className={fieldClass}
                                                         value={payment.data.notes}
@@ -710,16 +718,18 @@ export default function PurchasingPage({
                                                 </label>
                                             </div>
                                             {Object.keys(payment.errors).length > 0 && (
-                                                <p className="mt-4 text-sm text-red-700">
-                                                    Pembayaran belum valid. Periksa nominal, akun, dan waktu.
+                                                <p className="mt-4 text-sm text-destructive">
+                                                    The payment is invalid. Check the amount, account, and time.
                                                 </p>
                                             )}
-                                            <button
-                                                className={`${buttonClass} mt-5`}
+                                            <Button
+                                                type="submit"
+                                                size="checkout"
+                                                className="mt-5 w-full"
                                                 disabled={payment.processing || !payment.data.purchase_id}
                                             >
-                                                Posting pembayaran
-                                            </button>
+                                                Post payment
+                                            </Button>
                                         </div>
                                     </form>
                                 </SheetContent>
@@ -728,18 +738,18 @@ export default function PurchasingPage({
                     </div>
 
                     <section className={cardClass}>
-                        <div className="flex gap-1 border-b border-stone-100 p-1.5" role="tablist" aria-label="Data pembelian">
+                        <div className="flex gap-1 border-b border-border p-1.5" role="tablist" aria-label="Purchase records">
                             <DataTab
                                 active={activeView === 'purchases'}
                                 icon={ReceiptText}
-                                label="Riwayat pembelian"
+                                label="Purchase history"
                                 count={purchases.total}
                                 onClick={() => setActiveView('purchases')}
                             />
                             <DataTab
                                 active={activeView === 'payables'}
                                 icon={Clock3}
-                                label="Buku utang"
+                                label="Payables ledger"
                                 count={payableTransactions.total}
                                 onClick={() => setActiveView('payables')}
                             />
@@ -751,17 +761,17 @@ export default function PurchasingPage({
                         )}
                     </section>
                 </div>
-            </div>
+            </AppPage>
             <Suspense
                 fallback={
                     <div role="status" className="fixed inset-0 z-[90] grid place-items-center bg-black/80 text-white">
-                        Membuka kamera…
+                        Opening camera…
                     </div>
                 }
             >
                 <ProductScanner
                     purpose="purchase"
-                    title="Scan produk pembelian"
+                    title="Scan product purchases"
                     open={scannerOpen}
                     onOpenChange={setScannerOpen}
                     onConfirm={addScannerSelections}
@@ -794,12 +804,12 @@ function DataTab({
             className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-2 text-xs font-bold transition focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none sm:px-3 sm:text-sm ${
                 active
                     ? 'bg-[var(--app-primary)] text-white shadow-[0_8px_20px_-14px_var(--app-primary)]'
-                    : 'text-stone-500 hover:bg-orange-50 hover:text-[var(--app-primary)]'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-[var(--app-primary)]'
             }`}
         >
             <Icon className="size-4 shrink-0" />
             <span className="truncate">{label}</span>
-            <span className={`rounded-md px-1.5 py-0.5 text-[10px] tabular-nums ${active ? 'bg-white/20' : 'bg-stone-100'}`}>{count}</span>
+            <span className={`rounded-md px-1.5 py-0.5 text-[10px] tabular-nums ${active ? 'bg-card/20' : 'bg-muted'}`}>{count}</span>
         </button>
     );
 }
@@ -807,7 +817,7 @@ function DataTab({
 function PurchaseHistory({ purchases, timezone }: { purchases: Page<Purchase>; timezone: string }) {
     return (
         <div role="tabpanel">
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-border">
                 {purchases.data.map((entry) => {
                     const hasDebt = Number(entry.outstanding_amount) > 0;
 
@@ -816,27 +826,27 @@ function PurchaseHistory({ purchases, timezone }: { purchases: Page<Purchase>; t
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <p className="truncate text-sm font-black text-[var(--app-ink)]">{entry.document_number}</p>
+                                        <p className="truncate text-sm font-semibold text-[var(--app-ink)]">{entry.document_number}</p>
                                         <span
                                             className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${
                                                 hasDebt ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
                                             }`}
                                         >
                                             {hasDebt ? <Clock3 className="size-3" /> : <CheckCircle2 className="size-3" />}
-                                            {hasDebt ? 'Belum lunas' : 'Lunas'}
+                                            {hasDebt ? 'Outstanding' : 'Paid off'}
                                         </span>
                                     </div>
-                                    <p className="mt-1 truncate text-sm font-medium text-stone-700">{entry.supplier_name}</p>
-                                    <p className="mt-0.5 text-xs text-stone-500">
+                                    <p className="mt-1 truncate text-sm font-medium text-foreground">{entry.supplier_name}</p>
+                                    <p className="mt-0.5 text-xs text-muted-foreground">
                                         {ledgerDateTime(entry.occurred_at, timezone)}
-                                        {entry.supplier_invoice_number ? ` · Invoice ${entry.supplier_invoice_number}` : ''}
+                                        {entry.supplier_invoice_number ? `· Invoices${entry.supplier_invoice_number}` : ''}
                                     </p>
                                 </div>
                                 <div className="shrink-0 text-right">
-                                    <p className="text-sm font-black text-[var(--app-ink)] tabular-nums">{money(entry.total_amount)}</p>
+                                    <p className="text-sm font-semibold text-[var(--app-ink)] tabular-nums">{money(entry.total_amount)}</p>
                                     {hasDebt && (
                                         <p className="mt-1 text-xs font-bold text-amber-700 tabular-nums">
-                                            Sisa {money(entry.outstanding_amount)}
+                                            Remaining {money(entry.outstanding_amount)}
                                         </p>
                                     )}
                                 </div>
@@ -845,10 +855,10 @@ function PurchaseHistory({ purchases, timezone }: { purchases: Page<Purchase>; t
                                 {entry.items.map((item, index) => (
                                     <div
                                         key={`${entry.public_id}-${index}`}
-                                        className="max-w-sm min-w-[13rem] rounded-xl bg-stone-50 px-3 py-2.5"
+                                        className="max-w-sm min-w-[13rem] rounded-xl bg-muted px-3 py-2.5"
                                     >
-                                        <p className="truncate text-xs font-bold text-stone-800">{item.product_name}</p>
-                                        <p className="mt-1 text-xs text-stone-500 tabular-nums">
+                                        <p className="truncate text-xs font-bold text-foreground">{item.product_name}</p>
+                                        <p className="mt-1 text-xs text-muted-foreground tabular-nums">
                                             {quantity(item.quantity)} {item.unit_symbol} · {money(item.landed_total)}
                                         </p>
                                     </div>
@@ -858,8 +868,8 @@ function PurchaseHistory({ purchases, timezone }: { purchases: Page<Purchase>; t
                     );
                 })}
             </div>
-            {purchases.data.length === 0 && <EmptyState icon={ReceiptText} text="Belum ada pembelian." />}
-            <div className="border-t border-stone-100 px-4 py-4">
+            {purchases.data.length === 0 && <EmptyState icon={ReceiptText} title={translate('No purchases yet.')} />}
+            <div className="border-t border-border px-4 py-4">
                 <Pagination links={linksForView(purchases.links, 'purchases')} />
             </div>
         </div>
@@ -869,7 +879,7 @@ function PurchaseHistory({ purchases, timezone }: { purchases: Page<Purchase>; t
 function PayableLedger({ transactions, timezone }: { transactions: Page<PayableTransaction>; timezone: string }) {
     return (
         <div role="tabpanel">
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-border">
                 {transactions.data.map((entry) => {
                     const increase = entry.direction === 'increase';
                     const Icon = increase ? ArrowUpRight : ArrowDownLeft;
@@ -888,7 +898,9 @@ function PayableLedger({ transactions, timezone }: { transactions: Page<PayableT
                             </div>
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-bold text-[var(--app-ink)]">{entry.supplier_name}</p>
-                                <p className="mt-0.5 truncate text-xs text-stone-500">{ledgerDateTime(entry.occurred_at, timezone)}</p>
+                                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                    {ledgerDateTime(entry.occurred_at, timezone)}
+                                </p>
                             </div>
                             <div className="hidden sm:block">
                                 <span
@@ -896,35 +908,26 @@ function PayableLedger({ transactions, timezone }: { transactions: Page<PayableT
                                         increase ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
                                     }`}
                                 >
-                                    {entry.reason === 'purchase' ? 'Pembelian' : 'Pembayaran'}
+                                    {entry.reason === 'purchase' ? 'Purchases' : 'Payment'}
                                 </span>
                             </div>
                             <div className="text-right">
-                                <p className={`text-sm font-black tabular-nums ${increase ? 'text-amber-700' : 'text-emerald-700'}`}>
+                                <p className={`text-sm font-semibold tabular-nums ${increase ? 'text-amber-700' : 'text-emerald-700'}`}>
                                     {increase ? '+' : '-'}
                                     {money(entry.amount)}
                                 </p>
-                                <p className="mt-0.5 text-[11px] text-stone-500 tabular-nums">Saldo {money(entry.balance_after)}</p>
+                                <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+                                    Balance {money(entry.balance_after)}
+                                </p>
                             </div>
                         </article>
                     );
                 })}
             </div>
-            {transactions.data.length === 0 && <EmptyState icon={Clock3} text="Belum ada pergerakan utang." />}
-            <div className="border-t border-stone-100 px-4 py-4">
+            {transactions.data.length === 0 && <EmptyState icon={Clock3} title={translate('No payable activity yet.')} />}
+            <div className="border-t border-border px-4 py-4">
                 <Pagination links={linksForView(transactions.links, 'payables')} />
             </div>
-        </div>
-    );
-}
-
-function EmptyState({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
-    return (
-        <div className="grid place-items-center px-4 py-12 text-center">
-            <div className="grid size-11 place-items-center rounded-xl bg-orange-50 text-[var(--app-primary)]">
-                <Icon className="size-5" />
-            </div>
-            <p className="mt-3 text-sm font-semibold text-stone-500">{text}</p>
         </div>
     );
 }

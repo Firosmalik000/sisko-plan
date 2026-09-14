@@ -28,7 +28,7 @@ final class Decimal
     public static function divide(string $left, string $right, int $scale): string
     {
         if (bccomp(self::numeric($right), '0', max($scale, self::QUANTITY_SCALE)) === 0) {
-            throw new InvalidArgumentException('Pembagian dengan nol tidak diizinkan.');
+            throw new InvalidArgumentException('Division by zero is not allowed.');
         }
 
         return bcdiv(self::numeric($left), self::numeric($right), $scale);
@@ -48,7 +48,7 @@ final class Decimal
     private static function numeric(string $value): string
     {
         if (! is_numeric($value)) {
-            throw new InvalidArgumentException('Nilai desimal tidak valid.');
+            throw new InvalidArgumentException('The decimal value is invalid.');
         }
 
         return $value;

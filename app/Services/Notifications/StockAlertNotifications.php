@@ -47,7 +47,7 @@ class StockAlertNotifications
             ->get()
             ->map(fn (InventoryBalance $alert) => [
                 'id' => $alert->id,
-                'name' => $alert->name ?? __('Produk'),
+                'name' => $alert->name ?? __('Product'),
                 'variant_name' => $alert->getAttribute('variant_name'),
                 'unit' => $alert->getAttribute('unit'),
                 'quantity' => (string) $alert->quantity,

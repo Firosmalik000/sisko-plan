@@ -72,10 +72,10 @@ class ProductRequest extends MasterDataRequest
             $retail = $this->input('retail_unit_public_id');
             $large = $this->input('large_unit_public_id');
             if (is_string($retail) && ($types[$retail] ?? null)?->value !== UnitType::Retail->value) {
-                $validator->errors()->add('retail_unit_public_id', __('Pilih satuan dari kelompok ecer.'));
+                $validator->errors()->add('retail_unit_public_id', __('Select a unit from the retail group.'));
             }
             if (is_string($large) && $large !== $retail && ($types[$large] ?? null)?->value !== UnitType::Large->value) {
-                $validator->errors()->add('large_unit_public_id', __('Pilih satuan dari kelompok besar.'));
+                $validator->errors()->add('large_unit_public_id', __('Select a unit from the wholesale group.'));
             }
         }];
     }
@@ -108,7 +108,7 @@ class ProductRequest extends MasterDataRequest
 
             $duplicateKey = $field['column'].'|'.mb_strtolower($value);
             if (isset($seen[$duplicateKey])) {
-                $validator->errors()->add($field['key'], __('Kode ini digunakan lebih dari sekali pada produk yang sama.'));
+                $validator->errors()->add($field['key'], __('This code is used more than once on the same product.'));
 
                 continue;
             }
@@ -120,7 +120,7 @@ class ProductRequest extends MasterDataRequest
                 ->when($productId !== null, fn ($query) => $query->where('product_id', '!=', $productId))
                 ->exists();
             if ($conflict) {
-                $validator->errors()->add($field['key'], __('Kode ini sudah digunakan produk lain di toko ini.'));
+                $validator->errors()->add($field['key'], __('This code is already used by another product in this store.'));
             }
         }
     }

@@ -1,6 +1,5 @@
 export const vietnameseCustomerReferralCatalog: Record<string, string> = {
     'Add-on': 'Tiện ích bổ sung',
-    addon: 'tiện ích bổ sung',
     'Referral & Komisi': 'Giới thiệu & Hoa hồng',
     'Bagikan Sisko-plan kepada teman Anda. Komisi mengikuti rate paket yang dibayar oleh pengguna referral.':
         'Chia sẻ Sisko-plan với bạn bè. Hoa hồng áp dụng theo tỷ lệ của gói mà người được giới thiệu thanh toán.',
@@ -52,4 +51,21 @@ export const vietnameseCustomerReferralCatalog: Record<string, string> = {
     'Total penarikan': 'Tổng tiền rút',
     'Mengajukan...': 'Đang gửi...',
     'Ya, ajukan penarikan': 'Có, gửi yêu cầu',
+    'Referrals & Commissions': 'Giới thiệu & Hoa hồng',
+    'Content & Promotions': 'Nội dung & Khuyến mãi',
+    Batal: 'Hủy',
+    Indonesia: 'Indonesia',
+    Malaysia: 'Malaysia',
+    Vietnam: 'Việt Nam',
+    Draft: 'Bản nháp',
+    Terapkan: 'Áp dụng',
+    '/pricing atau https://example.com/promo': '/pricing hoặc https://example.com/promo',
+    'Tanggal mulai': 'Ngày bắt đầu',
+    'Tanggal selesai': 'Ngày kết thúc',
+    Tanggal: 'Ngày',
+    Tutup: 'Đóng',
+    'referral commission': 'hoa hồng giới thiệu',
+    'Referral commission (%)': 'Hoa hồng giới thiệu (%)',
+    'Calculated from the actual payment amount. Use 0 to disable commission.':
+        'Tính theo số tiền thanh toán thực tế. Dùng 0 để tắt hoa hồng.',
 };

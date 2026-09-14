@@ -50,7 +50,7 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
                     2FA recovery codes
                 </CardTitle>
                 <CardDescription>
-                    Recovery codes let you regain access if you lose your 2FA device. Store them in a secure password manager.
+                    Recovery codes restore access if you lose your 2FA device. Store them in a secure password manager.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -112,8 +112,8 @@ export default function TwoFactorRecoveryCodes({ recoveryCodesList, fetchRecover
 
                                 <div className="text-xs text-muted-foreground select-none">
                                     <p id="regenerate-warning">
-                                        Each recovery code can be used once to access your account and will be removed after use. If you
-                                        need more, click <span className="font-bold">Regenerate codes</span> above.
+                                        Each recovery code can be used once and is removed after use. If you need more, select{' '}
+                                        <span className="font-bold">Regenerate codes</span> above.
                                     </p>
                                 </div>
                             </>

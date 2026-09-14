@@ -28,7 +28,7 @@ class StartStockCount
                 ->first();
             if ($active !== null) {
                 throw ValidationException::withMessages([
-                    'stock_count' => __('Selesaikan :document sebelum memulai opname baru.', [
+                    'stock_count' => __('Complete :document before starting a new stock count.', [
                         'document' => $active->document_number,
                     ]),
                 ]);
@@ -48,7 +48,7 @@ class StartStockCount
                 ]);
 
             if ($products->isEmpty()) {
-                throw ValidationException::withMessages(['stock_count' => 'Belum ada produk persediaan aktif untuk dihitung.']);
+                throw ValidationException::withMessages(['stock_count' => __('There are no active inventory products to count.')]);
             }
 
             $snapshotAt = now();

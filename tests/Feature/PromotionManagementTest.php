@@ -212,7 +212,7 @@ class PromotionManagementTest extends TestCase
             ->withSession(['active_store_id' => $store->id, 'locale' => 'id'])
             ->get(route('dashboard'))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('customer/dashboard')
+                ->component('customer/dashboard/index')
                 ->has('promotions', 1)
                 ->where('promotions.0.public_id', $banner->public_id)
                 ->missing('promotions.0.image_path')

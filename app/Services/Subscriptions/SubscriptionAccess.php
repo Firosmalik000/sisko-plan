@@ -37,9 +37,9 @@ class SubscriptionAccess
         if ($subscription === null) {
             return [
                 'can_write' => false,
-                'reason' => __('Akun belum memiliki subscription.'),
+                'reason' => __('The account does not have a subscription yet.'),
                 'status' => 'missing',
-                'plan_name' => __('Belum ada paket'),
+                'plan_name' => __('No plans available'),
                 'max_stores' => 0,
                 'max_products' => 0,
                 'max_members' => 0,
@@ -80,7 +80,7 @@ class SubscriptionAccess
 
         if ($reason !== null) {
             throw ValidationException::withMessages([
-                'subscription' => __('Akses portal toko dinonaktifkan. :reason', [
+                'subscription' => __('Store portal access is disabled. :reason', [
                     'reason' => __($reason),
                 ]),
             ]);
@@ -92,7 +92,7 @@ class SubscriptionAccess
         $subscription = $this->subscriptionFor($store);
 
         return $subscription === null
-            ? 'Akun belum memiliki subscription.'
+            ? 'The account does not have a subscription yet.'
             : $this->blockedReason($subscription);
     }
 
@@ -117,14 +117,14 @@ class SubscriptionAccess
         $reason = null;
 
         if ($subscription !== null && ($blockedReason = $this->blockedReason($subscription)) !== null) {
-            $reason = str(__('Toko baru tidak dapat dibuat. :reason', [
+            $reason = str(__('A new store cannot be created. :reason', [
                 'reason' => __($blockedReason),
             ]))->toString();
         }
 
         $limit = $this->entitlements->forOwner($owner->id, $plan)['max_stores'];
         if ($reason === null && $limit > 0 && $storesUsed >= $limit) {
-            $reason = str(__('Batas :limit toko pada paket :plan sudah tercapai.', [
+            $reason = str(__('The limit of :limit stores for the :plan plan has been reached.', [
                 'limit' => $limit,
                 'plan' => $plan->name,
             ]))->toString();
@@ -153,7 +153,7 @@ class SubscriptionAccess
 
         if ($limit > 0 && $productsUsed >= $limit) {
             throw ValidationException::withMessages([
-                'name' => __('Batas :limit produk aktif untuk seluruh toko pada paket :plan sudah tercapai.', [
+                'name' => __('The limit of :limit active products across all stores for the :plan plan has been reached.', [
                     'limit' => $limit,
                     'plan' => $subscription->plan->name,
                 ]),
@@ -173,7 +173,7 @@ class SubscriptionAccess
         $limit = $this->entitlements->forOwner($store->owner_user_id, $subscription->plan)['max_members'];
         if ($limit > 0 && $this->activeMembersCount($store->owner_user_id) >= $limit) {
             throw ValidationException::withMessages([
-                'email' => __('Batas :limit staf aktif untuk seluruh toko pada paket :plan sudah tercapai.', [
+                'email' => __('The limit of :limit active staff across all stores for the :plan plan has been reached.', [
                     'limit' => $limit,
                     'plan' => $subscription->plan->name,
                 ]),
@@ -195,19 +195,19 @@ class SubscriptionAccess
 
         $messages = [];
         if ($limits['max_stores'] > 0 && $storesUsed > $limits['max_stores']) {
-            $messages[] = __(':used toko aktif melebihi batas :limit.', [
+            $messages[] = __(':used active stores exceed the limit of :limit.', [
                 'used' => $storesUsed,
                 'limit' => $limits['max_stores'],
             ]);
         }
         if ($limits['max_products'] > 0 && $productsUsed > $limits['max_products']) {
-            $messages[] = __(':used produk aktif melebihi batas :limit.', [
+            $messages[] = __(':used active products exceed the limit of :limit.', [
                 'used' => $productsUsed,
                 'limit' => $limits['max_products'],
             ]);
         }
         if ($limits['max_members'] > 0 && $membersUsed > $limits['max_members']) {
-            $messages[] = __(':used staf aktif melebihi batas :limit.', [
+            $messages[] = __(':used active staff exceed the limit of :limit.', [
                 'used' => $membersUsed,
                 'limit' => $limits['max_members'],
             ]);
@@ -215,7 +215,7 @@ class SubscriptionAccess
 
         if ($messages !== []) {
             throw ValidationException::withMessages([
-                'plan_id' => __('Paket belum dapat dipilih: :reasons', [
+                'plan_id' => __('The plan cannot be selected: :reasons', [
                     'reasons' => implode(' ', $messages),
                 ]),
             ]);
@@ -244,7 +244,7 @@ class SubscriptionAccess
     {
         if (($reason = $this->blockedReason($subscription)) !== null) {
             throw ValidationException::withMessages([
-                'subscription' => __('Akses portal toko dinonaktifkan. :reason', [
+                'subscription' => __('Store portal access is disabled. :reason', [
                     'reason' => __($reason),
                 ]),
             ]);
@@ -278,34 +278,34 @@ class SubscriptionAccess
     {
         $now = CarbonImmutable::now();
         if ($subscription->starts_at->gt($now)) {
-            return 'Subscription belum dimulai.';
+            return 'The subscription has not started yet.';
         }
 
         if ($subscription->status === SubscriptionStatus::Trialing) {
             if ($subscription->trial_ends_at === null) {
-                return 'Tanggal selesai trial belum ditetapkan.';
+                return 'The trial end date has not been set.';
             }
 
             return $subscription->trial_ends_at->endOfDay()->lt($now)
-                ? 'Masa trial subscription telah berakhir.' : null;
+                ? 'The subscription trial has ended.' : null;
         }
         if ($subscription->status === SubscriptionStatus::Active) {
             if ($subscription->current_period_start === null) {
-                return 'Periode subscription belum ditetapkan.';
+                return 'The subscription period has not been set.';
             }
             if ($subscription->current_period_start->startOfDay()->gt($now)) {
-                return 'Periode subscription belum dimulai.';
+                return 'The subscription period has not started.';
             }
 
             return $subscription->current_period_end !== null && $subscription->current_period_end->endOfDay()->lt($now)
-                ? 'Periode subscription telah berakhir.'
+                ? 'The subscription period has ended.'
                 : null;
         }
 
         return match ($subscription->status) {
-            SubscriptionStatus::PastDue => 'Pembayaran subscription melewati jatuh tempo.',
-            SubscriptionStatus::Suspended => 'Subscription ditangguhkan oleh platform.',
-            SubscriptionStatus::Cancelled => 'Subscription telah dibatalkan.',
+            SubscriptionStatus::PastDue => 'The subscription payment is overdue.',
+            SubscriptionStatus::Suspended => 'The subscription has been suspended by the platform.',
+            SubscriptionStatus::Cancelled => 'The subscription has been cancelled.',
         };
     }
 

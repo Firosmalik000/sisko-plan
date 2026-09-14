@@ -1,9 +1,11 @@
+import { Ruler } from 'lucide-react';
+import { ReferenceDataPage } from '@/components/page/reference-data-page';
+import type { ReferenceRecord } from '@/components/page/reference-data-page';
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/components/reference-data-page';
-import type { ReferenceRecord } from '@/components/reference-data-page';
 import { translate } from '@/lib/i18n';
 import { referenceLabel } from '@/lib/unit-references';
 import type { UnitReference } from '@/lib/unit-references';
+import { index, store, update } from '@/routes/master-data/units';
 
 type Unit = ReferenceRecord & {
     symbol: string;
@@ -26,9 +28,10 @@ export default function UnitsIndex({
 }) {
     return (
         <ReferenceDataPage
-            title="Satuan barang"
-            endpoint="/master-data/units"
-            singular="Satuan"
+            title="Unit item"
+            icon={Ruler}
+            routes={{ index: index.url(), store: store.url(), update: update.url }}
+            singular="Unit"
             items={units}
             search={search}
             status={status}
@@ -38,10 +41,10 @@ export default function UnitsIndex({
             fields={[
                 {
                     name: 'reference_code',
-                    label: 'Referensi satuan',
+                    label: 'Reference unit',
                     type: 'select',
                     options: (values) => [
-                        { value: '', label: translate('Satuan custom') },
+                        { value: '', label: translate('User-defined unit') },
                         ...unitReferences
                             .filter(
                                 (item) =>
@@ -67,46 +70,39 @@ export default function UnitsIndex({
                 },
                 {
                     name: 'name',
-                    label: 'Nama satuan',
-                    placeholder: 'Botol',
+                    label: 'Unit name',
+                    placeholder: 'Bottle',
                     change: () => ({ name_is_custom: true }),
                 },
                 {
                     name: 'name_is_custom',
-                    label: 'Nama khusus',
+                    label: 'Custom name',
                     type: 'select',
                     options: [
-                        { value: 'true', label: translate('Nama khusus') },
-                        { value: 'false', label: translate('Gunakan nama standar') },
+                        { value: 'true', label: translate('Custom name') },
+                        { value: 'false', label: translate('Use the standard name') },
                     ],
                     change: (value) => ({ name_is_custom: value === 'true' }),
                 },
                 {
                     name: 'symbol',
-                    label: 'Singkatan',
+                    label: 'Abbreviation',
                     placeholder: 'btl',
                 },
                 {
                     name: 'unit_type',
-                    label: 'Kelompok',
+                    label: 'Group',
                     type: 'select',
                     options: [
-                        { value: 'retail', label: 'Ecer' },
-                        { value: 'large', label: 'Besar' },
+                        { value: 'retail', label: 'Retail' },
+                        { value: 'large', label: 'Bulk' },
                     ],
                 },
             ]}
             details={[
-                { key: 'symbol', label: 'Singkatan' },
-                { key: 'unit_type_label', label: 'Kelompok' },
+                { key: 'symbol', label: 'Abbreviation' },
+                { key: 'unit_type_label', label: 'Group' },
             ]}
         />
     );
 }
-
-UnitsIndex.layout = {
-    breadcrumbs: [
-        { title: 'Master Data', href: '/master-data/products' },
-        { title: 'Satuan', href: '/master-data/units' },
-    ],
-};

@@ -1,7 +1,9 @@
+import { Landmark, WalletCards } from 'lucide-react';
+import { ReferenceDataPage } from '@/components/page/reference-data-page';
+import type { ReferenceRecord } from '@/components/page/reference-data-page';
 import type { PaginationLink } from '@/components/pagination';
-import { ReferenceDataPage } from '@/components/reference-data-page';
-import type { ReferenceRecord } from '@/components/reference-data-page';
 import { translate } from '@/lib/i18n';
+import { index, store, update } from '@/routes/master-data/financial-accounts';
 
 type Account = ReferenceRecord & {
     type: string;
@@ -9,13 +11,14 @@ type Account = ReferenceRecord & {
     notes: string | null;
 };
 const labels: Record<string, string> = {
-    cash: 'Kas tunai',
-    bank: 'Bank',
+    cash: 'Cash cash',
+    bank: 'Banks',
     e_wallet: 'E-wallet',
 };
 
 export default function FinancialAccountsIndex({
     accounts,
+    accountTypes,
     search,
     status,
     canManage,
@@ -36,9 +39,11 @@ export default function FinancialAccountsIndex({
 
     return (
         <ReferenceDataPage
-            title="Kas & rekening"
-            endpoint="/master-data/financial-accounts"
-            singular="Akun"
+            title="Cash & bank account"
+            icon={WalletCards}
+            recordIcon={Landmark}
+            routes={{ index: index.url(), store: store.url(), update: update.url }}
+            singular="Account"
             items={mapped}
             search={search}
             status={status}
@@ -52,32 +57,25 @@ export default function FinancialAccountsIndex({
             fields={[
                 {
                     name: 'name',
-                    label: 'Nama akun',
-                    placeholder: 'Contoh: Kas toko',
+                    label: 'Account name',
+                    placeholder: 'Sample: Cash store',
                 },
                 {
                     name: 'type',
-                    label: 'Jenis akun',
+                    label: 'Type account',
                     type: 'select',
-                    options: Object.entries(labels).map(([value, label]) => ({
-                        value,
-                        label,
+                    options: accountTypes.map((type) => ({
+                        value: type,
+                        label: labels[type] ?? type,
                     })),
                 },
-                { name: 'account_number', label: 'Nomor rekening / akun' },
-                { name: 'notes', label: 'Catatan', type: 'textarea' },
+                { name: 'account_number', label: 'Number bank account / account' },
+                { name: 'notes', label: 'Notes', type: 'textarea' },
             ]}
             details={[
-                { key: 'type_label', label: 'Jenis' },
-                { key: 'account_number', label: 'Nomor' },
+                { key: 'type_label', label: 'Type' },
+                { key: 'account_number', label: 'Number' },
             ]}
         />
     );
 }
-
-FinancialAccountsIndex.layout = {
-    breadcrumbs: [
-        { title: 'Master Data', href: '/master-data/products' },
-        { title: 'Kas & rekening', href: '/master-data/financial-accounts' },
-    ],
-};

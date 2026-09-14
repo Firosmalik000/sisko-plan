@@ -25,6 +25,8 @@ const buttonVariants = cva(
         sm: "h-8 rounded-md px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9",
+        touch: "min-h-11 rounded-xl px-4 py-2 has-[>svg]:px-3.5",
+        checkout: "min-h-12 rounded-xl px-6 py-3 text-base font-semibold has-[>svg]:px-5",
       },
     },
     defaultVariants: {

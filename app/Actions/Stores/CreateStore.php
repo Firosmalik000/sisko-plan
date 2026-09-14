@@ -28,8 +28,9 @@ class CreateStore
         ?string $ipAddress = null,
         ?string $countryCode = null,
         ?string $address = null,
+        ?string $timezone = null,
     ): Store {
-        return DB::transaction(function () use ($owner, $name, $ipAddress, $countryCode, $address): Store {
+        return DB::transaction(function () use ($owner, $name, $ipAddress, $countryCode, $address, $timezone): Store {
             $this->subscriptionAccess->assertStoreCapacity($owner);
             $country = Country::query()
                 ->with('currency')
@@ -55,6 +56,7 @@ class CreateStore
             ]);
             $store->settings()->create([
                 'currency' => $country->currency_code,
+                'timezone' => $timezone ?? $country->default_timezone,
                 'address' => $address,
             ]);
             $this->starterData->handle($store);
@@ -62,6 +64,7 @@ class CreateStore
             $this->recordAudit->handle($owner, 'store.created', $store, $store, $ipAddress, [
                 'country' => $country->code,
                 'currency' => $country->currency_code,
+                'timezone' => $timezone ?? $country->default_timezone,
             ]);
 
             return $store;

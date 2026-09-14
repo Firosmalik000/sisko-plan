@@ -31,7 +31,7 @@ class UpdateStockCount
                 ->keyBy(fn (InventoryBalance $balance): string => (string) ($balance->getAttribute('variant_public_id') ?? $balance->getAttribute('product_public_id')));
 
             if ($identities->count() !== count($items)) {
-                throw ValidationException::withMessages(['items' => 'Salah satu produk tidak termasuk toko aktif.']);
+                throw ValidationException::withMessages(['items' => __('One of the products does not belong to the active store.')]);
             }
 
             foreach ($items as $index => $input) {
@@ -42,7 +42,7 @@ class UpdateStockCount
                     ->lockForUpdate()
                     ->first();
                 if ($item === null) {
-                    throw ValidationException::withMessages(["items.{$index}.product_id" => 'Produk tidak terdapat dalam sesi opname ini.']);
+                    throw ValidationException::withMessages(["items.{$index}.product_id" => __('The product is not included in this stock count session.')]);
                 }
                 $countedQuantity = $input['counted_quantity'];
                 $item->update([
@@ -67,7 +67,7 @@ class UpdateStockCount
                 ->count();
             if ($remaining > 0) {
                 throw ValidationException::withMessages([
-                    'items' => __('Masih ada :count produk yang belum dihitung.', ['count' => $remaining]),
+                    'items' => __(':count products have not been counted yet.', ['count' => $remaining]),
                 ]);
             }
 
@@ -85,7 +85,7 @@ class UpdateStockCount
         DB::transaction(function () use ($store, $stockCount, $actor, $ipAddress): void {
             $locked = $this->lock($store, $stockCount);
             if ($locked->status !== StockCountStatus::Counted) {
-                throw ValidationException::withMessages(['stock_count' => 'Hanya opname selesai dihitung yang dapat dibuka kembali.']);
+                throw ValidationException::withMessages(['stock_count' => __('Only a completed stock count can be reopened.')]);
             }
             $locked->update(['status' => StockCountStatus::Draft, 'completed_at' => null, 'completed_by_user_id' => null]);
             $this->audit->handle($actor, 'stock_count.reopened', $locked, $store, $ipAddress);
@@ -97,7 +97,7 @@ class UpdateStockCount
         DB::transaction(function () use ($store, $stockCount, $actor, $ipAddress): void {
             $locked = $this->lock($store, $stockCount);
             if (! in_array($locked->status, [StockCountStatus::Draft, StockCountStatus::Counted], true)) {
-                throw ValidationException::withMessages(['stock_count' => 'Opname ini tidak dapat dibatalkan.']);
+                throw ValidationException::withMessages(['stock_count' => __('This stock count cannot be cancelled.')]);
             }
             $locked->update([
                 'status' => StockCountStatus::Cancelled,
@@ -112,7 +112,7 @@ class UpdateStockCount
     {
         $locked = $this->lock($store, $stockCount);
         if ($locked->status !== StockCountStatus::Draft) {
-            throw ValidationException::withMessages(['stock_count' => 'Penghitungan hanya dapat diubah saat opname berstatus Draft.']);
+            throw ValidationException::withMessages(['stock_count' => __('Counts can only be changed while the stock count is in Draft status.')]);
         }
 
         return $locked;

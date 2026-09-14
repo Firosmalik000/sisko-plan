@@ -22,12 +22,12 @@ export function SubscriptionBanner() {
             <div className="flex items-start gap-3">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                 <p>
-                    <strong>Mode hanya-baca.</strong>{' '}
-                    {subscriptionState.reason ?? 'Subscription tidak dapat digunakan untuk perubahan baru.'}
+                    <strong>Mode only-read.</strong>{' '}
+                    {subscriptionState.reason ?? 'The subscription is read-only. New changes are disabled.'}
                 </p>
             </div>
             <Link href="/pricing" className="inline-flex shrink-0 items-center gap-1 font-bold underline underline-offset-4">
-                Lihat penawaran <ArrowRight className="size-4" />
+                View offer <ArrowRight className="size-4" />
             </Link>
         </div>
     );

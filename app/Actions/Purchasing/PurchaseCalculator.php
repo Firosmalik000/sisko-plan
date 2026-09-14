@@ -18,23 +18,23 @@ class PurchaseCalculator
     public function calculate(array $items, string $discount, string $additionalCost): array
     {
         if ($items === []) {
-            throw ValidationException::withMessages(['items' => 'Minimal satu item pembelian wajib diisi.']);
+            throw ValidationException::withMessages(['items' => __('At least one purchase item is required.')]);
         }
         $subtotal = '0.0000';
         foreach ($items as $index => $item) {
             if (Decimal::compare($item['quantity'], '0', Decimal::QUANTITY_SCALE) <= 0 || Decimal::compare($item['unit_price'], '0', Decimal::MONEY_SCALE) < 0) {
-                throw ValidationException::withMessages(["items.{$index}" => 'Kuantitas harus positif dan harga tidak boleh negatif.']);
+                throw ValidationException::withMessages(["items.{$index}" => __('The quantity must be positive and the price cannot be negative.')]);
             }
             $lineSubtotal = Decimal::multiply($item['quantity'], $item['unit_price']);
             $baseQuantity = Decimal::multiply($item['quantity'], $item['conversion_factor'], Decimal::QUANTITY_SCALE);
             if (Decimal::compare($baseQuantity, '0', Decimal::QUANTITY_SCALE) <= 0 || Decimal::compare($baseQuantity, self::MAX_QUANTITY, Decimal::QUANTITY_SCALE) > 0) {
-                throw ValidationException::withMessages(["items.{$index}.quantity" => 'Hasil konversi kuantitas harus lebih besar dari nol dan tidak melebihi kapasitas yang didukung.']);
+                throw ValidationException::withMessages(["items.{$index}.quantity" => __('The converted quantity must be greater than zero and within the supported capacity.')]);
             }
             $items[$index] = [...$item, 'line_subtotal' => $lineSubtotal, 'base_quantity' => $baseQuantity];
             $subtotal = Decimal::add($subtotal, $lineSubtotal, Decimal::MONEY_SCALE);
         }
         if (Decimal::compare($subtotal, '0', Decimal::MONEY_SCALE) <= 0 || Decimal::compare($discount, '0', Decimal::MONEY_SCALE) < 0 || Decimal::compare($discount, $subtotal, Decimal::MONEY_SCALE) > 0 || Decimal::compare($additionalCost, '0', Decimal::MONEY_SCALE) < 0) {
-            throw ValidationException::withMessages(['discount_amount' => 'Subtotal harus positif, diskon tidak boleh melebihi subtotal, dan biaya tambahan tidak boleh negatif.']);
+            throw ValidationException::withMessages(['discount_amount' => __('The subtotal must be positive, the discount cannot exceed the subtotal, and additional costs cannot be negative.')]);
         }
         $remainingDiscount = $discount;
         $remainingAdditional = $additionalCost;
@@ -53,16 +53,16 @@ class PurchaseCalculator
             $landedTotal = Decimal::add(Decimal::subtract((string) $item['line_subtotal'], $allocatedDiscount, Decimal::MONEY_SCALE), $allocatedAdditional, Decimal::MONEY_SCALE);
             $baseUnitCost = Decimal::divide($landedTotal, (string) $item['base_quantity'], Decimal::MONEY_SCALE);
             if (Decimal::compare($landedTotal, '0', Decimal::MONEY_SCALE) < 0 || Decimal::compare($landedTotal, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0 || Decimal::compare($baseUnitCost, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0) {
-                throw ValidationException::withMessages(["items.{$index}.unit_price" => 'Landed cost atau biaya per satuan dasar melebihi kapasitas yang didukung.']);
+                throw ValidationException::withMessages(["items.{$index}.unit_price" => __('The landed cost or cost per base unit exceeds the supported capacity.')]);
             }
             $items[$index] = [...$item, 'allocated_discount' => $allocatedDiscount, 'allocated_additional_cost' => $allocatedAdditional, 'landed_total' => $landedTotal, 'base_unit_cost' => $baseUnitCost];
         }
         $total = Decimal::add(Decimal::subtract($subtotal, $discount, Decimal::MONEY_SCALE), $additionalCost, Decimal::MONEY_SCALE);
         if (Decimal::compare($total, '0', Decimal::MONEY_SCALE) <= 0) {
-            throw ValidationException::withMessages(['discount_amount' => 'Total pembelian setelah diskon dan biaya tambahan harus lebih besar dari nol.']);
+            throw ValidationException::withMessages(['discount_amount' => __('The purchase total after discounts and additional costs must be greater than zero.')]);
         }
         if (Decimal::compare($subtotal, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0 || Decimal::compare($total, self::MAX_MONEY, Decimal::MONEY_SCALE) > 0) {
-            throw ValidationException::withMessages(['items' => 'Nilai pembelian melebihi kapasitas nominal yang didukung.']);
+            throw ValidationException::withMessages(['items' => __('The purchase value exceeds the supported amount capacity.')]);
         }
 
         return ['subtotal' => $subtotal, 'discount' => $discount, 'additional_cost' => $additionalCost, 'total' => $total, 'items' => $items];

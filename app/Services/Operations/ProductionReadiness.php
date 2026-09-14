@@ -16,25 +16,25 @@ class ProductionReadiness
     public function evaluate(bool $includeRuntime = true): array
     {
         $checks = [
-            $this->check('environment', 'Environment production', app()->environment('production'), true, 'APP_ENV harus production.'),
-            $this->check('debug', 'Debug dinonaktifkan', ! config('app.debug'), true, 'APP_DEBUG harus false.'),
-            $this->check('app_key', 'Application key valid', $this->validApplicationKey(), true, 'APP_KEY wajib berupa key unik hasil generate yang sesuai dengan APP_CIPHER.'),
-            $this->check('https_url', 'URL aplikasi HTTPS', str_starts_with((string) config('app.url'), 'https://'), true, 'APP_URL harus menggunakan HTTPS.'),
-            $this->check('force_https', 'HTTPS dipaksakan', (bool) config('security.force_https'), true, 'APP_FORCE_HTTPS harus true.'),
-            $this->check('session_secure', 'Cookie sesi secure', (bool) config('session.secure'), true, 'SESSION_SECURE_COOKIE harus true.'),
-            $this->check('session_encrypted', 'Payload sesi terenkripsi', (bool) config('session.encrypt'), true, 'SESSION_ENCRYPT harus true.'),
-            $this->check('session_http_only', 'Cookie sesi HTTP-only', (bool) config('session.http_only'), true, 'SESSION_HTTP_ONLY harus true.'),
-            $this->check('session_same_site', 'SameSite aman', in_array(config('session.same_site'), ['lax', 'strict'], true), true, 'SESSION_SAME_SITE harus lax atau strict.'),
-            $this->check('session_backend', 'Backend sesi persisten', in_array(config('session.driver'), ['database', 'file', 'redis', 'memcached', 'dynamodb'], true), true, 'SESSION_DRIVER harus menggunakan backend persisten yang didukung.'),
-            $this->check('database', 'Database production', $this->configuredDriver('database.connections', config('database.default'), ['mysql']), true, 'DB_CONNECTION harus menggunakan koneksi MySQL yang terkonfigurasi.'),
-            $this->check('cache', 'Cache persisten', $this->configuredDriver('cache.stores', config('cache.default'), ['database', 'file', 'storage', 'memcached', 'redis', 'dynamodb']), true, 'CACHE_STORE harus menggunakan cache persisten yang terkonfigurasi.'),
-            $this->check('queue', 'Queue asynchronous', $this->configuredDriver('queue.connections', config('queue.default'), ['database', 'beanstalkd', 'sqs', 'redis']), true, 'QUEUE_CONNECTION harus menggunakan queue asynchronous yang terkonfigurasi.'),
-            $this->check('mail', 'Mailer production', $this->configuredDriver('mail.mailers', config('mail.default'), ['smtp', 'ses', 'postmark', 'resend', 'sendmail', 'mailgun', 'failover', 'roundrobin']), true, 'MAIL_MAILER harus menggunakan mailer production yang terkonfigurasi.'),
-            $this->check('log_level', 'Level log production', config('logging.production_level') !== 'debug', false, 'Gunakan LOG_LEVEL info atau lebih tinggi.'),
-            $this->check('csp', 'Content Security Policy aktif', (bool) config('security.content_security_policy'), false, 'Aktifkan SECURITY_CSP_ENABLED hanya setelah policy kompatibel dengan Inertia.'),
-            $this->check('hsts', 'HSTS aktif', (bool) config('security.hsts'), true, 'SECURITY_HSTS_ENABLED harus true.'),
-            $this->check('admin_2fa_required', '2FA Platform Admin diwajibkan', (bool) config('security.platform_admin_2fa_required'), true, 'PLATFORM_ADMIN_2FA_REQUIRED harus true.'),
-            $this->check('write_limits', 'Rate limit write valid', (int) config('security.store_writes_per_minute') > 0 && (int) config('security.platform_writes_per_minute') > 0, true, 'Rate limit write tenant dan platform harus lebih dari nol.'),
+            $this->check('environment', 'Production environment', app()->environment('production'), true, 'APP_ENV must be production.'),
+            $this->check('debug', 'Debugging disabled', ! config('app.debug'), true, 'APP_DEBUG must be false.'),
+            $this->check('app_key', 'Valid application key', $this->validApplicationKey(), true, 'APP_KEY must be a unique generated key compatible with APP_CIPHER.'),
+            $this->check('https_url', 'HTTPS application URL', str_starts_with((string) config('app.url'), 'https://'), true, 'APP_URL must use HTTPS.'),
+            $this->check('force_https', 'HTTPS enforced', (bool) config('security.force_https'), true, 'APP_FORCE_HTTPS must be true.'),
+            $this->check('session_secure', 'Secure session cookie', (bool) config('session.secure'), true, 'SESSION_SECURE_COOKIE must be true.'),
+            $this->check('session_encrypted', 'Encrypted session payload', (bool) config('session.encrypt'), true, 'SESSION_ENCRYPT must be true.'),
+            $this->check('session_http_only', 'HTTP-only session cookie', (bool) config('session.http_only'), true, 'SESSION_HTTP_ONLY must be true.'),
+            $this->check('session_same_site', 'Secure SameSite policy', in_array(config('session.same_site'), ['lax', 'strict'], true), true, 'SESSION_SAME_SITE must be lax or strict.'),
+            $this->check('session_backend', 'Persistent session backend', in_array(config('session.driver'), ['database', 'file', 'redis', 'memcached', 'dynamodb'], true), true, 'SESSION_DRIVER must use a supported persistent backend.'),
+            $this->check('database', 'Production database', $this->configuredDriver('database.connections', config('database.default'), ['mysql']), true, 'DB_CONNECTION must use a configured MySQL connection.'),
+            $this->check('cache', 'Persistent cache', $this->configuredDriver('cache.stores', config('cache.default'), ['database', 'file', 'storage', 'memcached', 'redis', 'dynamodb']), true, 'CACHE_STORE must use a configured persistent cache.'),
+            $this->check('queue', 'Asynchronous queue', $this->configuredDriver('queue.connections', config('queue.default'), ['database', 'beanstalkd', 'sqs', 'redis']), true, 'QUEUE_CONNECTION must use a configured asynchronous queue.'),
+            $this->check('mail', 'Production mailer', $this->configuredDriver('mail.mailers', config('mail.default'), ['smtp', 'ses', 'postmark', 'resend', 'sendmail', 'mailgun', 'failover', 'roundrobin']), true, 'MAIL_MAILER must use a configured production mailer.'),
+            $this->check('log_level', 'Production log level', config('logging.production_level') !== 'debug', false, 'Use LOG_LEVEL info or higher.'),
+            $this->check('csp', 'Content Security Policy enabled', (bool) config('security.content_security_policy'), false, 'Enable SECURITY_CSP_ENABLED only after the policy is compatible with Inertia.'),
+            $this->check('hsts', 'HSTS enabled', (bool) config('security.hsts'), true, 'SECURITY_HSTS_ENABLED must be true.'),
+            $this->check('admin_2fa_required', 'Platform Admin 2FA required', (bool) config('security.platform_admin_2fa_required'), true, 'PLATFORM_ADMIN_2FA_REQUIRED must be true.'),
+            $this->check('write_limits', 'Valid write rate limits', (int) config('security.store_writes_per_minute') > 0 && (int) config('security.platform_writes_per_minute') > 0, true, 'Tenant and platform write rate limits must be greater than zero.'),
         ];
 
         if (! $includeRuntime) {
@@ -49,7 +49,7 @@ class ProductionReadiness
     {
         try {
             DB::select('select 1');
-            $database = $this->check('database_connection', 'Koneksi database', true, true, 'Database tidak dapat dihubungi.');
+            $database = $this->check('database_connection', 'Database connection', true, true, 'The database cannot be reached.');
             $activeAdmins = User::query()->whereNotNull('platform_role')->where('status', UserStatus::Active)->count();
             $adminsWithoutTwoFactor = User::query()
                 ->whereNotNull('platform_role')
@@ -58,35 +58,35 @@ class ProductionReadiness
                 ->count();
             $admins = $this->check(
                 'platform_users',
-                'Platform Admin aktif terlindungi 2FA',
+                'Active Platform Admin accounts protected by 2FA',
                 $activeAdmins > 0 && $adminsWithoutTwoFactor === 0,
                 true,
                 $activeAdmins === 0
-                    ? 'Buat minimal satu Platform Admin aktif.'
-                    : __(':count Platform Admin aktif belum mengonfirmasi 2FA.', ['count' => $adminsWithoutTwoFactor]),
+                    ? 'Create at least one active Platform Admin.'
+                    : __(':count active Platform Admin accounts have not confirmed 2FA.', ['count' => $adminsWithoutTwoFactor]),
             );
             $migrator = app(Migrator::class);
             $files = array_keys($migrator->getMigrationFiles([database_path('migrations')]));
             $pending = array_diff($files, $migrator->getRepository()->getRan());
             $migrations = $this->check(
                 'migrations',
-                'Migration terkini',
+                'Migrations up to date',
                 $pending === [],
                 true,
-                __(':count migration belum dijalankan.', ['count' => count($pending)]),
+                __(':count migrations have not been run.', ['count' => count($pending)]),
             );
             $catalogSchema = $this->check(
                 'catalog_schema',
-                'Schema katalog konsisten',
+                'Consistent catalog schema',
                 $this->catalogSchemaIsCanonical(),
                 true,
-                'Schema produk, varian, unit, SKU, barcode, foto, atau stok tidak sesuai kontrak aplikasi.',
+                'The product, variant, unit, SKU, barcode, photo, or stock schema does not match the application contract.',
             );
 
             return [$database, $admins, $migrations, $catalogSchema];
         } catch (Throwable) {
             return [
-                $this->check('database_connection', 'Koneksi database', false, true, 'Database atau metadata migration tidak dapat diperiksa.'),
+                $this->check('database_connection', 'Database connection', false, true, 'The database or migration metadata could not be checked.'),
             ];
         }
     }

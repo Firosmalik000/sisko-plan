@@ -14,8 +14,8 @@ export default function AuthLayout({
     const { t } = useTranslation();
     const { component } = usePage();
     const isLoginPage = component === 'auth/login';
-    const resolvedTitle = title || (isLoginPage ? 'Masuk ke akun Anda' : title);
-    const resolvedDescription = description || (isLoginPage ? 'Gunakan Google atau email Anda' : description);
+    const resolvedTitle = title || (isLoginPage ? 'Sign in to your account' : title);
+    const resolvedDescription = description || (isLoginPage ? 'Use Google or your email' : description);
 
     return (
         <AuthLayoutTemplate title={t(resolvedTitle)} description={t(resolvedDescription)}>

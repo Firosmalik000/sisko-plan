@@ -2,42 +2,51 @@ import { router, usePage } from '@inertiajs/react';
 import { Globe2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import type { AppLocale } from '@/lib/currency';
-import { setActiveLocale, useTranslation } from '@/lib/i18n';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { loadLocaleCatalog, setActiveLocale, useTranslation } from '@/lib/i18n';
+import { appLocaleOptions, isAppLocale } from '@/lib/locales';
+import type { AppLocaleOption } from '@/lib/locales';
 
-type LocaleOption = { code: AppLocale; label: string };
-
-const fallbackLocales: LocaleOption[] = [
-    { code: 'id', label: 'Indonesia' },
-    { code: 'en', label: 'English' },
-    { code: 'ms', label: 'Melayu' },
-    { code: 'vi', label: 'Tiếng Việt' },
-];
-
-const isLocaleOption = (value: unknown): value is LocaleOption =>
+const isLocaleOption = (value: unknown): value is AppLocaleOption =>
     typeof value === 'object' &&
     value !== null &&
     'code' in value &&
-    (value.code === 'en' || value.code === 'id' || value.code === 'ms' || value.code === 'vi') &&
+    isAppLocale(value.code) &&
     'label' in value &&
     typeof value.label === 'string';
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ variant = 'button' }: { variant?: 'button' | 'settings' }) {
     const pageProps = usePage().props;
-    const { locale } = useTranslation();
+    const { locale, t } = useTranslation();
     const configuredLocales = Array.isArray(pageProps.locales) ? pageProps.locales.filter(isLocaleOption) : [];
-    const locales = configuredLocales.length > 0 ? configuredLocales : fallbackLocales;
+    const locales = configuredLocales.length > 0 ? configuredLocales : appLocaleOptions;
     const [isChanging, setIsChanging] = useState(false);
 
-    const changeLocale = (nextLocale: string) => {
-        if (nextLocale === locale || isChanging) {
+    const changeLocale = async (nextLocale: string) => {
+        if (!isAppLocale(nextLocale) || nextLocale === locale || isChanging) {
+            return;
+        }
+
+        setIsChanging(true);
+
+        try {
+            await loadLocaleCatalog(nextLocale);
+        } catch {
+            setIsChanging(false);
+
             return;
         }
 
         const previousLocale = locale;
-        setActiveLocale(nextLocale as AppLocale);
-        setIsChanging(true);
+        setActiveLocale(nextLocale);
         router.post(
             '/locale',
             { locale: nextLocale },
@@ -55,6 +64,30 @@ export default function LanguageSwitcher() {
         document.documentElement.lang = locale;
     }, [locale]);
 
+    if (variant === 'settings') {
+        return (
+            <>
+                <DropdownMenuLabel className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground">
+                    <Globe2 className="size-4" />
+                    {t('Language')}
+                </DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={locale} onValueChange={(value) => void changeLocale(value)} aria-label={t('Language')}>
+                    {locales.map((language) => (
+                        <DropdownMenuRadioItem
+                            key={language.code}
+                            value={language.code}
+                            disabled={isChanging}
+                            onSelect={(event) => event.preventDefault()}
+                            className="min-h-11 rounded-xl pr-3 pl-8 text-sm focus:bg-muted data-[state=checked]:bg-accent data-[state=checked]:font-medium data-[state=checked]:focus:bg-accent"
+                        >
+                            {language.label}
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </>
+        );
+    }
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -62,7 +95,7 @@ export default function LanguageSwitcher() {
                     variant="outline"
                     size="sm"
                     disabled={isChanging}
-                    aria-label="Pilih bahasa"
+                    aria-label={t('Select language')}
                     className="border-[#ee4d2d]/20 bg-white font-black text-[#b83219] shadow-sm hover:border-[#ee4d2d]/35 hover:bg-[#fff0eb] hover:text-[#b83219] data-[state=open]:border-[#ee4d2d]/35 data-[state=open]:bg-[#fff0eb] data-[state=open]:text-[#b83219]"
                 >
                     <Globe2 className="size-4" />
@@ -73,7 +106,7 @@ export default function LanguageSwitcher() {
                 {locales.map((language) => (
                     <DropdownMenuItem
                         key={language.code}
-                        onClick={() => changeLocale(language.code)}
+                        onClick={() => void changeLocale(language.code)}
                         className={
                             language.code === locale
                                 ? 'bg-[#fff0eb] font-bold text-[#b83219] focus:bg-[#ffe2d9] focus:text-[#b83219]'

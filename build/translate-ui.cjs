@@ -30,6 +30,43 @@ module.exports = function translateUiLiterals({ types: t }) {
         return t.callExpression(t.identifier('__translateUi'), [t.stringLiteral(value)]);
     };
 
+    const translatedTemplate = (node) => {
+        if (node.expressions.length === 0) {
+            return translationCall(node.quasis[0]?.value.cooked ?? '');
+        }
+
+        const quasis = [t.templateElement({ raw: '', cooked: '' })];
+        const expressions = [];
+
+        const appendLiteral = (raw, cooked) => {
+            const current = quasis.at(-1);
+            current.value.raw += raw;
+            current.value.cooked += cooked;
+        };
+
+        node.quasis.forEach((quasi, index) => {
+            const cooked = quasi.value.cooked ?? quasi.value.raw;
+
+            if (isHumanText(cooked)) {
+                expressions.push(translationCall(cooked));
+                quasis.push(t.templateElement({ raw: '', cooked: '' }));
+            } else {
+                appendLiteral(quasi.value.raw, cooked);
+            }
+
+            if (index < node.expressions.length) {
+                expressions.push(node.expressions[index]);
+                quasis.push(t.templateElement({ raw: '', cooked: '' }));
+            }
+        });
+
+        quasis.forEach((quasi, index) => {
+            quasi.tail = index === quasis.length - 1;
+        });
+
+        return t.templateLiteral(quasis, expressions);
+    };
+
     const isHumanText = (value) => {
         const normalized = value.trim();
 
@@ -62,21 +99,17 @@ module.exports = function translateUiLiterals({ types: t }) {
 
     const enclosingNamedContainer = (path) => {
         const owner = path.findParent(
-            (candidate) =>
-                candidate.isVariableDeclarator() ||
-                candidate.isFunctionDeclaration() ||
-                candidate.isFunctionExpression() ||
-                candidate.isArrowFunctionExpression(),
+            (candidate) => candidate.isVariableDeclarator() || candidate.isFunctionExpression() || candidate.isArrowFunctionExpression(),
         );
 
         if (!owner) return '';
         if (owner.isVariableDeclarator() && t.isIdentifier(owner.node.id)) return owner.node.id.name;
-        if (owner.isFunctionDeclaration() && owner.node.id) return owner.node.id.name;
-
         const declaration = owner.parentPath;
 
         return declaration?.isVariableDeclarator() && t.isIdentifier(declaration.node.id) ? declaration.node.id.name : '';
     };
+
+    const isUiContainerName = (name) => uiContainerNames.test(name) && !/Context$/u.test(name);
 
     return {
         name: 'translate-ui-literals',
@@ -85,7 +118,7 @@ module.exports = function translateUiLiterals({ types: t }) {
                 enter(path, state) {
                     programPath = path;
                     needsImport = false;
-                    skipCurrentFile = /[\\/]lib[\\/]i18n\.ts$/u.test(state.filename ?? '');
+                    skipCurrentFile = /[\\/]lib[\\/](?:i18n|locales)\.ts$/u.test(state.filename ?? '');
 
                     if (skipCurrentFile) {
                         path.skip();
@@ -138,7 +171,7 @@ module.exports = function translateUiLiterals({ types: t }) {
                       ? path.node.key.value
                       : null;
 
-                const translatedContainer = uiContainerNames.test(enclosingNamedContainer(path));
+                const translatedContainer = isUiContainerName(enclosingNamedContainer(path));
 
                 if (
                     name !== null &&
@@ -170,9 +203,8 @@ module.exports = function translateUiLiterals({ types: t }) {
                     path.findParent(
                         (parent) =>
                             parent.isCallExpression() &&
-                            parent.get('callee').isIdentifier({
-                                name: '__translateUi',
-                            }),
+                            parent.get('callee').isIdentifier() &&
+                            ['__translateUi', 'translate', 't'].includes(parent.node.callee.name),
                     )
                 ) {
                     return;
@@ -203,7 +235,7 @@ module.exports = function translateUiLiterals({ types: t }) {
                     return;
                 }
 
-                if (uiContainerNames.test(enclosingNamedContainer(path))) {
+                if (isUiContainerName(enclosingNamedContainer(path))) {
                     path.replaceWith(translationCall(path.node.value));
                 }
             },
@@ -235,7 +267,7 @@ module.exports = function translateUiLiterals({ types: t }) {
 
                 if (isTranslatedAttribute && isHumanText(visibleText)) {
                     needsImport = true;
-                    path.replaceWith(t.callExpression(t.identifier('__translateUi'), [path.node]));
+                    path.replaceWith(translatedTemplate(path.node));
                     path.skip();
 
                     return;
@@ -243,7 +275,7 @@ module.exports = function translateUiLiterals({ types: t }) {
 
                 if (isRenderedExpression && isHumanText(visibleText)) {
                     needsImport = true;
-                    path.replaceWith(t.callExpression(t.identifier('__translateUi'), [path.node]));
+                    path.replaceWith(translatedTemplate(path.node));
                     path.skip();
                 }
             },

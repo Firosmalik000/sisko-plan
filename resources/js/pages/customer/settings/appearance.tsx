@@ -1,19 +1,25 @@
 import { Head } from '@inertiajs/react';
 import AppearanceTabs from '@/components/appearance-tabs';
-import Heading from '@/components/heading';
+import { PageSection } from '@/components/page/page-section';
+import { useTranslation } from '@/lib/i18n';
 import { edit as editAppearance } from '@/routes/appearance';
 
 export default function Appearance() {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Tema tampilan" />
+            <Head title={t('Theme display')} />
 
-            <h1 className="sr-only">Tema tampilan</h1>
+            <h1 className="sr-only">{t('Theme display')}</h1>
 
-            <div className="space-y-6">
-                <Heading variant="small" title="Tema tampilan" />
+            <PageSection
+                title={t('Theme display')}
+                description={t('Choose a comfortable appearance for this device.')}
+                contentClassName="p-4 sm:p-5"
+            >
                 <AppearanceTabs />
-            </div>
+            </PageSection>
         </>
     );
 }
@@ -21,7 +27,7 @@ export default function Appearance() {
 Appearance.layout = {
     breadcrumbs: [
         {
-            title: 'Tema tampilan',
+            title: 'Theme display',
             href: editAppearance(),
         },
     ],

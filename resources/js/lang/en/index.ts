@@ -1,17 +1,19 @@
-import { englishOverrides } from './application';
-import { englishOverrides as englishCustomerReferralCatalog } from './customer-referral';
-import { englishDynamicCatalog } from './dynamic';
-import { englishProductCatalog } from './product';
-import { englishOverrides as englishPromotionCatalog } from './promotion';
-import { landingEnglishOverrides } from './public';
-import { englishOverrides as englishReferralCatalog } from './referral';
+import { enAuthCatalog } from './auth';
+import { enCustomerCatalog } from './customer';
+import { englishOverrides as enCustomerReferralCatalog } from './customer-referral';
+import { enPlatformCatalog } from './platform';
+import { englishOverrides as enPromotionCatalog } from './promotion';
+import { enPublicCatalog } from './public';
+import { englishOverrides as enReferralCatalog } from './referral';
+import { enSharedCatalog } from './shared';
 
 export const englishCatalog: Record<string, string> = {
-    ...englishOverrides,
-    ...landingEnglishOverrides,
-    ...englishProductCatalog,
-    ...englishDynamicCatalog,
-    ...englishCustomerReferralCatalog,
-    ...englishReferralCatalog,
-    ...englishPromotionCatalog,
+    ...enAuthCatalog,
+    ...enCustomerCatalog,
+    ...enPlatformCatalog,
+    ...enPublicCatalog,
+    ...enSharedCatalog,
+    ...enCustomerReferralCatalog,
+    ...enReferralCatalog,
+    ...enPromotionCatalog,
 };

@@ -17,7 +17,7 @@ class UpsertSaleCustomer
 
         if ($name === null || $phone === null) {
             throw ValidationException::withMessages([
-                'customer_name' => __('Nama pelanggan dan nomor telepon harus diisi bersama.'),
+                'customer_name' => __('Customer name and phone number must be provided together.'),
             ]);
         }
 

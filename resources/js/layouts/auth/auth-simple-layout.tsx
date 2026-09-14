@@ -7,9 +7,9 @@ import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
 const highlights = [
-    { icon: ReceiptText, label: 'Kasir cepat' },
-    { icon: Boxes, label: 'Stok real-time' },
-    { icon: BarChart3, label: 'Laporan ringkas' },
+    { icon: ReceiptText, label: 'Quick actions' },
+    { icon: Boxes, label: 'Real-time stock' },
+    { icon: BarChart3, label: 'Concise reports' },
 ];
 
 export default function AuthSimpleLayout({ children, title, description }: AuthLayoutProps) {
@@ -55,13 +55,13 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                         <div className="my-auto max-w-[25rem] py-10">
                             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-2 text-[11px] font-bold tracking-[0.14em] text-white uppercase">
                                 <Store className="size-3.5" />
-                                {t('Ruang kerja toko Anda')}
+                                {t('Your store workspace')}
                             </div>
                             <h1 className="mt-6 max-w-[25rem] text-4xl leading-[1.04] font-bold tracking-[-0.045em] xl:text-[3.1rem]">
-                                {t('Semua pekerjaan toko, terasa lebih terarah.')}
+                                {t('Keep every store task on track.')}
                             </h1>
                             <p className="mt-5 max-w-[20rem] text-[15px] leading-7 text-white">
-                                {t('Kelola transaksi, stok, dan perkembangan usaha dari satu tempat.')}
+                                {t('Manage transactions, stock, and business performance in one place.')}
                             </p>
 
                             <div className="relative z-10 mt-8 grid max-w-[21rem] grid-cols-3 gap-2">
@@ -76,7 +76,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
 
                         <div className="flex items-center gap-3 border-t border-white/15 pt-6 text-xs text-white">
                             <ShieldCheck className="size-4 text-[#ffd6cb]" />
-                            {t('Akses aman dan terkontrol untuk setiap peran.')}
+                            {t('Secure, controlled access for every role.')}
                         </div>
                     </div>
                 </aside>
@@ -101,7 +101,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                                 <LanguageSwitcher />
                                 <Link
                                     href={home()}
-                                    aria-label={t('Kembali ke halaman utama')}
+                                    aria-label={t('Back to home')}
                                     className="flex size-10 items-center justify-center rounded-full border border-[#efcfc4] bg-white text-[#ee4d2d] shadow-lg shadow-[#a8321b]/10"
                                 >
                                     <ArrowLeft className="size-4" />
@@ -113,7 +113,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                             <div className="mb-8">
                                 <div className="inline-flex items-center gap-2 rounded-full bg-[#fff0eb] px-3 py-1.5 text-[10px] font-bold tracking-[0.08em] text-[#b83219] uppercase">
                                     <BadgeCheck className="size-3.5" />
-                                    {t('Akses aman')}
+                                    {t('Secure access')}
                                 </div>
                                 <h1 className="mt-5 text-3xl font-bold tracking-[-0.04em] text-[#3b211b]">{title}</h1>
                                 <p className="mt-3 text-sm leading-6 text-[#765f59] sm:text-base">{description}</p>
@@ -134,7 +134,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                         </div>
 
                         <p className="mt-6 text-center text-[11px] leading-5 text-[#806963]">
-                            {t('Dengan melanjutkan, Anda menyetujui kebijakan penggunaan layanan')} {brandName}.
+                            {t('By continuing, you agree to the service terms')} {brandName}.
                         </p>
                     </div>
                 </main>

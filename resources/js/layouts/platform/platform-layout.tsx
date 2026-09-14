@@ -38,10 +38,10 @@ type NavigationItem = {
 
 const navigation: Array<{ label: string; items: NavigationItem[] }> = [
     {
-        label: 'Ringkasan',
+        label: 'Summary',
         items: [
             {
-                label: 'Dashboard',
+                label: 'Dashboards',
                 href: '/super-admin',
                 icon: Gauge,
                 permission: 'platform.dashboard.view',
@@ -49,16 +49,16 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
         ],
     },
     {
-        label: 'Tenant',
+        label: 'Tenants',
         items: [
             {
-                label: 'Pengguna',
+                label: 'Users',
                 href: '/super-admin/users',
                 icon: Users,
                 permission: 'platform.users.view',
             },
             {
-                label: 'Toko',
+                label: 'Store',
                 href: '/super-admin/stores',
                 icon: Building2,
                 permission: 'platform.stores.view',
@@ -66,16 +66,16 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
         ],
     },
     {
-        label: 'Komersial',
+        label: 'Commercial',
         items: [
             {
-                label: 'Subscription & paket',
+                label: 'Subscription & plan',
                 href: '/super-admin/subscriptions',
                 icon: CreditCard,
                 permission: 'platform.subscriptions.view',
             },
             {
-                label: 'Riwayat pembayaran',
+                label: 'Payment history',
                 href: '/super-admin/payments',
                 icon: ReceiptText,
                 permission: 'platform.payments.view',
@@ -89,28 +89,28 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
         ],
     },
     {
-        label: 'Platform',
+        label: 'Platforms',
         items: [
             {
-                label: 'Negara & mata uang',
+                label: 'Countries & currencies',
                 href: '/super-admin/geography',
                 icon: MapPinned,
                 permission: 'platform.geography.view',
             },
             {
-                label: 'Brand & SEO',
+                label: 'Branding & SEO',
                 href: '/super-admin/brand-seo',
                 icon: Globe2,
                 permission: 'platform.branding.view',
             },
             {
-                label: 'Konten & Promosi',
+                label: 'Content & Promotions',
                 href: '/super-admin/promotions',
                 icon: Images,
                 permission: 'platform.promotions.view',
             },
             {
-                label: 'Admin platform',
+                label: 'Platform admins',
                 href: '/super-admin/platform-admins',
                 icon: UserCog,
                 permission: 'platform.admins.view',
@@ -221,7 +221,7 @@ function AccountMenu({ admin, compact = false }: { admin: PlatformAdmin; compact
                     <button
                         type="button"
                         className="flex size-10 items-center justify-center rounded-xl bg-white/15 text-xs font-black text-white transition outline-none hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white"
-                        aria-label="Buka menu akun"
+                        aria-label="Open account menu"
                     >
                         {initials}
                     </button>
@@ -236,7 +236,7 @@ function AccountMenu({ admin, compact = false }: { admin: PlatformAdmin; compact
                         <span className="min-w-0 flex-1">
                             <span className="block truncate text-xs font-semibold">{admin.name}</span>
                             <span className="block truncate text-[10px] text-white/65">
-                                {t(admin.role === 'super_admin' ? 'Super Admin' : 'Admin Platform')}
+                                {t(admin.role === 'super_admin' ? 'Super Admin' : 'Platform Admin')}
                             </span>
                         </span>
                         <ChevronUp className="size-4 text-white/65" />
@@ -257,14 +257,14 @@ function AccountMenu({ admin, compact = false }: { admin: PlatformAdmin; compact
                 <DropdownMenuItem asChild className="min-h-10 rounded-lg px-3">
                     <Link href="/super-admin/security">
                         <LockKeyhole className="size-4" />
-                        Pengaturan akun
+                        Settings account
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild variant="destructive" className="min-h-10 rounded-lg px-3">
                     <Link href="/super-admin/logout" method="post" as="button" className="w-full">
                         <LogOut className="size-4" />
-                        Keluar
+                        Sign out
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuContent>

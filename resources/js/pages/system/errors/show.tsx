@@ -20,104 +20,104 @@ type ErrorContent = {
 
 const errors: Record<number, ErrorContent> = {
     400: {
-        title: 'Permintaan tidak dapat diproses',
-        description: 'Data yang dikirim tidak sesuai dengan yang dibutuhkan halaman ini.',
+        title: 'Request cannot processed',
+        description: 'The submitted data does not match what this page requires.',
         icon: TriangleAlert,
         primary: 'back',
     },
     401: {
-        title: 'Silakan masuk kembali',
-        description: 'Sesi masuk tidak ditemukan atau akses akun perlu dikonfirmasi ulang.',
+        title: 'Please sign in again',
+        description: 'The login session was not found or account access must be confirmed again.',
         icon: LockKeyhole,
         primary: 'login',
     },
     403: {
-        title: 'Akses tidak tersedia',
-        description: 'Akun Anda tidak memiliki izin untuk membuka halaman atau menjalankan tindakan ini.',
+        title: 'Access unavailable',
+        description: 'Your account does not have permission to open this page or perform this action.',
         icon: ShieldAlert,
         primary: 'home',
     },
     404: {
-        title: 'Halaman tidak ditemukan',
-        description: 'Alamat mungkin berubah, sudah tidak digunakan, atau tidak pernah tersedia.',
+        title: 'Page not found',
+        description: 'The address may have changed, is no longer used, or was never available.',
         icon: SearchX,
         primary: 'back',
     },
     405: {
-        title: 'Cara akses tidak didukung',
-        description: 'Halaman menerima jenis permintaan yang berbeda. Kembali lalu coba tindakan semula.',
+        title: 'Way access not supported',
+        description: 'This page received a different request type. Go back and try the action again.',
         icon: TriangleAlert,
         primary: 'back',
     },
     408: {
-        title: 'Permintaan terlalu lama',
-        description: 'Koneksi terputus sebelum proses selesai. Periksa jaringan lalu coba kembali.',
+        title: 'Request too long',
+        description: 'The connection ended before the process finished. Check your network and try again.',
         icon: Clock3,
         primary: 'reload',
     },
     409: {
-        title: 'Data sedang berubah',
-        description: 'Kondisi data sudah berbeda dari saat halaman dibuka. Muat ulang sebelum melanjutkan.',
+        title: 'Data is changing',
+        description: 'The data has changed since this page was opened. Reload before continuing.',
         icon: RefreshCw,
         primary: 'reload',
     },
     410: {
-        title: 'Halaman sudah tidak tersedia',
-        description: 'Konten ini telah dipindahkan atau dihapus dan tidak dapat dibuka lagi.',
+        title: 'Page already unavailable',
+        description: 'This content has been moved or deleted and can no longer be opened.',
         icon: SearchX,
         primary: 'home',
     },
     413: {
-        title: 'Data yang dikirim terlalu besar',
-        description: 'Kurangi ukuran data atau file, lalu kirim kembali dari halaman sebelumnya.',
+        title: 'Submitted data is too large',
+        description: 'Reduce the data or file size, then submit it again from the previous page.',
         icon: TriangleAlert,
         primary: 'back',
     },
     419: {
-        title: 'Sesi Anda telah berakhir',
-        description: 'Halaman terlalu lama terbuka. Muat ulang untuk mendapatkan sesi yang baru.',
+        title: 'Your session has ended',
+        description: 'Page too long open. Reload again for get session that new.',
         icon: Clock3,
         primary: 'reload',
     },
     422: {
-        title: 'Data belum dapat diproses',
-        description: 'Periksa kembali data yang dimasukkan, lalu perbaiki bagian yang belum sesuai.',
+        title: 'Data could not be processed',
+        description: 'Review the entered data and correct any fields that are not valid.',
         icon: TriangleAlert,
         primary: 'back',
     },
     423: {
-        title: 'Data sedang dikunci',
-        description: 'Proses lain sedang menggunakan data ini. Tunggu sebentar lalu coba kembali.',
+        title: 'Data is locked',
+        description: 'Another process is using this data. Wait a moment and try again.',
         icon: LockKeyhole,
         primary: 'reload',
     },
     429: {
-        title: 'Terlalu banyak percobaan',
-        description: 'Batas permintaan sementara tercapai. Tunggu beberapa saat sebelum mencoba lagi.',
+        title: 'Too many attempts',
+        description: 'The temporary request limit has been reached. Wait a moment before trying again.',
         icon: Clock3,
         primary: 'reload',
     },
     500: {
-        title: 'Terjadi kendala pada sistem',
-        description: 'Permintaan belum dapat diselesaikan. Data error telah diberi ID untuk penelusuran.',
+        title: 'A system error occurred',
+        description: 'The request could not be completed. The error has been assigned an ID for investigation.',
         icon: ServerCog,
         primary: 'reload',
     },
     502: {
-        title: 'Layanan penghubung bermasalah',
-        description: 'Salah satu layanan belum memberikan respons yang valid. Coba kembali sebentar lagi.',
+        title: 'Service connector unavailable',
+        description: 'A connected service returned an invalid response. Try again shortly.',
         icon: ServerCog,
         primary: 'reload',
     },
     503: {
-        title: 'Layanan sedang tidak tersedia',
-        description: 'Sistem sedang dirawat atau menerima beban tinggi. Silakan coba kembali nanti.',
+        title: 'Service currently unavailable',
+        description: 'System currently under maintenance or receiving load high. Please try back later.',
         icon: ServerCog,
         primary: 'reload',
     },
     504: {
-        title: 'Respons layanan terlalu lama',
-        description: 'Sistem belum menerima jawaban tepat waktu. Tunggu sebentar lalu coba kembali.',
+        title: 'Response service too long',
+        description: 'The system did not receive a response in time. Wait a moment and try again.',
         icon: Clock3,
         primary: 'reload',
     },
@@ -126,7 +126,7 @@ const errors: Record<number, ErrorContent> = {
 export default function ErrorPage({ status, requestId, homeUrl, loginUrl, isAuthenticated, isPlatformAdmin }: Props) {
     const content = errors[status] ?? fallbackContent(status);
     const Icon = content.icon;
-    const homeLabel = isPlatformAdmin ? 'Kembali ke portal' : isAuthenticated ? 'Kembali ke dashboard' : 'Kembali ke beranda';
+    const homeLabel = isPlatformAdmin ? 'Back to portal' : isAuthenticated ? 'Back to dashboard' : 'Back to home';
 
     return (
         <>
@@ -160,7 +160,7 @@ export default function ErrorPage({ status, requestId, homeUrl, loginUrl, isAuth
                         </div>
 
                         <p className="mt-8 text-xs font-semibold text-slate-500">
-                            ID permintaan: <code className="rounded bg-[#0b292f]/6 px-1.5 py-1 font-mono text-[#0b292f]">{requestId}</code>
+                            ID request: <code className="rounded bg-[#0b292f]/6 px-1.5 py-1 font-mono text-[#0b292f]">{requestId}</code>
                         </p>
                     </section>
 
@@ -189,7 +189,7 @@ function PrimaryAction({
         return (
             <Link href={loginUrl} className={className}>
                 <LockKeyhole className="size-4" />
-                Masuk kembali
+                Sign in again
             </Link>
         );
     }
@@ -207,7 +207,7 @@ function PrimaryAction({
         return (
             <button type="button" className={className} onClick={() => window.location.reload()}>
                 <RefreshCw className="size-4" />
-                Muat ulang halaman
+                Reload again page
             </button>
         );
     }
@@ -215,7 +215,7 @@ function PrimaryAction({
     return (
         <button type="button" className={className} onClick={() => window.history.back()}>
             <ArrowLeft className="size-4" />
-            Kembali
+            Back
         </button>
     );
 }
@@ -223,11 +223,11 @@ function PrimaryAction({
 function ErrorReceipt({ status }: { status: number }) {
     return (
         <aside
-            aria-label={`Kode error ${status}`}
+            aria-label={`Code error${status}`}
             className="w-full max-w-md overflow-hidden rounded-2xl bg-[#0b292f] text-white shadow-2xl shadow-[#0b292f]/20 lg:w-[26rem]"
         >
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <span className="text-xs font-black tracking-[0.14em] text-[#e7bd52] uppercase">Status sistem</span>
+                <span className="text-xs font-black tracking-[0.14em] text-[#e7bd52] uppercase">Status system</span>
                 <span className="size-2 rounded-full bg-[#e7bd52]" />
             </div>
             <div className="px-5 py-7 sm:px-7 sm:py-9">
@@ -239,7 +239,7 @@ function ErrorReceipt({ status }: { status: number }) {
                 </div>
                 <div className="mt-8 flex items-center justify-between text-xs font-semibold text-slate-300">
                     <span>SISKO CONTROL</span>
-                    <span>Perlu ditangani</span>
+                    <span>Need handled</span>
                 </div>
             </div>
         </aside>
@@ -249,14 +249,14 @@ function ErrorReceipt({ status }: { status: number }) {
 function fallbackContent(status: number): ErrorContent {
     return status >= 500
         ? {
-              title: 'Layanan belum dapat digunakan',
-              description: 'Sistem mengalami kendala sementara. Muat ulang atau kembali beberapa saat lagi.',
+              title: 'Service unavailable',
+              description: 'System experiencing issues temporarily. Reload again or back a few when again.',
               icon: ServerCog,
               primary: 'reload',
           }
         : {
-              title: 'Permintaan belum dapat diselesaikan',
-              description: 'Kembali ke halaman sebelumnya atau buka halaman utama untuk melanjutkan.',
+              title: 'The request could not be completed',
+              description: 'Return to the previous page or open the home page to continue.',
               icon: TriangleAlert,
               primary: 'back',
           };

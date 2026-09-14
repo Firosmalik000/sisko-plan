@@ -20,10 +20,10 @@ export function ImpersonationBanner() {
                 <div className="flex min-w-0 items-start gap-3">
                     <BadgeAlert className="mt-0.5 size-4 shrink-0" />
                     <div className="min-w-0">
-                        <p className="text-sm font-semibold">Impersonasi aktif</p>
-                        <p className="truncate text-sm text-amber-900/80">Sedang masuk sebagai {auth.user?.name ?? 'akun ini'}</p>
+                        <p className="text-sm font-semibold">Impersonation active</p>
+                        <p className="truncate text-sm text-amber-900/80">Currently signed in as {auth.user?.name ?? 'this account'}</p>
                         <p className="truncate text-xs text-amber-900/70">
-                            Dari {impersonation.admin_name} · {impersonation.admin_email}
+                            From {impersonation.admin_name} · {impersonation.admin_email}
                         </p>
                     </div>
                 </div>
@@ -33,7 +33,7 @@ export function ImpersonationBanner() {
                     as="button"
                     className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-amber-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-900"
                 >
-                    Kembali ke Super Admin
+                    Back to Super Admin
                     <ArrowLeftRight className="size-4" />
                 </Link>
             </div>

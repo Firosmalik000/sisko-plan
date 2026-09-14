@@ -28,6 +28,7 @@ class StoreFactory extends Factory
             $store->loadMissing('country');
             $store->settings()->firstOrCreate([], [
                 'currency' => $store->country->currency_code ?? 'IDR',
+                'timezone' => $store->country->default_timezone ?? 'Asia/Jakarta',
             ]);
             app(StartDefaultSubscription::class)->handle($store);
         });

@@ -1,5 +1,14 @@
 import type { CSSProperties } from 'react';
 
+export const storeThemePresets = [
+    { name: 'Sisko Orange', color: '#ee4d2d' },
+    { name: 'Coral', color: '#f35d3d' },
+    { name: 'Samudra', color: '#147d92' },
+    { name: 'Nila', color: '#5753c9' },
+    { name: 'Anggur', color: '#a34888' },
+    { name: 'Arang', color: '#334155' },
+] as const;
+
 function hexToRgb(hex: string) {
     const value = hex.replace('#', '');
     const number = Number.parseInt(value, 16);
@@ -29,38 +38,45 @@ function contrastColor(hex: string) {
     return luminance > 0.64 ? '#2d2928' : '#ffffff';
 }
 
-export function storeThemeVariables(color = '#ee4d2d'): CSSProperties {
+export function storeThemeVariables(color = '#ee4d2d', appearance: 'light' | 'dark' = 'light'): CSSProperties {
     const safeColor = /^#[0-9a-f]{6}$/i.test(color) ? color : '#ee4d2d';
-    const foreground = '#2d2928';
-    const surface = '#fffaf7';
-    const soft = mix(safeColor, '#ffffff', 0.9);
-    const softStrong = mix(safeColor, '#ffffff', 0.8);
-    const border = mix(safeColor, '#ffffff', 0.76);
+    const dark = appearance === 'dark';
+    const foreground = dark ? '#f4f1ef' : '#2d2928';
+    const surface = dark ? '#141414' : mix(safeColor, '#ffffff', 0.965);
+    const card = dark ? '#1c1c1c' : '#ffffff';
+    const soft = dark ? '#242424' : mix(safeColor, '#ffffff', 0.9);
+    const softStrong = dark ? mix(safeColor, '#242424', 0.84) : mix(safeColor, '#ffffff', 0.8);
+    const border = dark ? '#343434' : mix(safeColor, '#ffffff', 0.76);
+    const input = dark ? '#454545' : mix(safeColor, '#ffffff', 0.68);
+    const muted = dark ? '#222222' : mix(safeColor, '#ffffff', 0.94);
+    const mutedForeground = dark ? '#b9b3b0' : '#756d6a';
     const primaryForeground = contrastColor(safeColor);
 
     return {
+        colorScheme: appearance,
+        fontFamily: '"Inter", ui-sans-serif, system-ui, sans-serif',
         '--app-primary': safeColor,
         '--app-primary-foreground': primaryForeground,
-        '--app-shadow': `${safeColor}38`,
+        '--app-shadow': dark ? 'transparent' : `${safeColor}38`,
         '--app-ink': foreground,
         '--app-soft': soft,
         '--app-soft-strong': softStrong,
         '--background': surface,
         '--foreground': foreground,
-        '--card': '#ffffff',
+        '--card': card,
         '--card-foreground': foreground,
-        '--popover': '#ffffff',
+        '--popover': card,
         '--popover-foreground': foreground,
         '--primary': safeColor,
         '--primary-foreground': primaryForeground,
         '--secondary': soft,
         '--secondary-foreground': foreground,
-        '--muted': '#f8ede9',
-        '--muted-foreground': '#756d6a',
+        '--muted': muted,
+        '--muted-foreground': mutedForeground,
         '--accent': softStrong,
         '--accent-foreground': foreground,
         '--border': border,
-        '--input': mix(safeColor, '#ffffff', 0.68),
+        '--input': input,
         '--ring': safeColor,
         '--sidebar': surface,
         '--sidebar-foreground': foreground,
@@ -70,6 +86,34 @@ export function storeThemeVariables(color = '#ee4d2d'): CSSProperties {
         '--sidebar-accent-foreground': foreground,
         '--sidebar-border': border,
         '--sidebar-ring': safeColor,
+        // Tailwind's generated utilities read --color-* tokens. Defining the
+        // aliases at the customer boundary keeps the public/landing palette
+        // untouched while making shared semantic components store-aware.
+        '--color-background': surface,
+        '--color-foreground': foreground,
+        '--color-card': card,
+        '--color-card-foreground': foreground,
+        '--color-popover': card,
+        '--color-popover-foreground': foreground,
+        '--color-primary': safeColor,
+        '--color-primary-foreground': primaryForeground,
+        '--color-secondary': soft,
+        '--color-secondary-foreground': foreground,
+        '--color-muted': muted,
+        '--color-muted-foreground': mutedForeground,
+        '--color-accent': softStrong,
+        '--color-accent-foreground': foreground,
+        '--color-border': border,
+        '--color-input': input,
+        '--color-ring': safeColor,
+        '--color-sidebar': surface,
+        '--color-sidebar-foreground': foreground,
+        '--color-sidebar-primary': safeColor,
+        '--color-sidebar-primary-foreground': primaryForeground,
+        '--color-sidebar-accent': soft,
+        '--color-sidebar-accent-foreground': foreground,
+        '--color-sidebar-border': border,
+        '--color-sidebar-ring': safeColor,
         '--workspace-50': mix(safeColor, '#ffffff', 0.94),
         '--workspace-100': mix(safeColor, '#ffffff', 0.88),
         '--workspace-200': mix(safeColor, '#ffffff', 0.74),
@@ -91,6 +135,14 @@ export function previewStoreTheme(color: string) {
         return;
     }
 
-    const variables = storeThemeVariables(color) as Record<string, string>;
-    Object.entries(variables).forEach(([name, value]) => workspace.style.setProperty(name, value));
+    const variables = storeThemeVariables(color, document.documentElement.classList.contains('dark') ? 'dark' : 'light') as Record<
+        string,
+        string
+    >;
+    Object.entries(variables).forEach(([name, value]) =>
+        workspace.style.setProperty(
+            name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
+            value,
+        ),
+    );
 }

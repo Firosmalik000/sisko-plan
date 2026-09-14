@@ -14,7 +14,7 @@ class StockIdentity implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! is_string($value)) {
-            $fail(__('Produk persediaan tidak valid.'));
+            $fail(__('The inventory product is invalid.'));
 
             return;
         }
@@ -25,7 +25,7 @@ class StockIdentity implements ValidationRule
                 ->whereHas('product', fn ($query) => $query->where('variant_mode', 'separate'))->exists();
 
         if (! $exists) {
-            $fail(__('Produk persediaan tidak ditemukan pada toko aktif.'));
+            $fail(__('The inventory product was not found in the active store.'));
         }
     }
 }

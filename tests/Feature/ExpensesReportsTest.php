@@ -108,7 +108,7 @@ class ExpensesReportsTest extends TestCase
         $this->actingAs($cashier)->withSession($session)->get(route('expenses.index'))->assertForbidden();
         $this->actingAs($cashier)->withSession($session)->get(route('reports.index'))->assertForbidden();
         $this->actingAs($cashier)->withSession($session)->get(route('dashboard'))->assertInertia(fn (Assert $page) => $page
-            ->component('customer/dashboard')->where('canViewBusinessPosition', false)->missing('performance')->missing('position')->missing('lowStock'));
+            ->component('customer/dashboard/index')->where('canViewBusinessPosition', false)->missing('performance')->missing('position')->missing('lowStock'));
 
         $this->actingAs($owner)->withSession($session)->post(route('expenses.store'), [
             'category_id' => $foreignCategory->public_id, 'account_id' => $foreignCash->public_id, 'amount' => '10',
@@ -142,7 +142,7 @@ class ExpensesReportsTest extends TestCase
         $session = ['active_store_id' => $store->id];
 
         $this->actingAs($owner)->withSession($session)->get(route('dashboard'))
-            ->assertInertia(fn (Assert $page) => $page->component('customer/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('customer/dashboard/index')
                 ->where('canViewBusinessPosition', true)
                 ->where('performance.net_revenue', '3000.0000')
                 ->where('performance.net_cogs', '1500.0000')
@@ -155,10 +155,14 @@ class ExpensesReportsTest extends TestCase
                 ->where('position.low_stock_count', 1)
                 ->where('transactions', 1)
                 ->where('period.key', 'month')
-                ->where('comparison.previous_net_revenue', '0.0000')
+                ->missing('monthLabel')
+                ->where('comparison.direction', 'up')
+                ->where('comparison.percentage', null)
                 ->has('salesTrend', 8)
+                ->where('salesTrend.6.transactions', 1)
                 ->has('topProducts', 1)
                 ->where('topProducts.0.product_name', $soldProductName)
+                ->where('topProducts.0.net_quantity_sold', '3.000000')
                 ->where('topProducts.0.net_revenue', '3000.0000')
                 ->has('categorySales', 1)
                 ->where('categorySales.0.category_name', 'Tanpa Kategori')
@@ -166,7 +170,7 @@ class ExpensesReportsTest extends TestCase
                 ->has('lowStock', 1));
 
         $this->actingAs($owner)->withSession($session)->get(route('dashboard', ['period' => 'day']))
-            ->assertInertia(fn (Assert $page) => $page->component('customer/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('customer/dashboard/index')
                 ->where('period.key', 'day')
                 ->where('performance.net_revenue', '0.0000')
                 ->where('transactions', 0)

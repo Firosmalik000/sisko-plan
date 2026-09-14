@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Store;
 use App\Models\User;
+use App\Support\LocaleContext;
 use App\Support\MarketplaceCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,7 @@ final class NativeReceiptController extends Controller
     public function __invoke(Request $request, Sale $sale): JsonResponse
     {
         $locale = $request->string('locale')->toString();
-        if (in_array($locale, ['id', 'en', 'ms', 'vi'], true)) {
+        if (in_array($locale, LocaleContext::allowedLocales($request), true)) {
             app()->setLocale($locale);
         }
 
@@ -54,8 +55,8 @@ final class NativeReceiptController extends Controller
             'receipt' => [
                 'store_name' => $store->name,
                 'address' => $settings->address,
-                'header' => $settings->receipt_header ?? __('Bukti penjualan'),
-                'footer' => $settings->receipt_footer ?? __('Terima kasih. Simpan struk ini untuk referensi retur.'),
+                'header' => $settings->receipt_header ?? __('Sales receipt'),
+                'footer' => $settings->receipt_footer ?? __('Thank you. Keep this receipt as a reference for returns.'),
                 'paper_size' => $settings->receipt_paper_size ?? '58mm',
                 'show_address' => $settings->receipt_show_address ?? true,
                 'show_cashier' => $settings->receipt_show_cashier ?? true,

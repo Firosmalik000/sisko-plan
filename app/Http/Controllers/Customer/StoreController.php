@@ -15,6 +15,7 @@ use App\Models\Store;
 use App\Services\Stores\StoreCountryChange;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedUser;
+use App\Support\LocaleContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -66,7 +67,10 @@ class StoreController extends Controller
             return to_route('stores.index');
         }
 
-        $countries = Country::query()->with('currency')->where('is_active', true)->orderBy('name_id')->get()
+        $marketPriority = array_flip(array_keys(config('localization.countries', [])));
+        $countries = Country::query()->with('currency')->where('is_active', true)->orderBy('name')->get()
+            ->sortBy(fn (Country $country): array => [$marketPriority[$country->code] ?? PHP_INT_MAX, $country->name])
+            ->values()
             ->map(fn (Country $country): array => [
                 'code' => $country->code,
                 'name' => $country->localizedName(),
@@ -75,14 +79,17 @@ class StoreController extends Controller
                     'name' => $country->currency->name,
                     'symbol' => $country->currency->symbol,
                 ],
+                'default_timezone' => $country->default_timezone,
+                'timezones' => $country->timezones(),
             ]);
-        $preferredCountry = $request->session()->get('market') === 'ms' ? 'MY' : 'ID';
+        $preferredCountry = LocaleContext::market($request);
+        $defaultCountry = $countries->contains('code', $preferredCountry)
+            ? $preferredCountry
+            : ($countries->firstWhere('code', 'ID')['code'] ?? $countries->first()['code'] ?? '');
 
         return Inertia::render('customer/stores/create', [
             'countries' => $countries,
-            'defaultCountry' => $countries->contains('code', $preferredCountry)
-                ? $preferredCountry
-                : $countries->first()['code'] ?? '',
+            'defaultCountry' => $defaultCountry,
         ]);
     }
 
@@ -94,6 +101,7 @@ class StoreController extends Controller
             $request->ip(),
             $request->validated('country'),
             $request->validated('address'),
+            $request->validated('timezone'),
         );
         $request->session()->put('active_store_id', $store->id);
 
@@ -108,17 +116,22 @@ class StoreController extends Controller
 
         $store->load(['country.currency', 'settings', 'users' => fn ($query) => $query->orderBy('name')]);
         $storeCurrency = Currency::query()->find($store->settings->currency ?? $store->country->currency_code);
+        $marketPriority = array_flip(array_keys(config('localization.countries', [])));
         $countries = Country::query()
             ->with('currency')
             ->where(fn ($query) => $query->where('is_active', true)->orWhereKey($store->country_id))
-            ->orderBy('name_id')
+            ->orderBy('name')
             ->get()
+            ->sortBy(fn (Country $country): array => [$marketPriority[$country->code] ?? PHP_INT_MAX, $country->name])
+            ->values()
             ->map(fn (Country $country): array => [
                 'code' => $country->code,
                 'name' => $country->localizedName(),
                 'currency_code' => $country->currency_code,
                 'currency_symbol' => $country->currency->symbol,
                 'is_active' => $country->is_active,
+                'default_timezone' => $country->default_timezone,
+                'timezones' => $country->timezones(),
             ]);
 
         return Inertia::render('customer/stores/show', [
@@ -133,6 +146,7 @@ class StoreController extends Controller
                 'currency_code' => $store->settings->currency ?? $store->country->currency_code,
                 'currency_symbol' => $storeCurrency?->symbol,
                 'address' => $store->settings?->address,
+                'timezone' => $store->settings->timezone ?? $store->country?->default_timezone,
                 'can_manage' => AuthenticatedUser::get(request())->can('update', $store),
                 'can_archive' => AuthenticatedUser::get(request())->can('archive', $store),
                 'can_restore' => AuthenticatedUser::get(request())->can('restore', $store),
@@ -164,12 +178,16 @@ class StoreController extends Controller
             $before = [
                 ...$lockedStore->only(['name', 'country_id']),
                 'address' => $lockedStore->settings?->address,
+                'timezone' => $lockedStore->settings?->timezone,
             ];
             $lockedStore->name = $request->validated('name');
 
             $settings = [];
             if ($request->has('address')) {
                 $settings['address'] = $request->validated('address');
+            }
+            if ($request->has('timezone')) {
+                $settings['timezone'] = $request->validated('timezone');
             }
 
             $countryCode = $request->validated('country');
@@ -178,6 +196,7 @@ class StoreController extends Controller
                 $country = Country::query()->with('currency')->where('code', $countryCode)->where('is_active', true)->sharedLock()->firstOrFail();
                 $lockedStore->country()->associate($country);
                 $settings['currency'] = $country->currency_code;
+                $settings['timezone'] = $request->validated('timezone') ?? $country->default_timezone;
             }
 
             $lockedStore->save();
@@ -189,6 +208,7 @@ class StoreController extends Controller
                 'after' => [
                     ...$lockedStore->only(['name', 'country_id']),
                     'address' => $storeSettings?->address,
+                    'timezone' => $storeSettings?->timezone,
                 ],
             ]);
         });

@@ -41,16 +41,16 @@ export default function PlatformAdmins({
 
     return (
         <>
-            <Head title="Admin Platform" />
+            <Head title="Platform Admin" />
             <div className="platform-enter mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">Admin Platform</h1>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">{admins.length} akun terdaftar</p>
+                    <h1 className="text-3xl font-black tracking-tight text-[#3b211b]">Platform Admin</h1>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">{admins.length} account registered</p>
                 </div>
                 {can_manage && (
                     <Button className="min-h-11 bg-[#d83f22] px-4 text-white hover:bg-[#b83219]" onClick={() => setCreateOpen(true)}>
                         <Plus className="size-4" />
-                        Tambah admin
+                        Add admin
                     </Button>
                 )}
             </div>
@@ -62,10 +62,10 @@ export default function PlatformAdmins({
                             <tr>
                                 <PlatformTableLeadHeader />
                                 <th className="px-4 py-3">Admin</th>
-                                <th className="px-4 py-3">Peran</th>
+                                <th className="px-4 py-3">Roles</th>
                                 <th className="px-4 py-3">2FA</th>
-                                <th className="px-4 py-3">Login terakhir</th>
-                                <th className="px-4 py-3">Akses</th>
+                                <th className="px-4 py-3">Login last</th>
+                                <th className="px-4 py-3">Access</th>
                                 <th className="px-4 py-3">Status</th>
                             </tr>
                         </thead>
@@ -118,18 +118,20 @@ export default function PlatformAdmins({
                                     </td>
                                     <td className="px-4 py-3">
                                         {admin.role === 'super_admin' ? (
-                                            <span className="text-xs font-bold text-emerald-700">Akses penuh</span>
+                                            <span className="text-xs font-bold text-emerald-700">Access full</span>
                                         ) : can_manage ? (
                                             <PermissionDialog admin={admin} groups={permission_groups} />
                                         ) : (
-                                            <span className="text-xs font-semibold text-slate-500">{admin.permissions.length} izin</span>
+                                            <span className="text-xs font-semibold text-slate-500">
+                                                {admin.permissions.length} permission
+                                            </span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
                                         <span
                                             className={`text-xs font-semibold ${admin.is_active ? 'text-emerald-700' : 'text-slate-500'}`}
                                         >
-                                            {admin.is_active ? (admin.id === platformAdmin.id ? 'Akun Anda' : 'Aktif') : 'Nonaktif'}
+                                            {admin.is_active ? (admin.id === platformAdmin.id ? 'Your account' : 'Active') : 'Inactive'}
                                         </span>
                                     </td>
                                 </tr>
@@ -149,29 +151,31 @@ function AddAdminDialog({ open, setOpen }: { open: boolean; setOpen: (open: bool
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="w-[calc(100%-1rem)] gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-md">
                 <DialogHeader className="border-b border-slate-200 px-4 py-4 pr-12 text-left sm:px-5">
-                    <DialogTitle className="text-lg font-black text-[#3b211b]">Tambah admin platform</DialogTitle>
-                    <DialogDescription className="text-sm text-slate-500">Akun baru memperoleh izin operasional standar.</DialogDescription>
+                    <DialogTitle className="text-lg font-black text-[#3b211b]">Add admin platform</DialogTitle>
+                    <DialogDescription className="text-sm text-slate-500">
+                        Account new receives permission operations standard.
+                    </DialogDescription>
                 </DialogHeader>
                 <Form action="/super-admin/platform-admins" method="post" resetOnSuccess onSuccess={() => setOpen(false)}>
                     {({ processing, errors }) => (
                         <>
                             <div className="grid gap-4 px-4 py-5 sm:px-5">
-                                <Field label="Nama lengkap" error={errors.name}>
+                                <Field label="Full name" error={errors.name}>
                                     <Input name="name" required autoFocus autoComplete="name" />
                                 </Field>
                                 <Field label="Email" error={errors.email}>
                                     <Input name="email" type="email" required autoComplete="email" />
                                 </Field>
-                                <Field label="Kata sandi awal" error={errors.password}>
+                                <Field label="Password opening" error={errors.password}>
                                     <Input name="password" type="password" required minLength={12} autoComplete="new-password" />
                                 </Field>
                             </div>
                             <DialogFooter className="border-t border-slate-200 px-4 py-3 sm:px-5">
                                 <Button type="button" variant="outline" disabled={processing} onClick={() => setOpen(false)}>
-                                    Batal
+                                    Cancel
                                 </Button>
                                 <Button className="bg-[#d83f22] text-white hover:bg-[#b83219]" disabled={processing}>
-                                    {processing ? 'Menambahkan...' : 'Tambah admin'}
+                                    {processing ? 'Adding...' : 'Add admin'}
                                 </Button>
                             </DialogFooter>
                         </>
@@ -207,11 +211,11 @@ function PermissionDialog({ admin, groups }: { admin: AdminItem; groups: Permiss
                 onClick={() => setOpen(true)}
             >
                 <KeyRound className="size-3.5" />
-                {admin.permissions.length} izin
+                {admin.permissions.length} permission
             </button>
             <DialogContent className="flex max-h-[92svh] w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-2xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-2xl">
                 <DialogHeader className="border-b border-slate-200 px-4 py-4 pr-12 text-left sm:px-5">
-                    <DialogTitle className="text-lg font-black text-[#3b211b]">Akses {admin.name}</DialogTitle>
+                    <DialogTitle className="text-lg font-black text-[#3b211b]">Access {admin.name}</DialogTitle>
                 </DialogHeader>
                 <form
                     onSubmit={(event) => {
@@ -251,10 +255,10 @@ function PermissionDialog({ admin, groups }: { admin: AdminItem; groups: Permiss
                     </div>
                     <DialogFooter className="border-t border-slate-200 px-4 py-3 sm:px-5">
                         <Button type="button" variant="outline" onClick={close}>
-                            Batal
+                            Cancel
                         </Button>
                         <Button className="bg-[#d83f22] text-white hover:bg-[#b83219]" disabled={form.processing}>
-                            {form.processing ? 'Menyimpan...' : 'Simpan akses'}
+                            {form.processing ? 'Saving...' : 'Save access'}
                         </Button>
                     </DialogFooter>
                 </form>

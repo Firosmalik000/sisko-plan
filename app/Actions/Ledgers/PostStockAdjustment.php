@@ -31,7 +31,7 @@ class PostStockAdjustment
                     return $existing;
                 }
                 if (! in_array($type, ['opening', 'increase', 'decrease', 'damaged', 'lost', 'opname_in', 'opname_out'], true)) {
-                    throw ValidationException::withMessages(['type' => __('Jenis penyesuaian stok tidak valid.')]);
+                    throw ValidationException::withMessages(['type' => __('The stock adjustment type is invalid.')]);
                 }
                 $document = StockAdjustment::create([
                     'store_id' => $store->id, 'stock_count_id' => $stockCountId,
@@ -46,7 +46,7 @@ class PostStockAdjustment
                 };
                 foreach ($items as $item) {
                     if (Decimal::compare($item['quantity'], '0', Decimal::QUANTITY_SCALE) <= 0) {
-                        throw ValidationException::withMessages(['items' => 'Kuantitas harus lebih besar dari nol.']);
+                        throw ValidationException::withMessages(['items' => __('The quantity must be greater than zero.')]);
                     }
                     Product::query()->where(['id' => $item['product_id'], 'store_id' => $store->id])->firstOrFail();
                     if (isset($item['product_variant_id'])) {

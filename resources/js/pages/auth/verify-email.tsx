@@ -12,11 +12,11 @@ export default function VerifyEmail({ status }: { status?: string }) {
 
     return (
         <>
-            <Head title={t('Verifikasi email')} />
+            <Head title={t('Email verification')} />
 
             {status === 'verification-link-sent' && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {t('Tautan verifikasi baru telah dikirim ke alamat email yang Anda gunakan saat mendaftar.')}
+                    {t('A new verification link has been sent to the email address you used to register.')}
                 </div>
             )}
 
@@ -25,11 +25,11 @@ export default function VerifyEmail({ status }: { status?: string }) {
                     <>
                         <Button disabled={processing} variant="secondary">
                             {processing && <Spinner />}
-                            {t('Kirim ulang email verifikasi')}
+                            {t('Resend verification email')}
                         </Button>
 
                         <TextLink href={logout()} className="mx-auto block text-sm">
-                            {t('Keluar')}
+                            {t('Sign out')}
                         </TextLink>
                     </>
                 )}

@@ -13,3 +13,9 @@ Use this file only as a compact project status board. Detailed progress belongs 
 | 6 | Not started | | |
 | 7 | Not started | | |
 | 8 | Not started | | |
+
+## Customer UI/UX
+
+| Pekerjaan | Status | Plan |
+|---|---|---|
+| Redesign customer | PLANNED: bangun ulang frontend mengikuti prototype; mulai M1 fondasi + Beranda + Produk. Belum ada milestone selesai. | [Plan customer](docs/superpowers/plans/2026-09-08-customer-ui-redesign.md) |

@@ -43,7 +43,7 @@ class CreatePlatformAdmin extends Command
             'status' => UserStatus::Active,
         ]);
 
-        $this->info('Super Admin berhasil dibuat.');
+        $this->info('Super Admin created successfully.');
 
         return self::SUCCESS;
     }

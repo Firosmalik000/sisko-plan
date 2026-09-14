@@ -99,7 +99,7 @@ class StoreSaleRequest extends SaleRequest
         return [function (Validator $validator): void {
             if ($this->input('sales_channel') === 'marketplace') {
                 if ($this->input('payment_method') !== 'marketplace') {
-                    $validator->errors()->add('payment_method', __('Transaksi marketplace harus masuk ke saldo marketplace.'));
+                    $validator->errors()->add('payment_method', __('Marketplace sales must be posted to the marketplace balance.'));
                 }
 
                 return;
@@ -124,7 +124,7 @@ class StoreSaleRequest extends SaleRequest
             );
 
             if (! $valid) {
-                $validator->errors()->add('payment_method', __('Metode bayar tidak sesuai dengan akun penerimaan.'));
+                $validator->errors()->add('payment_method', __('The payment method does not match the receiving account.'));
             }
         }];
     }
@@ -133,10 +133,10 @@ class StoreSaleRequest extends SaleRequest
     public function messages(): array
     {
         return [
-            'customer_name.required_with' => __('Nama pelanggan dan nomor telepon harus diisi bersama.'),
-            'customer_phone.required_with' => __('Nama pelanggan dan nomor telepon harus diisi bersama.'),
-            'customer_phone.regex' => __('Nomor telepon pelanggan tidak valid.'),
-            'customer_email.email' => __('Email pelanggan tidak valid.'),
+            'customer_name.required_with' => __('Customer name and phone number must be provided together.'),
+            'customer_phone.required_with' => __('Customer name and phone number must be provided together.'),
+            'customer_phone.regex' => __('The customer phone number is invalid.'),
+            'customer_email.email' => __('The customer email address is invalid.'),
         ];
     }
 

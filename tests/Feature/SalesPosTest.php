@@ -594,6 +594,28 @@ class SalesPosTest extends TestCase
         }
     }
 
+    public function test_country_without_configured_payment_integrations_gets_cash_and_other_marketplace_only(): void
+    {
+        [$owner, $store] = $this->fixtures();
+        $store->update(['country_id' => Country::query()->where('code', 'SG')->valueOrFail('id')]);
+        $store->unsetRelation('country');
+
+        $this->actingAs($owner)
+            ->withSession(['active_store_id' => $store->id])
+            ->get(route('pos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('paymentMethods', 1)
+                ->where('paymentMethods.0.method', 'cash')
+                ->has('marketplaces', 1)
+                ->where('marketplaces.0.code', 'other'));
+
+        $this->assertNull(PaymentMethodCatalog::qrForCountry('SG'));
+        $this->assertDatabaseMissing('financial_accounts', [
+            'store_id' => $store->id,
+            'payment_code' => 'qr_payment',
+        ]);
+    }
+
     public function test_country_payment_compatibility_rejects_every_foreign_catalog_combination(): void
     {
         $countries = [
@@ -740,9 +762,8 @@ class SalesPosTest extends TestCase
             }
         }
 
-        $defaultQrCode = PaymentMethodCatalog::qrForCountry('ZZ')['code'];
-        $this->assertNotContains($defaultQrCode, $qrCodes);
-        $this->assertSame([...$qrCodes, $defaultQrCode], PaymentMethodCatalog::qrCodes());
+        $this->assertNull(PaymentMethodCatalog::qrForCountry('ZZ'));
+        $this->assertSame($qrCodes, PaymentMethodCatalog::qrCodes());
         $this->assertSame($walletCodes, PaymentMethodCatalog::walletCodes());
         $this->assertSame([], array_intersect($qrCodes, $walletCodes));
     }
@@ -1318,7 +1339,7 @@ class SalesPosTest extends TestCase
         [$owner, $store, $product, $cash] = $this->fixtures();
         $this->openStock($store, $owner, $product, '5', '500');
         $sale = $this->postSale($store, $owner, $product, $cash);
-        $session = ['active_store_id' => $store->id, 'market' => 'ms', 'locale' => 'ms'];
+        $session = ['active_store_id' => $store->id, 'market' => 'MY', 'locale' => 'ms'];
 
         $this->actingAs($owner)->withSession($session)->get(route('sales.show', $sale))
             ->assertInertia(fn (Assert $page) => $page
@@ -1331,7 +1352,7 @@ class SalesPosTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->withSession(['active_store_id' => $store->id, 'market' => 'id', 'locale' => 'en'])
+            ->withSession(['active_store_id' => $store->id, 'market' => 'ID', 'locale' => 'en'])
             ->get(route('sales.show', $sale))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('receipt.header', 'My Store Receipt')

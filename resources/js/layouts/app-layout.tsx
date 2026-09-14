@@ -1,13 +1,13 @@
 import { usePage } from '@inertiajs/react';
 import { AppOpenPromotion } from '@/components/app-open-promotion';
-import AppLayoutTemplate from '@/layouts/app/app-mobile-layout';
+import CustomerLayout from '@/layouts/customer/customer-layout';
 import { applyStoreCurrency } from '@/lib/currency';
 import type { MarketCode } from '@/lib/currency';
 import { useTranslation } from '@/lib/i18n';
 import type { AppOpenPromotion as AppOpenPromotionData } from '@/lib/promotions';
 import type { BreadcrumbItem, StoreSummary } from '@/types';
 
-export default function AppLayout({ breadcrumbs = [], children }: { breadcrumbs?: BreadcrumbItem[]; children: React.ReactNode }) {
+export default function AppLayout({ children }: { breadcrumbs?: BreadcrumbItem[]; children: React.ReactNode }) {
     useTranslation();
     const { activeStore, market, appOpenPromotions } = usePage<{
         activeStore: StoreSummary | null;
@@ -20,9 +20,7 @@ export default function AppLayout({ breadcrumbs = [], children }: { breadcrumbs?
 
     return (
         <>
-            <AppLayoutTemplate key={activeStore?.public_id ?? 'no-store'} breadcrumbs={breadcrumbs}>
-                {children}
-            </AppLayoutTemplate>
+            <CustomerLayout key={activeStore?.public_id ?? 'no-store'}>{children}</CustomerLayout>
             <AppOpenPromotion promotions={appOpenPromotions ?? []} />
         </>
     );

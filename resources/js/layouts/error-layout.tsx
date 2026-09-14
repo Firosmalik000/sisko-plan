@@ -15,7 +15,7 @@ export default function ErrorLayout({ children }: { children: React.ReactNode })
                     <Link
                         href={homeUrl}
                         className="inline-flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#d7a941] focus-visible:ring-offset-4"
-                        aria-label={`${appName}, beranda`}
+                        aria-label={`${appName}, home`}
                     >
                         <span className="flex size-9 items-center justify-center rounded-lg bg-[#0b292f] text-[#e7bd52]">
                             <BrandMark logoUrl={branding.logo_url} className="size-full rounded-lg object-contain" />

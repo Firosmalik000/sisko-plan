@@ -26,13 +26,13 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
 
     return (
         <>
-            <Head title={t('Masuk')} />
+            <Head title={t('Sign in')} />
 
             {oauthError && <InputError message={t(oauthError)} className="mb-4 text-center" />}
 
             {googleAuthEnabled && (
                 <>
-                    <GoogleAuthButton label={t('Masuk dengan Google')} />
+                    <GoogleAuthButton label={t('Sign in with Google')} />
                     <AuthDivider />
                 </>
             )}
@@ -42,7 +42,7 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                     <>
                         <div className="grid gap-5">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">{t('Alamat email')}</Label>
+                                <Label htmlFor="email">{t('Email address')}</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -59,10 +59,10 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">{t('Kata sandi')}</Label>
+                                    <Label htmlFor="password">{t('Password')}</Label>
                                     {canResetPassword && (
                                         <TextLink href={request()} className="ml-auto text-sm" tabIndex={5}>
-                                            {t('Lupa kata sandi?')}
+                                            {t('Forgot password?')}
                                         </TextLink>
                                     )}
                                 </div>
@@ -72,7 +72,7 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                     required
                                     tabIndex={2}
                                     autoComplete="current-password"
-                                    placeholder={t('Kata sandi')}
+                                    placeholder={t('Password')}
                                     className="h-12 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-4 shadow-none focus:border-[#ee4d2d] focus:ring-[#ee4d2d]/20"
                                 />
                                 <InputError message={errors.password} />
@@ -80,7 +80,7 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
 
                             <div className="flex items-center space-x-3">
                                 <Checkbox id="remember" name="remember" tabIndex={3} />
-                                <Label htmlFor="remember">{t('Ingat saya')}</Label>
+                                <Label htmlFor="remember">{t('Remember me')}</Label>
                             </div>
 
                             <Button
@@ -91,14 +91,14 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                 data-test="login-button"
                             >
                                 {processing && <Spinner />}
-                                {t('Masuk')}
+                                {t('Sign in')}
                             </Button>
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            {t('Belum memiliki akun?')}{' '}
+                            {t("Don't have an account yet?")}{' '}
                             <TextLink href={register()} tabIndex={5}>
-                                {t('Daftar')}
+                                {t('Register')}
                             </TextLink>
                         </div>
                     </>
@@ -111,6 +111,6 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
 }
 
 Login.layout = {
-    title: 'Masuk ke akun Anda',
-    description: 'Gunakan Google atau email Anda',
+    title: 'Sign in to your account',
+    description: 'Use Google or your email',
 };

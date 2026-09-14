@@ -1,19 +1,19 @@
-import { malayCore } from './common';
-import { malayOverrides as malayCustomerReferralCatalog } from './customer-referral';
-import { malayDynamicCatalog } from './dynamic';
-import { malayProductCatalog } from './product';
-import { malayOverrides as malayPromotionCatalog } from './promotion';
-import { landingMalayOverrides } from './public';
-import { malayOverrides as malayReferralCatalog } from './referral';
-import { reviewedMalayOverrides } from './reviewed';
+import { msAuthCatalog } from './auth';
+import { msCustomerCatalog } from './customer';
+import { malayOverrides as msCustomerReferralCatalog } from './customer-referral';
+import { msPlatformCatalog } from './platform';
+import { malayOverrides as msPromotionCatalog } from './promotion';
+import { msPublicCatalog } from './public';
+import { malayOverrides as msReferralCatalog } from './referral';
+import { msSharedCatalog } from './shared';
 
 export const malayCatalog: Record<string, string> = {
-    ...malayCore,
-    ...reviewedMalayOverrides,
-    ...landingMalayOverrides,
-    ...malayProductCatalog,
-    ...malayDynamicCatalog,
-    ...malayCustomerReferralCatalog,
-    ...malayReferralCatalog,
-    ...malayPromotionCatalog,
+    ...msAuthCatalog,
+    ...msCustomerCatalog,
+    ...msPlatformCatalog,
+    ...msPublicCatalog,
+    ...msSharedCatalog,
+    ...msCustomerReferralCatalog,
+    ...msReferralCatalog,
+    ...msPromotionCatalog,
 };

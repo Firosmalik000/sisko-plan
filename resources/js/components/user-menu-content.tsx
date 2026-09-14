@@ -49,7 +49,7 @@ export function UserMenuContent({ user }: Props) {
                     data-test="logout-button"
                 >
                     <LogOut className="mr-2" />
-                    {impersonation ? 'Kembali ke Super Admin' : 'Log out'}
+                    {impersonation ? 'Back to Super Admin' : 'Log out'}
                 </Link>
             </DropdownMenuItem>
         </>

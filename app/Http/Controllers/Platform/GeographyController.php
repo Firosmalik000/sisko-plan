@@ -21,7 +21,7 @@ class GeographyController extends Controller
     public function index(Request $request): Response
     {
         return Inertia::render('platform/geography/index', [
-            'countries' => Country::query()->with('currency')->withCount('stores')->orderBy('name_id')->get(),
+            'countries' => Country::query()->with('currency')->withCount('stores')->orderBy('name')->get(),
             'currencies' => Currency::query()->withCount('countries')->orderBy('code')->get(),
             'can_manage' => AuthenticatedPlatformAdmin::get($request)->can(PlatformPermission::GEOGRAPHY_MANAGE),
         ]);
@@ -31,10 +31,9 @@ class GeographyController extends Controller
     {
         $validated = $request->validate([
             'code' => ['required', 'string', 'size:2', 'alpha', 'uppercase', 'unique:countries,code'],
-            'name_id' => ['required', 'string', 'max:100'],
-            'name_ms' => ['required', 'string', 'max:100'],
-            'name_en' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100'],
             'currency_code' => ['required', Rule::exists('currencies', 'code')->where('is_active', true)],
+            'default_timezone' => ['required', 'string', Rule::in(timezone_identifiers_list())],
         ]);
         $admin = AuthenticatedPlatformAdmin::get($request);
         DB::transaction(function () use ($validated, $audit, $admin, $request): void {
@@ -77,10 +76,9 @@ class GeographyController extends Controller
     public function updateCountry(Request $request, Country $country, RecordAdminAudit $audit): RedirectResponse
     {
         $validated = $request->validate([
-            'name_id' => ['required', 'string', 'max:100'],
-            'name_ms' => ['required', 'string', 'max:100'],
-            'name_en' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100'],
             'currency_code' => ['required', Rule::exists('currencies', 'code')->where('is_active', true)],
+            'default_timezone' => ['required', 'string', Rule::in(timezone_identifiers_list())],
             'is_active' => ['required', 'boolean'],
         ]);
         $admin = AuthenticatedPlatformAdmin::get($request);
@@ -101,7 +99,7 @@ class GeographyController extends Controller
                 ]);
             }
 
-            $before = $lockedCountry->only(['name_id', 'name_ms', 'name_en', 'currency_code', 'is_active']);
+            $before = $lockedCountry->only(['name', 'currency_code', 'default_timezone', 'is_active']);
             $lockedCountry->update($validated);
             $audit->handle($admin, 'country.updated', $lockedCountry, $request->ip(), [
                 'before' => $before,
@@ -130,7 +128,7 @@ class GeographyController extends Controller
             $countries = Country::query()->where('currency_code', $currency->code)->lockForUpdate()->get();
             if (! $validated['is_active'] && $countries->contains('is_active', true)) {
                 throw ValidationException::withMessages([
-                    'is_active' => __('Currency masih digunakan oleh negara aktif.'),
+                    'is_active' => __('The currency is still used by an active country.'),
                 ]);
             }
 

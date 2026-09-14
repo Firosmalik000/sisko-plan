@@ -150,7 +150,7 @@ class ProductScannerController extends Controller
             'status' => 'error',
             'code' => 'SCAN_LIMIT_REACHED',
             'retryable' => false,
-            'message' => __('Kuota :limit scan foto AI bulan ini sudah habis. Barcode tetap bisa digunakan.', [
+            'message' => __('This month\'s :limit photo scan quota for AI has run out.Barcodes can still be used.', [
                 'limit' => $exception->limit,
             ]),
             'used' => $exception->used,

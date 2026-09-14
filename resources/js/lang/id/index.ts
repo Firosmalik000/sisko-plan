@@ -1,13 +1,19 @@
-import { indonesianOverrides } from './application';
-import { indonesianCore } from './common';
-import { indonesianOverrides as indonesianCustomerReferralCatalog } from './customer-referral';
-import { indonesianOverrides as indonesianPromotionCatalog } from './promotion';
-import { indonesianOverrides as indonesianReferralCatalog } from './referral';
+import { idAuthCatalog } from './auth';
+import { idCustomerCatalog } from './customer';
+import { indonesianOverrides as idCustomerReferralCatalog } from './customer-referral';
+import { idPlatformCatalog } from './platform';
+import { indonesianOverrides as idPromotionCatalog } from './promotion';
+import { idPublicCatalog } from './public';
+import { indonesianOverrides as idReferralCatalog } from './referral';
+import { idSharedCatalog } from './shared';
 
 export const indonesianCatalog: Record<string, string> = {
-    ...indonesianCore,
-    ...indonesianOverrides,
-    ...indonesianCustomerReferralCatalog,
-    ...indonesianReferralCatalog,
-    ...indonesianPromotionCatalog,
+    ...idAuthCatalog,
+    ...idCustomerCatalog,
+    ...idPlatformCatalog,
+    ...idPublicCatalog,
+    ...idSharedCatalog,
+    ...idCustomerReferralCatalog,
+    ...idReferralCatalog,
+    ...idPromotionCatalog,
 };

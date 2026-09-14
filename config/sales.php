@@ -28,8 +28,6 @@ return [
             ['code' => 'other', 'label' => 'Marketplace lainnya'],
         ],
         'default' => [
-            ['code' => 'shopee', 'label' => 'Shopee'],
-            ['code' => 'lazada', 'label' => 'Lazada'],
             ['code' => 'other', 'label' => 'Marketplace lainnya'],
         ],
     ],
@@ -38,7 +36,6 @@ return [
         'MY' => ['code' => 'duitnow_qr', 'method' => 'qr_payment', 'label' => 'DuitNow QR'],
         'TH' => ['code' => 'promptpay_qr', 'method' => 'qr_payment', 'label' => 'PromptPay QR'],
         'VN' => ['code' => 'vietqr', 'method' => 'qr_payment', 'label' => 'VietQR'],
-        'default' => ['code' => 'qr_payment', 'method' => 'qr_payment', 'label' => 'Pembayaran QR'],
     ],
     'country_wallets' => [
         'MY' => [

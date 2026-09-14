@@ -53,7 +53,7 @@ class IdempotencyGuard
     {
         if (! hash_equals((string) $existing->getAttribute('request_hash'), $requestHash)) {
             throw ValidationException::withMessages([
-                'idempotency_key' => __('Kunci idempotency sudah digunakan untuk payload yang berbeda.'),
+                'idempotency_key' => __('The idempotency key has already been used for a different payload.'),
             ]);
         }
     }

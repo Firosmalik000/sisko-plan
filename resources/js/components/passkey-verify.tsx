@@ -39,7 +39,7 @@ export default function PasskeyVerify({ routes, label, loadingLabel, separator }
             <div className="grid gap-2">
                 <Button type="button" variant="outline" className="w-full" onClick={verify} disabled={isLoading}>
                     {isLoading ? <Spinner /> : <KeyRound className="h-4 w-4" />}
-                    {isLoading ? (loadingLabel ?? 'Authenticating...') : (label ?? 'Sign in with a passkey')}
+                    {isLoading ? (loadingLabel ?? 'Authenticating...') : (label ?? 'Sign in with a password')}
                 </Button>
                 {error && <InputError message={error} className="text-center" />}
             </div>
