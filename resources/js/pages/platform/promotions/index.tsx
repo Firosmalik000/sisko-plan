@@ -306,7 +306,7 @@ export default function PromotionsIndex({ promotions, filters, summary, can_mana
                                 error={form.errors.image}
                                 hint={
                                     form.data.placement === 'dashboard_banner'
-                                        ? 'Rekomendasi 1600 × 900 (16:9), minimum lebar 1280px.'
+                                        ? 'Rekomendasi 1920 × 480 (4:1). Letakkan konten utama di area tengah agar aman saat dipotong responsif.'
                                         : 'Rekomendasi 1080 × 1350 (4:5), minimum lebar 900px.'
                                 }
                             >

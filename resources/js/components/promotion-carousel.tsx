@@ -38,7 +38,7 @@ export function PromotionCarousel({ promotions }: { promotions: CustomerPromotio
     return (
         <section
             aria-label={t('Gambar promosi')}
-            className="group relative mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-[var(--app-ink)]/10 bg-white shadow-sm"
+            className="group relative w-full overflow-hidden rounded-2xl border border-[var(--app-ink)]/10 bg-white shadow-sm"
             onPointerEnter={() => setPaused(true)}
             onPointerLeave={() => setPaused(false)}
             onFocusCapture={() => setPaused(true)}
@@ -70,7 +70,11 @@ export function PromotionCarousel({ promotions }: { promotions: CustomerPromotio
                         destination={promotion.destination_url}
                         className="block min-w-full snap-center"
                     >
-                        <img src={promotion.image_url} alt={promotion.name} className="aspect-video w-full bg-slate-50 object-contain" />
+                        <img
+                            src={promotion.image_url}
+                            alt={promotion.name}
+                            className="aspect-video w-full bg-slate-50 object-cover sm:aspect-auto sm:h-44 lg:h-52"
+                        />
                     </PromotionLink>
                 ))}
             </div>
@@ -93,7 +97,7 @@ export function PromotionCarousel({ promotions }: { promotions: CustomerPromotio
                         <ChevronRight className="size-5" />
                     </button>
                     <div
-                        className="absolute right-0 bottom-1.5 left-0 flex justify-center gap-1"
+                        className="absolute right-0 bottom-0 left-0 flex justify-center gap-1"
                         role="tablist"
                         aria-label={t('Pilih gambar promosi')}
                     >
@@ -105,7 +109,7 @@ export function PromotionCarousel({ promotions }: { promotions: CustomerPromotio
                                 aria-selected={active === index}
                                 aria-label={`${t('Gambar')} ${index + 1}`}
                                 onClick={() => goTo(index)}
-                                className="grid size-10 place-items-center rounded-full focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
+                                className="grid size-11 place-items-center rounded-full focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
                             >
                                 <span
                                     className={cn(
