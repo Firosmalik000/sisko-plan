@@ -22,21 +22,34 @@ class SelectSubscriptionPlan
         private SubscriptionPeriods $periods,
     ) {}
 
-    /** @return array{subscription:Subscription,period:SubscriptionPeriod,scheduled:bool} */
-    public function handle(User $owner, Plan $plan, ?string $ipAddress): array
+    /**
+     * @param  array<string, mixed>|null  $purchasedTerms
+     * @return array{subscription:Subscription,period:SubscriptionPeriod,scheduled:bool}
+     */
+    public function handle(User $owner, Plan $plan, ?string $ipAddress, ?array $purchasedTerms = null): array
     {
         $this->periods->syncForOwner($owner->id);
 
-        return DB::transaction(function () use ($owner, $plan, $ipAddress): array {
+        return DB::transaction(function () use ($owner, $plan, $ipAddress, $purchasedTerms): array {
             User::query()->whereKey($owner->id)->lockForUpdate()->firstOrFail();
             $subscription = Subscription::query()
                 ->with(['plan', 'store'])
                 ->where('user_id', $owner->id)
                 ->lockForUpdate()
                 ->first();
-            $selectedPlan = Plan::query()->whereKey($plan->id)->where('is_active', true)->lockForUpdate()->firstOrFail();
+            $planQuery = Plan::query()->whereKey($plan->id);
+            if ($purchasedTerms === null) {
+                $planQuery->where('is_active', true);
+            }
+            $selectedPlan = $planQuery->lockForUpdate()->firstOrFail();
+            $terms = $purchasedTerms ?? $selectedPlan->only([
+                'name', 'kind', 'billing_cycle', 'monthly_price', 'duration_months',
+                'max_stores', 'max_products', 'max_members', 'max_scans', 'is_trial',
+            ]);
+            $fulfillmentPlan = clone $selectedPlan;
+            $fulfillmentPlan->forceFill($terms);
 
-            if ($selectedPlan->kind !== Plan::KIND_BASE) {
+            if ($fulfillmentPlan->kind !== Plan::KIND_BASE) {
                 throw ValidationException::withMessages(['plan_id' => __('Penawaran ini bukan paket utama.')]);
             }
 
@@ -46,25 +59,25 @@ class SelectSubscriptionPlan
                 ]);
             }
             $operational = $this->access->blockedReason($subscription) === null;
-            if ($selectedPlan->is_trial && ($subscription->trial_used_at !== null || $subscription->trial_ends_at !== null)) {
+            if ($fulfillmentPlan->is_trial && ($subscription->trial_used_at !== null || $subscription->trial_ends_at !== null)) {
                 throw ValidationException::withMessages([
                     'plan_id' => 'Trial hanya dapat digunakan satu kali per akun.',
                 ]);
             }
-            if ($selectedPlan->is_trial && $operational) {
+            if ($fulfillmentPlan->is_trial && $operational) {
                 throw ValidationException::withMessages([
                     'plan_id' => 'Trial tidak dapat dijadwalkan saat subscription masih aktif.',
                 ]);
             }
 
-            $this->access->assertPlanCapacity($owner, $selectedPlan);
+            $this->access->assertPlanCapacity($owner, $fulfillmentPlan);
 
             $now = CarbonImmutable::now();
             $freeLifetimeUpgrade = $operational
                 && $subscription->plan->billing_cycle === Plan::BILLING_LIFETIME
                 && (float) $subscription->plan->monthly_price === 0.0
                 && $subscription->plan_id !== $selectedPlan->id;
-            $periodStart = $selectedPlan->is_trial || $freeLifetimeUpgrade
+            $periodStart = $fulfillmentPlan->is_trial || $freeLifetimeUpgrade
                 ? $now->startOfDay()
                 : $this->periods->nextAvailableStart($subscription);
             if ($periodStart === null) {
@@ -72,11 +85,11 @@ class SelectSubscriptionPlan
                     'plan_id' => 'Subscription tanpa batas periode tidak dapat diperpanjang.',
                 ]);
             }
-            $periodEnd = $selectedPlan->is_trial
+            $periodEnd = $fulfillmentPlan->is_trial
                 ? $periodStart->addDays(Plan::TRIAL_DAYS)
-                : ($selectedPlan->billing_cycle === Plan::BILLING_LIFETIME
+                : ($fulfillmentPlan->billing_cycle === Plan::BILLING_LIFETIME
                     ? null
-                    : $periodStart->addMonthsNoOverflow($selectedPlan->duration_months)->subDay());
+                    : $periodStart->addMonthsNoOverflow($fulfillmentPlan->duration_months)->subDay());
             $scheduled = $periodStart->isAfter($now->startOfDay());
             $before = $subscription->only([
                 'plan_id', 'status', 'starts_at', 'trial_ends_at', 'trial_used_at',
@@ -86,17 +99,16 @@ class SelectSubscriptionPlan
                 'subscription_id' => $subscription->id,
                 'user_id' => $owner->id,
                 'plan_id' => $selectedPlan->id,
-                'plan_name' => $selectedPlan->name,
-                'monthly_price' => $selectedPlan->monthly_price,
-                'duration_months' => $selectedPlan->duration_months,
-                'was_trial' => $selectedPlan->is_trial,
+                'plan_name' => $fulfillmentPlan->name,
+                'monthly_price' => $fulfillmentPlan->monthly_price,
+                'duration_months' => $fulfillmentPlan->duration_months,
+                'was_trial' => $fulfillmentPlan->is_trial,
                 'period_start' => $periodStart,
                 'period_end' => $periodEnd,
                 'source' => 'self_service',
                 'activated_at' => $scheduled ? null : $now,
                 'created_by_user_id' => $owner->id,
             ]);
-
             if (! $scheduled) {
                 if ($freeLifetimeUpgrade) {
                     $previousStart = $subscription->current_period_start?->toImmutable() ?? $periodStart;
@@ -112,7 +124,7 @@ class SelectSubscriptionPlan
                     'cancelled_at' => null,
                     'created_by_user_id' => $owner->id,
                 ];
-                if ($selectedPlan->is_trial) {
+                if ($fulfillmentPlan->is_trial) {
                     $attributes += [
                         'status' => SubscriptionStatus::Trialing,
                         'trial_ends_at' => $periodEnd,

@@ -9,6 +9,7 @@ import {
     LogOut,
     LockKeyhole,
     MapPinned,
+    Images,
     ReceiptText,
     UserCog,
     Users,
@@ -101,6 +102,12 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 href: '/super-admin/brand-seo',
                 icon: Globe2,
                 permission: 'platform.branding.view',
+            },
+            {
+                label: 'Konten & Promosi',
+                href: '/super-admin/promotions',
+                icon: Images,
+                permission: 'platform.promotions.view',
             },
             {
                 label: 'Admin platform',

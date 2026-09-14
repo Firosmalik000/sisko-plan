@@ -10,14 +10,14 @@ use App\Support\DecimalPercentage;
 
 class CreateReferralCommissionForPayment
 {
-    public function handle(SubscriptionPayment $payment): ?ReferralCommission
+    public function handle(SubscriptionPayment $payment, ?string $commissionRate = null): ?ReferralCommission
     {
         if ($payment->user_id === null || $payment->plan_id === null || (string) $payment->amount === '0.0000') {
             return null;
         }
 
         $plan = $payment->plan;
-        $rate = (string) $plan?->referral_commission_rate;
+        $rate = $commissionRate ?? (string) $plan?->referral_commission_rate;
         if ($plan === null || (int) str_replace('.', '', $rate) === 0) {
             return null;
         }

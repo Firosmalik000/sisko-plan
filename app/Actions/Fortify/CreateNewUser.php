@@ -2,19 +2,29 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Referrals\AttributeReferral;
 use App\Actions\Subscriptions\StartDefaultSubscription;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Models\ReferralCode;
 use App\Models\User;
+use App\Support\Referrals\ReferralIntent;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
 
-    public function __construct(private StartDefaultSubscription $subscriptions) {}
+    public function __construct(
+        private StartDefaultSubscription $subscriptions,
+        private AttributeReferral $attributeReferral,
+        private ReferralIntent $referralIntent,
+        private Request $request,
+    ) {}
 
     /**
      * Validate and create a newly registered user.
@@ -28,15 +38,30 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return DB::transaction(function () use ($input): User {
+        $pendingCode = $this->referralIntent->resolve($this->request);
+        $user = DB::transaction(function () use ($input, $pendingCode): User {
             $user = User::create([
                 'name' => $input['name'],
                 'email' => $input['email'],
                 'password' => $input['password'],
             ]);
             $this->subscriptions->handle($user);
+            $referralCode = $pendingCode === null ? null : ReferralCode::query()->find($pendingCode->id);
+            if ($referralCode !== null) {
+                try {
+                    $this->attributeReferral->handle($user, $referralCode);
+                } catch (ValidationException) {
+                    // Stale marketing intent must not prevent a valid registration.
+                }
+            }
 
             return $user;
         });
+
+        if ($pendingCode !== null) {
+            $this->referralIntent->forget($this->request);
+        }
+
+        return $user;
     }
 }

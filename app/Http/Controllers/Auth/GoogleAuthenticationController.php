@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Referrals\AttributeReferral;
 use App\Actions\Subscriptions\StartDefaultSubscription;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
+use App\Models\ReferralCode;
 use App\Models\User;
+use App\Support\Referrals\ReferralIntent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Events\TwoFactorAuthenticationChallenged;
 use Laravel\Socialite\AbstractUser as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
@@ -18,7 +22,11 @@ use Throwable;
 
 class GoogleAuthenticationController extends Controller
 {
-    public function __construct(private StartDefaultSubscription $subscriptions) {}
+    public function __construct(
+        private StartDefaultSubscription $subscriptions,
+        private AttributeReferral $attributeReferral,
+        private ReferralIntent $referralIntent,
+    ) {}
 
     public function redirect(): RedirectResponse
     {
@@ -35,12 +43,14 @@ class GoogleAuthenticationController extends Controller
             return to_route('login')->with('oauth_error', __('Login Google belum dikonfigurasi.'));
         }
 
+        $pendingCode = $this->referralIntent->resolve($request);
+
         try {
             $googleUser = Socialite::driver('google')->user();
             if (! $googleUser instanceof SocialiteUser) {
                 throw new GoogleAuthenticationException(__('Respons akun Google tidak valid.'));
             }
-            $user = $this->resolveUser($googleUser);
+            ['user' => $user, 'was_newly_created' => $wasNewlyCreated] = $this->resolveUser($googleUser, $pendingCode);
         } catch (GoogleAuthenticationException $exception) {
             return to_route('login')->with('oauth_error', $exception->getMessage());
         } catch (Throwable $exception) {
@@ -55,6 +65,10 @@ class GoogleAuthenticationController extends Controller
 
         if ($user->isPlatformAdmin()) {
             return to_route('login')->with('oauth_error', __('Admin platform harus masuk menggunakan metode utama.'));
+        }
+
+        if ($pendingCode !== null) {
+            $this->referralIntent->forget($request);
         }
 
         if ($user->hasEnabledTwoFactorAuthentication()) {
@@ -73,7 +87,8 @@ class GoogleAuthenticationController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    private function resolveUser(SocialiteUser $googleUser): User
+    /** @return array{user:User,was_newly_created:bool} */
+    private function resolveUser(SocialiteUser $googleUser, ?ReferralCode $pendingCode): array
     {
         $googleId = trim((string) $googleUser->getId());
         $email = Str::lower(trim((string) $googleUser->getEmail()));
@@ -84,10 +99,10 @@ class GoogleAuthenticationController extends Controller
             throw new GoogleAuthenticationException(__('Google tidak memberikan email terverifikasi.'));
         }
 
-        return DB::transaction(function () use ($googleUser, $googleId, $email): User {
+        return DB::transaction(function () use ($googleUser, $googleId, $email, $pendingCode): array {
             $linkedUser = User::query()->where('google_id', $googleId)->lockForUpdate()->first();
             if ($linkedUser !== null) {
-                return $linkedUser;
+                return ['user' => $linkedUser, 'was_newly_created' => false];
             }
 
             $user = User::query()->firstOrCreate(
@@ -99,6 +114,7 @@ class GoogleAuthenticationController extends Controller
                     'status' => UserStatus::Active,
                 ],
             );
+            $wasNewlyCreated = $user->wasRecentlyCreated;
             $user = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
             if ($user->status !== UserStatus::Active) {
@@ -119,7 +135,18 @@ class GoogleAuthenticationController extends Controller
             ])->save();
             $this->subscriptions->handle($user);
 
-            return $user;
+            $referralCode = ! $wasNewlyCreated || $pendingCode === null
+                ? null
+                : ReferralCode::query()->find($pendingCode->id);
+            if ($referralCode !== null) {
+                try {
+                    $this->attributeReferral->handle($user, $referralCode);
+                } catch (ValidationException) {
+                    // A stale referral must not block a valid Google account.
+                }
+            }
+
+            return ['user' => $user, 'was_newly_created' => $wasNewlyCreated];
         });
     }
 

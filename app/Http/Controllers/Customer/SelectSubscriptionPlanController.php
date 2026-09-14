@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Actions\Subscriptions\PurchaseSubscriptionAddon;
-use App\Actions\Subscriptions\SelectSubscriptionPlan;
+use App\Actions\Subscriptions\CompleteSubscriptionOrder;
+use App\Actions\Subscriptions\CreateSubscriptionOrder;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class SelectSubscriptionPlanController extends Controller
 {
-    public function __invoke(Request $request, SelectSubscriptionPlan $action, PurchaseSubscriptionAddon $addons): RedirectResponse
+    public function __invoke(Request $request, CreateSubscriptionOrder $orders, CompleteSubscriptionOrder $complete): RedirectResponse
     {
         $user = $request->user();
 
@@ -26,6 +27,7 @@ class SelectSubscriptionPlanController extends Controller
 
         $validated = $request->validate([
             'plan_id' => ['required', 'string', 'exists:plans,public_id'],
+            'idempotency_key' => ['nullable', 'uuid'],
         ]);
         $plan = Plan::query()
             ->where('public_id', $validated['plan_id'])
@@ -37,21 +39,21 @@ class SelectSubscriptionPlanController extends Controller
             throw ValidationException::withMessages(['plan_id' => __('Plan is unavailable.')]);
         }
 
-        if ($plan->kind === Plan::KIND_ADDON) {
-            $addons->handle($user, $plan, $request->ip());
+        $order = $orders->handle($user, $plan, $validated['idempotency_key'] ?? (string) Str::uuid());
+        $order = $complete->handle($order, $request->ip());
+
+        if ($order->plan_kind === Plan::KIND_ADDON) {
             Inertia::flash('toast', ['type' => 'success', 'message' => __('Add-on :name berhasil ditambahkan.', ['name' => $plan->name])]);
 
             return to_route('subscription.index');
         }
 
-        $result = $action->handle($user, $plan, $request->ip());
-
-        if ($result['scheduled']) {
+        if ($order->period?->activated_at === null) {
             Inertia::flash('toast', [
                 'type' => 'success',
                 'message' => __('Plan :name is scheduled to start on :date.', [
                     'name' => $plan->name,
-                    'date' => $result['period']->period_start->translatedFormat('d M Y'),
+                    'date' => $order->period->period_start->translatedFormat('d M Y'),
                 ]),
             ]);
 

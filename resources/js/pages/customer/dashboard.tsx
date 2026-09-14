@@ -14,9 +14,11 @@ import {
 } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import { money, quantity } from '@/components/operations-shell';
+import { PromotionCarousel } from '@/components/promotion-carousel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCompactMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
+import type { CustomerPromotion } from '@/lib/promotions';
 import type { StoreSummary } from '@/types';
 
 type Performance = {
@@ -67,6 +69,7 @@ type DashboardProps = {
     comparison?: { previous_net_revenue: string };
     categorySales?: CategorySale[];
     topProducts?: TopProduct[];
+    promotions: CustomerPromotion[];
 };
 
 type PeriodKey = 'day' | 'month' | 'quarter' | 'semester' | 'year';
@@ -85,7 +88,7 @@ export default function Dashboard(props: DashboardProps) {
     const { activeStore } = usePage<{ activeStore: StoreSummary }>().props;
 
     if (!props.canViewBusinessPosition || !props.performance || !props.position) {
-        return <OperationalDashboard activeStore={activeStore} />;
+        return <OperationalDashboard activeStore={activeStore} promotions={props.promotions ?? []} />;
     }
 
     const {
@@ -118,6 +121,8 @@ export default function Dashboard(props: DashboardProps) {
                             </div>
                         </div>
                     </header>
+
+                    <PromotionCarousel promotions={props.promotions ?? []} />
 
                     <CashflowHighlight period={period} performance={performance} transactions={transactions} change={revenueChange} />
 
@@ -509,7 +514,7 @@ function LowStockPanel({ items }: { items: LowStock[] }) {
     );
 }
 
-function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
+function OperationalDashboard({ activeStore, promotions }: { activeStore: StoreSummary; promotions: CustomerPromotion[] }) {
     const shortcuts = [
         { href: '/pos', label: 'Buka Kasir', icon: ShoppingCart },
         { href: '/sales', label: 'Penjualan', icon: ReceiptText },
@@ -536,6 +541,7 @@ function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
                             </Link>
                         </div>
                     </section>
+                    <PromotionCarousel promotions={promotions} />
                     <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {shortcuts.map((item) => (
                             <Link

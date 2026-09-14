@@ -217,5 +217,16 @@
     "All payout commissions must still be approved.": "All payout commissions must still be approved.",
     "Commission updated successfully.": "Commission updated successfully.",
     "Payout created successfully.": "Payout created successfully.",
-    "Payout marked as paid.": "Payout marked as paid."
+    "No approved commission is currently available for withdrawal.": "No approved commission is currently available for withdrawal.",
+    "Withdrawal request submitted successfully.": "Withdrawal request submitted successfully.",
+    "Payout marked as paid.": "Payout marked as paid.",
+    "Poster image could not be read.": "The promotional image could not be read.",
+    "Dashboard banner must be a landscape image at least 1280px wide.": "The dashboard banner must be a landscape image at least 1280px wide.",
+    "App Open poster must be a portrait image at least 900px wide.": "The App Open poster must be a portrait image at least 900px wide.",
+    "The destination must be an internal path or a valid HTTP(S) URL.": "The destination must be an internal path or a valid HTTP(S) URL.",
+    "Promotion image could not be stored.": "The promotional image could not be stored.",
+    "Promotion created successfully.": "Promotion created successfully.",
+    "Promotion updated successfully.": "Promotion updated successfully.",
+    "Promotion status updated successfully.": "Promotion status updated successfully.",
+    "Promotion deleted successfully.": "Promotion deleted successfully."
 }

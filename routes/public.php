@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\GoogleAuthenticationController;
 use App\Http\Controllers\PublicSite\BrandLogoController;
 use App\Http\Controllers\PublicSite\LocaleController;
 use App\Http\Controllers\PublicSite\PricingController;
+use App\Http\Controllers\PublicSite\ReferralCaptureController;
 use App\Http\Controllers\Sales\NativeReceiptController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,7 @@ Route::get('app', fn () => auth()->check()
     : to_route('login'))->name('app.entry');
 Route::get('brand/logo', BrandLogoController::class)->name('platform.logo');
 Route::get('pricing', PricingController::class)->name('pricing');
+Route::get('r/{code}', ReferralCaptureController::class)->where('code', '[A-Za-z0-9]+')->name('referral.capture');
 Route::post('locale', [LocaleController::class, 'update'])->name('locale.update');
 Route::get('native-print/sales/{sale}', NativeReceiptController::class)
     ->middleware(['signed', 'throttle:30,1'])

@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_active
  * @property int|null $subscriptions_count
  * @property-read Collection<int, ReferralCommission> $referralCommissions
+ * @property-read Collection<int, SubscriptionOrder> $subscriptionOrders
  */
 #[Fillable(['code', 'name', 'description', 'kind', 'offer_category', 'monthly_price', 'referral_commission_rate', 'billing_cycle', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_default', 'is_trial', 'is_active'])]
 class Plan extends Model
@@ -74,6 +75,12 @@ class Plan extends Model
     public function referralCommissions(): HasMany
     {
         return $this->hasMany(ReferralCommission::class);
+    }
+
+    /** @return HasMany<SubscriptionOrder, $this> */
+    public function subscriptionOrders(): HasMany
+    {
+        return $this->hasMany(SubscriptionOrder::class);
     }
 
     protected function casts(): array

@@ -1,8 +1,10 @@
 import { vietnameseCustomerCatalog } from './customer';
+import { vietnameseCustomerReferralCatalog } from './customer-referral';
 import { vietnameseDynamicCatalog } from './dynamic';
 import { vietnameseExtendedCatalog } from './extended';
 import { vietnamesePlatformCatalog } from './platform';
 import { vietnameseProductCatalog } from './product';
+import { vietnamesePromotionCatalog } from './promotion';
 import { vietnamesePublicCatalog } from './public';
 import { vietnameseReferralCatalog } from './referral';
 import { vietnameseSharedCatalog } from './shared';
@@ -645,7 +647,9 @@ export const vietnameseCatalog: Record<string, string> = {
     ...vietnameseProductCatalog,
     ...vietnamesePublicCatalog,
     ...vietnameseDynamicCatalog,
+    ...vietnameseCustomerReferralCatalog,
     ...vietnameseReferralCatalog,
+    ...vietnamesePromotionCatalog,
     'Filter transaksi': 'Bộ lọc giao dịch',
     'Reset filter': 'Đặt lại bộ lọc',
     'Cari transaksi': 'Tìm giao dịch',

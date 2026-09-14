@@ -21,17 +21,24 @@ class PurchaseSubscriptionAddon
         private SubscriptionPeriods $periods,
     ) {}
 
-    public function handle(User $owner, Plan $plan, ?string $ipAddress): SubscriptionAddon
+    /** @param array<string, mixed>|null $purchasedTerms */
+    public function handle(User $owner, Plan $plan, ?string $ipAddress, ?array $purchasedTerms = null): SubscriptionAddon
     {
         $this->periods->syncForOwner($owner->id);
 
-        return DB::transaction(function () use ($owner, $plan, $ipAddress): SubscriptionAddon {
+        return DB::transaction(function () use ($owner, $plan, $ipAddress, $purchasedTerms): SubscriptionAddon {
             User::query()->whereKey($owner->id)->lockForUpdate()->firstOrFail();
             $subscription = Subscription::query()->with(['plan', 'store'])
                 ->where('user_id', $owner->id)->lockForUpdate()->firstOrFail();
-            $selectedPlan = Plan::query()->whereKey($plan->id)
-                ->where(['kind' => Plan::KIND_ADDON, 'is_active' => true])
-                ->lockForUpdate()->firstOrFail();
+            $planQuery = Plan::query()->whereKey($plan->id);
+            if ($purchasedTerms === null) {
+                $planQuery->where(['kind' => Plan::KIND_ADDON, 'is_active' => true]);
+            }
+            $selectedPlan = $planQuery->lockForUpdate()->firstOrFail();
+            $terms = $purchasedTerms ?? $selectedPlan->only([
+                'name', 'offer_category', 'billing_cycle', 'monthly_price', 'duration_months',
+                'max_stores', 'max_products', 'max_members', 'max_scans',
+            ]);
 
             if ($this->access->blockedReason($subscription) !== null) {
                 throw ValidationException::withMessages([
@@ -40,21 +47,21 @@ class PurchaseSubscriptionAddon
             }
 
             $startsOn = CarbonImmutable::today();
-            $endsOn = $selectedPlan->billing_cycle === Plan::BILLING_LIFETIME
+            $endsOn = $terms['billing_cycle'] === Plan::BILLING_LIFETIME
                 ? null
-                : $startsOn->addMonthsNoOverflow($selectedPlan->duration_months)->subDay();
+                : $startsOn->addMonthsNoOverflow((int) $terms['duration_months'])->subDay();
             $addon = SubscriptionAddon::create([
                 'subscription_id' => $subscription->id,
                 'user_id' => $owner->id,
                 'plan_id' => $selectedPlan->id,
-                'plan_name' => $selectedPlan->name,
-                'offer_category' => $selectedPlan->offer_category,
-                'price' => $selectedPlan->monthly_price,
-                'duration_months' => $selectedPlan->duration_months,
-                'stores' => $selectedPlan->max_stores,
-                'products' => $selectedPlan->max_products,
-                'members' => $selectedPlan->max_members,
-                'scans' => $selectedPlan->max_scans,
+                'plan_name' => $terms['name'],
+                'offer_category' => $terms['offer_category'],
+                'price' => $terms['monthly_price'],
+                'duration_months' => $terms['duration_months'],
+                'stores' => $terms['max_stores'],
+                'products' => $terms['max_products'],
+                'members' => $terms['max_members'],
+                'scans' => $terms['max_scans'],
                 'starts_on' => $startsOn,
                 'ends_on' => $endsOn,
                 'source' => 'self_service',

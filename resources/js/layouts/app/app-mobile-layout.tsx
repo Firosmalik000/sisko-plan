@@ -12,6 +12,7 @@ import {
     ChevronDown,
     ChevronRight,
     CreditCard,
+    Gift,
     Handshake,
     LockKeyhole,
     Home,
@@ -176,6 +177,7 @@ const moreMenuSections = [
                 title: 'Toko',
                 href: '/stores',
                 icon: Store,
+                requiresStore: false,
             },
         ],
     },
@@ -191,6 +193,12 @@ const moreMenuSections = [
                 title: 'Langganan',
                 href: '/subscription',
                 icon: Check,
+            },
+            {
+                title: 'Referral & Komisi',
+                href: '/referral',
+                icon: Gift,
+                requiresStore: false,
             },
         ],
     },
@@ -518,6 +526,7 @@ function customerBackTarget(pathname: string, searchParams: URLSearchParams) {
         '/reports',
         '/stores',
         '/subscription',
+        '/referral',
         '/settings',
     ];
 
@@ -657,6 +666,7 @@ function BottomNavigation() {
         '/operations/stock-opnames',
         '/master-data/suppliers',
         '/subscription',
+        '/referral',
     ].some((href) => isActive(href));
 
     return (
@@ -666,7 +676,7 @@ function BottomNavigation() {
                 <BottomNavLink item={primaryItems[1]} active={isActive(primaryItems[1].href)} disabled={!activeStore} />
                 <CashierMenu active={cashierActive} disabled={!activeStore} />
                 <BottomNavLink item={primaryItems[2]} active={isActive(primaryItems[2].href)} disabled={!activeStore} />
-                <MoreMenu active={moreActive} disabled={!activeStore} />
+                <MoreMenu active={moreActive} hasActiveStore={activeStore !== null} />
             </div>
         </nav>
     );
@@ -814,7 +824,7 @@ function CashierMenu({ active, disabled }: { active: boolean; disabled: boolean 
     );
 }
 
-function MoreMenu({ active, disabled }: { active: boolean; disabled: boolean }) {
+function MoreMenu({ active, hasActiveStore }: { active: boolean; hasActiveStore: boolean }) {
     const { t } = useTranslation();
 
     return (
@@ -822,11 +832,9 @@ function MoreMenu({ active, disabled }: { active: boolean; disabled: boolean }) 
             <SheetTrigger asChild>
                 <button
                     type="button"
-                    disabled={disabled}
                     className={cn(
                         'group flex min-w-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-[10px] font-semibold transition sm:text-xs',
                         active ? 'text-[var(--app-primary)]' : 'text-[var(--muted-foreground)]',
-                        disabled && 'opacity-60',
                     )}
                 >
                     <span
@@ -863,22 +871,44 @@ function MoreMenu({ active, disabled }: { active: boolean; disabled: boolean }) 
                                 </p>
                             </div>
                             <div className="space-y-2">
-                                {section.items.map((item) => (
-                                    <SheetClose asChild key={item.title}>
-                                        <Link
-                                            href={item.href}
-                                            className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[var(--app-ink)]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[var(--app-primary)]/20 hover:bg-[#fffdfc] hover:shadow-md"
-                                        >
+                                {section.items.map((item) => {
+                                    const requiresStore = !('requiresStore' in item) || item.requiresStore !== false;
+                                    const itemDisabled = requiresStore && !hasActiveStore;
+                                    const content = (
+                                        <>
                                             <span className="flex size-10 shrink-0 items-center justify-center rounded-[.9rem] bg-[var(--app-soft)] text-[var(--app-primary)]">
                                                 <item.icon className="size-[1.1rem]" />
                                             </span>
                                             <span className="min-w-0 flex-1">
                                                 <span className="block text-sm font-black text-[var(--app-ink)]">{t(item.title)}</span>
                                             </span>
-                                            <ChevronRight className="size-4 shrink-0 text-[var(--muted-foreground)] transition group-hover:translate-x-0.5" />
-                                        </Link>
-                                    </SheetClose>
-                                ))}
+                                            {itemDisabled ? (
+                                                <LockKeyhole className="size-4 shrink-0 text-[var(--muted-foreground)]" />
+                                            ) : (
+                                                <ChevronRight className="size-4 shrink-0 text-[var(--muted-foreground)] transition group-hover:translate-x-0.5" />
+                                            )}
+                                        </>
+                                    );
+
+                                    return itemDisabled ? (
+                                        <div
+                                            key={item.title}
+                                            aria-disabled="true"
+                                            className="flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[var(--app-ink)]/6 bg-white/55 px-3 py-2 opacity-55"
+                                        >
+                                            {content}
+                                        </div>
+                                    ) : (
+                                        <SheetClose asChild key={item.title}>
+                                            <Link
+                                                href={item.href}
+                                                className="group flex min-h-14 items-center gap-3 rounded-[1.05rem] border border-[var(--app-ink)]/8 bg-white px-3 py-2 shadow-sm transition hover:border-[var(--app-primary)]/20 hover:bg-[#fffdfc] hover:shadow-md focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]/35 focus-visible:outline-none"
+                                            >
+                                                {content}
+                                            </Link>
+                                        </SheetClose>
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}

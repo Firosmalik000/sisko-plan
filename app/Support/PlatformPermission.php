@@ -40,6 +40,10 @@ final class PlatformPermission
 
     public const BRANDING_MANAGE = 'platform.branding.manage';
 
+    public const PROMOTIONS_VIEW = 'platform.promotions.view';
+
+    public const PROMOTIONS_MANAGE = 'platform.promotions.manage';
+
     public const GEOGRAPHY_VIEW = 'platform.geography.view';
 
     public const GEOGRAPHY_MANAGE = 'platform.geography.manage';
@@ -79,6 +83,8 @@ final class PlatformPermission
             self::PAYMENTS_VIEW,
             self::BRANDING_VIEW,
             self::BRANDING_MANAGE,
+            self::PROMOTIONS_VIEW,
+            self::PROMOTIONS_MANAGE,
             self::GEOGRAPHY_VIEW,
             self::GEOGRAPHY_MANAGE,
             self::REFERRALS_VIEW,
@@ -131,6 +137,10 @@ final class PlatformPermission
                 ['name' => self::BRANDING_VIEW, 'label' => 'Lihat pengaturan brand & SEO'],
                 ['name' => self::BRANDING_MANAGE, 'label' => 'Kelola brand & SEO'],
             ]],
+            ['label' => 'Konten & Promosi', 'permissions' => [
+                ['name' => self::PROMOTIONS_VIEW, 'label' => 'Lihat konten & promosi'],
+                ['name' => self::PROMOTIONS_MANAGE, 'label' => 'Kelola konten & promosi'],
+            ]],
             ['label' => 'Negara & Mata Uang', 'permissions' => [
                 ['name' => self::GEOGRAPHY_VIEW, 'label' => 'Lihat negara dan mata uang'],
                 ['name' => self::GEOGRAPHY_MANAGE, 'label' => 'Kelola negara dan mata uang'],
@@ -151,6 +161,7 @@ final class PlatformPermission
             self::PAYOUTS_VIEW => 'super-admin.referral-commission.payouts',
             self::ADMINS_VIEW => 'super-admin.platform-admins.index',
             self::BRANDING_VIEW => 'super-admin.brand-seo.index',
+            self::PROMOTIONS_VIEW => 'super-admin.promotions.index',
             self::GEOGRAPHY_VIEW => 'super-admin.geography.index',
         ] as $permission => $route) {
             if ($user->can($permission)) {

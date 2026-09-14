@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Enums\UserStatus;
 use App\Models\User;
+use App\Support\Referrals\ReferralIntent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Facades\Socialite;
@@ -83,6 +84,36 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertNull($user->platform_role);
     }
 
+    public function test_new_google_user_receives_pending_referral_and_own_code(): void
+    {
+        $referrer = User::factory()->create();
+        $this->get(route('referral.capture', ['code' => $referrer->referralCode->code]));
+        Socialite::fake('google', $this->googleUser());
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionMissing(ReferralIntent::SESSION_KEY);
+
+        $user = User::query()->where('email', 'owner@example.com')->sole();
+        $this->assertDatabaseHas('referral_attributions', [
+            'referrer_user_id' => $referrer->id,
+            'referred_user_id' => $user->id,
+            'referral_code_id' => $referrer->referralCode->id,
+        ]);
+        $this->assertNotNull($user->referralCode()->first());
+    }
+
+    public function test_referral_intent_survives_google_redirect(): void
+    {
+        $referrer = User::factory()->create();
+        Socialite::fake('google');
+        $this->get(route('referral.capture', ['code' => $referrer->referralCode->code]));
+
+        $this->get(route('auth.google.redirect'))
+            ->assertRedirect('https://socialite.fake/google/authorize')
+            ->assertSessionHas(ReferralIntent::SESSION_KEY, fn (array $intent): bool => $intent['code'] === $referrer->referralCode->code);
+    }
+
     public function test_google_login_links_existing_account_by_verified_email(): void
     {
         $existing = User::factory()->unverified()->create(['email' => 'owner@example.com']);
@@ -94,6 +125,31 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertSame('google-user-1', $existing->refresh()->google_id);
         $this->assertNotNull($existing->email_verified_at);
         $this->assertAuthenticatedAs($existing);
+    }
+
+    public function test_existing_google_linked_account_is_not_retroactively_attributed(): void
+    {
+        $referrer = User::factory()->create();
+        $existing = User::factory()->create(['email' => 'owner@example.com', 'google_id' => 'google-user-1']);
+        $this->get(route('referral.capture', ['code' => $referrer->referralCode->code]));
+        Socialite::fake('google', $this->googleUser());
+
+        $this->get(route('auth.google.callback'))->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseMissing('referral_attributions', ['referred_user_id' => $existing->id]);
+    }
+
+    public function test_existing_local_account_linked_to_google_is_not_retroactively_attributed(): void
+    {
+        $referrer = User::factory()->create();
+        $existing = User::factory()->create(['email' => 'owner@example.com', 'google_id' => null]);
+        $this->get(route('referral.capture', ['code' => $referrer->referralCode->code]));
+        Socialite::fake('google', $this->googleUser());
+
+        $this->get(route('auth.google.callback'))->assertRedirect(route('dashboard'));
+
+        $this->assertSame('google-user-1', $existing->refresh()->google_id);
+        $this->assertDatabaseMissing('referral_attributions', ['referred_user_id' => $existing->id]);
     }
 
     public function test_google_login_preserves_two_factor_challenge(): void

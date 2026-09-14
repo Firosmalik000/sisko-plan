@@ -19,7 +19,7 @@ class SavePlan
         return DB::transaction(function () use ($admin, $data, $plan, $ipAddress): Plan {
             $locked = $plan === null ? null : Plan::query()->lockForUpdate()->findOrFail($plan->id);
             if ($locked !== null && $locked->kind !== $data['kind']
-                && ($locked->subscriptions()->exists() || $locked->subscriptionAddons()->exists())) {
+                && ($locked->subscriptions()->exists() || $locked->subscriptionAddons()->exists() || $locked->subscriptionOrders()->exists())) {
                 throw ValidationException::withMessages(['kind' => __('Jenis penawaran tidak dapat diubah setelah digunakan.')]);
             }
             if ($locked?->is_default) {

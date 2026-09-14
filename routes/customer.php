@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Customer\DashboardController;
 use App\Http\Controllers\Customer\ProductScannerController;
+use App\Http\Controllers\Customer\ReferralController;
 use App\Http\Controllers\Customer\SelectSubscriptionPlanController;
 use App\Http\Controllers\Customer\StoreController;
 use App\Http\Controllers\Customer\StoreMemberController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Notifications\StockAlertNotificationController;
 use App\Http\Controllers\Operations\LedgerController;
 use App\Http\Controllers\Operations\StockCountController;
 use App\Http\Controllers\Platform\ImpersonationController;
+use App\Http\Controllers\PromotionImageController;
 use App\Http\Controllers\Purchasing\PurchasingController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Sales\PosController;
@@ -23,10 +25,13 @@ use App\Http\Controllers\Sales\SalesController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'throttle:store-writes'])->group(function () {
+    Route::get('promotion-media/{promotion}', PromotionImageController::class)->name('promotions.image');
     Route::post('impersonation/leave', [ImpersonationController::class, 'destroy'])->name('impersonation.leave');
 });
 
 Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function () {
+    Route::get('referral', ReferralController::class)->name('referral.index');
+    Route::post('referral/withdrawals', [ReferralController::class, 'storeWithdrawal'])->name('referral.withdrawals.store');
     Route::post('pricing/subscribe', SelectSubscriptionPlanController::class)->name('pricing.subscribe');
     Route::get('stores', [StoreController::class, 'index'])->name('stores.index');
     Route::get('stores/create', [StoreController::class, 'create'])->name('stores.create');
