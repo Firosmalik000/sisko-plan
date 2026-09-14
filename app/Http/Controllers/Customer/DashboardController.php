@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Services\Promotions\PromotionDelivery;
 use App\Services\Reporting\BusinessMetrics;
 use App\Support\CurrentStore;
 use App\Support\Decimal;
+use App\Support\LocaleContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -14,14 +16,21 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, CurrentStore $currentStore, BusinessMetrics $metrics): Response
-    {
+    public function __invoke(
+        Request $request,
+        CurrentStore $currentStore,
+        BusinessMetrics $metrics,
+        PromotionDelivery $promotionDelivery,
+    ): Response {
         $store = $currentStore->get();
         Gate::authorize('view', $store);
         $canViewBusinessPosition = Gate::allows('viewReports', $store);
         $payload = [
             'canViewBusinessPosition' => $canViewBusinessPosition,
             'timezone' => $store->settings()->value('timezone') ?? 'Asia/Jakarta',
+            'promotions' => $promotionDelivery->dashboardBanners(LocaleContext::locale($request))
+                ->map(fn ($promotion): array => $promotionDelivery->bannerPayload($promotion))
+                ->values(),
         ];
         if ($canViewBusinessPosition) {
             $timezone = (string) $payload['timezone'];

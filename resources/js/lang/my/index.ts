@@ -1,4 +1,5 @@
 import { myAuthCatalog } from './auth';
+import { burmeseCommerceFeatureCatalog } from './commerce-features';
 import { myCustomerCatalog } from './customer';
 import { myPlatformCatalog } from './platform';
 import { myPublicCatalog } from './public';
@@ -10,4 +11,5 @@ export const burmeseCatalog: Record<string, string> = {
     ...myPlatformCatalog,
     ...myPublicCatalog,
     ...mySharedCatalog,
+    ...burmeseCommerceFeatureCatalog,
 };

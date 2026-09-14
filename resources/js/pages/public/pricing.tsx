@@ -7,6 +7,7 @@ import { publicEase, publicViewport, revealClip, revealLeft, revealRight, stagge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatMoney, localeTag } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
+import { postingToken } from '@/lib/posting-token';
 import { dashboard, register } from '@/routes';
 import stores from '@/routes/stores';
 
@@ -83,7 +84,7 @@ export default function Pricing({
     const { auth, branding } = usePage().props;
     const categoryCopy = localizedCategoryCopy();
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-    const form = useForm({ plan_id: '' });
+    const form = useForm({ plan_id: '', idempotency_key: postingToken() });
     const scheduled = Boolean(
         account.next_period_start && new Date(`${account.next_period_start}T00:00:00`).getTime() > new Date().setHours(0, 0, 0, 0),
     );
@@ -109,7 +110,7 @@ export default function Pricing({
 
     const openConfirmation = (plan: Plan) => {
         form.clearErrors();
-        form.setData('plan_id', plan.public_id);
+        form.setData({ plan_id: plan.public_id, idempotency_key: postingToken() });
         setSelectedPlan(plan);
     };
     const submit = (event: FormEvent) => {

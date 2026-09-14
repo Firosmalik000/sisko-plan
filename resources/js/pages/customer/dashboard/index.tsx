@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { ArrowUpRight, Boxes, CreditCard, ReceiptText, ShoppingCart, Store } from 'lucide-react';
 import { AppPage } from '@/components/page/app-page';
 import { PageSection } from '@/components/page/page-section';
+import { PromotionCarousel } from '@/components/promotion-carousel';
 import { Button } from '@/components/ui/button';
 import { translate } from '@/lib/i18n';
 import { cash, inventory } from '@/routes/operations';
@@ -15,7 +16,7 @@ export default function DashboardIndex(props: DashboardProps) {
     const { activeStore } = usePage<{ activeStore: StoreSummary }>().props;
 
     if (!props.canViewBusinessPosition || !props.performance || !props.position) {
-        return <OperationalDashboard activeStore={activeStore} />;
+        return <OperationalDashboard activeStore={activeStore} promotions={props.promotions ?? []} />;
     }
 
     return (
@@ -29,11 +30,18 @@ export default function DashboardIndex(props: DashboardProps) {
             comparison={props.comparison ?? { direction: 'flat', percentage: 0 }}
             categorySales={props.categorySales ?? []}
             topProducts={props.topProducts ?? []}
+            promotions={props.promotions ?? []}
         />
     );
 }
 
-function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
+function OperationalDashboard({
+    activeStore,
+    promotions,
+}: {
+    activeStore: StoreSummary;
+    promotions: NonNullable<DashboardProps['promotions']>;
+}) {
     const shortcuts = [
         { href: posIndex.url(), label: 'Open Checkout', icon: ShoppingCart },
         { href: salesIndex.url(), label: 'Sales', icon: ReceiptText },
@@ -55,6 +63,7 @@ function OperationalDashboard({ activeStore }: { activeStore: StoreSummary }) {
                 </Button>
             }
         >
+            <PromotionCarousel promotions={promotions} />
             <PageSection contentClassName="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
                 {shortcuts.map((item) => (
                     <Link

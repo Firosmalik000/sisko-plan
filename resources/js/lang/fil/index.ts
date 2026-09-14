@@ -1,4 +1,5 @@
 import { filAuthCatalog } from './auth';
+import { filipinoCommerceFeatureCatalog } from './commerce-features';
 import { filCustomerCatalog } from './customer';
 import { filPlatformCatalog } from './platform';
 import { filPublicCatalog } from './public';
@@ -10,4 +11,5 @@ export const filipinoCatalog: Record<string, string> = {
     ...filPlatformCatalog,
     ...filPublicCatalog,
     ...filSharedCatalog,
+    ...filipinoCommerceFeatureCatalog,
 };

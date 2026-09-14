@@ -40,10 +40,18 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property int|null $stores_count
+ * @property int|null $referrals_made_count
+ * @property string|null $commission_total
+ * @property string|null $referral_revenue
  * @property-read StoreMembership $pivot
  * @property-read Collection<int, Store> $stores
  * @property-read Collection<int, Store> $ownedStores
  * @property-read Subscription|null $subscription
+ * @property-read ReferralCode|null $referralCode
+ * @property-read Collection<int, ReferralAttribution> $referralsMade
+ * @property-read ReferralAttribution|null $referralAttribution
+ * @property-read Collection<int, ReferralCommission> $referralCommissionsEarned
+ * @property-read Collection<int, CommissionPayout> $commissionPayouts
  */
 #[Fillable(['name', 'email', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at'])]
 #[Hidden(['avatar_path', 'google_id', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -80,6 +88,36 @@ class User extends Authenticatable implements PasskeyUser
     public function adminAuditLogs(): HasMany
     {
         return $this->hasMany(AdminAuditLog::class);
+    }
+
+    /** @return HasOne<ReferralCode, $this> */
+    public function referralCode(): HasOne
+    {
+        return $this->hasOne(ReferralCode::class);
+    }
+
+    /** @return HasMany<ReferralAttribution, $this> */
+    public function referralsMade(): HasMany
+    {
+        return $this->hasMany(ReferralAttribution::class, 'referrer_user_id');
+    }
+
+    /** @return HasOne<ReferralAttribution, $this> */
+    public function referralAttribution(): HasOne
+    {
+        return $this->hasOne(ReferralAttribution::class, 'referred_user_id');
+    }
+
+    /** @return HasMany<ReferralCommission, $this> */
+    public function referralCommissionsEarned(): HasMany
+    {
+        return $this->hasMany(ReferralCommission::class, 'referrer_user_id');
+    }
+
+    /** @return HasMany<CommissionPayout, $this> */
+    public function commissionPayouts(): HasMany
+    {
+        return $this->hasMany(CommissionPayout::class, 'referrer_user_id');
     }
 
     public function isPlatformAdmin(): bool

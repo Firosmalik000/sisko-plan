@@ -1,4 +1,5 @@
 import { loAuthCatalog } from './auth';
+import { laoCommerceFeatureCatalog } from './commerce-features';
 import { loCustomerCatalog } from './customer';
 import { loPlatformCatalog } from './platform';
 import { loPublicCatalog } from './public';
@@ -10,4 +11,5 @@ export const laoCatalog: Record<string, string> = {
     ...loPlatformCatalog,
     ...loPublicCatalog,
     ...loSharedCatalog,
+    ...laoCommerceFeatureCatalog,
 };

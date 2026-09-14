@@ -57,6 +57,7 @@ export type DashboardProps = {
     comparison?: RevenueComparison;
     categorySales?: CategorySale[];
     topProducts?: TopProduct[];
+    promotions?: CustomerPromotion[];
 };
 
 export type BusinessDashboardProps = {
@@ -69,4 +70,6 @@ export type BusinessDashboardProps = {
     comparison: RevenueComparison;
     categorySales: CategorySale[];
     topProducts: TopProduct[];
+    promotions: CustomerPromotion[];
 };
+import type { CustomerPromotion } from '@/lib/promotions';

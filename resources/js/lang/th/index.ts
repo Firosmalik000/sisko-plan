@@ -1,4 +1,5 @@
 import { thAuthCatalog } from './auth';
+import { thaiCommerceFeatureCatalog } from './commerce-features';
 import { thCustomerCatalog } from './customer';
 import { thPlatformCatalog } from './platform';
 import { thPublicCatalog } from './public';
@@ -10,4 +11,5 @@ export const thaiCatalog: Record<string, string> = {
     ...thPlatformCatalog,
     ...thPublicCatalog,
     ...thSharedCatalog,
+    ...thaiCommerceFeatureCatalog,
 };

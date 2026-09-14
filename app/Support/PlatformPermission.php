@@ -40,9 +40,23 @@ final class PlatformPermission
 
     public const BRANDING_MANAGE = 'platform.branding.manage';
 
+    public const PROMOTIONS_VIEW = 'platform.promotions.view';
+
+    public const PROMOTIONS_MANAGE = 'platform.promotions.manage';
+
     public const GEOGRAPHY_VIEW = 'platform.geography.view';
 
     public const GEOGRAPHY_MANAGE = 'platform.geography.manage';
+
+    public const REFERRALS_VIEW = 'platform.referrals.view';
+
+    public const COMMISSIONS_VIEW = 'platform.commissions.view';
+
+    public const COMMISSIONS_MANAGE = 'platform.commissions.manage';
+
+    public const PAYOUTS_VIEW = 'platform.payouts.view';
+
+    public const PAYOUTS_MANAGE = 'platform.payouts.manage';
 
     /** @return list<string> */
     public static function all(): array
@@ -69,8 +83,15 @@ final class PlatformPermission
             self::PAYMENTS_VIEW,
             self::BRANDING_VIEW,
             self::BRANDING_MANAGE,
+            self::PROMOTIONS_VIEW,
+            self::PROMOTIONS_MANAGE,
             self::GEOGRAPHY_VIEW,
             self::GEOGRAPHY_MANAGE,
+            self::REFERRALS_VIEW,
+            self::COMMISSIONS_VIEW,
+            self::COMMISSIONS_MANAGE,
+            self::PAYOUTS_VIEW,
+            self::PAYOUTS_MANAGE,
         ];
     }
 
@@ -101,6 +122,13 @@ final class PlatformPermission
             ['label' => 'Payments', 'permissions' => [
                 ['name' => self::PAYMENTS_VIEW, 'label' => 'View payment history'],
             ]],
+            ['label' => 'Referral & Commission', 'permissions' => [
+                ['name' => self::REFERRALS_VIEW, 'label' => 'View referrals'],
+                ['name' => self::COMMISSIONS_VIEW, 'label' => 'View commissions'],
+                ['name' => self::COMMISSIONS_MANAGE, 'label' => 'Manage commissions'],
+                ['name' => self::PAYOUTS_VIEW, 'label' => 'View payouts'],
+                ['name' => self::PAYOUTS_MANAGE, 'label' => 'Manage payouts'],
+            ]],
             ['label' => 'Platform Admins', 'permissions' => [
                 ['name' => self::ADMINS_VIEW, 'label' => 'View platform admins'],
                 ['name' => self::ADMINS_MANAGE, 'label' => 'Manage admins and access'],
@@ -108,6 +136,10 @@ final class PlatformPermission
             ['label' => 'Brand & SEO', 'permissions' => [
                 ['name' => self::BRANDING_VIEW, 'label' => 'View brand and SEO settings'],
                 ['name' => self::BRANDING_MANAGE, 'label' => 'Manage brand and SEO'],
+            ]],
+            ['label' => 'Content & Promotions', 'permissions' => [
+                ['name' => self::PROMOTIONS_VIEW, 'label' => 'View content and promotions'],
+                ['name' => self::PROMOTIONS_MANAGE, 'label' => 'Manage content and promotions'],
             ]],
             ['label' => 'Countries & Currencies', 'permissions' => [
                 ['name' => self::GEOGRAPHY_VIEW, 'label' => 'View countries and currencies'],
@@ -124,8 +156,12 @@ final class PlatformPermission
             self::STORES_VIEW => 'super-admin.stores.index',
             self::SUBSCRIPTIONS_VIEW => 'super-admin.subscriptions.index',
             self::PAYMENTS_VIEW => 'super-admin.payments.index',
+            self::REFERRALS_VIEW => 'super-admin.referral-commission.overview',
+            self::COMMISSIONS_VIEW => 'super-admin.referral-commission.commissions',
+            self::PAYOUTS_VIEW => 'super-admin.referral-commission.payouts',
             self::ADMINS_VIEW => 'super-admin.platform-admins.index',
             self::BRANDING_VIEW => 'super-admin.brand-seo.index',
+            self::PROMOTIONS_VIEW => 'super-admin.promotions.index',
             self::GEOGRAPHY_VIEW => 'super-admin.geography.index',
         ] as $permission => $route) {
             if ($user->can($permission)) {

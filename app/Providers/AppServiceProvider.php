@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\PlatformAdminRole;
 use App\Models\User;
+use App\Observers\UserObserver;
 use App\Support\CurrentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -31,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        User::observe(UserObserver::class);
         Gate::before(fn (User $user, string $ability): ?bool => $user->platform_role === PlatformAdminRole::SuperAdmin
             && str_starts_with($ability, 'platform.')
                 ? true

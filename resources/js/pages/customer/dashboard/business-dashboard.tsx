@@ -4,6 +4,7 @@ import { AppPage } from '@/components/page/app-page';
 import { EmptyState } from '@/components/page/empty-state';
 import { MetricItem, MetricStrip } from '@/components/page/metric-strip';
 import { PageSection } from '@/components/page/page-section';
+import { PromotionCarousel } from '@/components/promotion-carousel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -34,6 +35,7 @@ export function BusinessDashboard({
     comparison,
     categorySales,
     topProducts,
+    promotions,
 }: BusinessDashboardProps) {
     const activePeriod = periodOptions.find((option) => option.key === period) ?? periodOptions[1];
     const periodLabel = translate(activePeriod.description);
@@ -72,6 +74,7 @@ export function BusinessDashboard({
                 </>
             }
         >
+            <PromotionCarousel promotions={promotions} />
             <MetricStrip>
                 <MetricItem
                     label={translate('Net sales')}

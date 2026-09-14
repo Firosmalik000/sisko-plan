@@ -15,6 +15,7 @@ const moreDestinations: ReadonlyMap<string, string> = new Map([
     ['/settings/profile', 'Settings'],
     ['/settings/security', 'Security'],
     ['/settings/appearance', 'Appearance'],
+    ['/referral', 'Referrals & Commissions'],
 ] as const);
 
 export type CustomerParentDestination = 'more' | 'sales' | 'stockCounts' | 'stores';

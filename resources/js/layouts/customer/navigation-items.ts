@@ -6,6 +6,7 @@ import {
     ClipboardCheck,
     CreditCard,
     Grid2X2,
+    Gift,
     Handshake,
     Home,
     Landmark,
@@ -36,6 +37,7 @@ import stockOpnameRoutes from '@/routes/operations/stock-opnames';
 import posRoutes from '@/routes/pos';
 import profileRoutes from '@/routes/profile';
 import purchasingRoutes from '@/routes/purchasing';
+import referralRoutes from '@/routes/referral';
 import reportsRoutes from '@/routes/reports';
 import salesRoutes from '@/routes/sales';
 import securityRoutes from '@/routes/security';
@@ -105,6 +107,7 @@ export const moreMenuSections = [
     {
         title: 'Account & store',
         items: [
+            { title: 'Referrals & Commissions', href: referralRoutes.index.url(), icon: Gift },
             { title: 'Stores & team', href: storesRoutes.index.url(), icon: Store },
             { title: 'Subscriptions', href: subscriptionRoutes.index.url(), icon: CreditCard },
             { title: 'Settings', href: profileRoutes.edit.url(), icon: Settings },

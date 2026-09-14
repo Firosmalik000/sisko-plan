@@ -8,6 +8,7 @@ use App\Models\Currency;
 use App\Models\PlatformSetting;
 use App\Models\Store;
 use App\Services\Notifications\StockAlertNotifications;
+use App\Services\Promotions\PromotionDelivery;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use App\Support\Authentication\AuthenticatedUser;
@@ -54,6 +55,7 @@ class HandleInertiaRequests extends Middleware
         $storeCreation = null;
         $stockAlerts = ['count' => 0, 'unread_count' => 0, 'items' => []];
         $branding = PlatformSetting::current()->publicPayload();
+        $appOpenPromotions = [];
 
         if ($user !== null) {
             $storeModels = $user->stores()
@@ -105,6 +107,12 @@ class HandleInertiaRequests extends Middleware
             }
             if (! $user->isPlatformAdmin()) {
                 $storeCreation = app(SubscriptionAccess::class)->storeCreationState($user);
+                if ($this->isCustomerPortalRequest($request)) {
+                    $delivery = app(PromotionDelivery::class);
+                    $appOpenPromotions = $delivery->appOpenPromotions(LocaleContext::locale($request))
+                        ->map(fn ($promotion): array => $delivery->appOpenPayload($promotion))
+                        ->values();
+                }
             }
         }
 
@@ -146,7 +154,26 @@ class HandleInertiaRequests extends Middleware
             ],
             'storeCreation' => $storeCreation,
             'stockAlerts' => $stockAlerts,
+            'appOpenPromotions' => $appOpenPromotions,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    private function isCustomerPortalRequest(Request $request): bool
+    {
+        return $request->routeIs(
+            'dashboard',
+            'referral.*',
+            'stores.*',
+            'master-data.*',
+            'operations.*',
+            'purchasing.*',
+            'pos.*',
+            'sales.*',
+            'expenses.*',
+            'reports.*',
+            'subscription.*',
+            'notifications.*',
+        );
     }
 }

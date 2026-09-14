@@ -1,4 +1,5 @@
 import { tetAuthCatalog } from './auth';
+import { tetumCommerceFeatureCatalog } from './commerce-features';
 import { tetCustomerCatalog } from './customer';
 import { tetPlatformCatalog } from './platform';
 import { tetPublicCatalog } from './public';
@@ -10,4 +11,5 @@ export const tetumCatalog: Record<string, string> = {
     ...tetPlatformCatalog,
     ...tetPublicCatalog,
     ...tetSharedCatalog,
+    ...tetumCommerceFeatureCatalog,
 };

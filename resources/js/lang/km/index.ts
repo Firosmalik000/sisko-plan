@@ -1,4 +1,5 @@
 import { kmAuthCatalog } from './auth';
+import { khmerCommerceFeatureCatalog } from './commerce-features';
 import { kmCustomerCatalog } from './customer';
 import { kmPlatformCatalog } from './platform';
 import { kmPublicCatalog } from './public';
@@ -10,4 +11,5 @@ export const khmerCatalog: Record<string, string> = {
     ...kmPlatformCatalog,
     ...kmPublicCatalog,
     ...kmSharedCatalog,
+    ...khmerCommerceFeatureCatalog,
 };

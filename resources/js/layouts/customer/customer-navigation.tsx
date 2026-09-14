@@ -34,7 +34,7 @@ export function CustomerNavigation() {
                                         ? pathname === item.href || morePathActive(pathname)
                                         : pathname === item.href || pathname.startsWith(`${item.href}/`)
                                 }
-                                disabled={disabled}
+                                disabled={disabled && item.key !== 'more'}
                             />
                         ),
                     )}
