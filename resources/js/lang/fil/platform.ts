@@ -1,4 +1,7 @@
+import { operationalPlatformCatalog } from '../platform-operations.ts';
+
 export const filPlatformCatalog: Record<string, string> = {
+    ...operationalPlatformCatalog('fil'),
     '(inactive)': '(hindi aktibo)',
     '/month': '/buwan',
     '2FA active': 'Aktibo ang 2FA',

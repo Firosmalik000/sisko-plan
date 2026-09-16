@@ -3,30 +3,16 @@
 namespace App\Services\Stores;
 
 use App\Models\Store;
-use Illuminate\Support\Facades\DB;
+use App\Support\StoreOperationalHistory;
 use Illuminate\Validation\ValidationException;
 
 class StoreCountryChange
 {
-    /** @var list<string> */
-    private const CURRENCY_BEARING_TABLES = [
-        'stock_adjustments',
-        'capital_transactions',
-        'cash_transactions',
-        'purchases',
-        'sales',
-        'expenses',
-    ];
+    public function __construct(private StoreOperationalHistory $history) {}
 
     public function allowed(Store $store): bool
     {
-        foreach (self::CURRENCY_BEARING_TABLES as $table) {
-            if (DB::table($table)->where('store_id', $store->id)->exists()) {
-                return false;
-            }
-        }
-
-        return true;
+        return ! $this->history->hasPostedRecords($store);
     }
 
     public function assertAllowed(Store $store): void

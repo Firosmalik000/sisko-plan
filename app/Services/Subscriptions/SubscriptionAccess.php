@@ -5,13 +5,12 @@ namespace App\Services\Subscriptions;
 use App\Enums\MembershipStatus;
 use App\Enums\StoreStatus;
 use App\Enums\SubscriptionStatus;
+use App\Models\Business;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Subscription;
-use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class SubscriptionAccess
@@ -22,54 +21,46 @@ class SubscriptionAccess
     ) {}
 
     /** @return array{can_write:bool,reason:?string,status:string,plan_name:string,max_stores:int,max_products:int,max_members:int,max_scans:int,stores_used:int,products_used:int,members_used:int,scans_used:int,scan_period_start:?string,scan_period_end:?string} */
-    public function summary(Store $store): array
+    public function summary(Business|Store $subject): array
     {
-        $subscription = $this->subscriptionFor($store);
-        $storesUsed = $this->storesUsed($store->owner_user_id);
-        $productsUsed = Product::query()
-            ->where('is_active', true)
-            ->whereHas('store', fn ($query) => $query
-                ->where('owner_user_id', $store->owner_user_id)
-                ->where('status', '!=', StoreStatus::Archived->value))
+        return $this->businessSummary($subject instanceof Business ? $subject : $subject->business);
+    }
+
+    /** @return array{can_write:bool,reason:?string,status:string,plan_name:string,max_stores:int,max_products:int,max_members:int,max_scans:int,stores_used:int,products_used:int,members_used:int,scans_used:int,scan_period_start:?string,scan_period_end:?string} */
+    private function businessSummary(Business $business): array
+    {
+        $subscription = Subscription::query()->with('plan')->where('business_id', $business->id)->first();
+        $storesUsed = $business->stores()->where('status', '!=', StoreStatus::Archived->value)->count();
+        $productsUsed = Product::query()->where('is_active', true)
+            ->whereHas('store', fn ($query) => $query->where('business_id', $business->id)->where('status', '!=', StoreStatus::Archived->value))
             ->count();
-        $membersUsed = $this->activeMembersCount($store->owner_user_id);
+        $membersUsed = $business->memberships()
+            ->where('business_role', '!=', 'owner')
+            ->where('status', MembershipStatus::Active->value)
+            ->count();
 
         if ($subscription === null) {
             return [
-                'can_write' => false,
-                'reason' => __('The account does not have a subscription yet.'),
-                'status' => 'missing',
-                'plan_name' => __('No plans available'),
-                'max_stores' => 0,
-                'max_products' => 0,
-                'max_members' => 0,
-                'max_scans' => 0,
-                'stores_used' => $storesUsed,
-                'products_used' => $productsUsed,
-                'members_used' => $membersUsed,
-                'scans_used' => 0,
-                'scan_period_start' => null,
-                'scan_period_end' => null,
+                'can_write' => false, 'reason' => __('The account does not have a subscription yet.'),
+                'status' => 'missing', 'plan_name' => __('No plans available'),
+                'max_stores' => 0, 'max_products' => 0, 'max_members' => 0, 'max_scans' => 0,
+                'stores_used' => $storesUsed, 'products_used' => $productsUsed, 'members_used' => $membersUsed,
+                'scans_used' => 0, 'scan_period_start' => null, 'scan_period_end' => null,
             ];
         }
 
         $reason = $this->blockedReason($subscription);
-        $limits = $this->entitlements->forOwner($store->owner_user_id, $subscription->plan);
+        $limits = $this->entitlements->forBusiness($business, $subscription->plan);
 
         return [
             'can_write' => $reason === null,
             'reason' => $reason === null ? null : str(__($reason))->toString(),
             'status' => $subscription->status->value,
             'plan_name' => $subscription->plan->name,
-            'max_stores' => $limits['max_stores'],
-            'max_products' => $limits['max_products'],
-            'max_members' => $limits['max_members'],
-            'max_scans' => $limits['max_scans'],
-            'stores_used' => $storesUsed,
-            'products_used' => $productsUsed,
-            'members_used' => $membersUsed,
-            'scans_used' => $limits['scans_used'],
-            'scan_period_start' => $limits['scan_period_start'],
+            'max_stores' => $limits['max_stores'], 'max_products' => $limits['max_products'],
+            'max_members' => $limits['max_members'], 'max_scans' => $limits['max_scans'],
+            'stores_used' => $storesUsed, 'products_used' => $productsUsed, 'members_used' => $membersUsed,
+            'scans_used' => $limits['scans_used'], 'scan_period_start' => $limits['scan_period_start'],
             'scan_period_end' => $limits['scan_period_end'],
         ];
     }
@@ -96,10 +87,10 @@ class SubscriptionAccess
             : $this->blockedReason($subscription);
     }
 
-    public function assertStoreCapacity(User $owner): void
+    public function assertStoreCapacity(Business $business): void
     {
-        User::query()->whereKey($owner->id)->lockForUpdate()->firstOrFail();
-        $state = $this->storeCreationState($owner);
+        Business::query()->whereKey($business->id)->lockForUpdate()->firstOrFail();
+        $state = $this->storeCreationState($business);
 
         if (! $state['can_create']) {
             throw ValidationException::withMessages(['name' => $state['reason']]);
@@ -107,22 +98,16 @@ class SubscriptionAccess
     }
 
     /** @return array{can_create:bool,reason:?string,plan_name:string,stores_used:int,max_stores:int} */
-    public function storeCreationState(User $owner): array
+    public function storeCreationState(Business $business): array
     {
-        $this->periods->syncForOwner($owner->id);
-        $subscription = Subscription::query()->with('plan')->where('user_id', $owner->id)->first();
-        $plan = ($subscription === null ? null : $subscription->plan)
-            ?? Plan::query()->where(['is_default' => true, 'is_active' => true])->firstOrFail();
-        $storesUsed = $this->storesUsed($owner->id);
-        $reason = null;
-
-        if ($subscription !== null && ($blockedReason = $this->blockedReason($subscription)) !== null) {
-            $reason = str(__('A new store cannot be created. :reason', [
-                'reason' => __($blockedReason),
-            ]))->toString();
-        }
-
-        $limit = $this->entitlements->forOwner($owner->id, $plan)['max_stores'];
+        $this->periods->syncForBusiness($business->id);
+        $subscription = Subscription::query()->with('plan')->where('business_id', $business->id)->first();
+        $plan = $subscription === null
+            ? Plan::query()->where(['is_default' => true, 'is_active' => true])->firstOrFail()
+            : $subscription->plan;
+        $storesUsed = $business->stores()->where('status', '!=', StoreStatus::Archived->value)->count();
+        $reason = $subscription === null ? null : $this->blockedReason($subscription);
+        $limit = $this->entitlements->forBusiness($business, $plan)['max_stores'];
         if ($reason === null && $limit > 0 && $storesUsed >= $limit) {
             $reason = str(__('The limit of :limit stores for the :plan plan has been reached.', [
                 'limit' => $limit,
@@ -143,11 +128,11 @@ class SubscriptionAccess
     {
         $subscription = $this->lockedSubscriptionFor($store);
         $this->assertOperational($subscription);
-        $limit = $this->entitlements->forOwner($store->owner_user_id, $subscription->plan)['max_products'];
+        $limit = $this->entitlements->forBusiness($store->business_id, $subscription->plan)['max_products'];
         $productsUsed = Product::query()
             ->where('is_active', true)
             ->whereHas('store', fn ($query) => $query
-                ->where('owner_user_id', $store->owner_user_id)
+                ->where('business_id', $store->business_id)
                 ->where('status', '!=', StoreStatus::Archived->value))
             ->count();
 
@@ -161,37 +146,41 @@ class SubscriptionAccess
         }
     }
 
-    public function assertMemberCapacity(Store $store, ?int $memberId = null): void
+    public function assertBusinessMemberCapacity(Business $business, ?int $membershipId = null): void
     {
-        $subscription = $this->lockedSubscriptionFor($store);
+        Business::query()->whereKey($business->id)->lockForUpdate()->firstOrFail();
+        $subscription = Subscription::query()->with('plan')->where('business_id', $business->id)->lockForUpdate()->firstOrFail();
         $this->assertOperational($subscription);
 
-        if ($memberId !== null && $this->isActiveAccountMember($store->owner_user_id, $memberId)) {
+        if ($membershipId !== null && $business->memberships()->whereKey($membershipId)
+            ->where('business_role', '!=', 'owner')->where('status', MembershipStatus::Active->value)->exists()) {
             return;
         }
 
-        $limit = $this->entitlements->forOwner($store->owner_user_id, $subscription->plan)['max_members'];
-        if ($limit > 0 && $this->activeMembersCount($store->owner_user_id) >= $limit) {
+        $limit = $this->entitlements->forBusiness($business, $subscription->plan)['max_members'];
+        $used = $business->memberships()->where('business_role', '!=', 'owner')
+            ->where('status', MembershipStatus::Active->value)->count();
+        if ($limit > 0 && $used >= $limit) {
             throw ValidationException::withMessages([
                 'email' => __('The limit of :limit active staff across all stores for the :plan plan has been reached.', [
-                    'limit' => $limit,
-                    'plan' => $subscription->plan->name,
+                    'limit' => $limit, 'plan' => $subscription->plan->name,
                 ]),
             ]);
         }
     }
 
-    public function assertPlanCapacity(User $owner, Plan $plan): void
+    public function assertPlanCapacity(Business $business, Plan $plan): void
     {
-        $limits = $this->entitlements->forOwner($owner->id, $plan);
-        $storesUsed = $this->storesUsed($owner->id);
+        $limits = $this->entitlements->forBusiness($business, $plan);
+        $storesUsed = $business->stores()->where('status', '!=', StoreStatus::Archived->value)->count();
         $productsUsed = Product::query()
             ->where('is_active', true)
             ->whereHas('store', fn ($query) => $query
-                ->where('owner_user_id', $owner->id)
+                ->where('business_id', $business->id)
                 ->where('status', '!=', StoreStatus::Archived->value))
             ->count();
-        $membersUsed = $this->activeMembersCount($owner->id);
+        $membersUsed = $business->memberships()->where('business_role', '!=', 'owner')
+            ->where('status', MembershipStatus::Active->value)->count();
 
         $messages = [];
         if ($limits['max_stores'] > 0 && $storesUsed > $limits['max_stores']) {
@@ -224,18 +213,18 @@ class SubscriptionAccess
 
     private function subscriptionFor(Store $store): ?Subscription
     {
-        $this->periods->syncForOwner($store->owner_user_id);
+        $this->periods->syncForBusiness($store->business_id);
 
-        return Subscription::query()->with('plan')->where('user_id', $store->owner_user_id)->first();
+        return Subscription::query()->with('plan')->where('business_id', $store->business_id)->first();
     }
 
     private function lockedSubscriptionFor(Store $store): Subscription
     {
-        $this->periods->syncForOwner($store->owner_user_id);
+        $this->periods->syncForBusiness($store->business_id);
 
         return Subscription::query()
             ->with('plan')
-            ->where('user_id', $store->owner_user_id)
+            ->where('business_id', $store->business_id)
             ->lockForUpdate()
             ->firstOrFail();
     }
@@ -249,29 +238,6 @@ class SubscriptionAccess
                 ]),
             ]);
         }
-    }
-
-    private function activeMembersCount(int $ownerId): int
-    {
-        return DB::table('store_memberships')
-            ->join('stores', 'stores.id', '=', 'store_memberships.store_id')
-            ->where('stores.owner_user_id', $ownerId)
-            ->where('stores.status', '!=', StoreStatus::Archived->value)
-            ->where('store_memberships.user_id', '!=', $ownerId)
-            ->where('store_memberships.status', MembershipStatus::Active->value)
-            ->distinct()
-            ->count('store_memberships.user_id');
-    }
-
-    private function isActiveAccountMember(int $ownerId, int $memberId): bool
-    {
-        return DB::table('store_memberships')
-            ->join('stores', 'stores.id', '=', 'store_memberships.store_id')
-            ->where('stores.owner_user_id', $ownerId)
-            ->where('stores.status', '!=', StoreStatus::Archived->value)
-            ->where('store_memberships.user_id', $memberId)
-            ->where('store_memberships.status', MembershipStatus::Active->value)
-            ->exists();
     }
 
     public function blockedReason(Subscription $subscription): ?string
@@ -307,13 +273,5 @@ class SubscriptionAccess
             SubscriptionStatus::Suspended => 'The subscription has been suspended by the platform.',
             SubscriptionStatus::Cancelled => 'The subscription has been cancelled.',
         };
-    }
-
-    private function storesUsed(int $ownerId): int
-    {
-        return Store::query()
-            ->where('owner_user_id', $ownerId)
-            ->where('status', '!=', StoreStatus::Archived->value)
-            ->count();
     }
 }

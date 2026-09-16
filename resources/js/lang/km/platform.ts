@@ -1,4 +1,7 @@
+import { operationalPlatformCatalog } from '../platform-operations.ts';
+
 export const kmPlatformCatalog: Record<string, string> = {
+    ...operationalPlatformCatalog('km'),
     '(inactive)': '(អសកម្ម)',
     '/month': '/ ខែ',
     '2FA active': '2FA សកម្ម',

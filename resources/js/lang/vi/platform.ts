@@ -1,4 +1,7 @@
+import { operationalPlatformCatalog } from '../platform-operations.ts';
+
 export const viPlatformCatalog: Record<string, string> = {
+    ...operationalPlatformCatalog('vi'),
     '(inactive)': '(không hoạt động)',
     '/month': '/tháng',
     '2FA active': '2FA đang bật',

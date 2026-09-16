@@ -7,6 +7,7 @@ use App\Actions\Ledgers\ApplyStockMovement;
 use App\Actions\Ledgers\IdempotencyGuard;
 use App\Actions\Ledgers\LedgerTimestamp;
 use App\Actions\Ledgers\NextDocumentNumber;
+use App\Models\BusinessMembership;
 use App\Models\FinancialAccount;
 use App\Models\ProductUnit;
 use App\Models\Purchase;
@@ -24,8 +25,9 @@ class PostPurchase
     public function __construct(private NextDocumentNumber $numbers, private ApplyStockMovement $stock, private ApplySupplierPayable $payable, private ApplyPurchasePayment $payments, private PurchaseCalculator $calculator, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
     /** @param array<int, array{product_unit_id:int, quantity:string, unit_price:string}> $items */
-    public function handle(Store $store, User $actor, int $supplierId, array $items, string $discount, string $additionalCost, ?int $accountId, string $paidAmount, string $occurredAt, ?string $supplierInvoice, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): Purchase
+    public function handle(Store $store, BusinessMembership|User $actor, int $supplierId, array $items, string $discount, string $additionalCost, ?int $accountId, string $paidAmount, string $occurredAt, ?string $supplierInvoice, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): Purchase
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $supplierInvoice = $supplierInvoice === '' ? null : $supplierInvoice;
         $date = $this->timestamps->parse($store, $occurredAt);
         $requestHash = $this->idempotency->hash(compact('supplierId', 'items', 'discount', 'additionalCost', 'accountId', 'paidAmount', 'supplierInvoice', 'notes') + ['occurred_at' => $date->toISOString()]);
@@ -69,15 +71,18 @@ class PostPurchase
                 }
                 $purchase = Purchase::create([
                     'store_id' => $store->id, 'supplier_id' => $supplierId,
+                    'currency_code' => $store->currencyCode(),
                     'document_number' => $this->numbers->handle($store->id, 'pur', $date), 'supplier_invoice_number' => $supplierInvoice,
                     'subtotal' => $calculation['subtotal'], 'discount_amount' => $calculation['discount'],
                     'additional_cost' => $calculation['additional_cost'], 'total_amount' => $calculation['total'],
                     'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash, 'occurred_at' => $date,
-                    'notes' => $notes, 'created_by_user_id' => $actor->id, 'posted_at' => now(),
+                    'notes' => $notes,
+                    'created_by_business_membership_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 foreach ($calculation['items'] as $item) {
-                    PurchaseItem::create(['store_id' => $store->id, 'purchase_id' => $purchase->id, ...$item]);
                     $stockVariantId = $item['stock_variant_id'] === null ? null : (int) $item['stock_variant_id'];
+                    unset($item['stock_variant_id']);
+                    PurchaseItem::create(['store_id' => $store->id, 'purchase_id' => $purchase->id, ...$item]);
                     $this->stock->handle($store->id, (int) $item['product_id'], (string) $item['base_quantity'], (string) $item['base_unit_cost'], 'purchase', $purchase, $date, $actor, $notes, false, (string) $item['landed_total'], $stockVariantId);
                 }
                 $this->payable->handle($store->id, $supplierId, 'increase', $calculation['total'], 'purchase', $purchase, $date, $actor, $notes);

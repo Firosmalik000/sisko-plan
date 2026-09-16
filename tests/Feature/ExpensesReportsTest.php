@@ -8,9 +8,11 @@ use App\Actions\Ledgers\PostOpeningCash;
 use App\Actions\Ledgers\PostStockAdjustment;
 use App\Actions\Sales\PostSale;
 use App\Actions\Sales\PostSaleReturn;
+use App\Enums\BusinessRole;
 use App\Enums\FinancialAccountType;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Models\BusinessMembership;
 use App\Models\Country;
 use App\Models\ExpenseCategory;
 use App\Models\FinancialAccount;
@@ -102,8 +104,9 @@ class ExpensesReportsTest extends TestCase
         [$owner, $store, , $cash, , $category] = $this->fixtures();
         [, , , $foreignCash, , $foreignCategory] = $this->fixtures();
         $cashier = User::factory()->create();
-        $store->users()->attach($cashier, ['role' => MembershipRole::Cashier->value, 'status' => MembershipStatus::Active->value]);
-        $session = ['active_store_id' => $store->id];
+        $member = BusinessMembership::factory()->for($store->business)->for($cashier)->create(['business_role' => BusinessRole::Staff]);
+        $member->stores()->attach($store, ['role' => MembershipRole::Cashier->value, 'status' => MembershipStatus::Active->value]);
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
 
         $this->actingAs($cashier)->withSession($session)->get(route('expenses.index'))->assertForbidden();
         $this->actingAs($cashier)->withSession($session)->get(route('reports.index'))->assertForbidden();
@@ -195,7 +198,7 @@ class ExpensesReportsTest extends TestCase
     {
         CarbonImmutable::setTestNow('2026-08-08T12:00:00+07:00');
         [$owner, $indonesiaStore, , $indonesiaCash, , $indonesiaCategory] = $this->fixtures();
-        $malaysiaStore = Store::factory()->for($owner, 'owner')->create([
+        $malaysiaStore = Store::factory()->ownedBy($owner)->create([
             'name' => 'Kedai Malaysia',
             'country_id' => Country::query()->where('code', 'MY')->value('id'),
         ]);
@@ -321,7 +324,7 @@ class ExpensesReportsTest extends TestCase
     private function fixtures(): array
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $product = Product::factory()->for($store)->create();
         $cash = FinancialAccount::factory()->for($store)->create(['name' => 'Kas', 'type' => FinancialAccountType::Cash]);
         $bank = FinancialAccount::factory()->for($store)->create(['name' => 'Bank', 'type' => FinancialAccountType::Bank]);

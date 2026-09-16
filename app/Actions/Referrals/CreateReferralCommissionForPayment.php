@@ -12,7 +12,7 @@ class CreateReferralCommissionForPayment
 {
     public function handle(SubscriptionPayment $payment, ?string $commissionRate = null): ?ReferralCommission
     {
-        if ($payment->user_id === null || $payment->plan_id === null || (string) $payment->amount === '0.0000') {
+        if ($payment->plan_id === null || (string) $payment->amount === '0.0000') {
             return null;
         }
 
@@ -22,8 +22,8 @@ class CreateReferralCommissionForPayment
             return null;
         }
 
-        $attribution = ReferralAttribution::query()->where('referred_user_id', $payment->user_id)->first();
-        if ($attribution === null || $attribution->referrer_user_id === $payment->user_id) {
+        $attribution = ReferralAttribution::query()->where('referred_user_id', $payment->purchaser_user_id)->first();
+        if ($attribution === null || $attribution->referrer_user_id === $payment->purchaser_user_id) {
             return null;
         }
 
@@ -31,7 +31,7 @@ class CreateReferralCommissionForPayment
             ['subscription_payment_id' => $payment->id],
             [
                 'referrer_user_id' => $attribution->referrer_user_id,
-                'referred_user_id' => $payment->user_id,
+                'referred_user_id' => $payment->purchaser_user_id,
                 'referral_attribution_id' => $attribution->id,
                 'plan_id' => $plan->id,
                 'plan_name' => $payment->plan_name ?? $plan->name,

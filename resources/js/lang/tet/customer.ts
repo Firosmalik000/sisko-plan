@@ -1,4 +1,7 @@
+import { operationalCustomerCatalog } from '../customer-operations.ts';
+
 export const tetCustomerCatalog: Record<string, string> = {
+    ...operationalCustomerCatalog('tet'),
     ':name photo': 'Foto :name',
     '· Checkout': '· Checkout',
     '· Invoices': '· Fatura sira',

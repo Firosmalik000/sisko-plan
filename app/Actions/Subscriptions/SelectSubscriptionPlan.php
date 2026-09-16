@@ -4,10 +4,10 @@ namespace App\Actions\Subscriptions;
 
 use App\Actions\Audit\RecordAudit;
 use App\Enums\SubscriptionStatus;
+use App\Models\BusinessMembership;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SubscriptionPeriod;
-use App\Models\User;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Services\Subscriptions\SubscriptionPeriods;
 use Carbon\CarbonImmutable;
@@ -26,15 +26,16 @@ class SelectSubscriptionPlan
      * @param  array<string, mixed>|null  $purchasedTerms
      * @return array{subscription:Subscription,period:SubscriptionPeriod,scheduled:bool}
      */
-    public function handle(User $owner, Plan $plan, ?string $ipAddress, ?array $purchasedTerms = null): array
+    public function handle(BusinessMembership $actor, Plan $plan, ?string $ipAddress, ?array $purchasedTerms = null): array
     {
-        $this->periods->syncForOwner($owner->id);
+        $this->periods->syncForBusiness($actor->business_id);
 
-        return DB::transaction(function () use ($owner, $plan, $ipAddress, $purchasedTerms): array {
-            User::query()->whereKey($owner->id)->lockForUpdate()->firstOrFail();
+        return DB::transaction(function () use ($actor, $plan, $ipAddress, $purchasedTerms): array {
+            $actor = BusinessMembership::query()->with(['business', 'user'])->whereKey($actor->id)->lockForUpdate()->firstOrFail();
+            abort_unless($actor->business_role->value === 'owner' && $actor->user !== null, 403);
             $subscription = Subscription::query()
                 ->with(['plan', 'store'])
-                ->where('user_id', $owner->id)
+                ->where('business_id', $actor->business_id)
                 ->lockForUpdate()
                 ->first();
             $planQuery = Plan::query()->whereKey($plan->id);
@@ -70,7 +71,7 @@ class SelectSubscriptionPlan
                 ]);
             }
 
-            $this->access->assertPlanCapacity($owner, $fulfillmentPlan);
+            $this->access->assertPlanCapacity($actor->business, $fulfillmentPlan);
 
             $now = CarbonImmutable::now();
             $freeLifetimeUpgrade = $operational
@@ -97,7 +98,7 @@ class SelectSubscriptionPlan
             ]);
             $period = SubscriptionPeriod::create([
                 'subscription_id' => $subscription->id,
-                'user_id' => $owner->id,
+                'business_id' => $subscription->business_id,
                 'plan_id' => $selectedPlan->id,
                 'plan_name' => $fulfillmentPlan->name,
                 'monthly_price' => $fulfillmentPlan->monthly_price,
@@ -107,7 +108,6 @@ class SelectSubscriptionPlan
                 'period_end' => $periodEnd,
                 'source' => 'self_service',
                 'activated_at' => $scheduled ? null : $now,
-                'created_by_user_id' => $owner->id,
             ]);
             if (! $scheduled) {
                 if ($freeLifetimeUpgrade) {
@@ -122,7 +122,6 @@ class SelectSubscriptionPlan
                     'plan_id' => $selectedPlan->id,
                     'starts_at' => $periodStart,
                     'cancelled_at' => null,
-                    'created_by_user_id' => $owner->id,
                 ];
                 if ($fulfillmentPlan->is_trial) {
                     $attributes += [
@@ -143,7 +142,7 @@ class SelectSubscriptionPlan
                 $subscription->update($attributes);
             }
 
-            $this->audit->handle($owner, 'subscription.plan_selected', $subscription, $subscription->store, $ipAddress, [
+            $this->audit->handle($actor, 'subscription.plan_selected', $subscription, $subscription->store, $ipAddress, [
                 'before' => $before,
                 'after' => $subscription->only([
                     'plan_id', 'status', 'starts_at', 'trial_ends_at', 'trial_used_at',

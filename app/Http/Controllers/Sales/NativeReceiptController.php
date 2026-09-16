@@ -7,7 +7,6 @@ use App\Models\Currency;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Store;
-use App\Models\User;
 use App\Support\LocaleContext;
 use App\Support\MarketplaceCatalog;
 use Carbon\CarbonImmutable;
@@ -25,7 +24,7 @@ final class NativeReceiptController extends Controller
         }
 
         $store = Store::query()->with(['country', 'settings'])->findOrFail($sale->store_id);
-        $cashierName = User::query()->whereKey($sale->created_by_user_id)->valueOrFail('name');
+        $cashierName = $sale->cashier_name ?? __('Unknown cashier');
         $items = SaleItem::query()
             ->where(['store_id' => $store->id, 'sale_id' => $sale->id])
             ->orderBy('id')

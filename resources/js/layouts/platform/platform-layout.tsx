@@ -11,6 +11,8 @@ import {
     MapPinned,
     Images,
     ReceiptText,
+    ShoppingBag,
+    Store,
     UserCog,
     Users,
 } from 'lucide-react';
@@ -58,9 +60,15 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 permission: 'platform.users.view',
             },
             {
-                label: 'Store',
-                href: '/super-admin/stores',
+                label: 'Businesses',
+                href: '/super-admin/businesses',
                 icon: Building2,
+                permission: 'platform.businesses.view',
+            },
+            {
+                label: 'Stores',
+                href: '/super-admin/stores',
+                icon: Store,
                 permission: 'platform.stores.view',
             },
         ],
@@ -96,6 +104,12 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 href: '/super-admin/geography',
                 icon: MapPinned,
                 permission: 'platform.geography.view',
+            },
+            {
+                label: 'Commerce references',
+                href: '/super-admin/commerce',
+                icon: ShoppingBag,
+                permission: 'platform.commerce.view',
             },
             {
                 label: 'Branding & SEO',

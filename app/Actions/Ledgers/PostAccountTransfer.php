@@ -4,6 +4,7 @@ namespace App\Actions\Ledgers;
 
 use App\Actions\Audit\RecordAudit;
 use App\Models\AccountTransfer;
+use App\Models\BusinessMembership;
 use App\Models\FinancialAccount;
 use App\Models\Store;
 use App\Models\User;
@@ -15,8 +16,9 @@ class PostAccountTransfer
 {
     public function __construct(private NextDocumentNumber $numbers, private ApplyCashTransaction $cash, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
-    public function handle(Store $store, User $actor, int $fromId, int $toId, string $amount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): AccountTransfer
+    public function handle(Store $store, BusinessMembership|User $actor, int $fromId, int $toId, string $amount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): AccountTransfer
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $date = $this->timestamps->parse($store, $occurredAt);
         $requestHash = $this->idempotency->hash(['from_account_id' => $fromId, 'to_account_id' => $toId, 'amount' => $amount, 'occurred_at' => $date->toISOString(), 'notes' => $notes]);
 
@@ -35,9 +37,10 @@ class PostAccountTransfer
                 }
                 $transfer = AccountTransfer::create([
                     'store_id' => $store->id, 'document_number' => $this->numbers->handle($store->id, 'trf', $date),
+                    'currency_code' => $store->currencyCode(),
                     'from_account_id' => $fromId, 'to_account_id' => $toId, 'amount' => $amount,
                     'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash, 'occurred_at' => $date, 'notes' => $notes,
-                    'created_by_user_id' => $actor->id, 'posted_at' => now(),
+                    'created_by_business_membership_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 $this->cash->handle($store->id, $fromId, 'out', $amount, 'transfer_out', $transfer, $date, $actor, $notes);
                 $this->cash->handle($store->id, $toId, 'in', $amount, 'transfer_in', $transfer, $date, $actor, $notes);

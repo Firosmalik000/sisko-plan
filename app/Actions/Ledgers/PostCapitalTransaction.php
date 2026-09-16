@@ -3,6 +3,7 @@
 namespace App\Actions\Ledgers;
 
 use App\Actions\Audit\RecordAudit;
+use App\Models\BusinessMembership;
 use App\Models\CapitalTransaction;
 use App\Models\CapitalTransactionItem;
 use App\Models\FinancialAccount;
@@ -20,8 +21,9 @@ class PostCapitalTransaction
     public function __construct(private NextDocumentNumber $numbers, private ApplyCashTransaction $cash, private ApplyStockMovement $stock, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
     /** @param array<int, array{product_id:int, product_variant_id?:int|null, quantity:string, unit_cost?:string|null}> $items */
-    public function handle(Store $store, User $actor, string $type, ?int $accountId, ?string $amount, array $items, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): CapitalTransaction
+    public function handle(Store $store, BusinessMembership|User $actor, string $type, ?int $accountId, ?string $amount, array $items, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): CapitalTransaction
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $date = $this->timestamps->parse($store, $occurredAt);
         $requestHash = $this->idempotency->hash(['type' => $type, 'account_id' => $accountId, 'amount' => $amount, 'items' => $items, 'occurred_at' => $date->toISOString(), 'notes' => $notes]);
 
@@ -46,9 +48,10 @@ class PostCapitalTransaction
                 }
                 $capital = CapitalTransaction::create([
                     'store_id' => $store->id, 'document_number' => $this->numbers->handle($store->id, 'cap', $date),
+                    'currency_code' => $store->currencyCode(),
                     'type' => $type, 'financial_account_id' => $cashType ? $accountId : null, 'total_value' => '0',
                     'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash, 'occurred_at' => $date, 'notes' => $notes,
-                    'created_by_user_id' => $actor->id, 'posted_at' => now(),
+                    'created_by_business_membership_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 $total = '0.0000';
                 if ($cashType) {

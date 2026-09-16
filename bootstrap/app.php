@@ -2,13 +2,16 @@
 
 use App\Http\Controllers\ReadinessController;
 use App\Http\Middleware\AddRequestId;
+use App\Http\Middleware\AuthenticatePosDevice;
 use App\Http\Middleware\EnsurePlatformAdminHasTwoFactor;
+use App\Http\Middleware\EnsurePosActor;
 use App\Http\Middleware\EnsureSubscriptionAllowsWrites;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsPlatformAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetActiveBusiness;
 use App\Http\Middleware\SetActiveStore;
 use App\Http\Middleware\SetApplicationLocale;
 use App\Http\Middleware\TranslateValidationExceptions;
@@ -59,10 +62,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'active.business' => SetActiveBusiness::class,
             'active.store' => SetActiveStore::class,
             'platform-admin' => EnsureUserIsPlatformAdmin::class,
             'platform-admin.2fa' => EnsurePlatformAdminHasTwoFactor::class,
             'subscription.access' => EnsureSubscriptionAllowsWrites::class,
+            'pos.device' => AuthenticatePosDevice::class,
+            'pos.actor' => EnsurePosActor::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

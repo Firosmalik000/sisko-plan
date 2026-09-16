@@ -30,7 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('settings/appearance', 'customer/settings/appearance')->name('appearance.edit');
 
     Route::patch('settings/store', [ProfileController::class, 'updateStore'])
-        ->middleware(['active.store', 'throttle:store-writes'])
+        ->middleware(['active.business', 'active.store', 'throttle:store-writes'])
         ->name('settings.store.update');
 });
 

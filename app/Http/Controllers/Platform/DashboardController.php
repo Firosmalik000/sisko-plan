@@ -21,7 +21,7 @@ class DashboardController extends Controller
     {
         $today = now()->startOfDay();
         $operationalSubscriptions = Subscription::query()
-            ->whereNotNull('user_id')
+            ->whereNotNull('business_id')
             ->where(function ($query) use ($today): void {
                 $query->where(function ($active) use ($today): void {
                     $active->where('status', SubscriptionStatus::Active->value)
@@ -44,7 +44,7 @@ class DashboardController extends Controller
         });
         $subscriptionBreakdown = collect(SubscriptionStatus::cases())->mapWithKeys(
             fn (SubscriptionStatus $status): array => [
-                $status->value => Subscription::query()->whereNotNull('user_id')->where('status', $status)->count(),
+                $status->value => Subscription::query()->whereNotNull('business_id')->where('status', $status)->count(),
             ],
         );
 
@@ -68,14 +68,14 @@ class DashboardController extends Controller
                 'two_factor_enabled' => User::query()->whereNotNull('platform_role')->whereNotNull('two_factor_confirmed_at')->count(),
             ],
             'recent_payments' => SubscriptionPayment::query()
-                ->with(['user:id,name', 'store:id,name'])
+                ->with(['business:id,name', 'store:id,name'])
                 ->latest('paid_at')
                 ->limit(5)
                 ->get()
                 ->map(fn (SubscriptionPayment $payment): array => [
                     'public_id' => $payment->public_id,
                     'receipt_number' => $payment->receipt_number,
-                    'account' => $payment->user->name ?? $payment->store->name,
+                    'account' => $payment->business->name ?? $payment->store->name,
                     'amount' => $payment->amount,
                     'paid_at' => $payment->paid_at->toIso8601String(),
                 ]),

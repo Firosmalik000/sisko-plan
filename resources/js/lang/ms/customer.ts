@@ -1,4 +1,7 @@
+import { operationalCustomerCatalog } from '../customer-operations.ts';
+
 export const msCustomerCatalog: Record<string, string> = {
+    ...operationalCustomerCatalog('ms'),
     ':name photo': 'Foto :name',
     '· Checkout': '· Juruwang',
     '· Invoices': '· Invois',

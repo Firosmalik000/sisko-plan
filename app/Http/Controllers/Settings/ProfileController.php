@@ -11,7 +11,6 @@ use App\Models\Store;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedUser;
 use App\Support\CurrentStore;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,11 +33,11 @@ class ProfileController extends Controller
         $store = $this->activeStore($request);
 
         if ($store !== null) {
-            $store->loadMissing(['settings', 'subscription.plan']);
+            $store->loadMissing(['settings', 'business.subscription.plan']);
         }
 
         return Inertia::render('customer/settings/profile', [
-            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
+            'mustVerifyEmail' => true,
             'status' => $request->session()->get('status'),
             'store' => $store === null ? null : [
                 'public_id' => $store->public_id,
@@ -126,9 +125,9 @@ class ProfileController extends Controller
     {
         $user = AuthenticatedUser::get($request);
 
-        if ($user->ownedStores()->exists()) {
+        if ($user->businessMemberships()->where('business_role', 'owner')->exists()) {
             throw ValidationException::withMessages([
-                'password' => __("A store owner's account cannot be deleted. Transfer or close the store ownership first."),
+                'password' => __('A business owner account cannot be deleted. Transfer or close the business ownership first.'),
             ]);
         }
 
@@ -145,9 +144,21 @@ class ProfileController extends Controller
     private function activeStore(Request $request): ?Store
     {
         $user = AuthenticatedUser::get($request);
-        $stores = $user->activeStores()
+        $stores = Store::query()
+            ->where('stores.status', 'active')
+            ->whereHas('business.memberships', fn ($memberships) => $memberships
+                ->where('user_id', $user->id)
+                ->where('status', 'active'))
+            ->where(function ($stores) use ($user): void {
+                $stores->whereHas('business.memberships', fn ($memberships) => $memberships
+                    ->where('user_id', $user->id)
+                    ->whereIn('business_role', ['owner', 'admin']))
+                    ->orWhereHas('assignments.businessMembership', fn ($memberships) => $memberships
+                        ->where('user_id', $user->id)
+                        ->where('status', 'active'));
+            })
             ->orderBy('stores.id')
-            ->get(['stores.id', 'stores.public_id', 'stores.name', 'stores.owner_user_id', 'stores.status']);
+            ->get(['stores.id', 'stores.public_id', 'stores.business_id', 'stores.name', 'stores.status']);
 
         return $stores->firstWhere('id', (int) $request->session()->get('active_store_id'))
             ?? $stores->first();

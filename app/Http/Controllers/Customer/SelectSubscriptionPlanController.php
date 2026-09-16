@@ -6,7 +6,7 @@ use App\Actions\Subscriptions\CompleteSubscriptionOrder;
 use App\Actions\Subscriptions\CreateSubscriptionOrder;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
-use App\Models\User;
+use App\Support\Authentication\AuthenticatedUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,13 +17,11 @@ class SelectSubscriptionPlanController extends Controller
 {
     public function __invoke(Request $request, CreateSubscriptionOrder $orders, CompleteSubscriptionOrder $complete): RedirectResponse
     {
-        $user = $request->user();
-
-        if (! $user instanceof User || $user->isPlatformAdmin()) {
-            abort(403);
-        }
-
-        abort_unless($user->ownedStores()->exists(), 403);
+        $membership = AuthenticatedUser::get($request)->businessMemberships()
+            ->where('business_role', 'owner')->where('status', 'active')
+            ->when($request->session()->has('active_business_id'), fn ($query) => $query->where('business_id', $request->session()->get('active_business_id')))
+            ->first();
+        abort_unless($membership !== null, 403);
 
         $validated = $request->validate([
             'plan_id' => ['required', 'string', 'exists:plans,public_id'],
@@ -39,7 +37,7 @@ class SelectSubscriptionPlanController extends Controller
             throw ValidationException::withMessages(['plan_id' => __('Plan is unavailable.')]);
         }
 
-        $order = $orders->handle($user, $plan, $validated['idempotency_key'] ?? (string) Str::uuid());
+        $order = $orders->handle($membership, $plan, $validated['idempotency_key'] ?? (string) Str::uuid());
         $order = $complete->handle($order, $request->ip());
 
         if ($order->plan_kind === Plan::KIND_ADDON) {

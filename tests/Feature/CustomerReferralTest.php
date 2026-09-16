@@ -10,7 +10,6 @@ use App\Actions\Referrals\TransitionReferralCommission;
 use App\Actions\Subscriptions\BackfillSelfServiceSubscriptionOrders;
 use App\Actions\Subscriptions\CompleteSubscriptionOrder;
 use App\Actions\Subscriptions\CreateSubscriptionOrder;
-use App\Actions\Subscriptions\StartDefaultSubscription;
 use App\Enums\CommissionPayoutStatus;
 use App\Enums\ReferralCommissionStatus;
 use App\Enums\SubscriptionOrderStatus;
@@ -243,7 +242,7 @@ class CustomerReferralTest extends TestCase
     {
         $referrer = User::factory()->create();
         $referred = User::factory()->create();
-        Store::factory()->for($referred, 'owner')->create();
+        $store = Store::factory()->ownedBy($referred)->create();
         app(AttributeReferral::class)->handle($referred, $referrer->referralCode);
         $addonPlan = Plan::create([
             'code' => 'referral-staff-addon',
@@ -273,7 +272,7 @@ class CustomerReferralTest extends TestCase
 
         $payment = SubscriptionPayment::query()->sole();
         $commission = ReferralCommission::query()->sole();
-        $addon = $referred->subscription->addons()->sole();
+        $addon = $store->business->subscription->addons()->sole();
         $this->assertSame($addonPlan->id, $payment->plan_id);
         $this->assertSame(Plan::KIND_ADDON, $payment->plan_kind);
         $this->assertSame('30.0000', $payment->amount);
@@ -291,7 +290,7 @@ class CustomerReferralTest extends TestCase
     {
         $referrer = User::factory()->create();
         $referred = User::factory()->create();
-        Store::factory()->for($referred, 'owner')->create();
+        Store::factory()->ownedBy($referred)->create();
         app(AttributeReferral::class)->handle($referred, $referrer->referralCode);
         $basePlan = Plan::create([
             'code' => 'referral-paid-base',
@@ -329,7 +328,7 @@ class CustomerReferralTest extends TestCase
     {
         $referrer = User::factory()->create();
         $referred = User::factory()->create();
-        Store::factory()->for($referred, 'owner')->create();
+        Store::factory()->ownedBy($referred)->create();
         app(AttributeReferral::class)->handle($referred, $referrer->referralCode);
         $freePlan = Plan::create([
             'code' => 'alternate-free-plan', 'name' => 'Alternate Free', 'kind' => Plan::KIND_BASE,
@@ -354,7 +353,7 @@ class CustomerReferralTest extends TestCase
     {
         $referrer = User::factory()->create();
         $referred = User::factory()->create();
-        Store::factory()->for($referred, 'owner')->create();
+        $store = Store::factory()->ownedBy($referred)->create();
         app(AttributeReferral::class)->handle($referred, $referrer->referralCode);
         $addonPlan = Plan::create([
             'code' => 'gateway-ready-addon', 'name' => 'Gateway Ready Add-on', 'kind' => Plan::KIND_ADDON,
@@ -364,7 +363,8 @@ class CustomerReferralTest extends TestCase
             'is_active' => true, 'is_default' => false,
         ]);
 
-        $order = app(CreateSubscriptionOrder::class)->handle($referred, $addonPlan, (string) Str::uuid());
+        $owner = $referred->businessMemberships()->where('business_id', $store->business_id)->sole();
+        $order = app(CreateSubscriptionOrder::class)->handle($owner, $addonPlan, (string) Str::uuid());
         $this->assertSame(SubscriptionOrderStatus::Pending, $order->status);
         $this->assertDatabaseCount('subscription_addons', 0);
         $this->assertDatabaseCount('subscription_payments', 0);
@@ -383,7 +383,7 @@ class CustomerReferralTest extends TestCase
         app(CompleteSubscriptionOrder::class)->handle($order, null);
 
         $commission = ReferralCommission::query()->sole();
-        $addon = $referred->subscription->addons()->sole();
+        $addon = $store->business->subscription->addons()->sole();
         $this->assertSame('Gateway Ready Add-on', $addon->plan_name);
         $this->assertSame('100.0000', $addon->price);
         $this->assertSame(1, $addon->duration_months);
@@ -401,9 +401,9 @@ class CustomerReferralTest extends TestCase
     {
         $referrer = User::factory()->create();
         $referred = User::factory()->create();
-        Store::factory()->for($referred, 'owner')->create();
+        $store = Store::factory()->ownedBy($referred)->create();
         app(AttributeReferral::class)->handle($referred, $referrer->referralCode);
-        $subscription = $referred->subscription;
+        $subscription = $store->business->subscription;
         $addonPlan = Plan::create([
             'code' => 'legacy-self-service-addon', 'name' => 'Legacy Add-on', 'kind' => Plan::KIND_ADDON,
             'offer_category' => Plan::CATEGORY_STORE, 'billing_cycle' => Plan::BILLING_FIXED,
@@ -412,7 +412,7 @@ class CustomerReferralTest extends TestCase
             'is_active' => true, 'is_default' => false,
         ]);
         $addon = $subscription->addons()->create([
-            'user_id' => $referred->id, 'plan_id' => $addonPlan->id, 'plan_name' => $addonPlan->name,
+            'business_id' => $subscription->business_id, 'plan_id' => $addonPlan->id, 'plan_name' => $addonPlan->name,
             'offer_category' => $addonPlan->offer_category, 'price' => '50', 'duration_months' => 1,
             'stores' => 1, 'products' => 0, 'members' => 0, 'scans' => 0,
             'starts_on' => now()->toDateString(), 'ends_on' => now()->addMonth()->subDay()->toDateString(),
@@ -440,10 +440,12 @@ class CustomerReferralTest extends TestCase
     private function commission(User $admin, User $referrer, User $referred, Plan $plan, string $amount): ReferralCommission
     {
         app(AttributeReferral::class)->handle($referred, $referrer->referralCode);
-        $subscription = app(StartDefaultSubscription::class)->handle($referred);
+        $store = Store::factory()->ownedBy($referred)->create();
+        $subscription = $store->business->subscription;
         $subscription->update(['plan_id' => $plan->id]);
         $payment = SubscriptionPayment::create([
-            'user_id' => $referred->id,
+            'purchaser_user_id' => $referred->id,
+            'business_id' => $subscription->business_id,
             'subscription_id' => $subscription->id,
             'plan_id' => $plan->id,
             'plan_name' => $plan->name,

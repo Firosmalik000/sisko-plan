@@ -2,8 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\BusinessRole;
+use App\Enums\BusinessStatus;
 use App\Enums\MembershipStatus;
 use App\Enums\StoreStatus;
+use App\Models\BusinessMembership;
 use App\Models\Currency;
 use App\Models\PlatformSetting;
 use App\Models\Store;
@@ -13,6 +16,7 @@ use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedPlatformAdmin;
 use App\Support\Authentication\AuthenticatedUser;
 use App\Support\Authentication\Impersonation;
+use App\Support\BusinessCapability;
 use App\Support\LocaleContext;
 use App\Support\PlatformPermission;
 use Illuminate\Http\Request;
@@ -50,6 +54,9 @@ class HandleInertiaRequests extends Middleware
     {
         $user = AuthenticatedUser::optional($request);
         $stores = collect();
+        $businesses = collect();
+        $activeBusiness = null;
+        $capabilities = [];
         $activeStore = null;
         $subscription = null;
         $storeCreation = null;
@@ -58,12 +65,44 @@ class HandleInertiaRequests extends Middleware
         $appOpenPromotions = [];
 
         if ($user !== null) {
-            $storeModels = $user->stores()
+            $businessMemberships = $user->businessMemberships()
+                ->where('status', MembershipStatus::Active->value)
+                ->whereHas('business', fn ($query) => $query->where('status', BusinessStatus::Active->value))
+                ->with('business')
+                ->orderBy('id')
+                ->get();
+            $activeBusinessMembership = $businessMemberships
+                ->firstWhere('business_id', (int) $request->session()->get('active_business_id'))
+                ?? $businessMemberships->first();
+            $businesses = $businessMemberships->map(fn (BusinessMembership $membership): array => [
+                'public_id' => $membership->business->public_id,
+                'name' => $membership->business->name,
+                'role' => $membership->business_role->value,
+            ]);
+            $activeBusiness = $activeBusinessMembership === null ? null : [
+                'public_id' => $activeBusinessMembership->business->public_id,
+                'name' => $activeBusinessMembership->business->name,
+                'role' => $activeBusinessMembership->business_role->value,
+            ];
+
+            $storeQuery = Store::query()
                 ->where('stores.status', StoreStatus::Active->value)
-                ->wherePivot('status', MembershipStatus::Active->value)
                 ->orderBy('stores.name')
-                ->with(['country.currency', 'settings'])
-                ->get(['stores.id', 'stores.public_id', 'stores.owner_user_id', 'stores.country_id', 'stores.name']);
+                ->with(['country.currency', 'settings']);
+            if ($activeBusinessMembership === null) {
+                $storeModels = collect();
+            } elseif ($activeBusinessMembership->business_role === BusinessRole::Staff) {
+                $storeModels = $storeQuery
+                    ->where('business_id', $activeBusinessMembership->business_id)
+                    ->whereHas('assignments', fn ($query) => $query
+                        ->where('business_membership_id', $activeBusinessMembership->id)
+                        ->where('status', MembershipStatus::Active->value))
+                    ->get(['stores.id', 'stores.public_id', 'stores.business_id', 'stores.country_id', 'stores.name']);
+            } else {
+                $storeModels = $storeQuery
+                    ->where('business_id', $activeBusinessMembership->business_id)
+                    ->get(['stores.id', 'stores.public_id', 'stores.business_id', 'stores.country_id', 'stores.name']);
+            }
 
             $activeStoreModel = $storeModels->firstWhere('id', $request->session()->get('active_store_id'))
                 ?? $storeModels->first();
@@ -72,14 +111,17 @@ class HandleInertiaRequests extends Middleware
                 ->filter()
                 ->unique();
             $currencies = Currency::query()->whereIn('code', $currencyCodes)->get()->keyBy('code');
-            $stores = $storeModels->map(function (Store $store) use ($currencies): array {
+            $stores = $storeModels->map(function (Store $store) use ($currencies, $activeBusinessMembership): array {
                 $currencyCode = $store->settings->currency ?? $store->country->currency_code ?? 'IDR';
                 $currency = $currencies->get($currencyCode);
+                $role = $activeBusinessMembership?->business_role === BusinessRole::Staff
+                    ? $store->assignments()->where('business_membership_id', $activeBusinessMembership->id)->value('role')
+                    : $activeBusinessMembership?->business_role->value;
 
                 return [
                     'public_id' => $store->public_id,
                     'name' => $store->name,
-                    'role' => $store->pivot->role,
+                    'role' => $role,
                     'country_code' => $store->country->code ?? 'ID',
                     'currency_code' => $currencyCode,
                     'currency_symbol' => $currency->symbol ?? 'Rp',
@@ -93,7 +135,9 @@ class HandleInertiaRequests extends Middleware
             $activeStore = $activeStoreModel === null ? null : [
                 'public_id' => $activeStoreModel->public_id,
                 'name' => $activeStoreModel->name,
-                'role' => $activeStoreModel->pivot->role,
+                'role' => $activeBusinessMembership?->business_role === BusinessRole::Staff
+                    ? $activeStoreModel->assignments()->where('business_membership_id', $activeBusinessMembership->id)->value('role')
+                    : $activeBusinessMembership?->business_role->value,
                 'theme_color' => $activeStoreModel->settings()->value('theme_color') ?? '#ee4d2d',
                 'country_code' => $activeStoreModel->country->code ?? 'ID',
                 'currency_code' => $activeStoreModel->settings->currency ?? $activeStoreModel->country->currency_code ?? 'IDR',
@@ -102,11 +146,14 @@ class HandleInertiaRequests extends Middleware
                 'currency_symbol_position' => $activeCurrency->symbol_position ?? 'before',
             ];
             if ($activeStoreModel !== null) {
+                if ($activeBusinessMembership !== null) {
+                    $capabilities = app(BusinessCapability::class)->for($activeBusinessMembership, $activeStoreModel);
+                }
                 $subscription = app(SubscriptionAccess::class)->summary($activeStoreModel);
                 $stockAlerts = app(StockAlertNotifications::class)->summary($user, $activeStoreModel);
             }
-            if (! $user->isPlatformAdmin()) {
-                $storeCreation = app(SubscriptionAccess::class)->storeCreationState($user);
+            if (! $user->isPlatformAdmin() && $activeBusinessMembership !== null) {
+                $storeCreation = app(SubscriptionAccess::class)->storeCreationState($activeBusinessMembership->business);
                 if ($this->isCustomerPortalRequest($request)) {
                     $delivery = app(PromotionDelivery::class);
                     $appOpenPromotions = $delivery->appOpenPromotions(LocaleContext::locale($request))
@@ -126,6 +173,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user,
             ],
+            'businesses' => $businesses,
+            'activeBusiness' => $activeBusiness,
+            'capabilities' => $capabilities,
             'platformAdmin' => ($platformAdmin = AuthenticatedPlatformAdmin::optional($request)) === null ? null : [
                 ...$platformAdmin->only(['id', 'name', 'email']),
                 'role' => $platformAdmin->platform_role?->value,

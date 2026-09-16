@@ -7,6 +7,7 @@ use App\Actions\Ledgers\ApplyCashTransaction;
 use App\Actions\Ledgers\IdempotencyGuard;
 use App\Actions\Ledgers\LedgerTimestamp;
 use App\Actions\Ledgers\NextDocumentNumber;
+use App\Models\BusinessMembership;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\FinancialAccount;
@@ -19,8 +20,9 @@ class PostExpense
 {
     public function __construct(private NextDocumentNumber $numbers, private ApplyCashTransaction $cash, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
-    public function handle(Store $store, User $actor, int $categoryId, int $accountId, string $amount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): Expense
+    public function handle(Store $store, BusinessMembership|User $actor, int $categoryId, int $accountId, string $amount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): Expense
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $date = $this->timestamps->parse($store, $occurredAt);
         $requestHash = $this->idempotency->hash(['category_id' => $categoryId, 'account_id' => $accountId, 'amount' => $amount, 'occurred_at' => $date->toISOString(), 'notes' => $notes]);
 
@@ -34,10 +36,12 @@ class PostExpense
                 $account = FinancialAccount::query()->where(['id' => $accountId, 'store_id' => $store->id, 'is_active' => true])->firstOrFail();
                 $expense = Expense::create([
                     'store_id' => $store->id, 'expense_category_id' => $category->id, 'financial_account_id' => $account->id,
+                    'currency_code' => $store->currencyCode(),
                     'document_number' => $this->numbers->handle($store->id, 'exp', $date),
                     'category_name' => $category->name, 'account_name' => $account->name, 'amount' => $amount,
                     'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash, 'occurred_at' => $date,
-                    'notes' => $notes, 'created_by_user_id' => $actor->id, 'posted_at' => now(),
+                    'notes' => $notes,
+                    'created_by_business_membership_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 $this->cash->handle($store->id, $account->id, 'out', $amount, 'expense', $expense, $date, $actor, $notes);
                 $this->audit->handle($actor, 'expense.posted', $expense, $store, $ipAddress, ['document_number' => $expense->document_number, 'amount' => $amount]);

@@ -12,6 +12,7 @@ use App\Support\Decimal;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class RecordSelfServiceSubscriptionPayment
 {
@@ -40,6 +41,7 @@ class RecordSelfServiceSubscriptionPayment
         $requestHash = $this->idempotency->hash([
             'source_key' => $sourceKey,
             'user_id' => $owner->id,
+            'business_id' => $subscription->business_id,
             'subscription_id' => $subscription->id,
             'plan_id' => $plan->id,
             'amount' => $amount,
@@ -61,11 +63,16 @@ class RecordSelfServiceSubscriptionPayment
                     return $existing;
                 }
 
-                $lockedSubscription = Subscription::query()
-                    ->whereKey($subscription->id)
-                    ->where('user_id', $owner->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
+                $subscriptionQuery = Subscription::query()->whereKey($subscription->id);
+                if (Schema::hasColumn('subscriptions', 'business_id')) {
+                    $subscriptionQuery->whereHas('business.memberships', fn ($query) => $query
+                        ->where('user_id', $owner->id)
+                        ->where('business_role', 'owner')
+                        ->where('status', 'active'));
+                } else {
+                    $subscriptionQuery->where('user_id', $owner->id);
+                }
+                $lockedSubscription = $subscriptionQuery->lockForUpdate()->firstOrFail();
                 $lockedPlan = Plan::query()->whereKey($plan->id)->lockForUpdate()->firstOrFail();
                 $period = $paidAt->format('Ym');
                 DB::table('platform_sequences')->insertOrIgnore([
@@ -85,8 +92,8 @@ class RecordSelfServiceSubscriptionPayment
                     'updated_at' => now(),
                 ]);
 
-                $payment = SubscriptionPayment::create([
-                    'user_id' => $owner->id,
+                $attributes = [
+                    'purchaser_user_id' => $owner->id,
                     'store_id' => $lockedSubscription->store_id,
                     'subscription_id' => $lockedSubscription->id,
                     'plan_id' => $lockedPlan->id,
@@ -103,7 +110,13 @@ class RecordSelfServiceSubscriptionPayment
                     'paid_at' => $paidAt,
                     'notes' => null,
                     'created_by_user_id' => $owner->id,
-                ]);
+                ];
+                if (Schema::hasColumn('subscription_payments', 'business_id')) {
+                    $attributes['business_id'] = $lockedSubscription->business_id;
+                } else {
+                    $attributes['user_id'] = $owner->id;
+                }
+                $payment = SubscriptionPayment::create($attributes);
                 $payment->setRelation('plan', $lockedPlan);
                 $this->createCommission->handle($payment, $commissionRate);
 

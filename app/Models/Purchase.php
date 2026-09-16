@@ -10,9 +10,10 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @property int $store_id
  * @property int $supplier_id
+ * @property string $currency_code
  * @property string $total_amount
  */
-#[Fillable(['store_id', 'supplier_id', 'document_number', 'supplier_invoice_number', 'subtotal', 'discount_amount', 'additional_cost', 'total_amount', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_user_id', 'posted_at'])]
+#[Fillable(['store_id', 'currency_code', 'supplier_id', 'document_number', 'supplier_invoice_number', 'subtotal', 'discount_amount', 'additional_cost', 'total_amount', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_business_membership_id', 'posted_at'])]
 class Purchase extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;

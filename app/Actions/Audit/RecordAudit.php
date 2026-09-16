@@ -3,6 +3,7 @@
 namespace App\Actions\Audit;
 
 use App\Models\AuditLog;
+use App\Models\BusinessMembership;
 use App\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,6 +24,7 @@ class RecordAudit
             'store_id' => $store?->id,
             'actor_type' => $actor->getMorphClass(),
             'actor_id' => $actor->getKey(),
+            'actor_business_membership_id' => $actor instanceof BusinessMembership ? $actor->id : null,
             'action' => $action,
             'subject_type' => $subject?->getMorphClass(),
             'subject_id' => $subject?->getKey(),

@@ -1,0 +1,124 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /** @var list<string> */
+    private array $tables = [
+        'subscriptions',
+        'subscription_periods',
+        'subscription_addons',
+        'subscription_payments',
+        'subscription_scan_usages',
+        'subscription_scan_events',
+    ];
+
+    public function up(): void
+    {
+        foreach ($this->tables as $tableName) {
+            Schema::table($tableName, function (Blueprint $table): void {
+                $table->foreignId('business_id')->nullable()->constrained()->restrictOnDelete();
+            });
+        }
+        Schema::table('subscription_payments', function (Blueprint $table): void {
+            $table->foreignId('purchaser_user_id')->nullable()->after('business_id')->constrained('users')->restrictOnDelete();
+        });
+
+        DB::table('subscriptions')->orderBy('id')->eachById(function (object $subscription): void {
+            $businessId = DB::table('business_memberships')
+                ->where('user_id', $subscription->user_id)
+                ->where('business_role', 'owner')
+                ->orderBy('id')
+                ->value('business_id');
+            if ($businessId === null) {
+                throw new RuntimeException("Subscription [{$subscription->id}] has no owning Business.");
+            }
+            DB::table('subscriptions')->where('id', $subscription->id)->update(['business_id' => $businessId]);
+        });
+
+        foreach (['subscription_periods', 'subscription_addons', 'subscription_payments'] as $tableName) {
+            DB::table($tableName)->orderBy('id')->eachById(function (object $row) use ($tableName): void {
+                $businessId = DB::table('subscriptions')->where('id', $row->subscription_id)->value('business_id');
+                if ($businessId === null) {
+                    throw new RuntimeException("{$tableName} row [{$row->id}] has no Business subscription.");
+                }
+                $attributes = ['business_id' => $businessId];
+                if ($tableName === 'subscription_payments') {
+                    $attributes['purchaser_user_id'] = $row->user_id;
+                }
+                DB::table($tableName)->where('id', $row->id)->update($attributes);
+            });
+        }
+
+        DB::table('subscription_scan_usages')->orderBy('id')->eachById(function (object $usage): void {
+            $businessId = DB::table('business_memberships')->where('user_id', $usage->user_id)
+                ->where('business_role', 'owner')->orderBy('id')->value('business_id');
+            if ($businessId === null) {
+                throw new RuntimeException("Scan usage [{$usage->id}] has no owning Business.");
+            }
+            DB::table('subscription_scan_usages')->where('id', $usage->id)->update(['business_id' => $businessId]);
+        });
+        DB::table('subscription_scan_events')->orderBy('id')->eachById(function (object $event): void {
+            $businessId = DB::table('subscription_scan_usages')->where('id', $event->usage_id)->value('business_id');
+            if ($businessId === null) {
+                throw new RuntimeException("Scan event [{$event->id}] has no owning Business.");
+            }
+            DB::table('subscription_scan_events')->where('id', $event->id)->update(['business_id' => $businessId]);
+        });
+
+        Schema::table('subscriptions', function (Blueprint $table): void {
+            $table->dropForeign(['user_id']);
+            $table->dropUnique(['user_id']);
+            $table->unique('business_id');
+            $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
+        });
+        Schema::table('subscription_scan_usages', function (Blueprint $table): void {
+            $table->dropForeign(['user_id']);
+            $table->dropUnique(['user_id', 'period_start']);
+            $table->unique(['business_id', 'period_start']);
+            $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
+        });
+        Schema::table('subscription_scan_events', function (Blueprint $table): void {
+            $table->dropForeign(['user_id']);
+            $table->dropUnique(['user_id', 'request_key']);
+            $table->unique(['business_id', 'request_key']);
+            $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('subscription_payments', function (Blueprint $table): void {
+            $table->dropConstrainedForeignId('purchaser_user_id');
+        });
+
+        Schema::table('subscription_scan_events', function (Blueprint $table): void {
+            $table->dropForeign(['business_id']);
+            $table->dropUnique(['business_id', 'request_key']);
+            $table->unique(['user_id', 'request_key']);
+            $table->foreign('business_id')->references('id')->on('businesses')->restrictOnDelete();
+        });
+        Schema::table('subscription_scan_usages', function (Blueprint $table): void {
+            $table->dropForeign(['business_id']);
+            $table->dropUnique(['business_id', 'period_start']);
+            $table->unique(['user_id', 'period_start']);
+            $table->foreign('business_id')->references('id')->on('businesses')->restrictOnDelete();
+        });
+        Schema::table('subscriptions', function (Blueprint $table): void {
+            $table->dropForeign(['business_id']);
+            $table->dropUnique(['business_id']);
+            $table->unique('user_id');
+            $table->foreign('business_id')->references('id')->on('businesses')->restrictOnDelete();
+        });
+
+        foreach (array_reverse($this->tables) as $tableName) {
+            Schema::table($tableName, function (Blueprint $table): void {
+                $table->dropConstrainedForeignId('business_id');
+            });
+        }
+    }
+};

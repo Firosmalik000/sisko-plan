@@ -4,6 +4,7 @@ namespace App\Actions\Subscriptions;
 
 use App\Actions\Referrals\CreateReferralCommissionForPayment;
 use App\Enums\SubscriptionOrderStatus;
+use App\Models\BusinessMembership;
 use App\Models\Plan;
 use App\Models\SubscriptionAddon;
 use App\Models\SubscriptionOrder;
@@ -37,7 +38,13 @@ class BackfillSelfServiceSubscriptionOrders
         $startsOn = CarbonImmutable::parse($source instanceof SubscriptionAddon ? $source->starts_on : $source->period_start);
         $endsOnValue = $source instanceof SubscriptionAddon ? $source->ends_on : $source->period_end;
         $endsOn = $endsOnValue === null ? null : CarbonImmutable::parse($endsOnValue);
-        $owner = User::query()->findOrFail($source->user_id);
+        $ownerId = $source->getAttribute('user_id') ?? BusinessMembership::query()
+            ->where('business_id', $source->subscription->business_id)
+            ->where('business_role', 'owner')
+            ->whereNotNull('user_id')
+            ->oldest('id')
+            ->value('user_id');
+        $owner = User::query()->whereKey($ownerId)->firstOrFail();
         $plan = $source->plan;
         $oldPaymentKey = hash('sha256', "self-service:{$sourceKey}");
         $payment = SubscriptionPayment::query()->where('idempotency_key', $oldPaymentKey)->first();

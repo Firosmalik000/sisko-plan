@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BusinessRole;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
 use App\Enums\UnitType;
 use App\Models\AuditLog;
+use App\Models\BusinessMembership;
 use App\Models\Category;
 use App\Models\InventoryBalance;
 use App\Models\Product;
@@ -205,7 +207,8 @@ class MasterDataTest extends TestCase
     {
         [$owner, $store] = $this->ownerAndStore();
         $cashier = User::factory()->create();
-        $store->users()->attach($cashier, [
+        $businessMember = BusinessMembership::factory()->for($store->business)->for($cashier)->create(['business_role' => BusinessRole::Staff]);
+        $businessMember->stores()->attach($store, [
             'role' => MembershipRole::Cashier->value,
             'status' => MembershipStatus::Active->value,
         ]);
@@ -213,7 +216,7 @@ class MasterDataTest extends TestCase
         $otherStore = Store::factory()->create();
         Category::factory()->for($otherStore)->create(['name' => 'Rahasia toko lain']);
 
-        $this->actingAs($cashier)->withSession(['active_store_id' => $store->id])
+        $this->actingAs($cashier)->withSession(['active_business_id' => $store->business_id, 'active_store_id' => $store->id])
             ->get(route('master-data.categories.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -221,7 +224,7 @@ class MasterDataTest extends TestCase
                 ->where('canManage', false)
                 ->has('categories.data', 1));
 
-        $this->actingAs($cashier)->withSession(['active_store_id' => $store->id])
+        $this->actingAs($cashier)->withSession(['active_business_id' => $store->business_id, 'active_store_id' => $store->id])
             ->post(route('master-data.categories.store'), ['name' => 'Terlarang'])
             ->assertForbidden();
     }
@@ -230,12 +233,13 @@ class MasterDataTest extends TestCase
     {
         [, $store] = $this->ownerAndStore();
         $admin = User::factory()->create();
-        $store->users()->attach($admin, [
+        $businessMember = BusinessMembership::factory()->for($store->business)->for($admin)->create(['business_role' => BusinessRole::Staff]);
+        $businessMember->stores()->attach($store, [
             'role' => MembershipRole::Admin->value,
             'status' => MembershipStatus::Active->value,
         ]);
 
-        $this->actingAs($admin)->withSession(['active_store_id' => $store->id])
+        $this->actingAs($admin)->withSession(['active_business_id' => $store->business_id, 'active_store_id' => $store->id])
             ->post(route('master-data.categories.store'), ['name' => 'Dikelola Admin'])
             ->assertRedirect();
 
@@ -324,7 +328,7 @@ class MasterDataTest extends TestCase
                 'is_active' => false,
             ])->assertRedirect();
 
-        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+        $this->actingAs($owner)->withSession(['active_business_id' => $store->business_id, 'active_store_id' => $store->id])
             ->get(route('master-data.products.index'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('categories.0.is_active', false)
@@ -532,19 +536,20 @@ class MasterDataTest extends TestCase
             ->get(route('master-data.products.photo', $product->public_id))->assertOk();
 
         [, $otherStore] = $this->ownerAndStore();
-        $otherStore->users()->attach($owner, [
+        $otherMembership = BusinessMembership::factory()->for($otherStore->business)->for($owner)->create(['business_role' => BusinessRole::Staff]);
+        $otherMembership->stores()->attach($otherStore, [
             'role' => MembershipRole::Admin->value,
             'status' => MembershipStatus::Active->value,
         ]);
-        $this->actingAs($owner)->withSession(['active_store_id' => $otherStore->id])
+        $this->actingAs($owner)->withSession(['active_business_id' => $otherStore->business_id, 'active_store_id' => $otherStore->id])
             ->get(route('master-data.products.photo', $product->public_id))->assertNotFound();
 
         Storage::disk('local')->delete($product->photo_path);
-        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+        $this->actingAs($owner)->withSession(['active_business_id' => $store->business_id, 'active_store_id' => $store->id])
             ->get(route('master-data.products.index'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('products.data.0.photo_url', null));
-        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+        $this->actingAs($owner)->withSession(['active_business_id' => $store->business_id, 'active_store_id' => $store->id])
             ->get(route('master-data.products.photo', $product->public_id))->assertNotFound();
     }
 
@@ -650,7 +655,7 @@ class MasterDataTest extends TestCase
     private function ownerAndStore(): array
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
 
         return [$owner, $store];
     }

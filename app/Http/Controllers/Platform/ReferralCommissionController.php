@@ -64,11 +64,13 @@ class ReferralCommissionController extends Controller
             $selected = [
                 'name' => $user->name,
                 'users' => ReferralAttribution::query()->where('referrer_user_id', $user->id)
-                    ->with(['referred:id,name,email', 'referred.subscription.plan:id,name'])
+                    ->with(['referred:id,name,email', 'referred.businessMemberships' => fn ($query) => $query
+                        ->where('business_role', 'owner')->oldest('id')->with('business.subscription.plan:id,name')])
                     ->withSum('commissions as revenue', 'commissionable_amount')->withSum('commissions as commission_total', 'commission_amount')
                     ->latest('attributed_at')->limit(100)->get()->map(fn (ReferralAttribution $item) => [
                         'name' => $item->referred->name, 'email' => $item->referred->email,
-                        'attributed_at' => $item->attributed_at, 'plan' => $item->referred->subscription?->plan?->name,
+                        'attributed_at' => $item->attributed_at,
+                        'plan' => $item->referred->businessMemberships->first()?->business->subscription?->plan?->name,
                         'revenue' => $item->revenue ?? '0', 'commission_total' => $item->commission_total ?? '0',
                     ]),
             ];

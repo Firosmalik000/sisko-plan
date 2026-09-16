@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\StoreStatus;
+use App\Models\BusinessMembership;
 use App\Models\Country;
 use App\Models\Currency;
 use App\Models\Product;
@@ -306,7 +307,7 @@ class CountryCurrencyTest extends TestCase
     public function test_store_address_is_exposed_and_limited_to_five_hundred_characters(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $store->settings()->update(['address' => 'Jl. Melati No. 5']);
 
         $this->actingAs($owner)
@@ -335,6 +336,10 @@ class CountryCurrencyTest extends TestCase
             'country' => 'ID',
         ]);
         $store = Store::query()->sole();
+        $actor = BusinessMembership::query()
+            ->where('business_id', $store->business_id)
+            ->where('user_id', $owner->id)
+            ->sole();
         DB::table('stock_adjustments')->insert([
             'public_id' => (string) Str::ulid(),
             'store_id' => $store->id,
@@ -342,7 +347,7 @@ class CountryCurrencyTest extends TestCase
             'type' => 'increase',
             'idempotency_key' => (string) Str::uuid(),
             'occurred_at' => now(),
-            'created_by_user_id' => $owner->id,
+            'created_by_business_membership_id' => $actor->id,
             'posted_at' => now(),
             'created_at' => now(),
         ]);
@@ -363,8 +368,8 @@ class CountryCurrencyTest extends TestCase
             'name' => 'Toko Lama',
             'country' => 'ID',
         ]);
-        $store = Store::query()->with('subscription.plan')->sole();
-        $store->subscription->plan->update(['max_stores' => 1]);
+        $store = Store::query()->with('business.subscription.plan')->sole();
+        $store->business->subscription->plan->update(['max_stores' => 1]);
 
         $this->actingAs($owner)
             ->withSession(['active_store_id' => $store->id])

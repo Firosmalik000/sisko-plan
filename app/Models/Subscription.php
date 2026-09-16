@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int|null $user_id
+ * @property int $business_id
  * @property int|null $store_id
  * @property int $plan_id
  * @property SubscriptionStatus $status
@@ -23,24 +23,23 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $current_period_end
  * @property Carbon|null $cancelled_at
  * @property-read Store|null $store
- * @property-read User|null $user
  * @property-read Plan $plan
  */
-#[Fillable(['user_id', 'store_id', 'plan_id', 'status', 'starts_at', 'trial_ends_at', 'trial_used_at', 'current_period_start', 'current_period_end', 'cancelled_at', 'notes', 'created_by_user_id'])]
+#[Fillable(['business_id', 'store_id', 'plan_id', 'status', 'starts_at', 'trial_ends_at', 'trial_used_at', 'current_period_start', 'current_period_end', 'cancelled_at', 'notes', 'created_by_user_id'])]
 class Subscription extends Model
 {
     use HasPublicId;
+
+    /** @return BelongsTo<Business, $this> */
+    public function business(): BelongsTo
+    {
+        return $this->belongsTo(Business::class);
+    }
 
     /** @return BelongsTo<Store, $this> */
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
-    }
-
-    /** @return BelongsTo<User, $this> */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     /** @return BelongsTo<Plan, $this> */

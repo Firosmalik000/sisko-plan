@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Plan;
+use App\Models\Store;
 use App\Models\User;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -216,6 +217,7 @@ class LocaleTest extends TestCase
     public function test_customer_portal_offers_all_supported_languages_without_changing_market(): void
     {
         $user = User::factory()->create();
+        Store::factory()->ownedBy($user)->create();
 
         $this->actingAs($user)
             ->withSession(['market' => 'ID', 'locale' => 'id'])
@@ -238,6 +240,7 @@ class LocaleTest extends TestCase
     public function test_malaysia_customer_can_select_indonesian_without_changing_market(): void
     {
         $user = User::factory()->create();
+        Store::factory()->ownedBy($user)->create();
 
         $this->actingAs($user)
             ->withSession(['market' => 'MY', 'locale' => 'en'])

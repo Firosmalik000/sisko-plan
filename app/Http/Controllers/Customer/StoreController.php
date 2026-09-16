@@ -3,18 +3,22 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Actions\Audit\RecordAudit;
+use App\Actions\Businesses\ProvisionBusinessOwner;
 use App\Actions\Stores\CreateStore;
+use App\Enums\BusinessRole;
 use App\Enums\StoreStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Stores\DeleteStoreRequest;
 use App\Http\Requests\Stores\StoreStoreRequest;
 use App\Http\Requests\Stores\StoreUpdateRequest;
+use App\Models\Business;
 use App\Models\Country;
 use App\Models\Currency;
 use App\Models\Store;
 use App\Services\Stores\StoreCountryChange;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Support\Authentication\AuthenticatedUser;
+use App\Support\CurrentBusiness;
 use App\Support\LocaleContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,10 +30,10 @@ use Inertia\Response;
 
 class StoreController extends Controller
 {
-    public function index(Request $request, SubscriptionAccess $subscriptionAccess): Response
+    public function index(Request $request, CurrentBusiness $currentBusiness, SubscriptionAccess $subscriptionAccess): Response
     {
-        $user = AuthenticatedUser::get($request);
-        $storeModels = $user->stores()
+        $membership = $currentBusiness->membership();
+        $storeModels = $currentBusiness->get()->stores()
             ->orderBy('name')
             ->with(['country.currency', 'settings'])
             ->get();
@@ -41,8 +45,10 @@ class StoreController extends Controller
             'public_id' => $store->public_id,
             'name' => $store->name,
             'status' => $store->status->value,
-            'role' => $store->pivot->role,
-            'membership_status' => $store->pivot->status,
+            'role' => $membership->business_role === BusinessRole::Staff
+                ? $store->assignments()->where('business_membership_id', $membership->id)->value('role')
+                : $membership->business_role->value,
+            'membership_status' => $membership->status->value,
             'country' => $store->country?->localizedName(),
             'country_code' => $store->country?->code,
             'currency_code' => $store->settings->currency ?? $store->country->currency_code,
@@ -50,17 +56,16 @@ class StoreController extends Controller
             'address' => $store->settings?->address,
         ]);
 
-        $ownedStore = $storeModels->first(fn (Store $store): bool => $store->owner_user_id === $user->id);
-
         return Inertia::render('customer/stores/index', [
             'stores' => $stores,
-            'usage' => $ownedStore === null ? null : $subscriptionAccess->summary($ownedStore),
+            'usage' => $subscriptionAccess->summary($currentBusiness->get()),
         ]);
     }
 
-    public function create(Request $request, SubscriptionAccess $subscriptionAccess): Response|RedirectResponse
+    public function create(Request $request, ProvisionBusinessOwner $provision, SubscriptionAccess $subscriptionAccess): Response|RedirectResponse
     {
-        $state = $subscriptionAccess->storeCreationState(AuthenticatedUser::get($request));
+        $membership = $provision->handle(AuthenticatedUser::get($request));
+        $state = $subscriptionAccess->storeCreationState($membership->business);
         if (! $state['can_create']) {
             Inertia::flash('toast', ['type' => 'error', 'message' => $state['reason']]);
 
@@ -93,16 +98,20 @@ class StoreController extends Controller
         ]);
     }
 
-    public function store(StoreStoreRequest $request, CreateStore $createStore): RedirectResponse
+    public function store(StoreStoreRequest $request, ProvisionBusinessOwner $provision, CreateStore $createStore): RedirectResponse
     {
+        $membership = $provision->handle(AuthenticatedUser::get($request));
+
         $store = $createStore->handle(
-            AuthenticatedUser::get($request),
+            $membership->business,
+            $membership,
             $request->validated('name'),
             $request->ip(),
-            $request->validated('country'),
+            $request->validated('country') ?? 'ID',
             $request->validated('address'),
             $request->validated('timezone'),
         );
+        $request->session()->put('active_business_id', $membership->business_id);
         $request->session()->put('active_store_id', $store->id);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Store created successfully.')]);
@@ -114,7 +123,7 @@ class StoreController extends Controller
     {
         Gate::authorize('viewManagement', $store);
 
-        $store->load(['country.currency', 'settings', 'users' => fn ($query) => $query->orderBy('name')]);
+        $store->load(['country.currency', 'settings']);
         $storeCurrency = Currency::query()->find($store->settings->currency ?? $store->country->currency_code);
         $marketPriority = array_flip(array_keys(config('localization.countries', [])));
         $countries = Country::query()
@@ -140,7 +149,6 @@ class StoreController extends Controller
                 'public_id' => $store->public_id,
                 'name' => $store->name,
                 'status' => $store->status->value,
-                'owner_user_id' => $store->owner_user_id,
                 'country_code' => $store->country?->code,
                 'country_name' => $store->country?->localizedName(),
                 'currency_code' => $store->settings->currency ?? $store->country->currency_code,
@@ -152,13 +160,6 @@ class StoreController extends Controller
                 'can_restore' => AuthenticatedUser::get(request())->can('restore', $store),
                 'can_delete' => AuthenticatedUser::get(request())->can('deletePermanently', $store),
                 'country_editable' => $store->status === StoreStatus::Active && $countryChange->allowed($store),
-                'members' => $store->users->map(fn ($user) => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->pivot->role,
-                    'status' => $user->pivot->status,
-                ]),
             ],
         ]);
     }
@@ -242,7 +243,7 @@ class StoreController extends Controller
         Gate::authorize('restore', $store);
 
         DB::transaction(function () use ($request, $store, $subscriptionAccess, $audit): void {
-            $subscriptionAccess->assertStoreCapacity($store->owner);
+            $subscriptionAccess->assertStoreCapacity($store->business);
             $lockedStore = Store::query()->lockForUpdate()->findOrFail($store->id);
             abort_unless($lockedStore->status === StoreStatus::Archived, 409);
             $lockedStore->update(['status' => StoreStatus::Active]);
@@ -296,6 +297,20 @@ class StoreController extends Controller
     {
         Gate::authorize('switch', $store);
         $request->session()->put('active_store_id', $store->id);
+
+        return to_route('dashboard');
+    }
+
+    public function switchBusiness(Request $request, Business $business): RedirectResponse
+    {
+        $allowed = $business->memberships()
+            ->where('user_id', AuthenticatedUser::get($request)->id)
+            ->where('status', 'active')
+            ->exists();
+        abort_unless($allowed, 403);
+
+        $request->session()->put('active_business_id', $business->id);
+        $request->session()->forget(['active_store_id', 'pos_actor_membership_id', 'register_session_id']);
 
         return to_route('dashboard');
     }

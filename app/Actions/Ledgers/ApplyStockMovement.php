@@ -2,6 +2,7 @@
 
 namespace App\Actions\Ledgers;
 
+use App\Models\BusinessMembership;
 use App\Models\InventoryBalance;
 use App\Models\ProductVariant;
 use App\Models\StockMovement;
@@ -19,8 +20,9 @@ class ApplyStockMovement
 
     private const MAX_QUANTITY = '999999999999.999999';
 
-    public function handle(int $storeId, int $productId, string $quantityChange, ?string $incomingUnitCost, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes, bool $requireEmptyProduct = false, ?string $incomingValue = null, ?int $productVariantId = null): StockMovement
+    public function handle(int $storeId, int $productId, string $quantityChange, ?string $incomingUnitCost, string $reason, Model $reference, CarbonInterface $occurredAt, BusinessMembership|User $actor, ?string $notes, bool $requireEmptyProduct = false, ?string $incomingValue = null, ?int $productVariantId = null): StockMovement
     {
+        $actor = BusinessMembership::operational($storeId, $actor);
         if (Decimal::compare($quantityChange, '0', Decimal::QUANTITY_SCALE) === 0) {
             throw ValidationException::withMessages(['items' => __('The stock change cannot be zero.')]);
         }
@@ -87,12 +89,14 @@ class ApplyStockMovement
             'quantity_change' => $quantityChange, 'unit_cost' => $unitCost, 'value_change' => $valueChange,
             'quantity_after' => $newQuantity, 'average_cost_after' => $newAverage, 'inventory_value_after' => $newValue,
             'reference_type' => $reference->getMorphClass(), 'reference_id' => $reference->getKey(),
-            'occurred_at' => $occurredAt, 'notes' => $notes, 'created_by_user_id' => $actor->id,
+            'occurred_at' => $occurredAt, 'notes' => $notes,
+            'created_by_business_membership_id' => $actor->id,
         ]);
     }
 
-    public function revalue(int $storeId, int $productId, string $unitCost, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes = null, ?int $productVariantId = null): ?StockMovement
+    public function revalue(int $storeId, int $productId, string $unitCost, string $reason, Model $reference, CarbonInterface $occurredAt, BusinessMembership|User $actor, ?string $notes = null, ?int $productVariantId = null): ?StockMovement
     {
+        $actor = BusinessMembership::operational($storeId, $actor);
         if (Decimal::compare($unitCost, '0', Decimal::MONEY_SCALE) < 0) {
             throw ValidationException::withMessages(['items' => __('The cost per unit cannot be negative.')]);
         }
@@ -130,7 +134,8 @@ class ApplyStockMovement
             'quantity_change' => '0.000000', 'unit_cost' => $unitCost, 'value_change' => $valueChange,
             'quantity_after' => $balance->quantity, 'average_cost_after' => $unitCost, 'inventory_value_after' => $newValue,
             'reference_type' => $reference->getMorphClass(), 'reference_id' => $reference->getKey(),
-            'occurred_at' => $occurredAt, 'notes' => $notes, 'created_by_user_id' => $actor->id,
+            'occurred_at' => $occurredAt, 'notes' => $notes,
+            'created_by_business_membership_id' => $actor->id,
         ]);
     }
 }

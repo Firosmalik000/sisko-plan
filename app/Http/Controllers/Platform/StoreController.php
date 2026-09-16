@@ -22,28 +22,39 @@ class StoreController extends Controller
         $search = trim((string) $request->string('search'));
 
         $stores = Store::query()
-            ->with('owner:id,name,email')
+            ->with(['business' => fn ($business) => $business
+                ->select(['id', 'public_id', 'name'])
+                ->with('subscription.plan:id,name')
+                ->with(['memberships' => fn ($memberships) => $memberships
+                    ->where('business_role', 'owner')
+                    ->whereNotNull('user_id')
+                    ->with('user:id,name,email')
+                    ->oldest('id')])])
             ->with(['country.currency', 'settings'])
-            ->with('subscription.plan:id,name')
-            ->withCount(['users as active_members_count' => fn ($query) => $query->where('store_memberships.status', 'active')])
+            ->withCount(['assignments as active_members_count' => fn ($query) => $query->where('status', 'active')])
             ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->latest('id')
             ->paginate(15)
             ->withQueryString()
-            ->through(fn (Store $store): array => [
-                'public_id' => $store->public_id,
-                'name' => $store->name,
-                'status' => $store->status->value,
-                'owner' => $store->owner->only(['name', 'email']),
-                'active_members_count' => $store->active_members_count,
-                'country' => $store->country === null ? null : [
-                    'code' => $store->country->code,
-                    'name' => $store->country->localizedName(),
-                ],
-                'currency' => $store->settings->currency ?? $store->country->currency_code ?? 'IDR',
-                'subscription' => $store->subscription === null ? null : ['status' => $store->subscription->status->value, 'plan_name' => $store->subscription->plan->name],
-                'created_at' => $store->created_at?->toDateString(),
-            ]);
+            ->through(function (Store $store): array {
+                $owner = $store->business->memberships->firstOrFail()->user;
+
+                return [
+                    'public_id' => $store->public_id,
+                    'name' => $store->name,
+                    'status' => $store->status->value,
+                    'owner' => ['name' => $owner->name, 'email' => $owner->email],
+                    'business' => $store->business->only(['public_id', 'name']),
+                    'active_members_count' => $store->active_members_count,
+                    'country' => $store->country === null ? null : [
+                        'code' => $store->country->code,
+                        'name' => $store->country->localizedName(),
+                    ],
+                    'currency' => $store->settings->currency ?? $store->country->currency_code ?? 'IDR',
+                    'subscription' => $store->business->subscription === null ? null : ['status' => $store->business->subscription->status->value, 'plan_name' => $store->business->subscription->plan->name],
+                    'created_at' => $store->created_at?->toDateString(),
+                ];
+            });
 
         return Inertia::render('platform/stores/index', [
             'stores' => $stores,

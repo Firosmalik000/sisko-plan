@@ -21,6 +21,7 @@ import {
     Truck,
     MonitorCog,
     WalletCards,
+    UsersRound,
 } from 'lucide-react';
 import { customerNavigationContract } from '@/layouts/customer/navigation-contract';
 import { dashboard } from '@/routes';
@@ -43,6 +44,7 @@ import salesRoutes from '@/routes/sales';
 import securityRoutes from '@/routes/security';
 import storesRoutes from '@/routes/stores';
 import subscriptionRoutes from '@/routes/subscription';
+import teamRoutes from '@/routes/team';
 
 const primaryIcons = {
     home: Home,
@@ -81,19 +83,26 @@ export const moreMenuSections = [
     {
         title: 'Operations',
         items: [
-            { title: 'Inventory', href: operationsRoutes.inventory.url(), icon: Boxes },
+            { title: 'Inventory', href: operationsRoutes.inventory.url(), icon: Boxes, capability: 'inventory.manage' },
             { title: 'Stock count', href: stockOpnameRoutes.index.url(), icon: ClipboardCheck },
-            { title: 'Purchases', href: purchasingRoutes.index.url(), icon: Truck },
+            { title: 'Purchases', href: purchasingRoutes.index.url(), icon: Truck, capability: 'purchasing.manage' },
             { title: 'Suppliers', href: supplierRoutes.index.url(), icon: Handshake },
         ],
     },
     {
         title: 'Finance',
         items: [
-            { title: 'Cash & bank', href: operationsRoutes.cash.url(), icon: WalletCards },
-            { title: 'Expenses', href: expensesRoutes.index.url(), icon: CircleDollarSign },
+            { title: 'Cash & bank', href: operationsRoutes.cash.url(), icon: WalletCards, capability: 'cash.view' },
+            { title: 'Expenses', href: expensesRoutes.index.url(), icon: CircleDollarSign, capability: 'expenses.manage' },
+            {
+                title: 'Marketplace settlements',
+                href: salesRoutes.settlements.index.url(),
+                icon: Landmark,
+                capability: 'cash.view',
+                requiresMarketplace: true,
+            },
             { title: 'Capital', href: operationsRoutes.capital.url(), icon: Landmark },
-            { title: 'Reports', href: reportsRoutes.index.url(), icon: BarChart3 },
+            { title: 'Reports', href: reportsRoutes.index.url(), icon: BarChart3, capability: 'reports.view' },
         ],
     },
     {
@@ -108,8 +117,9 @@ export const moreMenuSections = [
         title: 'Account & store',
         items: [
             { title: 'Referrals & Commissions', href: referralRoutes.index.url(), icon: Gift },
-            { title: 'Stores & team', href: storesRoutes.index.url(), icon: Store },
-            { title: 'Subscriptions', href: subscriptionRoutes.index.url(), icon: CreditCard },
+            { title: 'Stores', href: storesRoutes.index.url(), icon: Store, capability: 'store.manage' },
+            { title: 'Staff & checkout', href: teamRoutes.index.url(), icon: UsersRound, capability: 'team.view' },
+            { title: 'Subscriptions', href: subscriptionRoutes.index.url(), icon: CreditCard, capability: 'subscription.manage' },
             { title: 'Settings', href: profileRoutes.edit.url(), icon: Settings },
             { title: 'Security', href: securityRoutes.edit.url(), icon: ShieldCheck },
             { title: 'Appearance', href: appearanceRoutes.edit.url(), icon: MonitorCog },

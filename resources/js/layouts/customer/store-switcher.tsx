@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { Check, ChevronDown, LockKeyhole, Plus, Store } from 'lucide-react';
+import { Building2, Check, ChevronDown, LockKeyhole, Plus, Store } from 'lucide-react';
 import { useState } from 'react';
 import { SubscriptionLimitContactDialog } from '@/components/subscription-limit-contact-dialog';
 import {
@@ -12,17 +12,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppearance } from '@/hooks/use-appearance';
 import { translate } from '@/lib/i18n';
+import { shouldShowWorkspaceSwitcher } from '@/lib/pos-operations-contract';
 import { storeThemeVariables } from '@/lib/store-theme';
+import businessesRoutes from '@/routes/businesses';
 import storesRoutes from '@/routes/stores';
-import type { StoreCreationState, StoreSummary } from '@/types';
+import type { BusinessSummary, StoreCreationState, StoreSummary } from '@/types';
 
 type StoreSwitcherProps = {
+    businesses: BusinessSummary[];
+    activeBusiness: BusinessSummary | null;
     stores: StoreSummary[];
     activeStore: StoreSummary | null;
     storeCreation: StoreCreationState | null;
 };
 
-export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitcherProps) {
+export function StoreSwitcher({ businesses, activeBusiness, stores, activeStore, storeCreation }: StoreSwitcherProps) {
     const canCreateStore = storeCreation?.can_create ?? false;
     const [limitOpen, setLimitOpen] = useState(false);
     const { resolvedAppearance } = useAppearance();
@@ -63,6 +67,17 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
         );
     }
 
+    if (!shouldShowWorkspaceSwitcher(businesses.length, stores.length)) {
+        return (
+            <div className="flex min-w-0 items-center gap-2.5 px-1 py-1.5 sm:max-w-sm">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[var(--app-soft-strong)] text-[var(--app-primary)]">
+                    <Store className="size-4" />
+                </span>
+                <span className="min-w-0 truncate text-sm font-semibold text-foreground sm:text-base">{activeStore.name}</span>
+            </div>
+        );
+    }
+
     return (
         <>
             <DropdownMenu>
@@ -88,13 +103,37 @@ export function StoreSwitcher({ stores, activeStore, storeCreation }: StoreSwitc
                     <DropdownMenuLabel className="px-3 py-2 text-xs text-muted-foreground">
                         {translate('Select workspace work')}
                     </DropdownMenuLabel>
+                    {businesses.length > 1 && (
+                        <>
+                            {businesses.map((business) => (
+                                <DropdownMenuItem
+                                    key={business.public_id}
+                                    className="gap-3 rounded-xl p-3"
+                                    onSelect={() => {
+                                        sessionStorage.removeItem('pos.draft');
+                                        router.post(
+                                            businessesRoutes.switch.url(business.public_id),
+                                            {},
+                                            { preserveState: false, preserveScroll: false },
+                                        );
+                                    }}
+                                >
+                                    <Building2 className="size-4" />
+                                    <span className="min-w-0 flex-1 truncate font-semibold">{business.name}</span>
+                                    {business.public_id === activeBusiness?.public_id && <Check className="size-4 text-primary" />}
+                                </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
+                        </>
+                    )}
                     {stores.map((store) => (
                         <DropdownMenuItem
                             key={store.public_id}
                             className="gap-3 rounded-xl p-3"
-                            onSelect={() =>
-                                router.post(storesRoutes.switch.url(store.public_id), {}, { preserveState: false, preserveScroll: false })
-                            }
+                            onSelect={() => {
+                                sessionStorage.removeItem('pos.draft');
+                                router.post(storesRoutes.switch.url(store.public_id), {}, { preserveState: false, preserveScroll: false });
+                            }}
                         >
                             <span className="flex size-9 items-center justify-center rounded-xl bg-[var(--app-soft)] text-[var(--app-primary)]">
                                 <Store className="size-4" />

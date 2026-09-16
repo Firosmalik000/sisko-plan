@@ -3,9 +3,9 @@
 namespace App\Services\Subscriptions;
 
 use App\Exceptions\ScanQuotaExceeded;
+use App\Models\Business;
 use App\Models\Store;
 use App\Models\SubscriptionScanUsage;
-use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -15,9 +15,9 @@ class ScanQuota
 
     public function ensureAvailable(Store $store, string $requestKey, int $units): void
     {
-        $limits = $this->entitlements->forOwner($store->owner_user_id);
+        $limits = $this->entitlements->forBusiness($store->business_id);
         if (DB::table('subscription_scan_events')->where([
-            'user_id' => $store->owner_user_id,
+            'business_id' => $store->business_id,
             'request_key' => $requestKey,
         ])->exists()) {
             return;
@@ -35,18 +35,18 @@ class ScanQuota
         }
 
         DB::transaction(function () use ($store, $requestKey, $operation, $units): void {
-            User::query()->whereKey($store->owner_user_id)->lockForUpdate()->firstOrFail();
+            Business::query()->whereKey($store->business_id)->lockForUpdate()->firstOrFail();
             if (DB::table('subscription_scan_events')->where([
-                'user_id' => $store->owner_user_id,
+                'business_id' => $store->business_id,
                 'request_key' => $requestKey,
             ])->exists()) {
                 return;
             }
 
-            $limits = $this->entitlements->forOwner($store->owner_user_id);
+            $limits = $this->entitlements->forBusiness($store->business_id);
             $periodStart = CarbonImmutable::parse($limits['scan_period_start']);
             $usage = SubscriptionScanUsage::query()->firstOrCreate(
-                ['user_id' => $store->owner_user_id, 'period_start' => $periodStart->toDateString()],
+                ['business_id' => $store->business_id, 'period_start' => $periodStart->toDateString()],
                 ['period_end' => $periodStart->endOfMonth()->toDateString(), 'used' => 0],
             );
             $usage = SubscriptionScanUsage::query()->whereKey($usage->id)->lockForUpdate()->firstOrFail();
@@ -58,7 +58,7 @@ class ScanQuota
 
             DB::table('subscription_scan_events')->insert([
                 'usage_id' => $usage->id,
-                'user_id' => $store->owner_user_id,
+                'business_id' => $store->business_id,
                 'store_id' => $store->id,
                 'request_key' => $requestKey,
                 'operation' => $operation,

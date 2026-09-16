@@ -14,7 +14,8 @@
 - Use Laravel routes, middleware, requests, policies, actions, and services for domain behavior.
 - Keep React pages thin and focused on presentation and interaction.
 - Scope every operational query to the active store.
-- Use separate platform-admin and store-owner surfaces where needed.
+- Resolve an active Business Membership before resolving the active Store.
+- Use separate platform-admin, Business backoffice, and paired POS-terminal surfaces.
 
 ## Directory guidance
 
@@ -31,6 +32,7 @@
 ## Domain boundaries
 
 - Identity and tenancy must be explicit.
+- Business is the tenant and subscription boundary; Store is the operational ledger boundary; Business Membership is the tenant actor.
 - Master data, inventory, finance, purchasing, sales, and reporting are separate domain areas.
 - Each phase may add tables and services, but should not blur boundaries unnecessarily.
 

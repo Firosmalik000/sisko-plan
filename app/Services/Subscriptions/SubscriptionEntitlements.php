@@ -2,6 +2,7 @@
 
 namespace App\Services\Subscriptions;
 
+use App\Models\Business;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SubscriptionAddon;
@@ -10,23 +11,26 @@ use Carbon\CarbonImmutable;
 
 class SubscriptionEntitlements
 {
-    private const USAGE_TIMEZONE = 'Asia/Jakarta';
-
     /** @return array{max_stores:int,max_products:int,max_members:int,max_scans:int,scans_used:int,scan_period_start:string,scan_period_end:string} */
-    public function forOwner(int $ownerId, ?Plan $basePlan = null): array
+    public function forBusiness(Business|int $business, ?Plan $basePlan = null): array
     {
-        $basePlan ??= Subscription::query()->with('plan')->where('user_id', $ownerId)->first()->plan
-            ?? Plan::query()->where(['kind' => Plan::KIND_BASE, 'is_default' => true, 'is_active' => true])->firstOrFail();
-        $today = CarbonImmutable::now(self::USAGE_TIMEZONE)->startOfDay();
+        $businessId = $business instanceof Business ? $business->id : $business;
+        if ($basePlan === null) {
+            $subscription = Subscription::query()->with('plan')->where('business_id', $businessId)->first();
+            $basePlan = $subscription === null
+                ? Plan::query()->where(['kind' => Plan::KIND_BASE, 'is_default' => true, 'is_active' => true])->firstOrFail()
+                : $subscription->plan;
+        }
+        $today = CarbonImmutable::now('UTC')->startOfDay();
         $addons = SubscriptionAddon::query()
-            ->where('user_id', $ownerId)
+            ->where('business_id', $businessId)
             ->whereDate('starts_on', '<=', $today)
             ->where(fn ($query) => $query->whereNull('ends_on')->orWhereDate('ends_on', '>=', $today))
             ->get(['stores', 'products', 'members', 'scans']);
         $periodStart = $today->startOfMonth();
         $periodEnd = $today->endOfMonth();
         $scansUsed = SubscriptionScanUsage::query()
-            ->where('user_id', $ownerId)
+            ->where('business_id', $businessId)
             ->where('period_start', $periodStart->toDateString())
             ->value('used') ?? 0;
 

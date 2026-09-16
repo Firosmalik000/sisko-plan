@@ -7,8 +7,10 @@ use App\Actions\Ledgers\PostAccountTransfer;
 use App\Actions\Ledgers\PostCapitalTransaction;
 use App\Actions\Ledgers\PostOpeningCash;
 use App\Actions\Ledgers\PostStockAdjustment;
+use App\Enums\BusinessRole;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Models\BusinessMembership;
 use App\Models\CapitalTransaction;
 use App\Models\FinancialAccount;
 use App\Models\FinancialAccountBalance;
@@ -201,8 +203,9 @@ class OperationalLedgerTest extends TestCase
     {
         [, $store, $product] = $this->fixtures();
         $cashier = User::factory()->create();
-        $store->users()->attach($cashier, ['role' => MembershipRole::Cashier->value, 'status' => MembershipStatus::Active->value]);
-        $session = ['active_store_id' => $store->id];
+        $member = BusinessMembership::factory()->for($store->business)->for($cashier)->create(['business_role' => BusinessRole::Staff]);
+        $member->stores()->attach($store, ['role' => MembershipRole::Cashier->value, 'status' => MembershipStatus::Active->value]);
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
 
         $this->actingAs($cashier)->withSession($session)->get(route('operations.inventory'))->assertOk();
         $this->actingAs($cashier)->withSession($session)->post(route('operations.inventory.adjustments.store'), [
@@ -398,7 +401,7 @@ class OperationalLedgerTest extends TestCase
     private function fixtures(): array
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $product = Product::factory()->for($store)->create();
         $cash = FinancialAccount::factory()->for($store)->create(['name' => 'Kas']);
         $bank = FinancialAccount::factory()->for($store)->create(['name' => 'Bank']);

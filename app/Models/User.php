@@ -2,17 +2,15 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Enums\MembershipStatus;
 use App\Enums\PlatformAdminRole;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -43,10 +41,6 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int|null $referrals_made_count
  * @property string|null $commission_total
  * @property string|null $referral_revenue
- * @property-read StoreMembership $pivot
- * @property-read Collection<int, Store> $stores
- * @property-read Collection<int, Store> $ownedStores
- * @property-read Subscription|null $subscription
  * @property-read ReferralCode|null $referralCode
  * @property-read Collection<int, ReferralAttribution> $referralsMade
  * @property-read ReferralAttribution|null $referralAttribution
@@ -55,7 +49,7 @@ use Spatie\Permission\Traits\HasRoles;
  */
 #[Fillable(['name', 'email', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at'])]
 #[Hidden(['avatar_path', 'google_id', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
@@ -72,16 +66,10 @@ class User extends Authenticatable implements PasskeyUser
             : route('profile.photo', ['v' => $this->updated_at?->timestamp]));
     }
 
-    /** @return HasMany<Store, $this> */
-    public function ownedStores(): HasMany
+    /** @return HasMany<BusinessMembership, $this> */
+    public function businessMemberships(): HasMany
     {
-        return $this->hasMany(Store::class, 'owner_user_id');
-    }
-
-    /** @return HasOne<Subscription, $this> */
-    public function subscription(): HasOne
-    {
-        return $this->hasOne(Subscription::class);
+        return $this->hasMany(BusinessMembership::class);
     }
 
     /** @return HasMany<AdminAuditLog, $this> */
@@ -128,21 +116,6 @@ class User extends Authenticatable implements PasskeyUser
     public function canBeImpersonated(): bool
     {
         return $this->status === UserStatus::Active && $this->platform_role === null;
-    }
-
-    /** @return BelongsToMany<Store, $this, StoreMembership, 'pivot'> */
-    public function stores(): BelongsToMany
-    {
-        return $this->belongsToMany(Store::class, 'store_memberships')
-            ->using(StoreMembership::class)
-            ->withPivot(['role', 'status'])
-            ->withTimestamps();
-    }
-
-    /** @return BelongsToMany<Store, $this, StoreMembership, 'pivot'> */
-    public function activeStores(): BelongsToMany
-    {
-        return $this->stores()->wherePivot('status', MembershipStatus::Active->value);
     }
 
     /**

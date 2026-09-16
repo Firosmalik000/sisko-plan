@@ -35,7 +35,7 @@ class ReferenceLabelsTest extends TestCase
     public function test_standard_names_require_mapping_and_implicit_renames_become_custom(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         CategoryReference::create(['code' => 'beverages', 'name' => 'Beverages', 'is_active' => true, 'catalog_version' => 'v1']);
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id]);
         $this->post(route('master-data.categories.store'), ['name' => 'No mapping', 'name_is_custom' => false])->assertSessionHasErrors('reference_code');
@@ -49,7 +49,7 @@ class ReferenceLabelsTest extends TestCase
     public function test_category_mapping_validates_activity_and_preserves_custom_names_and_tenant_boundary(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         CategoryReference::create(['code' => 'beverages', 'name' => 'Beverages', 'is_active' => true, 'catalog_version' => 'v1']);
         $this->actingAs($owner)->withSession(['active_store_id' => $store->id]);
         $this->post(route('master-data.categories.store'), ['name' => 'My drinks', 'reference_code' => 'beverages', 'name_is_custom' => true])->assertSessionHasNoErrors();

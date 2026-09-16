@@ -46,6 +46,8 @@ Desktop POS should prioritize speed:
 
 Mobile POS may simplify layout, but it must preserve the core flow.
 
+Paired terminals use a focused shell without backoffice navigation, expose the active cashier/Store/register context, use at least 44px touch targets, and respect safe-area insets in webviews. Business and Store switchers are hidden when there is only one choice.
+
 ## Money and quantity display
 
 - Use Indonesian number formatting.

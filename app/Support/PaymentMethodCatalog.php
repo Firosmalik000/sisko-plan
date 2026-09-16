@@ -3,22 +3,32 @@
 namespace App\Support;
 
 use App\Enums\FinancialAccountType;
+use App\Models\Country;
 use App\Models\FinancialAccount;
+use App\Models\PaymentMethod;
+use App\Services\Commerce\CountryCommerceCatalog;
 
 class PaymentMethodCatalog
 {
     /** @return array{code:string, method:string, label:string}|null */
     public static function qrForCountry(?string $countryCode): ?array
     {
-        $payments = config('sales.qr_payments', []);
+        $country = Country::query()->where('code', strtoupper((string) $countryCode))->first();
+        $payment = $country === null ? null : app(CountryCommerceCatalog::class)->paymentMethods($country)->firstWhere('kind', 'national_qr');
 
-        return $payments[strtoupper((string) $countryCode)] ?? null;
+        return $payment === null ? null : ['code' => $payment->code, 'method' => $payment->checkout_method, 'label' => $payment->label];
     }
 
     /** @return array<int, array{code:string, label:string}> */
     public static function walletsForCountry(?string $countryCode): array
     {
-        return array_values(config('sales.country_wallets.'.strtoupper((string) $countryCode), []));
+        $country = Country::query()->where('code', strtoupper((string) $countryCode))->first();
+        if ($country === null) {
+            return [];
+        }
+
+        return app(CountryCommerceCatalog::class)->paymentMethods($country)->where('kind', 'e_wallet')
+            ->map(fn (PaymentMethod $method): array => ['code' => $method->code, 'label' => $method->label])->values()->all();
     }
 
     /** @return array<int, string> */
@@ -30,31 +40,13 @@ class PaymentMethodCatalog
     /** @return array<int, string> */
     public static function qrCodes(): array
     {
-        return array_values(array_unique(array_filter(array_map(
-            fn (mixed $payment): ?string => is_array($payment) && is_string($payment['code'] ?? null)
-                ? $payment['code']
-                : null,
-            config('sales.qr_payments', []),
-        ))));
+        return PaymentMethod::query()->where(['kind' => 'national_qr', 'is_active' => true])->orderBy('id')->pluck('code')->all();
     }
 
     /** @return array<int, string> */
     public static function walletCodes(): array
     {
-        $codes = [];
-        foreach (config('sales.country_wallets', []) as $wallets) {
-            if (! is_array($wallets)) {
-                continue;
-            }
-
-            foreach ($wallets as $wallet) {
-                if (is_array($wallet) && is_string($wallet['code'] ?? null)) {
-                    $codes[] = $wallet['code'];
-                }
-            }
-        }
-
-        return array_values(array_unique($codes));
+        return PaymentMethod::query()->where(['kind' => 'e_wallet', 'is_active' => true])->orderBy('id')->pluck('code')->all();
     }
 
     public static function acceptsInStoreAccount(FinancialAccount $account, string $paymentMethod, ?string $countryCode): bool

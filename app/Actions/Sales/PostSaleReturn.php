@@ -8,6 +8,7 @@ use App\Actions\Ledgers\ApplyStockMovement;
 use App\Actions\Ledgers\IdempotencyGuard;
 use App\Actions\Ledgers\LedgerTimestamp;
 use App\Actions\Ledgers\NextDocumentNumber;
+use App\Models\BusinessMembership;
 use App\Models\FinancialAccount;
 use App\Models\Product;
 use App\Models\Sale;
@@ -27,8 +28,9 @@ class PostSaleReturn
     public function __construct(private NextDocumentNumber $numbers, private ApplyStockMovement $stock, private ApplyCashTransaction $cash, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
     /** @param array<int, array{sale_item_id:int, quantity:string}> $items */
-    public function handle(Store $store, User $actor, int $saleId, int $accountId, array $items, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): SaleReturn
+    public function handle(Store $store, BusinessMembership|User $actor, int $saleId, int $accountId, array $items, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): SaleReturn
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $date = $this->timestamps->parse($store, $occurredAt);
         $requestHash = $this->idempotency->hash(compact('saleId', 'accountId', 'items', 'notes') + ['occurred_at' => $date->toISOString()]);
 
@@ -98,11 +100,13 @@ class PostSaleReturn
                 usort($calculatedItems, fn (array $left, array $right): int => [(int) $left['product_id'], (int) $left['sale_item_id']] <=> [(int) $right['product_id'], (int) $right['sale_item_id']]);
                 $saleReturn = SaleReturn::create([
                     'store_id' => $store->id, 'sale_id' => $sale->id, 'financial_account_id' => $accountId,
+                    'register_session_id' => $sale->register_session_id, 'currency_code' => $sale->currency_code ?? $store->settings()->value('currency'),
                     'document_number' => $this->numbers->handle($store->id, 'ret', $date),
                     'refund_amount' => $totalRefund, 'cogs_reversed' => $totalCogs,
                     'gross_profit_reversed' => Decimal::subtract($totalRefund, $totalCogs, Decimal::MONEY_SCALE),
                     'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash,
-                    'occurred_at' => $date, 'notes' => $notes, 'created_by_user_id' => $actor->id, 'posted_at' => now(),
+                    'occurred_at' => $date, 'notes' => $notes,
+                    'created_by_business_membership_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 foreach ($calculatedItems as $item) {
                     $stockVariantId = Product::query()->whereKey($item['product_id'])->value('variant_mode') === 'separate'
@@ -115,7 +119,7 @@ class PostSaleReturn
                     SaleReturnItem::create(['store_id' => $store->id, 'sale_return_id' => $saleReturn->id, ...$item]);
                 }
                 if (Decimal::compare($totalRefund, '0', Decimal::MONEY_SCALE) > 0) {
-                    $this->cash->handle($store->id, $accountId, 'out', $totalRefund, 'sale_refund', $saleReturn, $date, $actor, $notes);
+                    $this->cash->handle($store->id, $accountId, 'out', $totalRefund, 'sale_refund', $saleReturn, $date, $actor, $notes, registerSessionId: $sale->register_session_id);
                 }
                 $this->audit->handle($actor, 'sale.returned', $saleReturn, $store, $ipAddress, ['sale_document' => $sale->document_number, 'refund_amount' => $totalRefund]);
 

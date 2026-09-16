@@ -2,8 +2,8 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Businesses\ProvisionBusinessOwner;
 use App\Actions\Referrals\AttributeReferral;
-use App\Actions\Subscriptions\StartDefaultSubscription;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\ReferralCode;
@@ -20,7 +20,7 @@ class CreateNewUser implements CreatesNewUsers
     use PasswordValidationRules, ProfileValidationRules;
 
     public function __construct(
-        private StartDefaultSubscription $subscriptions,
+        private ProvisionBusinessOwner $businesses,
         private AttributeReferral $attributeReferral,
         private ReferralIntent $referralIntent,
         private Request $request,
@@ -45,7 +45,7 @@ class CreateNewUser implements CreatesNewUsers
                 'email' => $input['email'],
                 'password' => $input['password'],
             ]);
-            $this->subscriptions->handle($user);
+            $this->businesses->handle($user);
             $referralCode = $pendingCode === null ? null : ReferralCode::query()->find($pendingCode->id);
             if ($referralCode !== null) {
                 try {

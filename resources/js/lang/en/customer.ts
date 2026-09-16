@@ -1,4 +1,7 @@
+import { operationalCustomerCatalog } from '../customer-operations.ts';
+
 export const enCustomerCatalog: Record<string, string> = {
+    ...operationalCustomerCatalog('en'),
     ':name photo': ':name photo',
     '· Checkout': '· Checkout',
     '· Invoices': '· Invoices',

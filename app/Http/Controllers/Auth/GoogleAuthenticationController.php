@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Businesses\ProvisionBusinessOwner;
 use App\Actions\Referrals\AttributeReferral;
-use App\Actions\Subscriptions\StartDefaultSubscription;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ReferralCode;
@@ -23,7 +23,7 @@ use Throwable;
 class GoogleAuthenticationController extends Controller
 {
     public function __construct(
-        private StartDefaultSubscription $subscriptions,
+        private ProvisionBusinessOwner $businesses,
         private AttributeReferral $attributeReferral,
         private ReferralIntent $referralIntent,
     ) {}
@@ -133,7 +133,7 @@ class GoogleAuthenticationController extends Controller
                 'google_id' => $googleId,
                 'email_verified_at' => $user->email_verified_at ?? now(),
             ])->save();
-            $this->subscriptions->handle($user);
+            $this->businesses->handle($user);
 
             $referralCode = ! $wasNewlyCreated || $pendingCode === null
                 ? null

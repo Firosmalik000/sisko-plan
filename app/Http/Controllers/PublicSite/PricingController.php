@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\PublicSite;
 
 use App\Http\Controllers\Controller;
+use App\Models\BusinessMembership;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\Subscriptions\SubscriptionAccess;
@@ -19,8 +20,13 @@ class PricingController extends Controller
             ? $request->string('category')->toString()
             : null;
         $user = $request->user();
-        $accountOwner = $user instanceof User && ! $user->isPlatformAdmin() && $user->ownedStores()->exists();
-        $subscription = $accountOwner ? $periods->syncForOwner($user->id) : null;
+        $membership = $user instanceof User && ! $user->isPlatformAdmin()
+            ? $user->businessMemberships()->where('business_role', 'owner')->where('status', 'active')
+                ->when($request->session()->has('active_business_id'), fn ($query) => $query->where('business_id', $request->session()->get('active_business_id')))
+                ->with('business')->first()
+            : null;
+        $accountOwner = $membership instanceof BusinessMembership && $membership->business->stores()->exists();
+        $subscription = $accountOwner ? $periods->syncForBusiness($membership->business_id) : null;
         $operational = $subscription !== null && $access->blockedReason($subscription) === null;
         $nextPeriodStart = $subscription === null ? null : $periods->nextAvailableStart($subscription);
         $trialUsed = $subscription !== null

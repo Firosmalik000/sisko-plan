@@ -3,10 +3,10 @@
 namespace App\Actions\Subscriptions;
 
 use App\Actions\Audit\RecordAudit;
+use App\Models\BusinessMembership;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SubscriptionAddon;
-use App\Models\User;
 use App\Services\Subscriptions\SubscriptionAccess;
 use App\Services\Subscriptions\SubscriptionPeriods;
 use Carbon\CarbonImmutable;
@@ -22,14 +22,15 @@ class PurchaseSubscriptionAddon
     ) {}
 
     /** @param array<string, mixed>|null $purchasedTerms */
-    public function handle(User $owner, Plan $plan, ?string $ipAddress, ?array $purchasedTerms = null): SubscriptionAddon
+    public function handle(BusinessMembership $actor, Plan $plan, ?string $ipAddress, ?array $purchasedTerms = null): SubscriptionAddon
     {
-        $this->periods->syncForOwner($owner->id);
+        $this->periods->syncForBusiness($actor->business_id);
 
-        return DB::transaction(function () use ($owner, $plan, $ipAddress, $purchasedTerms): SubscriptionAddon {
-            User::query()->whereKey($owner->id)->lockForUpdate()->firstOrFail();
+        return DB::transaction(function () use ($actor, $plan, $ipAddress, $purchasedTerms): SubscriptionAddon {
+            $actor = BusinessMembership::query()->with(['business', 'user'])->whereKey($actor->id)->lockForUpdate()->firstOrFail();
+            abort_unless($actor->business_role->value === 'owner' && $actor->user !== null, 403);
             $subscription = Subscription::query()->with(['plan', 'store'])
-                ->where('user_id', $owner->id)->lockForUpdate()->firstOrFail();
+                ->where('business_id', $actor->business_id)->lockForUpdate()->firstOrFail();
             $planQuery = Plan::query()->whereKey($plan->id);
             if ($purchasedTerms === null) {
                 $planQuery->where(['kind' => Plan::KIND_ADDON, 'is_active' => true]);
@@ -52,7 +53,7 @@ class PurchaseSubscriptionAddon
                 : $startsOn->addMonthsNoOverflow((int) $terms['duration_months'])->subDay();
             $addon = SubscriptionAddon::create([
                 'subscription_id' => $subscription->id,
-                'user_id' => $owner->id,
+                'business_id' => $subscription->business_id,
                 'plan_id' => $selectedPlan->id,
                 'plan_name' => $terms['name'],
                 'offer_category' => $terms['offer_category'],
@@ -65,9 +66,8 @@ class PurchaseSubscriptionAddon
                 'starts_on' => $startsOn,
                 'ends_on' => $endsOn,
                 'source' => 'self_service',
-                'created_by_user_id' => $owner->id,
             ]);
-            $this->audit->handle($owner, 'subscription.addon_selected', $addon, $subscription->store, $ipAddress, [
+            $this->audit->handle($actor, 'subscription.addon_selected', $addon, $subscription->store, $ipAddress, [
                 'subscription_id' => $subscription->id,
                 'plan_id' => $selectedPlan->id,
                 'starts_on' => $startsOn->toDateString(),

@@ -52,13 +52,13 @@ class ReferralCommissionTest extends TestCase
         $referrer = User::factory()->create(['name' => 'Madun']);
         $referred = User::factory()->create(['name' => 'Andi']);
         app(AttributeReferral::class)->handle($referred, $referrer->referralCode);
-        $store = Store::factory()->for($referred, 'owner')->create();
+        $store = Store::factory()->ownedBy($referred)->create();
         $plan = Plan::create([
             'code' => 'plan-a', 'name' => 'Plan A', 'kind' => Plan::KIND_BASE, 'monthly_price' => '100000',
             'referral_commission_rate' => '10', 'max_stores' => 1, 'max_products' => 10, 'max_members' => 1,
             'max_scans' => 0, 'is_active' => true, 'is_default' => false,
         ]);
-        $subscription = $store->subscription()->sole();
+        $subscription = $store->business->subscription()->sole();
         $subscription->update(['plan_id' => $plan->id]);
         $key = (string) Str::uuid();
         $action = app(PostSubscriptionPayment::class);
@@ -90,9 +90,9 @@ class ReferralCommissionTest extends TestCase
         $admin = User::factory()->superAdmin()->create();
         $referrer = User::factory()->create();
         $referred = User::factory()->create();
-        $store = Store::factory()->for($referred, 'owner')->create();
+        $store = Store::factory()->ownedBy($referred)->create();
         $plan = Plan::create(['code' => 'decimal', 'name' => 'Decimal', 'monthly_price' => '99.9900', 'referral_commission_rate' => '12.50', 'max_stores' => 1, 'max_products' => 0, 'max_members' => 0, 'is_active' => true, 'is_default' => false]);
-        $subscription = $store->subscription()->sole();
+        $subscription = $store->business->subscription()->sole();
         $subscription->update(['plan_id' => $plan->id]);
         $action = app(PostSubscriptionPayment::class);
         $action->handle($admin, $subscription, '99.99', '2026-09-01', '2026-09-30', 'cash', null, now()->toISOString(), null, (string) Str::uuid(), null);
@@ -203,9 +203,9 @@ class ReferralCommissionTest extends TestCase
         $referrer = User::factory()->create();
         $referred = User::factory()->create();
         app(AttributeReferral::class)->handle($referred, $referrer->referralCode);
-        $store = Store::factory()->for($referred, 'owner')->create();
+        $store = Store::factory()->ownedBy($referred)->create();
         $plan = Plan::create(['code' => 'payable', 'name' => 'Payable', 'monthly_price' => '100000', 'referral_commission_rate' => '10', 'max_stores' => 1, 'max_products' => 0, 'max_members' => 0, 'is_active' => true, 'is_default' => false]);
-        $subscription = $store->subscription()->sole();
+        $subscription = $store->business->subscription()->sole();
         $subscription->update(['plan_id' => $plan->id]);
         app(PostSubscriptionPayment::class)->handle($admin, $subscription, '100000', '2026-09-01', '2026-09-30', 'cash', null, now()->toISOString(), null, (string) Str::uuid(), null);
 

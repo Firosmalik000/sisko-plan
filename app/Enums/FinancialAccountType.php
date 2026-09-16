@@ -7,4 +7,5 @@ enum FinancialAccountType: string
     case Cash = 'cash';
     case Bank = 'bank';
     case EWallet = 'e_wallet';
+    case MarketplaceClearing = 'marketplace_clearing';
 }

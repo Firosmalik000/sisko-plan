@@ -30,13 +30,23 @@ class PostSubscriptionPayment
                 }
                 $locked = Subscription::query()->whereKey($subscription->id)->lockForUpdate()->firstOrFail();
                 $locked->load('plan');
+                $ownerId = DB::table('business_memberships')
+                    ->where('business_id', $locked->business_id)
+                    ->where('business_role', 'owner')
+                    ->where('status', 'active')
+                    ->whereNotNull('user_id')
+                    ->oldest('id')
+                    ->value('user_id');
+                if ($ownerId === null) {
+                    throw new \LogicException('A claimed Business owner is required to post a subscription payment.');
+                }
                 $period = $paidDate->format('Ym');
                 DB::table('platform_sequences')->insertOrIgnore(['document_type' => 'subpay', 'period' => $period, 'last_number' => 0, 'created_at' => now(), 'updated_at' => now()]);
                 $sequence = DB::table('platform_sequences')->where(['document_type' => 'subpay', 'period' => $period])->lockForUpdate()->firstOrFail();
                 $number = ((int) $sequence->last_number) + 1;
                 DB::table('platform_sequences')->where('id', $sequence->id)->update(['last_number' => $number, 'updated_at' => now()]);
                 $payment = SubscriptionPayment::create([
-                    'user_id' => $locked->user_id, 'store_id' => $locked->store_id, 'subscription_id' => $locked->id,
+                    'purchaser_user_id' => $ownerId, 'business_id' => $locked->business_id, 'store_id' => $locked->store_id, 'subscription_id' => $locked->id,
                     'plan_id' => $locked->plan_id, 'plan_name' => $locked->plan->name, 'plan_kind' => $locked->plan->kind,
                     'receipt_number' => sprintf('SUBPAY-%s-%05d', $period, $number), 'amount' => $amount,
                     'period_start' => $periodStart, 'period_end' => $periodEnd, 'payment_method' => $method,
@@ -46,7 +56,7 @@ class PostSubscriptionPayment
                 $payment->setRelation('plan', $locked->plan);
                 $this->createCommission->handle($payment);
                 $renewed = $this->renewWhenEligible($locked, $periodStart, $periodEnd);
-                $this->audit->handle($admin, 'subscription.payment_posted', $payment, $ipAddress, ['user_id' => $locked->user_id, 'subscription_id' => $locked->id, 'amount' => $amount, 'period_end' => $periodEnd, 'renewed' => $renewed]);
+                $this->audit->handle($admin, 'subscription.payment_posted', $payment, $ipAddress, ['business_id' => $locked->business_id, 'subscription_id' => $locked->id, 'amount' => $amount, 'period_end' => $periodEnd, 'renewed' => $renewed]);
 
                 return $payment;
             }, 3);

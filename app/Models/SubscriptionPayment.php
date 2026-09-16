@@ -13,8 +13,9 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property string $public_id
+ * @property int $purchaser_user_id
  * @property int|null $store_id
- * @property int|null $user_id
+ * @property int $business_id
  * @property int $subscription_id
  * @property int|null $plan_id
  * @property string|null $plan_name
@@ -33,7 +34,7 @@ use Illuminate\Support\Carbon;
  * @property-read ReferralCommission|null $referralCommission
  * @property-read User|null $creator
  */
-#[Fillable(['user_id', 'store_id', 'subscription_id', 'plan_id', 'plan_name', 'plan_kind', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'idempotency_key', 'request_hash', 'paid_at', 'notes', 'created_by_user_id'])]
+#[Fillable(['purchaser_user_id', 'business_id', 'store_id', 'subscription_id', 'plan_id', 'plan_name', 'plan_kind', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'idempotency_key', 'request_hash', 'paid_at', 'notes', 'created_by_user_id'])]
 class SubscriptionPayment extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;
@@ -46,16 +47,16 @@ class SubscriptionPayment extends Model
         return $this->belongsTo(Subscription::class);
     }
 
+    /** @return BelongsTo<Business, $this> */
+    public function business(): BelongsTo
+    {
+        return $this->belongsTo(Business::class);
+    }
+
     /** @return BelongsTo<Store, $this> */
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
-    }
-
-    /** @return BelongsTo<User, $this> */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     /** @return BelongsTo<User, $this> */

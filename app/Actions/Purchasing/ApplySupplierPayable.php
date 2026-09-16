@@ -2,6 +2,8 @@
 
 namespace App\Actions\Purchasing;
 
+use App\Models\BusinessMembership;
+use App\Models\Store;
 use App\Models\SupplierPayableBalance;
 use App\Models\SupplierPayableTransaction;
 use App\Models\User;
@@ -14,8 +16,9 @@ use Illuminate\Validation\ValidationException;
 
 class ApplySupplierPayable
 {
-    public function handle(int $storeId, int $supplierId, string $direction, string $amount, string $reason, Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes): SupplierPayableTransaction
+    public function handle(int $storeId, int $supplierId, string $direction, string $amount, string $reason, Model $reference, CarbonInterface $occurredAt, BusinessMembership|User $actor, ?string $notes): SupplierPayableTransaction
     {
+        $actor = BusinessMembership::operational(Store::query()->findOrFail($storeId), $actor);
         if (! in_array($direction, ['increase', 'decrease'], true) || Decimal::compare($amount, '0', Decimal::MONEY_SCALE) <= 0) {
             throw ValidationException::withMessages(['amount' => __('The debt amount must be greater than zero.')]);
         }
@@ -38,9 +41,11 @@ class ApplySupplierPayable
 
         return SupplierPayableTransaction::create([
             'store_id' => $storeId, 'supplier_id' => $supplierId, 'direction' => $direction,
+            'currency_code' => Store::query()->findOrFail($storeId)->currencyCode(),
             'reason' => $reason, 'amount' => $amount, 'balance_after' => $newBalance,
             'reference_type' => $reference->getMorphClass(), 'reference_id' => $reference->getKey(),
-            'occurred_at' => $occurredAt, 'notes' => $notes, 'created_by_user_id' => $actor->id,
+            'occurred_at' => $occurredAt, 'notes' => $notes,
+            'created_by_business_membership_id' => $actor->id,
         ]);
     }
 }

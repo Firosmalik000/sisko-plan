@@ -3,6 +3,7 @@
 namespace App\Actions\Subscriptions;
 
 use App\Enums\SubscriptionOrderStatus;
+use App\Models\BusinessMembership;
 use App\Models\SubscriptionAddon;
 use App\Models\SubscriptionOrder;
 use App\Models\SubscriptionPeriod;
@@ -31,13 +32,19 @@ class CompleteSubscriptionOrder
             }
 
             $locked->load(['user', 'subscription', 'plan', 'period', 'addon']);
+            $owner = BusinessMembership::query()
+                ->where('business_id', $locked->subscription->business_id)
+                ->where('user_id', $locked->user_id)
+                ->where('business_role', 'owner')
+                ->where('status', 'active')
+                ->firstOrFail();
             $period = $locked->period;
             $addon = $locked->addon;
             if ($period === null && $addon === null) {
                 if ($locked->plan_kind === 'addon') {
-                    $addon = $this->purchaseAddon->handle($locked->user, $locked->plan, $ipAddress, $locked->plan_snapshot);
+                    $addon = $this->purchaseAddon->handle($owner, $locked->plan, $ipAddress, $locked->plan_snapshot);
                 } else {
-                    $period = $this->selectPlan->handle($locked->user, $locked->plan, $ipAddress, $locked->plan_snapshot)['period'];
+                    $period = $this->selectPlan->handle($owner, $locked->plan, $ipAddress, $locked->plan_snapshot)['period'];
                 }
             }
 

@@ -3,19 +3,21 @@
 namespace App\Actions\Subscriptions;
 
 use App\Enums\SubscriptionStatus;
+use App\Models\Business;
 use App\Models\Plan;
-use App\Models\Store;
 use App\Models\Subscription;
 use App\Models\SubscriptionPeriod;
-use App\Models\User;
 use Carbon\CarbonImmutable;
 
 class StartDefaultSubscription
 {
-    public function handle(Store|User $subject): Subscription
+    public function handle(Business $business): Subscription
     {
-        $owner = $subject instanceof Store ? $subject->owner : $subject;
-        $store = $subject instanceof Store ? $subject : null;
+        $owner = $business->memberships()->where('business_role', 'owner')->whereNotNull('user_id')->with('user')->oldest('id')->first()?->user;
+        if ($owner === null) {
+            throw new \LogicException('A claimed Business owner is required to start a subscription.');
+        }
+        $store = $business->stores()->oldest('id')->first();
         $plan = Plan::query()->where([
             'kind' => Plan::KIND_BASE,
             'is_default' => true,
@@ -29,7 +31,7 @@ class StartDefaultSubscription
                 ? null
                 : $periodStart->addMonthsNoOverflow($plan->duration_months)->subDay());
 
-        $subscription = Subscription::firstOrCreate(['user_id' => $owner->id], [
+        $subscription = Subscription::firstOrCreate(['business_id' => $business->id], [
             'store_id' => $store?->id,
             'plan_id' => $plan->id,
             'status' => $plan->is_trial ? SubscriptionStatus::Trialing : SubscriptionStatus::Active,
@@ -47,7 +49,7 @@ class StartDefaultSubscription
         if ($subscription->wasRecentlyCreated) {
             SubscriptionPeriod::create([
                 'subscription_id' => $subscription->id,
-                'user_id' => $owner->id,
+                'business_id' => $business->id,
                 'plan_id' => $plan->id,
                 'plan_name' => $plan->name,
                 'monthly_price' => $plan->monthly_price,

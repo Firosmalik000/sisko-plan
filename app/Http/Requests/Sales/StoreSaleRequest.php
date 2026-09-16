@@ -3,16 +3,28 @@
 namespace App\Http\Requests\Sales;
 
 use App\Enums\FinancialAccountType;
+use App\Models\BusinessMembership;
 use App\Models\FinancialAccount;
 use App\Rules\CatalogProductSelection;
+use App\Services\Commerce\CountryCommerceCatalog;
+use App\Support\BusinessCapability;
 use App\Support\CurrentStore;
-use App\Support\MarketplaceCatalog;
 use App\Support\PaymentMethodCatalog;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreSaleRequest extends SaleRequest
 {
+    public function authorize(): bool
+    {
+        $actor = $this->attributes->get('pos_actor');
+        if ($actor instanceof BusinessMembership) {
+            return app(BusinessCapability::class)->allows($actor, 'sales.checkout', app(CurrentStore::class)->get());
+        }
+
+        return parent::authorize();
+    }
+
     protected function prepareForValidation(): void
     {
         $storeId = app(CurrentStore::class)->id();
@@ -53,6 +65,7 @@ class StoreSaleRequest extends SaleRequest
         return [
             ...$this->postingRules(),
             'sales_channel' => ['required', Rule::in(['in_store', 'marketplace'])],
+            'register_session_id' => ['nullable', 'string', 'size:26'],
             'payment_method' => ['required', Rule::in(['cash', 'qris', 'qr_payment', 'bank_transfer', 'e_wallet', 'marketplace'])],
             'account_id' => [
                 Rule::requiredIf($salesChannel !== 'marketplace'),
@@ -75,9 +88,9 @@ class StoreSaleRequest extends SaleRequest
                 Rule::requiredIf($salesChannel === 'marketplace'),
                 Rule::prohibitedIf($salesChannel !== 'marketplace'),
                 'nullable',
-                Rule::in(MarketplaceCatalog::codesForCountry($store->country?->code)),
+                Rule::in(app(CountryCommerceCatalog::class)->marketplaces($store)->pluck('code')->all()),
             ],
-            'external_order_number' => [Rule::prohibitedIf($salesChannel !== 'marketplace'), 'nullable', 'string', 'max:100'],
+            'external_order_number' => [Rule::requiredIf($salesChannel === 'marketplace'), Rule::prohibitedIf($salesChannel !== 'marketplace'), 'nullable', 'string', 'max:100'],
             'payment_proof' => [
                 Rule::prohibitedIf($paymentMethod === 'cash' || $paymentMethod === 'marketplace'),
                 'nullable',

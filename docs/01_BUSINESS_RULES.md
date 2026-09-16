@@ -3,18 +3,21 @@
 ## Product level rules
 
 - Stage 1 is a modular monolith.
-- The application serves multiple stores from one shared database.
+- The application serves multiple Businesses and Stores from one shared database.
 - Store data must never leak across tenants.
 - The platform operator can administer the SaaS, but does not own store records.
 
 ## Ownership and access
 
-- A user may belong to one or more stores.
+- A User may belong to multiple Businesses through Business Memberships.
+- A Business owns Stores and one subscription; a User does not directly own either.
+- Business roles are Owner, Admin, and Staff. Store assignments refine Staff as Manager or Cashier.
+- A POS-only cashier has a Business Membership and PIN without requiring a User account.
 - Every store action requires authentication and an active store context.
 - A user must not access another store by changing an ID in the URL or request payload.
 - Sensitive platform actions require the platform admin surface and separate authorization.
-- One owner account has one active subscription shared by every store it owns.
-- Plan limits for stores, active products, and distinct active staff are enforced across all stores owned by that account; the account owner does not consume a staff seat.
+- One Business has one active subscription shared by every Store it owns.
+- Plan limits for Stores, active products, and active non-owner members are enforced per Business; owners do not consume staff seats.
 - Store portal access requires an operational subscription: trials need an unexpired end date, while active subscriptions need a started billing period that has not expired.
 - New customer registrations receive the active default free-forever base plan before their first store is created.
 - Existing customer accounts are backfilled to the free-forever base plan; suspended and cancelled account states remain restricted, while queued periods from retired base offers are cancelled.
@@ -24,7 +27,7 @@
 - Every add-on offer has one placement category: store capacity, staff capacity, scan capacity, product capacity, or a general bundle.
 - Store, staff, product, and scanner limit states link to the matching active add-on category on the pricing page.
 - Add-on activations snapshot their category and capacity so later plan edits do not rewrite customer history.
-- Monthly scanner usage is shared by all stores owned by the account and resets on each Jakarta calendar month.
+- Monthly scanner usage is shared by all Stores in the Business and uses the Business market period.
 - An owner with a non-operational subscription may confirm an eligible active plan from public pricing, while an operational subscription cannot be silently replaced mid-period.
 - Paid plans define a fixed duration from 1 through 12 months. Self-service and bulk activation derive the inclusive billing end date from that duration; changing a plan later does not rewrite an existing subscription period.
 - A paid self-service renewal never shortens an operational subscription. It is appended after the latest scheduled period and becomes effective automatically on its start date.

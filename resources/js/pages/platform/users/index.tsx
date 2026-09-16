@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { Power, Search, Trash2, UserRoundCog, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Pagination } from '@/components/pagination';
@@ -16,6 +16,7 @@ type UserItem = {
     status: 'active' | 'suspended';
     platform_role: 'super_admin' | 'admin' | null;
     stores_count: number;
+    businesses: Array<{ public_id: string; name: string }>;
     created_at: string;
     can_update_status: boolean;
     can_impersonate: boolean;
@@ -82,6 +83,15 @@ export default function AdminUsers({ users, filters }: { users: Paginated<UserIt
                                             <Users className="size-4 text-slate-400" />
                                             {user.stores_count}
                                         </span>
+                                        {user.businesses.map((business) => (
+                                            <Link
+                                                key={business.public_id}
+                                                href={`/super-admin/businesses/${business.public_id}`}
+                                                className="mt-1 block text-xs font-semibold text-[#b83219] hover:underline"
+                                            >
+                                                {business.name}
+                                            </Link>
+                                        ))}
                                     </td>
                                     <td className="px-5 py-4 text-slate-600">{user.created_at}</td>
                                     <td className="px-5 py-4">

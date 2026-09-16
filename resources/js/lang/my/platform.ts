@@ -1,4 +1,7 @@
+import { operationalPlatformCatalog } from '../platform-operations.ts';
+
 export const myPlatformCatalog: Record<string, string> = {
+    ...operationalPlatformCatalog('my'),
     '(inactive)': '(မလှုပ်မရှား)',
     '/month': '/လ',
     '2FA active': '2FA တက်ကြွနေသည်။',

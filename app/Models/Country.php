@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -33,6 +34,18 @@ class Country extends Model
     public function stores(): HasMany
     {
         return $this->hasMany(Store::class);
+    }
+
+    /** @return BelongsToMany<PaymentMethod, $this> */
+    public function paymentMethods(): BelongsToMany
+    {
+        return $this->belongsToMany(PaymentMethod::class)->withPivot(['priority', 'is_enabled']);
+    }
+
+    /** @return BelongsToMany<Marketplace, $this> */
+    public function marketplaces(): BelongsToMany
+    {
+        return $this->belongsToMany(Marketplace::class)->withPivot(['priority', 'is_enabled']);
     }
 
     public function localizedName(?string $locale = null): string

@@ -9,15 +9,19 @@ use App\Actions\Ledgers\IdempotencyGuard;
 use App\Actions\Ledgers\LedgerTimestamp;
 use App\Actions\Ledgers\NextDocumentNumber;
 use App\Enums\FinancialAccountType;
+use App\Models\BusinessMembership;
 use App\Models\CashTransaction;
 use App\Models\FinancialAccount;
+use App\Models\PosDevice;
 use App\Models\ProductUnit;
+use App\Models\RegisterSession;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SalePayment;
 use App\Models\StockMovement;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Commerce\CountryCommerceCatalog;
 use App\Support\Decimal;
 use App\Support\PaymentMethodCatalog;
 use Carbon\CarbonImmutable;
@@ -34,8 +38,9 @@ class PostSale
     public function __construct(private NextDocumentNumber $numbers, private ApplyStockMovement $stock, private ApplyCashTransaction $cash, private SaleCalculator $calculator, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps, private UpsertSaleCustomer $customers) {}
 
     /** @param array<int, array{product_unit_id:int, quantity:string, item_discount:string}> $items */
-    public function handle(Store $store, User $actor, int $accountId, array $items, string $transactionDiscount, string $paidAmount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null, ?UploadedFile $paymentProof = null, ?string $customerName = null, ?string $customerPhone = null, ?string $customerEmail = null, string $salesChannel = 'in_store', ?string $paymentMethod = null, ?string $marketplaceCode = null, ?string $externalOrderNumber = null, bool $alignWithLatestLedger = false): Sale
+    public function handle(Store $store, BusinessMembership|User $actor, int $accountId, array $items, string $transactionDiscount, string $paidAmount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null, ?UploadedFile $paymentProof = null, ?string $customerName = null, ?string $customerPhone = null, ?string $customerEmail = null, string $salesChannel = 'in_store', ?string $paymentMethod = null, ?string $marketplaceCode = null, ?string $externalOrderNumber = null, bool $alignWithLatestLedger = false, ?RegisterSession $registerSession = null, ?PosDevice $device = null, bool $requireRegisterSession = false): Sale
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $customerName = $customerName === null || trim($customerName) === '' ? null : trim($customerName);
         $customerPhone = $customerPhone === null || trim($customerPhone) === '' ? null : trim($customerPhone);
         $customerEmail = $customerEmail === null || trim($customerEmail) === '' ? null : Str::lower(trim($customerEmail));
@@ -48,6 +53,8 @@ class PostSale
         $requestPayload = compact('accountId', 'items', 'transactionDiscount', 'paidAmount', 'notes', 'customerName', 'customerEmail', 'salesChannel', 'paymentMethod', 'marketplaceCode', 'externalOrderNumber') + [
             'customer_phone' => $normalizedCustomerPhone,
             'occurred_at' => $date->toISOString(),
+            'register_session_id' => $registerSession?->id,
+            'pos_device_id' => $device?->id,
         ];
         if (is_string($proofChecksum)) {
             $requestPayload['payment_proof_sha256'] = $proofChecksum;
@@ -56,21 +63,43 @@ class PostSale
         $newProofPath = null;
 
         try {
-            return DB::transaction(function () use ($store, $actor, $accountId, $items, $transactionDiscount, $paidAmount, $date, $notes, $idempotencyKey, $requestHash, $ipAddress, $paymentProof, $customerName, $customerPhone, $customerEmail, $salesChannel, $paymentMethod, $marketplaceCode, $externalOrderNumber, $countryCode, $alignWithLatestLedger, &$newProofPath): Sale {
+            return DB::transaction(function () use ($store, $actor, $accountId, $items, $transactionDiscount, $paidAmount, $date, $notes, $idempotencyKey, $requestHash, $ipAddress, $paymentProof, $customerName, $customerPhone, $customerEmail, $salesChannel, $paymentMethod, $marketplaceCode, $externalOrderNumber, $countryCode, $alignWithLatestLedger, $registerSession, $device, $requireRegisterSession, &$newProofPath): Sale {
                 $existing = $this->idempotency->existing(fn (): ?Sale => Sale::query()->where(['store_id' => $store->id, 'idempotency_key' => $idempotencyKey])->lockForUpdate()->first(), $requestHash);
                 if ($existing !== null) {
                     return $existing;
                 }
+                $lockedSession = $registerSession === null ? null : RegisterSession::query()->with('register')->whereKey($registerSession->id)->lockForUpdate()->firstOrFail();
+                if ($requireRegisterSession && $salesChannel === 'in_store' && $lockedSession === null) {
+                    throw ValidationException::withMessages(['register_session' => __('An open register shift is required for in-store checkout.')]);
+                }
+                if ($lockedSession !== null) {
+                    $validSession = $lockedSession->store_id === $store->id
+                        && $lockedSession->status === 'open'
+                        && $lockedSession->opened_by_business_membership_id === $actor->id
+                        && ($device === null || ($lockedSession->pos_device_id === $device->id && $device->store_id === $store->id));
+                    if (! $validSession) {
+                        throw ValidationException::withMessages(['register_session' => __('The register shift does not match the cashier, Store, or POS device.')]);
+                    }
+                }
                 $account = FinancialAccount::query()->where(['id' => $accountId, 'store_id' => $store->id, 'is_active' => true])->firstOrFail();
+                $marketplace = $salesChannel === 'marketplace'
+                    ? app(CountryCommerceCatalog::class)->marketplaces($store)->firstWhere('code', $marketplaceCode)
+                    : null;
+                if ($salesChannel === 'marketplace' && $marketplace === null) {
+                    throw ValidationException::withMessages(['marketplace_code' => __('This marketplace is not available for the store country.')]);
+                }
                 $resolvedPaymentMethod = $paymentMethod ?? ($account->type === FinancialAccountType::Cash ? 'cash' : 'qris');
                 $validPaymentAccount = $resolvedPaymentMethod === 'marketplace'
                     ? $salesChannel === 'marketplace'
-                        && $account->type === FinancialAccountType::EWallet
+                        && $account->type === FinancialAccountType::MarketplaceClearing
                         && $account->marketplace_code === $marketplaceCode
                     : $salesChannel === 'in_store'
                         && PaymentMethodCatalog::acceptsInStoreAccount($account, $resolvedPaymentMethod, $countryCode);
                 if (! $validPaymentAccount) {
                     throw ValidationException::withMessages(['payment_method' => __('The payment method does not match the receiving account.')]);
+                }
+                if ($lockedSession !== null && $resolvedPaymentMethod === 'cash' && $lockedSession->register->cash_financial_account_id !== $account->id) {
+                    throw ValidationException::withMessages(['account_id' => __('Cash payment must use the active Register cash account.')]);
                 }
                 $productUnitIds = array_column($items, 'product_unit_id');
                 if (count($productUnitIds) !== count(array_unique($productUnitIds))) {
@@ -124,17 +153,22 @@ class PostSale
                     $newProofPath = $storedProofPath;
                 }
                 $customer = $this->customers->handle($store, $customerName, $customerPhone, $customerEmail);
+                $currencyCode = $lockedSession !== null ? $lockedSession->currency_code : ($store->settings()->value('currency') ?? $store->country()->value('currency_code') ?? 'IDR');
                 $sale = Sale::create([
                     'store_id' => $store->id, 'customer_id' => $customer?->id,
                     'document_number' => $this->numbers->handle($store->id, 'sale', $date),
                     'customer_name' => $customerName, 'customer_phone' => $customerPhone, 'customer_email' => $customerEmail,
                     'sales_channel' => $salesChannel, 'marketplace_code' => $marketplaceCode,
+                    'marketplace_id' => $marketplace?->id, 'marketplace_name' => $marketplace?->label,
                     'external_order_number' => $externalOrderNumber,
+                    'register_session_id' => $lockedSession?->id, 'pos_device_id' => $device?->id,
+                    'currency_code' => $currencyCode,
                     'subtotal' => $calculation['subtotal'], 'item_discount_amount' => $calculation['item_discount'],
                     'transaction_discount_amount' => $calculation['transaction_discount'], 'total_amount' => $calculation['total'],
                     'paid_amount' => $paidAmount, 'change_amount' => $change, 'idempotency_key' => $idempotencyKey,
                     'request_hash' => $requestHash, 'occurred_at' => $date, 'notes' => $notes,
-                    'created_by_user_id' => $actor->id, 'posted_at' => now(),
+                    'cashier_name' => $actor->display_name,
+                    'created_by_business_membership_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 foreach ($calculation['items'] as $item) {
                     $stockVariantId = $item['stock_variant_id'] === null ? null : (int) $item['stock_variant_id'];
@@ -158,11 +192,13 @@ class PostSale
                 $payment = SalePayment::create([
                     'store_id' => $store->id, 'sale_id' => $sale->id, 'financial_account_id' => $accountId,
                     'payment_method' => $resolvedPaymentMethod,
+                    'currency_code' => $currencyCode,
                     'payment_proof_path' => $newProofPath,
                     'amount' => $calculation['total'], 'tendered_amount' => $paidAmount, 'change_amount' => $change,
-                    'occurred_at' => $date, 'created_by_user_id' => $actor->id,
+                    'occurred_at' => $date,
+                    'created_by_business_membership_id' => $actor->id,
                 ]);
-                $this->cash->handle($store->id, $accountId, 'in', $calculation['total'], 'sale_payment', $payment, $date, $actor, $notes);
+                $this->cash->handle($store->id, $accountId, 'in', $calculation['total'], 'sale_payment', $payment, $date, $actor, $notes, registerSessionId: $lockedSession?->id);
                 $this->audit->handle($actor, 'sale.posted', $sale, $store, $ipAddress, ['document_number' => $sale->document_number, 'total_amount' => $calculation['total'], 'sales_channel' => $salesChannel]);
 
                 return $sale;

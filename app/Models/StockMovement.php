@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $value_change
  * @property int|null $product_variant_id
  */
-#[Fillable(['store_id', 'product_id', 'product_variant_id', 'reason', 'quantity_change', 'unit_cost', 'value_change', 'quantity_after', 'average_cost_after', 'inventory_value_after', 'reference_type', 'reference_id', 'occurred_at', 'notes', 'created_by_user_id'])]
+#[Fillable(['store_id', 'product_id', 'product_variant_id', 'reason', 'quantity_change', 'unit_cost', 'value_change', 'quantity_after', 'average_cost_after', 'inventory_value_after', 'reference_type', 'reference_id', 'occurred_at', 'notes', 'created_by_business_membership_id'])]
 class StockMovement extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;

@@ -4,10 +4,10 @@ namespace App\Actions\Subscriptions;
 
 use App\Actions\Ledgers\IdempotencyGuard;
 use App\Enums\SubscriptionOrderStatus;
+use App\Models\BusinessMembership;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SubscriptionOrder;
-use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -15,10 +15,11 @@ class CreateSubscriptionOrder
 {
     public function __construct(private IdempotencyGuard $idempotency) {}
 
-    public function handle(User $owner, Plan $plan, string $idempotencyKey): SubscriptionOrder
+    public function handle(BusinessMembership $owner, Plan $plan, string $idempotencyKey): SubscriptionOrder
     {
         $requestHash = $this->idempotency->hash([
-            'user_id' => $owner->id,
+            'business_membership_id' => $owner->id,
+            'business_id' => $owner->business_id,
             'plan_id' => $plan->id,
         ]);
 
@@ -35,12 +36,14 @@ class CreateSubscriptionOrder
                     return $existing;
                 }
 
-                User::query()->whereKey($owner->id)->lockForUpdate()->firstOrFail();
-                $subscription = Subscription::query()->where('user_id', $owner->id)->lockForUpdate()->firstOrFail();
+                $owner = BusinessMembership::query()->whereKey($owner->id)
+                    ->where('business_role', 'owner')->where('status', 'active')->whereNotNull('user_id')
+                    ->lockForUpdate()->firstOrFail();
+                $subscription = Subscription::query()->where('business_id', $owner->business_id)->lockForUpdate()->firstOrFail();
                 $selectedPlan = Plan::query()->whereKey($plan->id)->where('is_active', true)->lockForUpdate()->firstOrFail();
 
                 return SubscriptionOrder::create([
-                    'user_id' => $owner->id,
+                    'user_id' => $owner->user_id,
                     'subscription_id' => $subscription->id,
                     'plan_id' => $selectedPlan->id,
                     'plan_name' => $selectedPlan->name,
@@ -55,7 +58,7 @@ class CreateSubscriptionOrder
                     'provider' => 'manual',
                     'idempotency_key' => $idempotencyKey,
                     'request_hash' => $requestHash,
-                    'created_by_user_id' => $owner->id,
+                    'created_by_user_id' => $owner->user_id,
                 ]);
             }, 3);
         } catch (UniqueConstraintViolationException $exception) {

@@ -6,6 +6,8 @@ use App\Enums\PromotionFrequency;
 use App\Enums\PromotionLocale;
 use App\Enums\PromotionPlacement;
 use App\Enums\PromotionStatus;
+use App\Models\Business;
+use App\Models\BusinessMembership;
 use App\Models\Promotion;
 use App\Models\Store;
 use App\Models\User;
@@ -199,7 +201,7 @@ class PromotionManagementTest extends TestCase
     public function test_customer_dashboard_and_shell_receive_only_their_eligible_placement(): void
     {
         $customer = User::factory()->create();
-        $store = Store::factory()->for($customer, 'owner')->create();
+        $store = Store::factory()->ownedBy($customer)->create();
         $banner = $this->createPromotion(['name' => 'Dashboard']);
         $appOpen = $this->createPromotion([
             'name' => 'Interstitial',
@@ -219,17 +221,20 @@ class PromotionManagementTest extends TestCase
                 ->has('appOpenPromotions', 1)
                 ->where('appOpenPromotions.0.public_id', $appOpen->public_id)
                 ->missing('appOpenPromotions.0.image_path'));
-
         $this->actingAs($customer)->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page->where('appOpenPromotions', []));
 
         $customerWithoutStore = User::factory()->create();
+        $business = Business::factory()->create();
+        BusinessMembership::factory()->for($business)->for($customerWithoutStore)->create([
+            'business_role' => 'owner',
+            'status' => 'active',
+        ]);
         $this->actingAs($customerWithoutStore)->get(route('stores.index'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('activeStore', null)
                 ->has('appOpenPromotions', 1)
                 ->where('appOpenPromotions.0.public_id', $appOpen->public_id));
-
         $admin = User::factory()->platformAdmin()->create();
         $this->actingAs($admin)->get(route('super-admin.dashboard'))
             ->assertInertia(fn (Assert $page) => $page->where('appOpenPromotions', []));

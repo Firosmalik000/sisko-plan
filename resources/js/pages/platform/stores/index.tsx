@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { Building2, Power, Search } from 'lucide-react';
 import { Pagination } from '@/components/pagination';
 import type { PaginationLink } from '@/components/pagination';
@@ -12,6 +12,7 @@ type StoreItem = {
     name: string;
     status: 'active' | 'suspended' | 'archived';
     owner: { name: string; email: string };
+    business: { public_id: string; name: string } | null;
     active_members_count: number;
     created_at: string;
     subscription: { status: string; plan_name: string } | null;
@@ -96,6 +97,14 @@ export default function AdminStores({
                                             </span>
                                             <div>
                                                 <p className="font-medium">{store.name}</p>
+                                                {store.business && (
+                                                    <Link
+                                                        href={`/super-admin/businesses/${store.business.public_id}`}
+                                                        className="text-xs font-semibold text-[#b83219] hover:underline"
+                                                    >
+                                                        {store.business.name}
+                                                    </Link>
+                                                )}
                                                 <p className="text-xs text-slate-500">{store.created_at}</p>
                                             </div>
                                         </div>

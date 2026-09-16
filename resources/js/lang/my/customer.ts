@@ -1,4 +1,7 @@
+import { operationalCustomerCatalog } from '../customer-operations.ts';
+
 export const myCustomerCatalog: Record<string, string> = {
+    ...operationalCustomerCatalog('my'),
     ':name photo': ':name ဓာတ်ပုံ',
     '· Checkout': '· ငွေရှင်းပါ။',
     '· Invoices': '· ငွေတောင်းခံလွှာများ',
