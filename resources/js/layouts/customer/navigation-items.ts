@@ -21,7 +21,6 @@ import {
     MonitorCog,
     WalletCards,
     UsersRound,
-    MonitorDot,
 } from 'lucide-react';
 import { customerNavigationContract } from '@/layouts/customer/navigation-contract';
 import { dashboard } from '@/routes';
@@ -38,7 +37,6 @@ import stockOpnameRoutes from '@/routes/operations/stock-opnames';
 import posRoutes from '@/routes/pos';
 import profileRoutes from '@/routes/profile';
 import purchasingRoutes from '@/routes/purchasing';
-import registersRoutes from '@/routes/registers';
 import reportsRoutes from '@/routes/reports';
 import salesRoutes from '@/routes/sales';
 import securityRoutes from '@/routes/security';
@@ -94,7 +92,13 @@ export const moreMenuSections = [
         items: [
             { title: 'Cash & bank', href: operationsRoutes.cash.url(), icon: WalletCards, capability: 'cash.view' },
             { title: 'Expenses', href: expensesRoutes.index.url(), icon: CircleDollarSign, capability: 'expenses.manage' },
-            { title: 'Marketplace settlements', href: salesRoutes.settlements.index.url(), icon: Landmark, capability: 'cash.view' },
+            {
+                title: 'Marketplace settlements',
+                href: salesRoutes.settlements.index.url(),
+                icon: Landmark,
+                capability: 'cash.view',
+                requiresMarketplace: true,
+            },
             { title: 'Capital', href: operationsRoutes.capital.url(), icon: Landmark },
             { title: 'Reports', href: reportsRoutes.index.url(), icon: BarChart3, capability: 'reports.view' },
         ],
@@ -111,8 +115,7 @@ export const moreMenuSections = [
         title: 'Account & store',
         items: [
             { title: 'Stores', href: storesRoutes.index.url(), icon: Store, capability: 'store.manage' },
-            { title: 'Team', href: teamRoutes.index.url(), icon: UsersRound, capability: 'team.view' },
-            { title: 'Registers', href: registersRoutes.index.url(), icon: MonitorDot, capability: 'store.manage' },
+            { title: 'Staff & checkout', href: teamRoutes.index.url(), icon: UsersRound, capability: 'team.view' },
             { title: 'Subscriptions', href: subscriptionRoutes.index.url(), icon: CreditCard, capability: 'subscription.manage' },
             { title: 'Settings', href: profileRoutes.edit.url(), icon: Settings },
             { title: 'Security', href: securityRoutes.edit.url(), icon: ShieldCheck },

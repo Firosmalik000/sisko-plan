@@ -6,7 +6,9 @@ use App\Enums\BusinessRole;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
 use App\Models\BusinessMembership;
+use App\Models\FinancialAccount;
 use App\Models\PosDevice;
+use App\Models\Register;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,6 +38,44 @@ class PosDeviceAuthenticationTest extends TestCase
         $this->assertSame($store->id, $device->store_id);
         $this->assertNotSame($cookie->getValue(), $device->token_hash);
         $this->assertSame(64, strlen($device->token_hash));
+    }
+
+    public function test_first_device_activation_provisions_one_reusable_default_register(): void
+    {
+        [$owner, $store] = $this->storeFixture();
+
+        $this->actingAs($owner)->post(route('pos-devices.store', $store), [
+            'name' => 'Tablet Depan',
+        ])->assertRedirectToRoute('terminal.lock');
+        $this->actingAs($owner)->post(route('pos-devices.store', $store), [
+            'name' => 'Tablet Belakang',
+        ])->assertRedirectToRoute('terminal.lock');
+
+        $cashAccount = FinancialAccount::query()->where('store_id', $store->id)->sole();
+        $register = Register::query()->where('store_id', $store->id)->sole();
+
+        $this->assertSame('cash', $cashAccount->type->value);
+        $this->assertSame('Kas', $cashAccount->name);
+        $this->assertSame('Kasir Utama', $register->name);
+        $this->assertSame($cashAccount->id, $register->cash_financial_account_id);
+        $this->assertSame('active', $register->status);
+    }
+
+    public function test_device_activation_reuses_an_existing_active_cash_account(): void
+    {
+        [$owner, $store] = $this->storeFixture();
+        $cashAccount = FinancialAccount::factory()->for($store)->create([
+            'name' => 'Cash Drawer',
+            'type' => 'cash',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($owner)->post(route('pos-devices.store', $store), [
+            'name' => 'Tablet Depan',
+        ])->assertRedirectToRoute('terminal.lock');
+
+        $this->assertDatabaseCount('financial_accounts', 1);
+        $this->assertSame($cashAccount->id, Register::query()->sole()->cash_financial_account_id);
     }
 
     public function test_cashier_cannot_activate_a_device(): void

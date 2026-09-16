@@ -34,7 +34,7 @@ class BusinessMemberController extends Controller
         return Inertia::render('customer/team/index', [
             'business' => $business->only(['public_id', 'name']),
             'canManage' => $capabilities->allows($actor, 'members.manage'),
-            'stores' => Store::query()->where('business_id', $business->id)->orderBy('name')->get(['public_id', 'name']),
+            'assignableStores' => Store::query()->where('business_id', $business->id)->orderBy('name')->get(['public_id', 'name']),
             'members' => $business->memberships()->with(['user:id,email', 'stores:id,public_id,name'])
                 ->orderByRaw("CASE business_role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END")
                 ->orderBy('display_name')->get()->map(fn (BusinessMembership $member): array => [

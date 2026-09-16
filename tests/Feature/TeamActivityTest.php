@@ -34,7 +34,7 @@ class TeamActivityTest extends TestCase
             ->get(route('team.activity.index'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('customer/team/activity')
-                ->has('stores', 1)
-                ->where('stores.0.public_id', $assigned->public_id));
+                ->has('activityStores', 1)
+                ->where('activityStores.0.public_id', $assigned->public_id));
     }
 }

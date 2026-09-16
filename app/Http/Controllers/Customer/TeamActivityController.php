@@ -49,7 +49,7 @@ class TeamActivityController extends Controller
             });
 
         return Inertia::render('customer/team/activity', [
-            'stores' => $stores->map->only(['public_id', 'name']),
+            'activityStores' => $stores->map->only(['public_id', 'name']),
             'activity' => $activity,
         ]);
     }

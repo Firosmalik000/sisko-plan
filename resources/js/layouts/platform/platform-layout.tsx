@@ -63,7 +63,7 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 permission: 'platform.businesses.view',
             },
             {
-                label: 'Store',
+                label: 'Stores',
                 href: '/super-admin/stores',
                 icon: Store,
                 permission: 'platform.stores.view',

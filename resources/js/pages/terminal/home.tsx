@@ -1,5 +1,5 @@
 import { router, useForm } from '@inertiajs/react';
-import { LogOut, MonitorDot } from 'lucide-react';
+import { CircleStop, LogOut, MonitorDot, UsersRound } from 'lucide-react';
 import { useState } from 'react';
 import { FormCurrencyInput, FormSelect } from '@/components/forms';
 import { ResponsiveDialog } from '@/components/overlays';
@@ -36,7 +36,7 @@ export default function TerminalHome(props: {
                     </span>
                     <h1 className="mt-4 text-2xl font-bold">{t('Open register shift')}</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        {props.actor.display_name} · {props.device.name}
+                        {props.actor.display_name} · {props.store.name} · {props.device.name}
                     </p>
                     <div className="mt-6 space-y-4">
                         <FormSelect
@@ -86,17 +86,25 @@ export default function TerminalHome(props: {
 
     return (
         <>
-            <div className="sticky top-[env(safe-area-inset-top)] z-50 flex min-h-14 items-center justify-between gap-3 border-b border-border bg-card px-3 sm:px-5">
-                <p className="min-w-0 truncate text-sm font-semibold">
-                    {props.actor.display_name} · {props.activeRegisterSession.register.name} ·{' '}
-                    {props.activeRegisterSession.public_id.slice(-6)}
-                </p>
+            <div className="sticky top-[env(safe-area-inset-top)] z-50 flex min-h-14 items-center justify-between gap-2 border-b border-border bg-card px-3 sm:gap-3 sm:px-5">
+                <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">
+                        {props.actor.display_name} · {props.activeRegisterSession.register.name}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                        {props.store.name} · {props.device.name}
+                    </p>
+                </div>
                 <div className="flex shrink-0 gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setCloseOpen(true)}>
-                        {t('Close shift')}
+                    <Button className="min-h-11" variant="outline" size="sm" onClick={() => setCloseOpen(true)}>
+                        <CircleStop className="size-4" />
+                        <span className="hidden sm:inline">{t('Close shift')}</span>
+                        <span className="sr-only sm:hidden">{t('Close shift')}</span>
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => router.post(terminalRoutes.lock.store.url())}>
-                        {t('Switch user')}
+                    <Button className="min-h-11" variant="ghost" size="sm" onClick={() => router.post(terminalRoutes.lock.store.url())}>
+                        <UsersRound className="size-4" />
+                        <span className="hidden sm:inline">{t('Switch cashier')}</span>
+                        <span className="sr-only sm:hidden">{t('Switch cashier')}</span>
                     </Button>
                 </div>
             </div>

@@ -5,7 +5,7 @@ import type { CustomerPageProps } from '@/layouts/customer/customer-page-props';
 import { moreMenuSections } from '@/layouts/customer/navigation-items';
 import { useTranslation } from '@/lib/i18n';
 
-export default function MoreIndex() {
+export default function MoreIndex({ marketplaceEnabled }: { marketplaceEnabled: boolean }) {
     const { t } = useTranslation();
     const { capabilities } = usePage<CustomerPageProps>().props;
 
@@ -15,7 +15,11 @@ export default function MoreIndex() {
                 {moreMenuSections
                     .map((section) => ({
                         ...section,
-                        items: section.items.filter((item) => !('capability' in item) || capabilities.includes(item.capability)),
+                        items: section.items.filter(
+                            (item) =>
+                                (!('capability' in item) || capabilities.includes(item.capability)) &&
+                                (!('requiresMarketplace' in item) || marketplaceEnabled),
+                        ),
                     }))
                     .filter((section) => section.items.length > 0)
                     .map((section) => (

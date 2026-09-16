@@ -3,6 +3,7 @@
 use App\Http\Controllers\Customer\BusinessMemberController;
 use App\Http\Controllers\Customer\DashboardController;
 use App\Http\Controllers\Customer\GlobalSearchController;
+use App\Http\Controllers\Customer\MoreController;
 use App\Http\Controllers\Customer\ProductScannerController;
 use App\Http\Controllers\Customer\RegisterController;
 use App\Http\Controllers\Customer\SelectSubscriptionPlanController;
@@ -55,7 +56,7 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
 
     Route::middleware(['active.business', 'active.store', 'subscription.access'])->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
-        Route::inertia('more', 'customer/more/index')->name('customer.more');
+        Route::get('more', MoreController::class)->name('customer.more');
         Route::get('search', GlobalSearchController::class)->middleware('throttle:60,1')->name('customer.search');
 
         Route::post('scanner/catalog-item-lookups', [ProductScannerController::class, 'lookup'])->name('scanner.catalog-items.lookup');
