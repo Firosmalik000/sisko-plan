@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Actions\Subscriptions\StartDefaultSubscription;
+use App\Actions\Businesses\ProvisionBusinessOwner;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -18,7 +18,7 @@ use Throwable;
 
 class GoogleAuthenticationController extends Controller
 {
-    public function __construct(private StartDefaultSubscription $subscriptions) {}
+    public function __construct(private ProvisionBusinessOwner $businesses) {}
 
     public function redirect(): RedirectResponse
     {
@@ -117,7 +117,7 @@ class GoogleAuthenticationController extends Controller
                 'google_id' => $googleId,
                 'email_verified_at' => $user->email_verified_at ?? now(),
             ])->save();
-            $this->subscriptions->handle($user);
+            $this->businesses->handle($user);
 
             return $user;
         });

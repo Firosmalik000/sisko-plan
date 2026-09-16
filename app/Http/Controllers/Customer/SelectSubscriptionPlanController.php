@@ -6,7 +6,7 @@ use App\Actions\Subscriptions\PurchaseSubscriptionAddon;
 use App\Actions\Subscriptions\SelectSubscriptionPlan;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
-use App\Models\User;
+use App\Support\Authentication\AuthenticatedUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -16,13 +16,11 @@ class SelectSubscriptionPlanController extends Controller
 {
     public function __invoke(Request $request, SelectSubscriptionPlan $action, PurchaseSubscriptionAddon $addons): RedirectResponse
     {
-        $user = $request->user();
-
-        if (! $user instanceof User || $user->isPlatformAdmin()) {
-            abort(403);
-        }
-
-        abort_unless($user->ownedStores()->exists(), 403);
+        $membership = AuthenticatedUser::get($request)->businessMemberships()
+            ->where('business_role', 'owner')->where('status', 'active')
+            ->when($request->session()->has('active_business_id'), fn ($query) => $query->where('business_id', $request->session()->get('active_business_id')))
+            ->first();
+        abort_unless($membership !== null, 403);
 
         $validated = $request->validate([
             'plan_id' => ['required', 'string', 'exists:plans,public_id'],
@@ -38,13 +36,13 @@ class SelectSubscriptionPlanController extends Controller
         }
 
         if ($plan->kind === Plan::KIND_ADDON) {
-            $addons->handle($user, $plan, $request->ip());
+            $addons->handle($membership, $plan, $request->ip());
             Inertia::flash('toast', ['type' => 'success', 'message' => __('The :name add-on was added successfully.', ['name' => $plan->name])]);
 
             return to_route('subscription.index');
         }
 
-        $result = $action->handle($user, $plan, $request->ip());
+        $result = $action->handle($membership, $plan, $request->ip());
 
         if ($result['scheduled']) {
             Inertia::flash('toast', [

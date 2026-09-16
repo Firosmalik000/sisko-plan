@@ -2,11 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BusinessRole;
+use App\Enums\BusinessStatus;
 use App\Enums\PlatformAdminRole;
 use App\Enums\StoreStatus;
 use App\Enums\UserStatus;
+use App\Models\BusinessMembership;
 use App\Models\CashTransaction;
 use App\Models\FinancialAccount;
+use App\Models\Marketplace;
+use App\Models\PaymentMethod;
+use App\Models\PosDevice;
 use App\Models\Store;
 use App\Models\User;
 use App\Support\PlatformPermission;
@@ -165,7 +171,7 @@ class SuperAdminTest extends TestCase
     {
         $admin = User::factory()->superAdmin()->create();
         $owner = User::factory()->create();
-        Store::factory()->for($owner, 'owner')->create();
+        Store::factory()->ownedBy($owner)->create();
 
         $this->actingAs($admin)->delete(route('super-admin.users.destroy', $owner))
             ->assertSessionHasErrors('user');
@@ -173,6 +179,10 @@ class SuperAdminTest extends TestCase
 
         $operator = User::factory()->create();
         $store = Store::factory()->create();
+        $operatorMembership = BusinessMembership::factory()
+            ->for($store->business)
+            ->for($operator)
+            ->create(['business_role' => BusinessRole::Staff]);
         $account = FinancialAccount::factory()->for($store)->create();
         CashTransaction::create([
             'store_id' => $store->id,
@@ -181,9 +191,10 @@ class SuperAdminTest extends TestCase
             'reason' => 'opening_balance',
             'amount' => '1000',
             'balance_after' => '1000',
+            'currency_code' => $store->currencyCode(),
             'idempotency_key' => (string) Str::uuid(),
             'occurred_at' => now(),
-            'created_by_user_id' => $operator->id,
+            'created_by_business_membership_id' => $operatorMembership->id,
         ]);
 
         $this->actingAs($admin)->delete(route('super-admin.users.destroy', $operator))
@@ -309,8 +320,13 @@ class SuperAdminTest extends TestCase
         $targetUser = User::factory()->create();
         $targetAdmin = User::factory()->platformAdmin()->create();
         $store = Store::factory()->create();
-        $subscription = $store->subscription()->firstOrFail();
+        $subscription = $store->business->subscription()->firstOrFail();
         $plan = $subscription->plan;
+        $business = $store->business;
+        $membership = BusinessMembership::query()->where('business_id', $business->id)->firstOrFail();
+        $device = PosDevice::factory()->create(['business_id' => $business->id, 'store_id' => $store->id, 'activated_by_business_membership_id' => $membership->id]);
+        $marketplace = Marketplace::query()->firstOrFail();
+        $paymentMethod = PaymentMethod::query()->firstOrFail();
 
         $requests = [
             ['GET', route('super-admin.dashboard')],
@@ -320,6 +336,11 @@ class SuperAdminTest extends TestCase
             ['DELETE', route('super-admin.users.destroy', $targetUser)],
             ['GET', route('super-admin.stores.index')],
             ['PATCH', route('super-admin.stores.status', $store)],
+            ['GET', route('super-admin.businesses.index')],
+            ['GET', route('super-admin.businesses.show', $business)],
+            ['PATCH', route('super-admin.businesses.status', $business)],
+            ['POST', route('super-admin.businesses.devices.revoke', [$business, $device])],
+            ['POST', route('super-admin.businesses.ownership.recover', $business)],
             ['GET', route('super-admin.subscriptions.index')],
             ['GET', route('super-admin.payments.index')],
             ['POST', route('super-admin.plans.store')],
@@ -335,6 +356,9 @@ class SuperAdminTest extends TestCase
             ['PATCH', route('super-admin.brand-seo.update')],
             ['POST', route('super-admin.brand-seo.logo.update')],
             ['DELETE', route('super-admin.brand-seo.logo.destroy')],
+            ['GET', route('super-admin.commerce.index')],
+            ['PATCH', route('super-admin.commerce.marketplaces.update', $marketplace)],
+            ['PATCH', route('super-admin.commerce.payment-methods.update', $paymentMethod)],
         ];
 
         foreach ($requests as [$method, $url]) {
@@ -383,5 +407,50 @@ class SuperAdminTest extends TestCase
         ]);
         $this->actingAs($superAdmin)->get(route('super-admin.dashboard'))->assertOk();
         $this->actingAs($superAdmin)->get(route('super-admin.platform-admins.index'))->assertOk();
+    }
+
+    public function test_business_is_the_canonical_platform_tenant_surface_and_never_exposes_pos_secrets(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $owner = User::factory()->create();
+        $store = Store::factory()->ownedBy($owner)->create();
+        $business = $store->business;
+        $member = BusinessMembership::query()->where(['business_id' => $business->id, 'user_id' => $owner->id])->sole();
+        $member->update(['pos_pin_hash' => Hash::make('123456')]);
+        PosDevice::factory()->create(['business_id' => $business->id, 'store_id' => $store->id, 'activated_by_business_membership_id' => $member->id]);
+
+        $this->actingAs($admin)->get(route('super-admin.businesses.index'))
+            ->assertInertia(fn (Assert $page) => $page->component('platform/businesses/index')->has('businesses.data', 1));
+        $response = $this->actingAs($admin)->get(route('super-admin.businesses.show', $business))
+            ->assertInertia(fn (Assert $page) => $page->component('platform/businesses/show')
+                ->where('business.public_id', $business->public_id)->has('members', 1)->has('devices', 1));
+        $payload = $response->viewData('page');
+        $this->assertStringNotContainsString('pos_pin_hash', json_encode($payload));
+        $this->assertStringNotContainsString('token_hash', json_encode($payload));
+    }
+
+    public function test_business_platform_mutations_are_permissioned_and_audited(): void
+    {
+        $admin = User::factory()->superAdmin()->create();
+        $owner = User::factory()->create();
+        $store = Store::factory()->ownedBy($owner)->create();
+        $business = $store->business;
+        $ownerMember = BusinessMembership::query()->where(['business_id' => $business->id, 'user_id' => $owner->id])->sole();
+        $nextOwner = BusinessMembership::factory()->for($business)->create(['business_role' => BusinessRole::Admin]);
+        $device = PosDevice::factory()->create(['business_id' => $business->id, 'store_id' => $store->id, 'activated_by_business_membership_id' => $ownerMember->id]);
+        $marketplace = Marketplace::query()->where('code', 'shopee')->sole();
+
+        $this->actingAs($admin)->patch(route('super-admin.businesses.status', $business), ['status' => BusinessStatus::Suspended->value])->assertRedirect();
+        $this->assertSame(BusinessStatus::Suspended, $business->fresh()->status);
+        $this->actingAs($admin)->post(route('super-admin.businesses.devices.revoke', [$business, $device]))->assertRedirect();
+        $this->assertSame('revoked', $device->fresh()->status);
+        $this->actingAs($admin)->post(route('super-admin.businesses.ownership.recover', $business), ['member_id' => $nextOwner->public_id])->assertRedirect();
+        $this->assertSame(BusinessRole::Owner, $nextOwner->fresh()->business_role);
+        $this->actingAs($admin)->patch(route('super-admin.commerce.marketplaces.update', $marketplace), ['country_code' => 'ID', 'is_enabled' => false])->assertRedirect();
+        $this->assertDatabaseHas('country_marketplace', ['marketplace_id' => $marketplace->id, 'is_enabled' => false]);
+
+        foreach (['business.status_updated', 'business.device_revoked', 'business.ownership_recovered', 'commerce.marketplace_availability_updated'] as $action) {
+            $this->assertDatabaseHas('admin_audit_logs', ['user_id' => $admin->id, 'action' => $action]);
+        }
     }
 }

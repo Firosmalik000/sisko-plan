@@ -4,6 +4,7 @@ namespace App\Actions\Inventory;
 
 use App\Actions\Audit\RecordAudit;
 use App\Enums\StockCountStatus;
+use App\Models\BusinessMembership;
 use App\Models\InventoryBalance;
 use App\Models\StockCount;
 use App\Models\StockCountItem;
@@ -18,8 +19,9 @@ class UpdateStockCount
     public function __construct(private RecordAudit $audit) {}
 
     /** @param array<int, array{product_id:string, counted_quantity:?string}> $items */
-    public function save(Store $store, StockCount $stockCount, User $actor, array $items, ?string $ipAddress = null): void
+    public function save(Store $store, StockCount $stockCount, BusinessMembership|User $actor, array $items, ?string $ipAddress = null): void
     {
+        $actor = BusinessMembership::operational($store, $actor);
         DB::transaction(function () use ($store, $stockCount, $actor, $items, $ipAddress): void {
             $locked = $this->lockDraft($store, $stockCount);
             $identities = InventoryBalance::query()->where('inventory_balances.store_id', $store->id)
@@ -57,8 +59,9 @@ class UpdateStockCount
         }, 3);
     }
 
-    public function complete(Store $store, StockCount $stockCount, User $actor, ?string $ipAddress = null): void
+    public function complete(Store $store, StockCount $stockCount, BusinessMembership|User $actor, ?string $ipAddress = null): void
     {
+        $actor = BusinessMembership::operational($store, $actor);
         DB::transaction(function () use ($store, $stockCount, $actor, $ipAddress): void {
             $locked = $this->lockDraft($store, $stockCount);
             $remaining = StockCountItem::query()
@@ -74,26 +77,28 @@ class UpdateStockCount
             $locked->update([
                 'status' => StockCountStatus::Counted,
                 'completed_at' => now(),
-                'completed_by_user_id' => $actor->id,
+                'completed_by_business_membership_id' => $actor->id,
             ]);
             $this->audit->handle($actor, 'stock_count.completed', $locked, $store, $ipAddress);
         }, 3);
     }
 
-    public function reopen(Store $store, StockCount $stockCount, User $actor, ?string $ipAddress = null): void
+    public function reopen(Store $store, StockCount $stockCount, BusinessMembership|User $actor, ?string $ipAddress = null): void
     {
+        $actor = BusinessMembership::operational($store, $actor);
         DB::transaction(function () use ($store, $stockCount, $actor, $ipAddress): void {
             $locked = $this->lock($store, $stockCount);
             if ($locked->status !== StockCountStatus::Counted) {
                 throw ValidationException::withMessages(['stock_count' => __('Only a completed stock count can be reopened.')]);
             }
-            $locked->update(['status' => StockCountStatus::Draft, 'completed_at' => null, 'completed_by_user_id' => null]);
+            $locked->update(['status' => StockCountStatus::Draft, 'completed_at' => null, 'completed_by_business_membership_id' => null]);
             $this->audit->handle($actor, 'stock_count.reopened', $locked, $store, $ipAddress);
         }, 3);
     }
 
-    public function cancel(Store $store, StockCount $stockCount, User $actor, ?string $ipAddress = null): void
+    public function cancel(Store $store, StockCount $stockCount, BusinessMembership|User $actor, ?string $ipAddress = null): void
     {
+        $actor = BusinessMembership::operational($store, $actor);
         DB::transaction(function () use ($store, $stockCount, $actor, $ipAddress): void {
             $locked = $this->lock($store, $stockCount);
             if (! in_array($locked->status, [StockCountStatus::Draft, StockCountStatus::Counted], true)) {
@@ -102,7 +107,7 @@ class UpdateStockCount
             $locked->update([
                 'status' => StockCountStatus::Cancelled,
                 'cancelled_at' => now(),
-                'cancelled_by_user_id' => $actor->id,
+                'cancelled_by_business_membership_id' => $actor->id,
             ]);
             $this->audit->handle($actor, 'stock_count.cancelled', $locked, $store, $ipAddress);
         }, 3);

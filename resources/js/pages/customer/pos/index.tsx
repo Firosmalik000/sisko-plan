@@ -19,7 +19,7 @@ import { store as storeSale } from '@/routes/pos/sales';
 import type { StoreSummary } from '@/types';
 import { PosCartItems } from './cart';
 import { PosCatalog } from './catalog';
-import type { CatalogProduct, CartItem, Marketplace, PaymentMethod, ProductOption, SaleForm } from './types';
+import type { ActiveRegisterSession, CatalogProduct, CartItem, Marketplace, PaymentMethod, ProductOption, SaleForm } from './types';
 const ProductScanner = lazy(() => import('@/components/widgets/product-scanner/product-scanner'));
 
 export default function PosIndex({
@@ -27,11 +27,17 @@ export default function PosIndex({
     paymentMethods,
     marketplaces,
     timezone,
+    submitUrl = storeSale.url(),
+    activeRegisterSession = null,
+    terminalContext,
 }: {
     products: ProductOption[];
     paymentMethods: PaymentMethod[];
     marketplaces: Marketplace[];
     timezone: string;
+    submitUrl?: string;
+    activeRegisterSession?: ActiveRegisterSession | null;
+    terminalContext?: { cashier: string; device: string };
 }) {
     const { activeStore } = usePage<{ activeStore: StoreSummary | null }>().props;
     const [search, setSearch] = useState('');
@@ -56,6 +62,7 @@ export default function PosIndex({
     const isMobile = useIsMobile();
     const defaultPaymentMethod = paymentMethods.find((method) => method.method === 'cash') ?? paymentMethods[0];
     const sale = useForm<SaleForm>({
+        register_session_id: activeRegisterSession?.public_id ?? '',
         account_id: defaultPaymentMethod?.account_id ?? '',
         transaction_discount_amount: '0',
         paid_amount: '',
@@ -367,7 +374,7 @@ export default function PosIndex({
             marketplace_code: isMarketplace ? data.marketplace_code || marketplaces[0]?.code || '' : '',
             external_order_number: isMarketplace ? data.external_order_number : '',
         }));
-        sale.post(storeSale.url(), {
+        sale.post(submitUrl, {
             preserveScroll: true,
             onError: (errors) => {
                 setPaymentOpen(true);
@@ -396,7 +403,11 @@ export default function PosIndex({
         <>
             <AppPage
                 title={translate('Checkout')}
-                description={`${translate('New transaction')} · ${activeStore?.name ?? translate('Store')}`}
+                description={
+                    terminalContext && activeRegisterSession
+                        ? `${terminalContext.cashier} · ${activeRegisterSession.register.name} · ${activeRegisterSession.public_id.slice(-6)}`
+                        : `${translate('New transaction')} · ${activeStore?.name ?? translate('Store')}`
+                }
                 icon={ShoppingCart}
                 headerSurface
                 size="wide"

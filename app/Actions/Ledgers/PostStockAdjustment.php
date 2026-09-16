@@ -3,6 +3,7 @@
 namespace App\Actions\Ledgers;
 
 use App\Actions\Audit\RecordAudit;
+use App\Models\BusinessMembership;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\StockAdjustment;
@@ -19,8 +20,9 @@ class PostStockAdjustment
     public function __construct(private NextDocumentNumber $numbers, private ApplyStockMovement $stock, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
     /** @param array<int, array{product_id:int, product_variant_id?:int|null, quantity:string, unit_cost?:string|null}> $items */
-    public function handle(Store $store, User $actor, string $type, array $items, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null, ?int $stockCountId = null): StockAdjustment
+    public function handle(Store $store, BusinessMembership|User $actor, string $type, array $items, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null, ?int $stockCountId = null): StockAdjustment
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $date = $this->timestamps->parse($store, $occurredAt);
         $requestHash = $this->idempotency->hash(['type' => $type, 'items' => $items, 'occurred_at' => $date->toISOString(), 'notes' => $notes, 'stock_count_id' => $stockCountId]);
 
@@ -37,7 +39,8 @@ class PostStockAdjustment
                     'store_id' => $store->id, 'stock_count_id' => $stockCountId,
                     'document_number' => $this->numbers->handle($store->id, 'adj', $date),
                     'type' => $type, 'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash, 'occurred_at' => $date,
-                    'notes' => $notes, 'created_by_user_id' => $actor->id, 'posted_at' => now(),
+                    'notes' => $notes,
+                    'created_by_business_membership_id' => $actor->id, 'posted_at' => now(),
                 ]);
                 $incoming = in_array($type, ['opening', 'increase', 'opname_in'], true);
                 $reason = match ($type) {

@@ -44,6 +44,18 @@ final class PlatformPermission
 
     public const GEOGRAPHY_MANAGE = 'platform.geography.manage';
 
+    public const BUSINESSES_VIEW = 'platform.businesses.view';
+
+    public const BUSINESSES_STATUS_UPDATE = 'platform.businesses.status.update';
+
+    public const BUSINESSES_DEVICE_REVOKE = 'platform.businesses.devices.revoke';
+
+    public const BUSINESSES_OWNERSHIP_RECOVER = 'platform.businesses.ownership.recover';
+
+    public const COMMERCE_VIEW = 'platform.commerce.view';
+
+    public const COMMERCE_MANAGE = 'platform.commerce.manage';
+
     /** @return list<string> */
     public static function all(): array
     {
@@ -62,6 +74,10 @@ final class PlatformPermission
             self::USERS_STATUS_UPDATE,
             self::STORES_VIEW,
             self::STORES_STATUS_UPDATE,
+            self::BUSINESSES_VIEW,
+            self::BUSINESSES_STATUS_UPDATE,
+            self::BUSINESSES_DEVICE_REVOKE,
+            self::BUSINESSES_OWNERSHIP_RECOVER,
             self::SUBSCRIPTIONS_VIEW,
             self::PLANS_MANAGE,
             self::SUBSCRIPTIONS_MANAGE,
@@ -71,6 +87,8 @@ final class PlatformPermission
             self::BRANDING_MANAGE,
             self::GEOGRAPHY_VIEW,
             self::GEOGRAPHY_MANAGE,
+            self::COMMERCE_VIEW,
+            self::COMMERCE_MANAGE,
         ];
     }
 
@@ -90,6 +108,12 @@ final class PlatformPermission
             ['label' => 'Stores', 'permissions' => [
                 ['name' => self::STORES_VIEW, 'label' => 'View stores'],
                 ['name' => self::STORES_STATUS_UPDATE, 'label' => 'Change store status'],
+            ]],
+            ['label' => 'Businesses', 'permissions' => [
+                ['name' => self::BUSINESSES_VIEW, 'label' => 'View businesses'],
+                ['name' => self::BUSINESSES_STATUS_UPDATE, 'label' => 'Change business status'],
+                ['name' => self::BUSINESSES_DEVICE_REVOKE, 'label' => 'Revoke cashier devices'],
+                ['name' => self::BUSINESSES_OWNERSHIP_RECOVER, 'label' => 'Recover business ownership'],
             ]],
             ['label' => 'Subscriptions', 'permissions' => [
                 ['name' => self::SUBSCRIPTIONS_VIEW, 'label' => 'View subscriptions'],
@@ -113,6 +137,10 @@ final class PlatformPermission
                 ['name' => self::GEOGRAPHY_VIEW, 'label' => 'View countries and currencies'],
                 ['name' => self::GEOGRAPHY_MANAGE, 'label' => 'Manage countries and currencies'],
             ]],
+            ['label' => 'Commerce references', 'permissions' => [
+                ['name' => self::COMMERCE_VIEW, 'label' => 'View commerce references'],
+                ['name' => self::COMMERCE_MANAGE, 'label' => 'Manage commerce references'],
+            ]],
         ];
     }
 
@@ -121,12 +149,14 @@ final class PlatformPermission
         foreach ([
             self::DASHBOARD_VIEW => 'super-admin.dashboard',
             self::USERS_VIEW => 'super-admin.users.index',
+            self::BUSINESSES_VIEW => 'super-admin.businesses.index',
             self::STORES_VIEW => 'super-admin.stores.index',
             self::SUBSCRIPTIONS_VIEW => 'super-admin.subscriptions.index',
             self::PAYMENTS_VIEW => 'super-admin.payments.index',
             self::ADMINS_VIEW => 'super-admin.platform-admins.index',
             self::BRANDING_VIEW => 'super-admin.brand-seo.index',
             self::GEOGRAPHY_VIEW => 'super-admin.geography.index',
+            self::COMMERCE_VIEW => 'super-admin.commerce.index',
         ] as $permission => $route) {
             if ($user->can($permission)) {
                 return $route;

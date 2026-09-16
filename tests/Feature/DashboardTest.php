@@ -29,7 +29,7 @@ class DashboardTest extends TestCase
     public function test_authenticated_users_with_an_active_store_can_visit_the_dashboard()
     {
         $user = User::factory()->create();
-        Store::factory()->for($user, 'owner')->create();
+        Store::factory()->ownedBy($user)->create();
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 

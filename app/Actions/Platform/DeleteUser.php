@@ -22,8 +22,8 @@ class DeleteUser
             throw ValidationException::withMessages(['user' => __('Platform admin accounts must be managed from the Platform Admin menu.')]);
         }
 
-        if ($user->ownedStores()->exists()) {
-            throw ValidationException::withMessages(['user' => __("A store owner's account cannot be deleted. Transfer store ownership first.")]);
+        if ($user->businessMemberships()->where('business_role', 'owner')->exists()) {
+            throw ValidationException::withMessages(['user' => __('A business owner account cannot be deleted. Transfer business ownership first.')]);
         }
 
         $avatarPath = $user->avatar_path;

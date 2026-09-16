@@ -16,12 +16,16 @@
 Every store route must verify:
 
 - User authentication.
-- Active membership.
+- Verified email for full User accounts.
+- Active Business Membership and active Business.
+- Active Store assignment for Staff.
 - Store status.
 - Subscription allowance where relevant.
 - Action-specific policy.
 
 A user must not be able to access another store by changing a URL ID.
+
+Paired POS terminals authenticate the device token first and then unlock a cashier Business Membership with a six-digit PIN. Tokens and PIN hashes are never serialized. Sensitive register actions require a fresh Manager/Owner approval and are audited.
 
 ## Relationship validation
 

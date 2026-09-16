@@ -1,4 +1,7 @@
+import { operationalPlatformCatalog } from '../platform-operations.ts';
+
 export const tetPlatformCatalog: Record<string, string> = {
+    ...operationalPlatformCatalog('tet'),
     '(inactive)': '(la ativu)',
     '/month': '/fulan',
     '2FA active': '2FA ativu',

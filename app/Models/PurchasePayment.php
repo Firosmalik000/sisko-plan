@@ -7,7 +7,7 @@ use App\Models\Concerns\ImmutableLedgerRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['store_id', 'purchase_id', 'financial_account_id', 'document_number', 'amount', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_user_id', 'posted_at'])]
+#[Fillable(['store_id', 'currency_code', 'purchase_id', 'financial_account_id', 'document_number', 'amount', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_business_membership_id', 'posted_at'])]
 /** @property string $amount */
 class PurchasePayment extends Model
 {

@@ -2,11 +2,9 @@
 
 namespace App\Models;
 
-use App\Enums\MembershipStatus;
 use App\Enums\StoreStatus;
 use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,20 +17,18 @@ use Illuminate\Support\Str;
 /**
  * @property int $id
  * @property string $public_id
- * @property int $owner_user_id
+ * @property int $business_id
  * @property string $name
  * @property StoreStatus $status
  * @property int|null $active_members_count
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read User $owner
+ * @property-read Business $business
  * @property-read Country|null $country
- * @property-read Collection<int, User> $users
  * @property-read StoreSetting|null $settings
- * @property-read Subscription|null $subscription
  * @property-read StoreMembership $pivot
  */
-#[Fillable(['owner_user_id', 'country_id', 'name', 'status'])]
+#[Fillable(['business_id', 'country_id', 'name', 'status'])]
 class Store extends Model
 {
     /** @use HasFactory<StoreFactory> */
@@ -55,10 +51,21 @@ class Store extends Model
         return "store:{$this->public_id}";
     }
 
-    /** @return BelongsTo<User, $this> */
-    public function owner(): BelongsTo
+    public function currencyCode(): string
     {
-        return $this->belongsTo(User::class, 'owner_user_id');
+        return $this->settings()->value('currency') ?? $this->country()->value('currency_code') ?? 'IDR';
+    }
+
+    /** @return BelongsTo<Business, $this> */
+    public function business(): BelongsTo
+    {
+        return $this->belongsTo(Business::class);
+    }
+
+    /** @return HasMany<StoreMembership, $this> */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(StoreMembership::class);
     }
 
     /** @return BelongsTo<Country, $this> */
@@ -67,19 +74,10 @@ class Store extends Model
         return $this->belongsTo(Country::class);
     }
 
-    /** @return BelongsToMany<User, $this, StoreMembership, 'pivot'> */
-    public function users(): BelongsToMany
+    /** @return BelongsToMany<Marketplace, $this> */
+    public function marketplaces(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'store_memberships')
-            ->using(StoreMembership::class)
-            ->withPivot(['role', 'status'])
-            ->withTimestamps();
-    }
-
-    /** @return BelongsToMany<User, $this, StoreMembership, 'pivot'> */
-    public function activeUsers(): BelongsToMany
-    {
-        return $this->users()->wherePivot('status', MembershipStatus::Active->value);
+        return $this->belongsToMany(Marketplace::class, 'store_marketplace')->withPivot('is_enabled')->withTimestamps();
     }
 
     /** @return HasOne<StoreSetting, $this> */
@@ -122,12 +120,6 @@ class Store extends Model
     public function financialAccounts(): HasMany
     {
         return $this->hasMany(FinancialAccount::class);
-    }
-
-    /** @return HasOne<Subscription, $this> */
-    public function subscription(): HasOne
-    {
-        return $this->hasOne(Subscription::class, 'user_id', 'owner_user_id');
     }
 
     protected function casts(): array

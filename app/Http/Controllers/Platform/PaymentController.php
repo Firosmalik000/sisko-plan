@@ -25,11 +25,23 @@ class PaymentController extends Controller
         $to = $filters['to'] ?? null;
 
         $query = SubscriptionPayment::query()
-            ->with(['user:id,name,email', 'store:id,public_id,name', 'creator:id,name'])
+            ->with([
+                'business' => fn ($businesses) => $businesses
+                    ->select(['id', 'name'])
+                    ->with(['memberships' => fn ($memberships) => $memberships
+                        ->where('business_role', 'owner')
+                        ->whereNotNull('user_id')
+                        ->with('user:id,email')
+                        ->oldest('id')]),
+                'store:id,public_id,name',
+                'creator:id,name',
+            ])
             ->when($search !== '', fn ($builder) => $builder->where(function ($builder) use ($search): void {
                 $builder->where('receipt_number', 'like', "%{$search}%")
                     ->orWhere('external_reference', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
+                    ->orWhereHas('business', fn ($business) => $business
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('memberships.user', fn ($user) => $user->where('email', 'like', "%{$search}%")))
                     ->orWhereHas('store', fn ($store) => $store->where('name', 'like', "%{$search}%"));
             }))
             ->when($method !== '', fn ($builder) => $builder->where('payment_method', $method))
@@ -51,7 +63,10 @@ class PaymentController extends Controller
                         'payment_method', 'external_reference', 'paid_at', 'notes',
                     ]),
                     'store' => $payment->store->only(['public_id', 'name']),
-                    'account' => $payment->user?->only(['name', 'email']),
+                    'account' => [
+                        'name' => $payment->business->name,
+                        'email' => $payment->business->memberships->first()?->user?->email,
+                    ],
                     'created_by' => $payment->creator?->name,
                 ]),
             'filters' => compact('search', 'method', 'from', 'to'),

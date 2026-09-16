@@ -53,26 +53,26 @@ Examples:
 - platform_settings
 - admin_audit_logs
 
-`subscriptions.user_id` is the authoritative account owner for the active subscription. `subscriptions.store_id` and `subscription_payments.store_id` are retained as historical origin/attribution fields; commercial access and billing queries use the account owner.
+`subscriptions.business_id` is the authoritative commercial owner. Subscription periods, add-ons, payments, scan usage, and scan events are scoped through the same Business.
 
 `plans.duration_months` stores the paid activation term as an integer from 1 through 12. Trial duration remains governed by the fixed trial policy and is not inferred from this column.
 
 `plans.kind` separates base packages from add-on offers. `plans.billing_cycle` separates fixed terms from lifetime validity. Store, product, member, and scan values are base limits for base packages and additive capacities for add-ons.
 
-`subscription_periods` is the account subscription timeline. Confirmed period terms are appended with plan snapshots; only activation metadata may change when a scheduled period becomes effective. Queries and indexes remain scoped through `user_id` and `subscription_id`.
+`subscription_periods` is the Business subscription timeline. Confirmed period terms are appended with plan snapshots; only activation metadata may change when a scheduled period becomes effective. Queries and indexes remain scoped through `business_id` and `subscription_id`.
 
 `subscription_addons` stores immutable capacity snapshots and their validity windows. `subscription_scan_usages` is the monthly account counter; `subscription_scan_events` is its request-level audit trail.
 
 ### Identity and stores
 
 - users
+- businesses
+- business_memberships
 - stores
 - store_memberships
 - store_settings
 
-`store_memberships` is the canonical tenant membership table. Deployments created
-before 2026-09-07 are upgraded by an in-place rename from `store_user`; the
-migration verifies the row count and does not rebuild or truncate membership data.
+`business_memberships` is the canonical tenant identity and actor table. `store_memberships` only assigns Staff memberships to Stores and carries the Manager/Cashier role. Owner and Admin access derives from the Business membership and is not duplicated per Store.
 
 ### Catalog
 

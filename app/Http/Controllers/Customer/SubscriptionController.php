@@ -19,8 +19,8 @@ class SubscriptionController extends Controller
     {
         $store = $currentStore->get();
         Gate::authorize('viewSubscription', $store);
-        $periods->syncForOwner($store->owner_user_id);
-        $subscription = Subscription::query()->with('plan')->where('user_id', $store->owner_user_id)->firstOrFail();
+        $periods->syncForBusiness($store->business_id);
+        $subscription = Subscription::query()->with('plan')->where('business_id', $store->business_id)->firstOrFail();
         $today = CarbonImmutable::today();
         $history = $subscription->periods()
             ->with('plan:id,is_trial')
@@ -47,7 +47,7 @@ class SubscriptionController extends Controller
                     'status' => $status,
                 ];
             });
-        $payments = SubscriptionPayment::query()->where('user_id', $store->owner_user_id)->latest('id')->paginate(20, ['public_id', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'paid_at'], 'payment_page');
+        $payments = SubscriptionPayment::query()->where('business_id', $store->business_id)->latest('id')->paginate(20, ['public_id', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'paid_at'], 'payment_page');
 
         return Inertia::render('customer/subscription/index', [
             'subscription' => [

@@ -1,4 +1,7 @@
+import { operationalCustomerCatalog } from '../customer-operations.ts';
+
 export const loCustomerCatalog: Record<string, string> = {
+    ...operationalCustomerCatalog('lo'),
     ':name photo': 'ຮູບ :name',
     '· Checkout': '· ຊໍາລະເງິນ',
     '· Invoices': '· ໃບເກັບເງິນ',

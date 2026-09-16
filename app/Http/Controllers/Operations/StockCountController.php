@@ -30,7 +30,7 @@ class StockCountController extends Controller
 
         $counts = StockCount::query()
             ->where('store_id', $store->id)
-            ->with('creator:id,name')
+            ->with('creator:id,display_name')
             ->withCount('items')
             ->withCount(['items as counted_items_count' => fn ($query) => $query->whereNotNull('counted_quantity')])
             ->withCount(['items as discrepancy_items_count' => fn ($query) => $query->where('difference_quantity', '!=', 0)])
@@ -42,7 +42,7 @@ class StockCountController extends Controller
                 'document_number' => $count->document_number,
                 'status' => $count->status->value,
                 'snapshot_at' => $count->snapshot_at->toISOString(),
-                'created_by' => $count->creator?->name,
+                'created_by' => $count->creator?->display_name,
                 'items_count' => $count->items_count,
                 'counted_items_count' => $count->counted_items_count,
                 'discrepancy_items_count' => $count->discrepancy_items_count,
@@ -68,7 +68,7 @@ class StockCountController extends Controller
         $store = $currentStore->get();
         Gate::authorize('viewOperations', $store);
         $stockCount = $this->scoped($currentStore, $stockCount);
-        $stockCount->load(['creator:id,name', 'completer:id,name', 'poster:id,name']);
+        $stockCount->load(['creator:id,display_name', 'completer:id,display_name', 'poster:id,display_name']);
 
         $items = DB::table('stock_count_items')
             ->where('stock_count_items.store_id', $store->id)
@@ -111,9 +111,9 @@ class StockCountController extends Controller
                 'completed_at' => $stockCount->completed_at?->toISOString(),
                 'posted_at' => $stockCount->posted_at?->toISOString(),
                 'notes' => $stockCount->notes,
-                'created_by' => $stockCount->creator?->name,
-                'completed_by' => $stockCount->completer?->name,
-                'posted_by' => $stockCount->poster?->name,
+                'created_by' => $stockCount->creator?->display_name,
+                'completed_by' => $stockCount->completer?->display_name,
+                'posted_by' => $stockCount->poster?->display_name,
                 'items' => $items,
             ],
             'canCount' => Gate::allows('countStock', $store),

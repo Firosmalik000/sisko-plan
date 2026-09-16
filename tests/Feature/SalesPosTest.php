@@ -5,11 +5,14 @@ namespace Tests\Feature;
 use App\Actions\Audit\RecordAudit;
 use App\Actions\Ledgers\PostAccountTransfer;
 use App\Actions\Ledgers\PostStockAdjustment;
+use App\Actions\Registers\OpenRegisterSession;
 use App\Actions\Sales\PostSale;
 use App\Actions\Sales\PostSaleReturn;
+use App\Enums\BusinessRole;
 use App\Enums\FinancialAccountType;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Models\BusinessMembership;
 use App\Models\Country;
 use App\Models\Customer;
 use App\Models\FinancialAccount;
@@ -18,6 +21,7 @@ use App\Models\InventoryBalance;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\ProductVariant;
+use App\Models\Register;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleReturn;
@@ -321,8 +325,9 @@ class SalesPosTest extends TestCase
         [$owner, $store, $product, $cash] = $this->fixtures();
         $this->openStock($store, $owner, $product, '5', '500');
         $cashier = User::factory()->create();
-        $store->users()->attach($cashier, ['role' => MembershipRole::Cashier->value, 'status' => MembershipStatus::Active->value]);
-        $session = ['active_store_id' => $store->id];
+        $member = BusinessMembership::factory()->for($store->business)->for($cashier)->create(['business_role' => BusinessRole::Staff]);
+        $member->stores()->attach($store, ['role' => MembershipRole::Cashier->value, 'status' => MembershipStatus::Active->value]);
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
         $payload = [
             'account_id' => $cash->public_id, 'transaction_discount_amount' => '0', 'paid_amount' => '1000',
             'occurred_at' => '2026-08-07T16:00', 'idempotency_key' => (string) Str::uuid(),
@@ -370,7 +375,7 @@ class SalesPosTest extends TestCase
     public function test_pos_bootstraps_cash_and_qris_accounts_when_store_has_none(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $product = Product::factory()->for($store)->create();
         $product->productUnits()->sole()->update(['selling_price' => '1000']);
         $this->openStock($store, $owner, $product, '5', '500');
@@ -696,7 +701,7 @@ class SalesPosTest extends TestCase
     public function test_marketplace_providers_are_restricted_to_the_active_store_country(): void
     {
         $countries = [
-            'ID' => ['allowed' => 'tokopedia', 'foreign' => 'tiktok_shop'],
+            'ID' => ['allowed' => 'tokopedia', 'foreign' => 'tiki'],
             'MY' => ['allowed' => 'tiktok_shop', 'foreign' => 'tokopedia'],
             'TH' => ['allowed' => 'tiktok_shop', 'foreign' => 'tokopedia'],
             'VN' => ['allowed' => 'tiktok_shop', 'foreign' => 'tokopedia'],
@@ -771,7 +776,7 @@ class SalesPosTest extends TestCase
     public function test_changing_country_before_transactions_reconciles_visible_pos_payment_methods(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $session = ['active_store_id' => $store->id];
 
         $this->actingAs($owner)->withSession($session)->get(route('pos.index'))
@@ -912,7 +917,7 @@ class SalesPosTest extends TestCase
     public function test_pos_payment_methods_remain_available_across_indonesian_and_malay_sessions(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
 
         foreach (['id', 'ms'] as $locale) {
             $this->actingAs($owner)
@@ -1227,7 +1232,7 @@ class SalesPosTest extends TestCase
         $this->actingAs($owner)->withSession($session)->post(route('pos.sales.store'), $payload)->assertRedirect();
 
         $account = FinancialAccount::query()->where('store_id', $store->id)->where('marketplace_code', 'shopee')->sole();
-        $this->assertSame(FinancialAccountType::EWallet, $account->type);
+        $this->assertSame(FinancialAccountType::MarketplaceClearing, $account->type);
         $this->assertDatabaseCount('sales', 2);
         $this->assertDatabaseCount('customers', 0);
         $this->assertDatabaseHas('sale_payments', [
@@ -1521,11 +1526,64 @@ class SalesPosTest extends TestCase
         ]))->assertInertia(fn (Assert $page) => $page->has('sales.data', 0));
     }
 
+    public function test_in_store_cutover_sale_requires_open_register_and_snapshots_actor_context(): void
+    {
+        [$owner, $store, $product, $cash] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $actor = BusinessMembership::query()->where(['business_id' => $store->business_id, 'user_id' => $owner->id])->sole();
+
+        try {
+            app(PostSale::class)->handle(
+                $store, $actor, $cash->id,
+                [['product_unit_id' => $product->productUnits()->sole()->id, 'quantity' => '1', 'item_discount' => '0']],
+                '0', '1000', '2026-08-07T09:00:00Z', null, 'cutover-no-session',
+                requireRegisterSession: true,
+            );
+            $this->fail('In-store cutover sale must require a register session.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('register_session', $exception->errors());
+        }
+
+        $register = Register::factory()->for($store)->create(['cash_financial_account_id' => $cash->id]);
+        $session = app(OpenRegisterSession::class)->handle($register, $actor, '0');
+        $sale = app(PostSale::class)->handle(
+            $store, $actor, $cash->id,
+            [['product_unit_id' => $product->productUnits()->sole()->id, 'quantity' => '1', 'item_discount' => '0']],
+            '0', '1000', '2026-08-07T09:00:00Z', null, 'cutover-with-session',
+            registerSession: $session,
+            requireRegisterSession: true,
+        );
+
+        $this->assertSame($session->id, $sale->register_session_id);
+        $this->assertSame($actor->display_name, $sale->cashier_name);
+        $this->assertSame('IDR', $sale->currency_code);
+        $this->assertDatabaseHas('cash_transactions', ['register_session_id' => $session->id]);
+    }
+
+    public function test_cash_sale_must_use_the_open_register_cash_account(): void
+    {
+        [$owner, $store, $product, $cash, $otherAccount] = $this->fixtures();
+        $this->openStock($store, $owner, $product, '5', '500');
+        $actor = BusinessMembership::query()->where(['business_id' => $store->business_id, 'user_id' => $owner->id])->sole();
+        $register = Register::factory()->for($store)->create(['cash_financial_account_id' => $cash->id]);
+        $session = app(OpenRegisterSession::class)->handle($register, $actor, '0');
+
+        $this->expectException(ValidationException::class);
+        app(PostSale::class)->handle(
+            $store, $actor, $otherAccount->id,
+            [['product_unit_id' => $product->productUnits()->sole()->id, 'quantity' => '1', 'item_discount' => '0']],
+            '0', '1000', '2026-08-07T09:00:00Z', null, 'wrong-register-account',
+            paymentMethod: 'cash',
+            registerSession: $session,
+            requireRegisterSession: true,
+        );
+    }
+
     /** @return array{User, Store, Product, FinancialAccount, FinancialAccount} */
     private function fixtures(string $sellingPrice = '1000'): array
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $product = Product::factory()->for($store)->create();
         $product->productUnits()->sole()->update(['selling_price' => $sellingPrice]);
         $cash = FinancialAccount::factory()->for($store)->create(['name' => 'Kas', 'type' => FinancialAccountType::Cash]);

@@ -7,7 +7,7 @@ use App\Models\Concerns\ImmutableLedgerRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['store_id', 'supplier_id', 'direction', 'reason', 'amount', 'balance_after', 'reference_type', 'reference_id', 'occurred_at', 'notes', 'created_by_user_id'])]
+#[Fillable(['store_id', 'currency_code', 'supplier_id', 'direction', 'reason', 'amount', 'balance_after', 'reference_type', 'reference_id', 'occurred_at', 'notes', 'created_by_business_membership_id'])]
 class SupplierPayableTransaction extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;

@@ -5,12 +5,14 @@ import { ResponsiveDialog } from '@/components/overlays/responsive-dialog';
 import type { CustomerPageProps } from '@/layouts/customer/customer-page-props';
 import { cashierOptionIcons, primaryDestinations } from '@/layouts/customer/navigation-items';
 import { useTranslation } from '@/lib/i18n';
+import { visibleByCapability } from '@/lib/pos-operations-contract';
 import { cn } from '@/lib/utils';
 import storesRoutes from '@/routes/stores';
 
 export function CustomerNavigation() {
     const { url } = usePage();
-    const { activeStore } = usePage<CustomerPageProps>().props;
+    const { activeStore, capabilities } = usePage<CustomerPageProps>().props;
+    const visibleDestinations = visibleByCapability(primaryDestinations, capabilities);
     const pathname = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost').pathname;
     const disabled = !activeStore;
     const [cashierOpen, setCashierOpen] = useState(false);
@@ -22,7 +24,7 @@ export function CustomerNavigation() {
                 className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:inset-y-[75px] lg:right-auto lg:w-20 lg:border-t-0 lg:border-r lg:pb-0"
             >
                 <div className="mx-auto grid h-16 max-w-2xl grid-cols-5 items-stretch px-1 lg:flex lg:h-full lg:flex-col lg:gap-1 lg:px-2 lg:py-3">
-                    {primaryDestinations.map((item) =>
+                    {visibleDestinations.map((item) =>
                         item.kind === 'launcher' ? (
                             <CashierTrigger key={item.key} item={item} disabled={disabled} onClick={() => setCashierOpen(true)} />
                         ) : (

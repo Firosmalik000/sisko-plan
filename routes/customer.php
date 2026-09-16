@@ -1,12 +1,14 @@
 <?php
 
+use App\Http\Controllers\Customer\BusinessMemberController;
 use App\Http\Controllers\Customer\DashboardController;
 use App\Http\Controllers\Customer\GlobalSearchController;
 use App\Http\Controllers\Customer\ProductScannerController;
+use App\Http\Controllers\Customer\RegisterController;
 use App\Http\Controllers\Customer\SelectSubscriptionPlanController;
 use App\Http\Controllers\Customer\StoreController;
-use App\Http\Controllers\Customer\StoreMemberController;
 use App\Http\Controllers\Customer\SubscriptionController;
+use App\Http\Controllers\Customer\TeamActivityController;
 use App\Http\Controllers\Expenses\ExpenseController;
 use App\Http\Controllers\MasterData\CategoryController;
 use App\Http\Controllers\MasterData\FinancialAccountController;
@@ -19,7 +21,9 @@ use App\Http\Controllers\Operations\StockCountController;
 use App\Http\Controllers\Platform\ImpersonationController;
 use App\Http\Controllers\Purchasing\PurchasingController;
 use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Sales\MarketplaceSettlementController;
 use App\Http\Controllers\Sales\PosController;
+use App\Http\Controllers\Sales\PosDeviceController;
 use App\Http\Controllers\Sales\SalesController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,7 +33,7 @@ Route::middleware(['auth', 'throttle:store-writes'])->group(function () {
 
 Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function () {
     Route::post('pricing/subscribe', SelectSubscriptionPlanController::class)->name('pricing.subscribe');
-    Route::get('stores', [StoreController::class, 'index'])->name('stores.index');
+    Route::get('stores', [StoreController::class, 'index'])->middleware('active.business')->name('stores.index');
     Route::get('stores/create', [StoreController::class, 'create'])->name('stores.create');
     Route::post('stores', [StoreController::class, 'store'])->name('stores.store');
     Route::get('stores/{store}', [StoreController::class, 'show'])->name('stores.show');
@@ -38,12 +42,18 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
     Route::patch('stores/{store}/restore', [StoreController::class, 'restore'])->name('stores.restore');
     Route::delete('stores/{store}/permanent', [StoreController::class, 'forceDestroy'])->name('stores.force-destroy');
     Route::post('stores/{store}/switch', [StoreController::class, 'switch'])->name('stores.switch');
-    Route::post('stores/{store}/members', [StoreMemberController::class, 'store'])->name('stores.members.store');
-    Route::patch('stores/{store}/members/{member}', [StoreMemberController::class, 'update'])->name('stores.members.update');
+    Route::post('businesses/{business}/switch', [StoreController::class, 'switchBusiness'])->name('businesses.switch');
+    Route::post('businesses/{business}/members', [BusinessMemberController::class, 'store'])->name('businesses.members.store');
+    Route::patch('businesses/{business}/members/{member}', [BusinessMemberController::class, 'update'])->name('businesses.members.update');
+    Route::post('business-memberships/{member}/claim', [BusinessMemberController::class, 'claim'])->name('businesses.members.claim');
+    Route::middleware('active.business')->group(function () {
+        Route::post('stores/{store}/pos-devices', [PosDeviceController::class, 'store'])->name('pos-devices.store');
+        Route::delete('stores/{store}/pos-devices/{device}', [PosDeviceController::class, 'destroy'])->name('pos-devices.destroy');
+    });
 
-    Route::middleware('active.store')->post('notifications/stock-alerts/read', [StockAlertNotificationController::class, 'read'])->name('notifications.stock-alerts.read');
+    Route::middleware(['active.business', 'active.store'])->post('notifications/stock-alerts/read', [StockAlertNotificationController::class, 'read'])->name('notifications.stock-alerts.read');
 
-    Route::middleware(['active.store', 'subscription.access'])->group(function () {
+    Route::middleware(['active.business', 'active.store', 'subscription.access'])->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
         Route::inertia('more', 'customer/more/index')->name('customer.more');
         Route::get('search', GlobalSearchController::class)->middleware('throttle:60,1')->name('customer.search');
@@ -100,6 +110,9 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::get('pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('pos/sales', [PosController::class, 'store'])->name('pos.sales.store');
         Route::get('sales', [SalesController::class, 'index'])->name('sales.index');
+        Route::get('sales/settlements', [MarketplaceSettlementController::class, 'index'])->name('sales.settlements.index');
+        Route::post('sales/settlements', [MarketplaceSettlementController::class, 'store'])->name('sales.settlements.store');
+        Route::post('sales/settlements/{settlement}/reverse', [MarketplaceSettlementController::class, 'reverse'])->name('sales.settlements.reverse');
         Route::get('sales/{sale}/payment-proof', [SalesController::class, 'paymentProof'])->name('sales.payment-proof');
         Route::get('sales/{sale}', [SalesController::class, 'show'])->name('sales.show');
         Route::get('sales/{sale}/returns/create', [SalesController::class, 'createReturn'])->name('sales.returns.create');
@@ -111,6 +124,11 @@ Route::middleware(['auth', 'verified', 'throttle:store-writes'])->group(function
         Route::post('expenses', [ExpenseController::class, 'store'])->name('expenses.store');
 
         Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('registers', [RegisterController::class, 'index'])->name('registers.index');
+        Route::post('registers', [RegisterController::class, 'store'])->name('registers.store');
+        Route::get('team/activity', TeamActivityController::class)->name('team.activity.index');
+        Route::get('team', [BusinessMemberController::class, 'index'])->name('team.index');
+        Route::get('team/{member}', [BusinessMemberController::class, 'show'])->name('team.show');
         Route::get('subscription', SubscriptionController::class)->name('subscription.index');
     });
 });

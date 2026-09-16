@@ -53,7 +53,7 @@ class ManageSubscription
                         ->lockForUpdate()
                         ->firstOrFail();
                     $attributes = [
-                        'user_id' => $subscription->user_id,
+                        'business_id' => $subscription->business_id,
                         'plan_id' => $plan->id,
                         'plan_name' => $plan->name,
                         'offer_category' => $plan->offer_category,
@@ -85,7 +85,7 @@ class ManageSubscription
                 ->map(fn (SubscriptionAddon $addon): array => $this->addonSnapshot($addon))
                 ->all();
             $this->audit->handle($admin, 'subscription.updated', $subscription, $ipAddress, [
-                'user_id' => $subscription->user_id,
+                'business_id' => $subscription->business_id,
                 'before' => $before,
                 'after' => $subscription->only(['plan_id', 'status', 'starts_at', 'trial_ends_at', 'trial_used_at', 'current_period_start', 'current_period_end', 'cancelled_at', 'notes']),
                 'addons_before' => $beforeAddons,

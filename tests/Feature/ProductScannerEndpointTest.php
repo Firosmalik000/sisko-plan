@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BusinessRole;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
 use App\Enums\UnitType;
+use App\Models\BusinessMembership;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\ProductVariant;
@@ -155,7 +157,10 @@ class ProductScannerEndpointTest extends TestCase
     {
         [, $store] = $this->ownerAndStore();
         $cashier = User::factory()->create();
-        $store->users()->attach($cashier, [
+        $member = BusinessMembership::factory()->for($store->business)->for($cashier)->create([
+            'business_role' => BusinessRole::Staff,
+        ]);
+        $member->stores()->attach($store, [
             'role' => MembershipRole::Cashier->value,
             'status' => MembershipStatus::Active->value,
         ]);
@@ -180,7 +185,7 @@ class ProductScannerEndpointTest extends TestCase
     {
         $this->travelTo('2026-09-07 10:00:00');
         [$user, $store] = $this->ownerAndStore();
-        $store->subscription()->sole()->plan()->update(['max_scans' => 1]);
+        $store->business->subscription()->sole()->plan()->update(['max_scans' => 1]);
         app(ScanQuota::class)->consume($store, 'existing-ai-scan', 'recognize');
         $payload = [
             'purpose' => 'sale',
@@ -193,7 +198,7 @@ class ProductScannerEndpointTest extends TestCase
         $this->actingAs($user)->withSession(['active_store_id' => $store->id])
             ->postJson(route('scanner.catalog-items.lookup'), $payload)->assertOk();
         $this->assertDatabaseHas('subscription_scan_usages', [
-            'user_id' => $user->id,
+            'business_id' => $store->business_id,
             'period_start' => '2026-09-01',
             'used' => 1,
         ]);
@@ -369,7 +374,7 @@ class ProductScannerEndpointTest extends TestCase
     public function test_discovery_retries_charge_once_and_changed_content_is_rejected_at_limit(): void
     {
         [$user, $store] = $this->ownerAndStore();
-        $store->subscription()->sole()->plan()->update(['max_scans' => 1]);
+        $store->business->subscription()->sole()->plan()->update(['max_scans' => 1]);
         config()->set('services.catalog_intelligence.enabled', true);
         $this->mock(CatalogIntelligenceClient::class, function (MockInterface $mock): void {
             $mock->shouldReceive('discover')->twice()->withArgs(
@@ -512,7 +517,7 @@ class ProductScannerEndpointTest extends TestCase
     private function ownerAndStore(): array
     {
         $user = User::factory()->create();
-        $store = Store::factory()->for($user, 'owner')->create();
+        $store = Store::factory()->ownedBy($user)->create();
 
         return [$user, $store];
     }

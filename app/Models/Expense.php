@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** @property int $store_id */
-#[Fillable(['store_id', 'expense_category_id', 'financial_account_id', 'document_number', 'category_name', 'account_name', 'amount', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_user_id', 'posted_at'])]
+#[Fillable(['store_id', 'currency_code', 'expense_category_id', 'financial_account_id', 'document_number', 'category_name', 'account_name', 'amount', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_business_membership_id', 'posted_at'])]
 class Expense extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;

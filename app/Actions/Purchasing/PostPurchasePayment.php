@@ -5,6 +5,7 @@ namespace App\Actions\Purchasing;
 use App\Actions\Audit\RecordAudit;
 use App\Actions\Ledgers\IdempotencyGuard;
 use App\Actions\Ledgers\LedgerTimestamp;
+use App\Models\BusinessMembership;
 use App\Models\FinancialAccount;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
@@ -19,8 +20,9 @@ class PostPurchasePayment
 {
     public function __construct(private ApplyPurchasePayment $payments, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
-    public function handle(Store $store, User $actor, int $purchaseId, int $accountId, string $amount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): PurchasePayment
+    public function handle(Store $store, BusinessMembership|User $actor, int $purchaseId, int $accountId, string $amount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): PurchasePayment
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $date = $this->timestamps->parse($store, $occurredAt);
         $requestHash = $this->idempotency->hash(['purchase_id' => $purchaseId, 'account_id' => $accountId, 'amount' => $amount, 'occurred_at' => $date->toISOString(), 'notes' => $notes]);
 

@@ -6,9 +6,11 @@ use App\Actions\Inventory\PostStockCount;
 use App\Actions\Inventory\StartStockCount;
 use App\Actions\Inventory\UpdateStockCount;
 use App\Actions\Ledgers\PostStockAdjustment;
+use App\Enums\BusinessRole;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
 use App\Enums\StockCountStatus;
+use App\Models\BusinessMembership;
 use App\Models\InventoryBalance;
 use App\Models\Product;
 use App\Models\StockAdjustment;
@@ -46,12 +48,18 @@ class StockCountTest extends TestCase
     {
         [$owner, $store, $product] = $this->fixtures('5', '1000');
         $cashier = User::factory()->create();
-        $store->users()->attach($cashier, [
+        $membership = BusinessMembership::factory()->create([
+            'business_id' => $store->business_id,
+            'user_id' => $cashier->id,
+            'display_name' => $cashier->name,
+            'business_role' => BusinessRole::Staff,
+        ]);
+        $membership->stores()->attach($store, [
             'role' => MembershipRole::Cashier->value,
             'status' => MembershipStatus::Active->value,
         ]);
         $count = app(StartStockCount::class)->handle($store, $owner, null);
-        $session = ['active_store_id' => $store->id];
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
 
         $this->actingAs($cashier)->withSession($session)
             ->get(route('operations.stock-opnames.show', $count))
@@ -176,7 +184,7 @@ class StockCountTest extends TestCase
     private function fixtures(string $quantity, string $cost): array
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $product = Product::factory()->for($store)->create();
         app(PostStockAdjustment::class)->handle($store, $owner, 'opening', [[
             'product_id' => $product->id,

@@ -21,21 +21,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $posted_at
  * @property CarbonImmutable|null $cancelled_at
  * @property string|null $notes
- * @property int $created_by_user_id
- * @property int|null $completed_by_user_id
- * @property int|null $posted_by_user_id
- * @property int|null $cancelled_by_user_id
  * @property int $items_count
  * @property int $counted_items_count
  * @property int $discrepancy_items_count
- * @property-read User|null $creator
- * @property-read User|null $completer
- * @property-read User|null $poster
+ * @property-read BusinessMembership|null $creator
+ * @property-read BusinessMembership|null $completer
+ * @property-read BusinessMembership|null $poster
  */
 #[Fillable([
     'store_id', 'document_number', 'status', 'snapshot_at', 'completed_at', 'posted_at',
-    'cancelled_at', 'notes', 'created_by_user_id', 'completed_by_user_id',
-    'posted_by_user_id', 'cancelled_by_user_id',
+    'cancelled_at', 'notes', 'created_by_business_membership_id',
+    'completed_by_business_membership_id', 'posted_by_business_membership_id',
+    'cancelled_by_business_membership_id',
 ])]
 class StockCount extends Model
 {
@@ -47,22 +44,22 @@ class StockCount extends Model
         return $this->hasMany(StockCountItem::class);
     }
 
-    /** @return BelongsTo<User, $this> */
+    /** @return BelongsTo<BusinessMembership, $this> */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by_user_id');
+        return $this->belongsTo(BusinessMembership::class, 'created_by_business_membership_id');
     }
 
-    /** @return BelongsTo<User, $this> */
+    /** @return BelongsTo<BusinessMembership, $this> */
     public function completer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'completed_by_user_id');
+        return $this->belongsTo(BusinessMembership::class, 'completed_by_business_membership_id');
     }
 
-    /** @return BelongsTo<User, $this> */
+    /** @return BelongsTo<BusinessMembership, $this> */
     public function poster(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'posted_by_user_id');
+        return $this->belongsTo(BusinessMembership::class, 'posted_by_business_membership_id');
     }
 
     protected function casts(): array

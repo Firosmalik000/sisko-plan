@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
 /** @property int $store_id */
-#[Fillable(['store_id', 'sale_id', 'financial_account_id', 'document_number', 'refund_amount', 'cogs_reversed', 'gross_profit_reversed', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_user_id', 'posted_at'])]
+#[Fillable(['store_id', 'sale_id', 'financial_account_id', 'register_session_id', 'currency_code', 'document_number', 'refund_amount', 'cogs_reversed', 'gross_profit_reversed', 'idempotency_key', 'request_hash', 'occurred_at', 'notes', 'created_by_business_membership_id', 'posted_at'])]
 class SaleReturn extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;

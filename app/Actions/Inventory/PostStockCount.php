@@ -5,6 +5,7 @@ namespace App\Actions\Inventory;
 use App\Actions\Audit\RecordAudit;
 use App\Actions\Ledgers\PostStockAdjustment;
 use App\Enums\StockCountStatus;
+use App\Models\BusinessMembership;
 use App\Models\StockCount;
 use App\Models\StockCountItem;
 use App\Models\Store;
@@ -18,8 +19,9 @@ class PostStockCount
 {
     public function __construct(private PostStockAdjustment $adjustments, private RecordAudit $audit) {}
 
-    public function handle(Store $store, StockCount $stockCount, User $actor, ?string $ipAddress = null): void
+    public function handle(Store $store, StockCount $stockCount, BusinessMembership|User $actor, ?string $ipAddress = null): void
     {
+        $actor = BusinessMembership::operational($store, $actor);
         DB::transaction(function () use ($store, $stockCount, $actor, $ipAddress): void {
             $locked = StockCount::query()
                 ->where(['id' => $stockCount->id, 'store_id' => $store->id])
@@ -70,7 +72,7 @@ class PostStockCount
             $locked->update([
                 'status' => StockCountStatus::Posted,
                 'posted_at' => now(),
-                'posted_by_user_id' => $actor->id,
+                'posted_by_business_membership_id' => $actor->id,
             ]);
             $this->audit->handle($actor, 'stock_count.posted', $locked, $store, $ipAddress, [
                 'incoming_items' => count($incoming),

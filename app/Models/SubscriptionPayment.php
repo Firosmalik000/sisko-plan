@@ -25,7 +25,7 @@ use Illuminate\Support\Carbon;
  * @property-read Subscription $subscription
  * @property-read User|null $creator
  */
-#[Fillable(['user_id', 'store_id', 'subscription_id', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'idempotency_key', 'request_hash', 'paid_at', 'notes', 'created_by_user_id'])]
+#[Fillable(['business_id', 'store_id', 'subscription_id', 'receipt_number', 'amount', 'period_start', 'period_end', 'payment_method', 'external_reference', 'idempotency_key', 'request_hash', 'paid_at', 'notes', 'created_by_user_id'])]
 class SubscriptionPayment extends Model
 {
     use HasPublicId, ImmutableLedgerRecord;
@@ -38,16 +38,16 @@ class SubscriptionPayment extends Model
         return $this->belongsTo(Subscription::class);
     }
 
+    /** @return BelongsTo<Business, $this> */
+    public function business(): BelongsTo
+    {
+        return $this->belongsTo(Business::class);
+    }
+
     /** @return BelongsTo<Store, $this> */
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
-    }
-
-    /** @return BelongsTo<User, $this> */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     /** @return BelongsTo<User, $this> */

@@ -19,7 +19,7 @@ class ActivateAllSubscriptions
         return DB::transaction(function () use ($admin, $ipAddress): int {
             $subscriptions = Subscription::query()
                 ->with('plan:id,monthly_price,billing_cycle,duration_months,is_trial')
-                ->whereNotNull('user_id')
+                ->whereNotNull('business_id')
                 ->lockForUpdate()
                 ->orderBy('id')
                 ->get();
@@ -47,7 +47,7 @@ class ActivateAllSubscriptions
                     'created_by_user_id' => $admin->id,
                 ]);
                 $this->audit->handle($admin, 'subscription.activated_from_now', $subscription, $ipAddress, [
-                    'user_id' => $subscription->user_id,
+                    'business_id' => $subscription->business_id,
                     'before' => $before,
                     'after' => $subscription->only([
                         'status', 'starts_at', 'trial_ends_at', 'current_period_start',

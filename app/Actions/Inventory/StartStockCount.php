@@ -5,6 +5,7 @@ namespace App\Actions\Inventory;
 use App\Actions\Audit\RecordAudit;
 use App\Actions\Ledgers\NextDocumentNumber;
 use App\Enums\StockCountStatus;
+use App\Models\BusinessMembership;
 use App\Models\InventoryBalance;
 use App\Models\StockCount;
 use App\Models\Store;
@@ -16,8 +17,10 @@ class StartStockCount
 {
     public function __construct(private NextDocumentNumber $numbers, private RecordAudit $audit) {}
 
-    public function handle(Store $store, User $actor, ?string $notes, ?string $ipAddress = null): StockCount
+    public function handle(Store $store, BusinessMembership|User $actor, ?string $notes, ?string $ipAddress = null): StockCount
     {
+        $actor = BusinessMembership::operational($store, $actor);
+
         return DB::transaction(function () use ($store, $actor, $notes, $ipAddress): StockCount {
             Store::query()->whereKey($store->id)->lockForUpdate()->firstOrFail();
 
@@ -58,7 +61,7 @@ class StartStockCount
                 'status' => StockCountStatus::Draft,
                 'snapshot_at' => $snapshotAt,
                 'notes' => $notes,
-                'created_by_user_id' => $actor->id,
+                'created_by_business_membership_id' => $actor->id,
             ]);
 
             $timestamp = now();

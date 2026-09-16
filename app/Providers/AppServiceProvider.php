@@ -3,7 +3,11 @@
 namespace App\Providers;
 
 use App\Enums\PlatformAdminRole;
+use App\Models\Store;
 use App\Models\User;
+use App\Support\BusinessCapability;
+use App\Support\CurrentBusiness;
+use App\Support\CurrentPosDevice;
 use App\Support\CurrentStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -23,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->scoped(CurrentBusiness::class);
+        $this->app->scoped(CurrentPosDevice::class);
         $this->app->scoped(CurrentStore::class);
     }
 
@@ -35,6 +41,14 @@ class AppServiceProvider extends ServiceProvider
             && str_starts_with($ability, 'platform.')
                 ? true
                 : null);
+        foreach (['business.manage', 'members.manage', 'subscription.manage', 'store.manage', 'catalog.manage', 'inventory.manage', 'inventory.count', 'purchasing.manage', 'cash.view', 'expenses.manage', 'sales.checkout', 'sales.view-all', 'sales.view-own', 'register.use', 'register.approve', 'reports.view', 'devices.manage', 'team.view'] as $ability) {
+            Gate::define($ability, function (User $user, Store $store) use ($ability): bool {
+                $catalog = app(BusinessCapability::class);
+                $member = $catalog->memberFor($user, $store);
+
+                return $member !== null && $catalog->allows($member, $ability, $store);
+            });
+        }
         $this->configureDefaults();
     }
 

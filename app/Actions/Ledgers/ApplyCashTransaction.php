@@ -2,8 +2,10 @@
 
 namespace App\Actions\Ledgers;
 
+use App\Models\BusinessMembership;
 use App\Models\CashTransaction;
 use App\Models\FinancialAccountBalance;
+use App\Models\Store;
 use App\Models\User;
 use App\Support\Decimal;
 use Carbon\CarbonImmutable;
@@ -16,8 +18,9 @@ class ApplyCashTransaction
 {
     private const MAX_MONEY = '999999999999999.9999';
 
-    public function handle(int $storeId, int $accountId, string $direction, string $amount, string $reason, ?Model $reference, CarbonInterface $occurredAt, User $actor, ?string $notes, ?string $idempotencyKey = null, ?string $requestHash = null, bool $requireEmptyAccount = false): CashTransaction
+    public function handle(int $storeId, int $accountId, string $direction, string $amount, string $reason, ?Model $reference, CarbonInterface $occurredAt, BusinessMembership|User $actor, ?string $notes, ?string $idempotencyKey = null, ?string $requestHash = null, bool $requireEmptyAccount = false, ?int $registerSessionId = null): CashTransaction
     {
+        $actor = BusinessMembership::operational($storeId, $actor);
         if (! in_array($direction, ['in', 'out'], true) || Decimal::compare($amount, '0', Decimal::MONEY_SCALE) <= 0) {
             throw ValidationException::withMessages(['amount' => __('The transaction amount must be greater than zero.')]);
         }
@@ -46,11 +49,14 @@ class ApplyCashTransaction
 
         return CashTransaction::create([
             'store_id' => $storeId, 'financial_account_id' => $accountId, 'direction' => $direction,
+            'currency_code' => Store::query()->findOrFail($storeId)->currencyCode(),
             'reason' => $reason, 'amount' => $amount, 'balance_after' => $newBalance,
             'idempotency_key' => $idempotencyKey,
             'request_hash' => $requestHash,
+            'register_session_id' => $registerSessionId,
             'reference_type' => $reference?->getMorphClass(), 'reference_id' => $reference?->getKey(),
-            'occurred_at' => $occurredAt, 'notes' => $notes, 'created_by_user_id' => $actor->id,
+            'occurred_at' => $occurredAt, 'notes' => $notes,
+            'created_by_business_membership_id' => $actor->id,
         ]);
     }
 }

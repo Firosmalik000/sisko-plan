@@ -6,11 +6,15 @@ use App\Actions\Sales\PostSaleReturn;
 use App\Actions\Sales\UpsertSaleCustomer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreSaleReturnRequest;
+use App\Models\BusinessMembership;
 use App\Models\FinancialAccount;
+use App\Models\Register;
+use App\Models\RegisterSession;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SaleReturn;
 use App\Models\User;
+use App\Support\BusinessCapability;
 use App\Support\CurrentStore;
 use App\Support\Decimal;
 use App\Support\MarketplaceCatalog;
@@ -45,6 +49,9 @@ class SalesController extends Controller
             'customer' => ['nullable', 'in:identified,guest'],
             'view' => ['nullable', 'in:history,returns'],
             'from' => ['nullable', 'in:pos'],
+            'cashier_id' => ['nullable', 'string', 'size:26'],
+            'register_id' => ['nullable', 'string', 'size:26'],
+            'register_session_id' => ['nullable', 'string', 'size:26'],
         ]);
         $search = trim((string) ($validated['search'] ?? ''));
         $period = (string) ($validated['period'] ?? 'today');
@@ -55,6 +62,11 @@ class SalesController extends Controller
         $marketplaceCode = (string) ($validated['marketplace_code'] ?? '');
         $customer = (string) ($validated['customer'] ?? '');
         $from = ($validated['from'] ?? null) === 'pos' ? 'pos' : null;
+        $cashierId = BusinessMembership::query()->where(['business_id' => $store->business_id, 'public_id' => $validated['cashier_id'] ?? null])->value('id');
+        $registerId = Register::query()->where(['store_id' => $store->id, 'public_id' => $validated['register_id'] ?? null])->value('id');
+        $registerSessionId = RegisterSession::query()->where(['store_id' => $store->id, 'public_id' => $validated['register_session_id'] ?? null])->value('id');
+        $actor = app(BusinessCapability::class)->memberFor($request->user(), $store);
+        $ownSessionOnly = ! Gate::allows('sales.view-all', $store);
         $today = CarbonImmutable::now($timezone);
         $start = match ($period) {
             'today' => $today->startOfDay(),
@@ -78,6 +90,13 @@ class SalesController extends Controller
         $itemTotals = DB::table('sale_items')->select('sale_id')->selectRaw('SUM(cogs_amount) as cogs_amount, SUM(gross_profit) as gross_profit')->where('store_id', $store->id)->groupBy('sale_id');
         $returnTotals = DB::table('sale_returns')->select('sale_id')->selectRaw('SUM(refund_amount) as refund_amount, SUM(cogs_reversed) as cogs_reversed, SUM(gross_profit_reversed) as gross_profit_reversed')->where('store_id', $store->id)->groupBy('sale_id');
         $sales = Sale::query()->where('sales.store_id', $store->id)
+            ->when($ownSessionOnly, fn ($query) => $query
+                ->where('sales.created_by_business_membership_id', $actor?->id)
+                ->where(fn ($sessions) => $sessions->whereNull('sales.register_session_id')
+                    ->orWhere('sales.register_session_id', (int) $request->session()->get('register_session_id', 0))))
+            ->when($cashierId !== null && ! $ownSessionOnly, fn ($query) => $query->where('sales.created_by_business_membership_id', $cashierId))
+            ->when($registerSessionId !== null && ! $ownSessionOnly, fn ($query) => $query->where('sales.register_session_id', $registerSessionId))
+            ->when($registerId !== null && ! $ownSessionOnly, fn ($query) => $query->whereIn('sales.register_session_id', RegisterSession::query()->where('register_id', $registerId)->select('id')))
             ->when($start !== null, fn ($query) => $query->where('sales.occurred_at', '>=', $start->utc()))
             ->when($end !== null, fn ($query) => $query->where('sales.occurred_at', '<=', $end->utc()))
             ->join('sale_payments', 'sale_payments.sale_id', '=', 'sales.id')
@@ -138,8 +157,13 @@ class SalesController extends Controller
                 'customer' => $customer,
                 'view' => $view,
                 'from' => $from,
+                'cashier_id' => $validated['cashier_id'] ?? '',
+                'register_id' => $validated['register_id'] ?? '',
+                'register_session_id' => $validated['register_session_id'] ?? '',
             ],
             'marketplaces' => MarketplaceCatalog::forCountry($store->country?->code),
+            'cashiers' => BusinessMembership::query()->where('business_id', $store->business_id)->orderBy('display_name')->get(['public_id', 'display_name']),
+            'registers' => Register::query()->where('store_id', $store->id)->orderBy('name')->get(['public_id', 'name']),
         ]);
     }
 
@@ -222,9 +246,14 @@ class SalesController extends Controller
         $store = $currentStore->get();
         Gate::authorize('viewSales', $store);
         abort_unless($sale->store_id === $store->id, 404);
-        $sale = Sale::query()->where(['sales.id' => $sale->id, 'sales.store_id' => $store->id])
-            ->join('users', 'users.id', '=', 'sales.created_by_user_id')
-            ->firstOrFail(['sales.*', 'users.name as cashier_name']);
+        if (! Gate::allows('sales.view-all', $store)) {
+            $actor = app(BusinessCapability::class)->memberFor(request()->user(), $store);
+            abort_unless($actor !== null
+                && $sale->created_by_business_membership_id === $actor->id
+                && ($sale->register_session_id === null
+                    || $sale->register_session_id === (int) request()->session()->get('register_session_id', 0)), 403);
+        }
+        $sale = Sale::query()->where(['sales.id' => $sale->id, 'sales.store_id' => $store->id])->firstOrFail();
         $returned = DB::table('sale_return_items')->select('sale_item_id')->selectRaw('SUM(quantity) as returned_quantity, SUM(refund_amount) as refunded_amount, SUM(cogs_reversed) as cogs_reversed')->where('store_id', $store->id)->groupBy('sale_item_id');
         $items = SaleItem::query()->where(['sale_items.store_id' => $store->id, 'sale_items.sale_id' => $sale->id])
             ->leftJoinSub($returned, 'returned', 'returned.sale_item_id', '=', 'sale_items.id')

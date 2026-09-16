@@ -29,7 +29,7 @@ class SubscriptionController extends Controller
         $periods->syncDuePeriods();
         $plans = Plan::query()
             ->withCount([
-                'subscriptions' => fn ($query) => $query->whereNotNull('user_id'),
+                'subscriptions',
                 'subscriptionAddons',
             ])
             ->orderBy('monthly_price')->get()
@@ -38,9 +38,15 @@ class SubscriptionController extends Controller
                 'subscriptions_count' => $plan->kind === Plan::KIND_ADDON ? $plan->subscription_addons_count : $plan->subscriptions_count,
             ]);
         $subscriptions = Subscription::query()
-            ->whereNotNull('user_id')
             ->with([
-                'user' => fn ($query) => $query->select(['id', 'name', 'email'])->withCount('ownedStores'),
+                'business' => fn ($query) => $query
+                    ->select(['id', 'name'])
+                    ->withCount('stores')
+                    ->with(['memberships' => fn ($memberships) => $memberships
+                        ->where('business_role', 'owner')
+                        ->whereNotNull('user_id')
+                        ->with('user:id,name,email')
+                        ->oldest('id')]),
                 'plan:id,public_id,name,monthly_price,duration_months,max_stores,max_products,max_members,max_scans,is_active',
                 'addons' => fn ($query) => $query
                     ->where(fn ($addons) => $addons->whereNull('ends_on')->orWhereDate('ends_on', '>=', now()->toDateString()))
@@ -53,11 +59,15 @@ class SubscriptionController extends Controller
                     ->orderBy('id'),
             ])
             ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search): void {
-                $query->whereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
-                    ->orWhereHas('user.ownedStores', fn ($store) => $store->where('name', 'like', "%{$search}%"));
+                $query->whereHas('business', fn ($business) => $business->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('stores', fn ($store) => $store->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('memberships', fn ($memberships) => $memberships
+                        ->where('business_role', 'owner')
+                        ->whereHas('user', fn ($users) => $users->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))));
             }))
             ->when(in_array($status, array_column(SubscriptionStatus::cases(), 'value'), true), fn ($query) => $query->where('status', $status))
             ->latest('id')->paginate(15)->withQueryString()->through(function (Subscription $subscription): array {
+                $owner = $subscription->business->memberships->first()?->user;
                 $scheduledPeriods = [];
                 foreach ($subscription->periods as $period) {
                     $scheduledPeriods[] = [
@@ -72,9 +82,9 @@ class SubscriptionController extends Controller
                     ...$subscription->only(['public_id', 'status', 'starts_at', 'trial_ends_at', 'current_period_start', 'current_period_end', 'notes']),
                     'status' => $subscription->status->value,
                     'account' => [
-                        'name' => $subscription->user->name,
-                        'email' => $subscription->user->email,
-                        'stores_count' => $subscription->user->owned_stores_count,
+                        'name' => $subscription->business->name,
+                        'email' => $owner?->email,
+                        'stores_count' => $subscription->business->stores_count,
                     ],
                     'plan' => $subscription->plan->only(['public_id', 'name', 'monthly_price', 'duration_months', 'max_stores', 'max_products', 'max_members', 'max_scans', 'is_active']),
                     'active_addons' => $subscription->addons
@@ -133,8 +143,6 @@ class SubscriptionController extends Controller
 
     public function updateSubscription(Request $request, Subscription $subscription, ManageSubscription $action): RedirectResponse
     {
-        abort_if($subscription->user_id === null, 404);
-
         $validated = $request->validate([
             'plan_id' => [
                 'required',
@@ -228,8 +236,6 @@ class SubscriptionController extends Controller
 
     public function storePayment(Request $request, Subscription $subscription, PostSubscriptionPayment $action): RedirectResponse
     {
-        abort_if($subscription->user_id === null, 404);
-
         $validated = $request->validate([
             'amount' => ['required', 'decimal:0,4', 'gt:0', 'lte:999999999999999.9999'],
             'period_start' => ['required', 'date'],

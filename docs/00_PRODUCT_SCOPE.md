@@ -2,7 +2,7 @@
 
 ## Product statement
 
-Sistem Toko Stage 1 is a multi-store SaaS for small retail businesses that need product, stock, capital, cash, purchasing, POS sales, expenses, supplier debt, and simple but correct reporting.
+Sistem Toko Stage 1 is a multi-country Business-scoped SaaS for Southeast Asian merchants that need product, stock, capital, cash, purchasing, POS sales, expenses, supplier debt, and simple but correct reporting.
 
 ## Primary user
 
@@ -13,6 +13,7 @@ The main user is a small shop owner who:
 - Needs a system that is cleaner than manual notes.
 - Does not yet need full ERP or full accounting.
 - Needs a practical POS flow.
+- May operate multiple Businesses and Stores across supported countries.
 
 ## Platform operator
 
@@ -32,7 +33,7 @@ The operator is not the owner of store operational data.
 
 At the end of Stage 1:
 
-1. An owner can register, create multiple stores, and switch stores.
+1. An owner can register, create a Business, create Stores, and switch Business or Store.
 2. Each store remains isolated.
 3. An owner can manage master data.
 4. An owner can record cash or inventory capital.
@@ -58,6 +59,8 @@ Stage 1 is not:
 - Omnichannel marketplace software.
 - Native mobile app.
 - Offline-first POS.
+
+Multi-country identity, currencies, country-specific payment references, and marketplace clearing are in scope. Supplier marketplace, restaurant, laundry, service-item, payroll, and offline-first vertical workflows remain later specifications.
 
 ## Success principles
 

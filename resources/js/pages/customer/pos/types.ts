@@ -48,6 +48,7 @@ export type CartItem = ProductOption & {
 };
 
 export type SaleForm = {
+    register_session_id: string;
     account_id: string;
     transaction_discount_amount: string;
     paid_amount: string;
@@ -63,4 +64,11 @@ export type SaleForm = {
     notes: string;
     idempotency_key: string;
     items: CartItem[];
+};
+
+export type ActiveRegisterSession = {
+    public_id: string;
+    opening_cash: string;
+    expected_cash: string;
+    register: { public_id: string; name: string };
 };

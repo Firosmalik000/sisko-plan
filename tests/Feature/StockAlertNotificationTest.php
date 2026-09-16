@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Models\BusinessMembership;
 use App\Models\InventoryBalance;
 use App\Models\Product;
 use App\Models\Store;
@@ -93,7 +94,8 @@ class StockAlertNotificationTest extends TestCase
     {
         [$owner, $store, $balance] = $this->criticalBalance('1.000000', '3.000000');
         $cashier = User::factory()->create();
-        $store->users()->attach($cashier->id, [
+        $membership = BusinessMembership::factory()->for($store->business)->for($cashier)->create();
+        $membership->stores()->attach($store->id, [
             'role' => MembershipRole::Cashier->value,
             'status' => MembershipStatus::Active->value,
         ]);
@@ -129,7 +131,7 @@ class StockAlertNotificationTest extends TestCase
     private function criticalBalance(string $quantity, string $minimumQuantity): array
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $product = Product::factory()->for($store)->create(['name' => 'Kopi Susu']);
         $balance = InventoryBalance::query()->create([
             'store_id' => $store->id,

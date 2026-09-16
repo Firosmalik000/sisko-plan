@@ -1,5 +1,19 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, ChevronUp, CreditCard, Gauge, Globe2, LogOut, LockKeyhole, MapPinned, ReceiptText, UserCog, Users } from 'lucide-react';
+import {
+    Building2,
+    ChevronUp,
+    CreditCard,
+    Gauge,
+    Globe2,
+    LogOut,
+    LockKeyhole,
+    MapPinned,
+    ReceiptText,
+    ShoppingBag,
+    Store,
+    UserCog,
+    Users,
+} from 'lucide-react';
 import type { ComponentType } from 'react';
 import BrandMark from '@/components/brand-mark';
 import LanguageSwitcher from '@/components/language-switcher';
@@ -43,9 +57,15 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 permission: 'platform.users.view',
             },
             {
+                label: 'Businesses',
+                href: '/super-admin/businesses',
+                icon: Building2,
+                permission: 'platform.businesses.view',
+            },
+            {
                 label: 'Store',
                 href: '/super-admin/stores',
-                icon: Building2,
+                icon: Store,
                 permission: 'platform.stores.view',
             },
         ],
@@ -75,6 +95,12 @@ const navigation: Array<{ label: string; items: NavigationItem[] }> = [
                 href: '/super-admin/geography',
                 icon: MapPinned,
                 permission: 'platform.geography.view',
+            },
+            {
+                label: 'Commerce references',
+                href: '/super-admin/commerce',
+                icon: ShoppingBag,
+                permission: 'platform.commerce.view',
             },
             {
                 label: 'Branding & SEO',

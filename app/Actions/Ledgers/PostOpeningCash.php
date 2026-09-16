@@ -3,6 +3,7 @@
 namespace App\Actions\Ledgers;
 
 use App\Actions\Audit\RecordAudit;
+use App\Models\BusinessMembership;
 use App\Models\CashTransaction;
 use App\Models\FinancialAccount;
 use App\Models\FinancialAccountBalance;
@@ -15,8 +16,9 @@ class PostOpeningCash
 {
     public function __construct(private ApplyCashTransaction $cash, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps) {}
 
-    public function handle(Store $store, User $actor, int $accountId, string $amount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): CashTransaction
+    public function handle(Store $store, BusinessMembership|User $actor, int $accountId, string $amount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null): CashTransaction
     {
+        $actor = BusinessMembership::operational($store, $actor);
         $date = $this->timestamps->parse($store, $occurredAt);
         $requestHash = $this->idempotency->hash(['account_id' => $accountId, 'amount' => $amount, 'occurred_at' => $date->toISOString(), 'notes' => $notes]);
 

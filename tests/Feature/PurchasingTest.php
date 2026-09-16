@@ -11,8 +11,10 @@ use App\Actions\Purchasing\ApplyPurchasePayment;
 use App\Actions\Purchasing\ApplySupplierPayable;
 use App\Actions\Purchasing\PostPurchase;
 use App\Actions\Purchasing\PostPurchasePayment;
+use App\Enums\BusinessRole;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Models\BusinessMembership;
 use App\Models\CashTransaction;
 use App\Models\FinancialAccount;
 use App\Models\FinancialAccountBalance;
@@ -182,8 +184,9 @@ class PurchasingTest extends TestCase
     {
         [$owner, $store, $product, $supplier] = $this->fixtures();
         $cashier = User::factory()->create();
-        $store->users()->attach($cashier, ['role' => MembershipRole::Cashier->value, 'status' => MembershipStatus::Active->value]);
-        $session = ['active_store_id' => $store->id];
+        $member = BusinessMembership::factory()->for($store->business)->for($cashier)->create(['business_role' => BusinessRole::Staff]);
+        $member->stores()->attach($store, ['role' => MembershipRole::Cashier->value, 'status' => MembershipStatus::Active->value]);
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
         $payload = [
             'supplier_id' => $supplier->public_id, 'occurred_at' => '2026-08-07T10:00', 'idempotency_key' => (string) Str::uuid(),
             'discount_amount' => '0', 'additional_cost' => '0', 'paid_amount' => '0',
@@ -322,7 +325,7 @@ class PurchasingTest extends TestCase
     private function fixtures(): array
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
         $product = Product::factory()->for($store)->create();
         $supplier = Supplier::factory()->for($store)->create();
         $cash = FinancialAccount::factory()->for($store)->create(['name' => 'Kas']);

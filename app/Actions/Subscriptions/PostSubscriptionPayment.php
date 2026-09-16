@@ -34,14 +34,15 @@ class PostSubscriptionPayment
                 $number = ((int) $sequence->last_number) + 1;
                 DB::table('platform_sequences')->where('id', $sequence->id)->update(['last_number' => $number, 'updated_at' => now()]);
                 $payment = SubscriptionPayment::create([
-                    'user_id' => $locked->user_id, 'store_id' => $locked->store_id, 'subscription_id' => $locked->id,
+                    'business_id' => $locked->business_id,
+                    'store_id' => $locked->store_id, 'subscription_id' => $locked->id,
                     'receipt_number' => sprintf('SUBPAY-%s-%05d', $period, $number), 'amount' => $amount,
                     'period_start' => $periodStart, 'period_end' => $periodEnd, 'payment_method' => $method,
                     'external_reference' => $externalReference, 'idempotency_key' => $idempotencyKey, 'request_hash' => $requestHash,
                     'paid_at' => $paidDate, 'notes' => $notes, 'created_by_user_id' => $admin->id,
                 ]);
                 $renewed = $this->renewWhenEligible($locked, $periodStart, $periodEnd);
-                $this->audit->handle($admin, 'subscription.payment_posted', $payment, $ipAddress, ['user_id' => $locked->user_id, 'subscription_id' => $locked->id, 'amount' => $amount, 'period_end' => $periodEnd, 'renewed' => $renewed]);
+                $this->audit->handle($admin, 'subscription.payment_posted', $payment, $ipAddress, ['business_id' => $locked->business_id, 'subscription_id' => $locked->id, 'amount' => $amount, 'period_end' => $periodEnd, 'renewed' => $renewed]);
 
                 return $payment;
             }, 3);

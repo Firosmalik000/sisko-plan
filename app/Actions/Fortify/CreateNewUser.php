@@ -2,7 +2,7 @@
 
 namespace App\Actions\Fortify;
 
-use App\Actions\Subscriptions\StartDefaultSubscription;
+use App\Actions\Businesses\ProvisionBusinessOwner;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
@@ -14,7 +14,7 @@ class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
 
-    public function __construct(private StartDefaultSubscription $subscriptions) {}
+    public function __construct(private ProvisionBusinessOwner $businesses) {}
 
     /**
      * Validate and create a newly registered user.
@@ -34,7 +34,7 @@ class CreateNewUser implements CreatesNewUsers
                 'email' => $input['email'],
                 'password' => $input['password'],
             ]);
-            $this->subscriptions->handle($user);
+            $this->businesses->handle($user);
 
             return $user;
         });

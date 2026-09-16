@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Actions\Platform\DeleteUser;
 use App\Actions\Platform\RecordAdminAudit;
+use App\Enums\BusinessRole;
 use App\Enums\PlatformAdminRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -26,7 +27,11 @@ class UserController extends Controller
         $admin = AuthenticatedPlatformAdmin::get($request);
 
         $users = User::query()
-            ->withCount(['stores', 'ownedStores'])
+            ->with([
+                'businessMemberships.business:id,public_id,name',
+                'businessMemberships.business.stores:id,business_id',
+                'businessMemberships.stores:id',
+            ])
             ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
@@ -34,20 +39,30 @@ class UserController extends Controller
             ->latest('id')
             ->paginate(15)
             ->withQueryString()
-            ->through(fn (User $user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'status' => $user->status->value,
-                'platform_role' => $user->platform_role?->value,
-                'stores_count' => $user->stores_count,
-                'created_at' => $user->created_at?->toDateString(),
-                'can_update_status' => $admin->can($user->isPlatformAdmin() ? PlatformPermission::ADMINS_MANAGE : PlatformPermission::USERS_STATUS_UPDATE),
-                'can_impersonate' => $admin->can(PlatformPermission::USERS_IMPERSONATE) && $user->canBeImpersonated(),
-                'can_delete' => $admin->can(PlatformPermission::USERS_DELETE)
-                    && ! $user->isPlatformAdmin()
-                    && $user->owned_stores_count === 0,
-            ]);
+            ->through(function (User $user) use ($admin): array {
+                $storeCount = $user->businessMemberships
+                    ->flatMap(fn ($membership) => $membership->business_role === BusinessRole::Staff
+                        ? $membership->stores
+                        : $membership->business->stores)
+                    ->unique('id')
+                    ->count();
+
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'status' => $user->status->value,
+                    'platform_role' => $user->platform_role?->value,
+                    'stores_count' => $storeCount,
+                    'businesses' => $user->businessMemberships->map(fn ($membership): array => $membership->business->only(['public_id', 'name']))->values(),
+                    'created_at' => $user->created_at?->toDateString(),
+                    'can_update_status' => $admin->can($user->isPlatformAdmin() ? PlatformPermission::ADMINS_MANAGE : PlatformPermission::USERS_STATUS_UPDATE),
+                    'can_impersonate' => $admin->can(PlatformPermission::USERS_IMPERSONATE) && $user->canBeImpersonated(),
+                    'can_delete' => $admin->can(PlatformPermission::USERS_DELETE)
+                        && ! $user->isPlatformAdmin()
+                        && ! $user->businessMemberships->contains('business_role', BusinessRole::Owner),
+                ];
+            });
 
         return Inertia::render('platform/users/index', [
             'users' => $users,

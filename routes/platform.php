@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Platform\AuthenticatedSessionController;
+use App\Http\Controllers\Platform\BusinessController;
+use App\Http\Controllers\Platform\CommerceReferenceController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\GeographyController;
 use App\Http\Controllers\Platform\ImpersonationController;
@@ -35,6 +37,11 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::delete('users/{user}', [UserController::class, 'destroy'])->middleware('can:'.PlatformPermission::USERS_DELETE)->name('users.destroy');
             Route::get('stores', [StoreController::class, 'index'])->middleware('can:'.PlatformPermission::STORES_VIEW)->name('stores.index');
             Route::patch('stores/{store}/status', [StoreController::class, 'updateStatus'])->middleware('can:'.PlatformPermission::STORES_STATUS_UPDATE)->name('stores.status');
+            Route::get('businesses', [BusinessController::class, 'index'])->middleware('can:'.PlatformPermission::BUSINESSES_VIEW)->name('businesses.index');
+            Route::get('businesses/{business}', [BusinessController::class, 'show'])->middleware('can:'.PlatformPermission::BUSINESSES_VIEW)->name('businesses.show');
+            Route::patch('businesses/{business}/status', [BusinessController::class, 'updateStatus'])->middleware('can:'.PlatformPermission::BUSINESSES_STATUS_UPDATE)->name('businesses.status');
+            Route::post('businesses/{business}/devices/{device}/revoke', [BusinessController::class, 'revokeDevice'])->middleware('can:'.PlatformPermission::BUSINESSES_DEVICE_REVOKE)->name('businesses.devices.revoke');
+            Route::post('businesses/{business}/ownership/recover', [BusinessController::class, 'recoverOwnership'])->middleware('can:'.PlatformPermission::BUSINESSES_OWNERSHIP_RECOVER)->name('businesses.ownership.recover');
             Route::get('subscriptions', [SubscriptionController::class, 'index'])->middleware('can:'.PlatformPermission::SUBSCRIPTIONS_VIEW)->name('subscriptions.index');
             Route::get('payments', PaymentController::class)->middleware('can:'.PlatformPermission::PAYMENTS_VIEW)->name('payments.index');
             Route::post('plans', [SubscriptionController::class, 'storePlan'])->middleware('can:'.PlatformPermission::PLANS_MANAGE)->name('plans.store');
@@ -55,6 +62,9 @@ Route::prefix('super-admin')->name('super-admin.')->group(function () {
             Route::patch('geography/countries/{country}', [GeographyController::class, 'updateCountry'])->middleware('can:'.PlatformPermission::GEOGRAPHY_MANAGE)->name('geography.countries.update');
             Route::post('geography/currencies', [GeographyController::class, 'storeCurrency'])->middleware('can:'.PlatformPermission::GEOGRAPHY_MANAGE)->name('geography.currencies.store');
             Route::patch('geography/currencies/{currency}', [GeographyController::class, 'updateCurrency'])->middleware('can:'.PlatformPermission::GEOGRAPHY_MANAGE)->name('geography.currencies.update');
+            Route::get('commerce', [CommerceReferenceController::class, 'index'])->middleware('can:'.PlatformPermission::COMMERCE_VIEW)->name('commerce.index');
+            Route::patch('commerce/marketplaces/{marketplace}', [CommerceReferenceController::class, 'updateMarketplace'])->middleware('can:'.PlatformPermission::COMMERCE_MANAGE)->name('commerce.marketplaces.update');
+            Route::patch('commerce/payment-methods/{paymentMethod}', [CommerceReferenceController::class, 'updatePaymentMethod'])->middleware('can:'.PlatformPermission::COMMERCE_MANAGE)->name('commerce.payment-methods.update');
         });
     });
 });

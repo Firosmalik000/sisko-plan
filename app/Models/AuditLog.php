@@ -20,7 +20,7 @@ use Illuminate\Support\Carbon;
  * @property-read Model $actor
  * @property-read Model|null $subject
  */
-#[Fillable(['store_id', 'actor_type', 'actor_id', 'action', 'subject_type', 'subject_id', 'metadata', 'ip_address'])]
+#[Fillable(['store_id', 'actor_type', 'actor_id', 'actor_business_membership_id', 'action', 'subject_type', 'subject_id', 'metadata', 'ip_address'])]
 class AuditLog extends Model
 {
     public const UPDATED_AT = null;

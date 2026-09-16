@@ -24,6 +24,8 @@ This file records decisions that shape Stage 1 implementation.
 | 2026-08-08 | Keep deployment, backup, restore, and incident procedures infrastructure-neutral but version-controlled and mandatory for pilot go-live. | Stage 1 should be operable on the selected host without pretending the repository itself provides managed backups, monitoring, or failover. |
 | 2026-08-22 | Supersede the per-store subscription decision with one subscription per owner account and aggregate store, product, and distinct-staff limits across all owned stores; the owner does not consume a staff seat. | The commercial package is purchased by the account, while stores remain isolated operational tenants; this also makes configurable store and staff limits meaningful. |
 | 2026-08-22 | Require an operational account subscription before any store portal page is accessible, while keeping the subscription status page available to the owner. | Expired trials and active records without a started period must not expose tenant operations merely because the request is read-only. |
+| 2026-09-13 | Supersede User/Store ownership with Business as tenant and subscription owner, Business Membership as tenant actor, and Store as the operational ledger boundary. | One User can operate Businesses across countries; POS-only staff do not require accounts; roles and commercial limits remain coherent as the product grows. |
+| 2026-09-13 | Pair shared POS devices by opaque token, then unlock a cashier membership by six-digit PIN and bind sales to device, cashier, and register session snapshots. | Cashier attribution remains clear without forcing every small-shop cashier to use a personal device or email login. |
 
 ## 2026-08-24 — Trial identity and self-service plan confirmation
 

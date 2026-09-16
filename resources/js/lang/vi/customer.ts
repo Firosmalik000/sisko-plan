@@ -1,4 +1,7 @@
+import { operationalCustomerCatalog } from '../customer-operations.ts';
+
 export const viCustomerCatalog: Record<string, string> = {
+    ...operationalCustomerCatalog('vi'),
     ':name photo': 'Ảnh :name',
     '· Checkout': '· Thu ngân',
     '· Invoices': '· Hóa đơn',

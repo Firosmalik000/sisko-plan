@@ -12,6 +12,7 @@ import AuthLayout from '@/layouts/auth-layout';
 import ErrorLayout from '@/layouts/error-layout';
 import PlatformLayout from '@/layouts/platform/platform-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import TerminalLayout from '@/layouts/terminal-layout';
 import { applyStoreCurrency } from '@/lib/currency';
 import type { MarketCode } from '@/lib/currency';
 import { loadLocaleCatalog, setActiveLocale, useTranslation } from '@/lib/i18n';
@@ -121,6 +122,8 @@ async function bootstrap(): Promise<void> {
                     return PlatformLayout;
                 case name.startsWith('auth/'):
                     return AuthLayout;
+                case name.startsWith('terminal/'):
+                    return TerminalLayout;
                 case name.startsWith('customer/settings/'):
                     return [AppLayout, SettingsLayout];
                 default:

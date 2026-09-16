@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\MembershipRole;
-use App\Enums\MembershipStatus;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Store;
@@ -110,11 +108,7 @@ class CustomerGlobalSearchTest extends TestCase
     private function ownerAndStore(): array
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
-        $store->users()->updateExistingPivot($owner->id, [
-            'role' => MembershipRole::Owner->value,
-            'status' => MembershipStatus::Active->value,
-        ]);
+        $store = Store::factory()->ownedBy($owner)->create();
 
         return [$owner, $store];
     }

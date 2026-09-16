@@ -58,7 +58,7 @@ const parentDestinationHrefs: Record<CustomerParentDestination, string> = {
 export function CustomerHeader() {
     const { t } = useTranslation();
     const { url } = usePage();
-    const { auth, stores, activeStore, storeCreation, stockAlerts } = usePage<CustomerPageProps>().props;
+    const { auth, businesses, activeBusiness, stores, activeStore, storeCreation, stockAlerts } = usePage<CustomerPageProps>().props;
     const getInitials = useInitials();
     const [profilePanel, setProfilePanel] = useState<'main' | 'language' | 'appearance'>('main');
     const profileContent = useRef<HTMLDivElement>(null);
@@ -153,7 +153,13 @@ export function CustomerHeader() {
                     </span>
                     Sisko Plan
                 </Link>
-                <StoreSwitcher stores={stores} activeStore={activeStore} storeCreation={storeCreation} />
+                <StoreSwitcher
+                    businesses={businesses}
+                    activeBusiness={activeBusiness}
+                    stores={stores}
+                    activeStore={activeStore}
+                    storeCreation={storeCreation}
+                />
                 {activeStore && <GlobalSearch />}
 
                 {isMobile ? (

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Settings;
 
 use App\Enums\MembershipRole;
+use App\Models\BusinessMembership;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,7 +31,7 @@ class ProfileUpdateTest extends TestCase
     public function test_profile_page_contains_active_store_and_subscription_settings(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
 
         $this->actingAs($owner)
             ->withSession(['active_store_id' => $store->id])
@@ -39,13 +40,13 @@ class ProfileUpdateTest extends TestCase
                 ->component('customer/settings/profile')
                 ->where('store.public_id', $store->public_id)
                 ->where('store.can_manage', true)
-                ->where('subscription.plan_name', $store->subscription->plan->name));
+                ->where('subscription.plan_name', $store->business->subscription->plan->name));
     }
 
     public function test_new_store_uses_the_orange_portal_theme_by_default(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
 
         $this->assertSame('#ee4d2d', $store->settings()->value('theme_color'));
     }
@@ -53,7 +54,7 @@ class ProfileUpdateTest extends TestCase
     public function test_owner_can_update_store_receipt_and_theme_preferences(): void
     {
         $owner = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
+        $store = Store::factory()->ownedBy($owner)->create();
 
         $this->actingAs($owner)
             ->withSession(['active_store_id' => $store->id])
@@ -84,8 +85,9 @@ class ProfileUpdateTest extends TestCase
     {
         $owner = User::factory()->create();
         $cashier = User::factory()->create();
-        $store = Store::factory()->for($owner, 'owner')->create();
-        $store->users()->attach($cashier->id, ['role' => MembershipRole::Cashier->value, 'status' => 'active']);
+        $store = Store::factory()->ownedBy($owner)->create();
+        $membership = BusinessMembership::factory()->for($store->business)->for($cashier)->create();
+        $membership->stores()->attach($store->id, ['role' => MembershipRole::Cashier->value, 'status' => 'active']);
 
         $this->actingAs($cashier)
             ->withSession(['active_store_id' => $store->id])

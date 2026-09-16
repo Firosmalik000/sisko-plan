@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'period_start', 'period_end', 'used'])]
+#[Fillable(['business_id', 'period_start', 'period_end', 'used'])]
 class SubscriptionScanUsage extends Model
 {
     /** @return BelongsTo<User, $this> */
