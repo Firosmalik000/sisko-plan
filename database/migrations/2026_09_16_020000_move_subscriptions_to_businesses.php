@@ -20,13 +20,9 @@ return new class extends Migration
     public function up(): void
     {
         foreach ($this->tables as $tableName) {
-            Schema::table($tableName, function (Blueprint $table): void {
-                $table->foreignId('business_id')->nullable()->constrained()->restrictOnDelete();
-            });
+            $this->ensureNullableForeignId($tableName, 'business_id', 'businesses');
         }
-        Schema::table('subscription_payments', function (Blueprint $table): void {
-            $table->foreignId('purchaser_user_id')->nullable()->after('business_id')->constrained('users')->restrictOnDelete();
-        });
+        $this->ensureNullableForeignId('subscription_payments', 'purchaser_user_id', 'users', 'business_id');
 
         DB::table('subscriptions')->orderBy('id')->eachById(function (object $subscription): void {
             $businessId = DB::table('business_memberships')
@@ -70,24 +66,17 @@ return new class extends Migration
             DB::table('subscription_scan_events')->where('id', $event->id)->update(['business_id' => $businessId]);
         });
 
-        Schema::table('subscriptions', function (Blueprint $table): void {
-            $table->dropForeign(['user_id']);
-            $table->dropUnique(['user_id']);
-            $table->unique('business_id');
-            $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
-        });
-        Schema::table('subscription_scan_usages', function (Blueprint $table): void {
-            $table->dropForeign(['user_id']);
-            $table->dropUnique(['user_id', 'period_start']);
-            $table->unique(['business_id', 'period_start']);
-            $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
-        });
-        Schema::table('subscription_scan_events', function (Blueprint $table): void {
-            $table->dropForeign(['user_id']);
-            $table->dropUnique(['user_id', 'request_key']);
-            $table->unique(['business_id', 'request_key']);
-            $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
-        });
+        $this->replaceUserUniqueIndex('subscriptions', ['user_id'], ['business_id']);
+        $this->replaceUserUniqueIndex(
+            'subscription_scan_usages',
+            ['user_id', 'period_start'],
+            ['business_id', 'period_start'],
+        );
+        $this->replaceUserUniqueIndex(
+            'subscription_scan_events',
+            ['user_id', 'request_key'],
+            ['business_id', 'request_key'],
+        );
     }
 
     public function down(): void
@@ -118,6 +107,62 @@ return new class extends Migration
         foreach (array_reverse($this->tables) as $tableName) {
             Schema::table($tableName, function (Blueprint $table): void {
                 $table->dropConstrainedForeignId('business_id');
+            });
+        }
+    }
+
+    private function ensureNullableForeignId(
+        string $tableName,
+        string $columnName,
+        string $foreignTable,
+        ?string $after = null,
+    ): void {
+        if (! Schema::hasColumn($tableName, $columnName)) {
+            Schema::table($tableName, function (Blueprint $table) use ($columnName, $foreignTable, $after): void {
+                $column = $table->foreignId($columnName)->nullable();
+                if ($after !== null) {
+                    $column->after($after);
+                }
+                $column->constrained($foreignTable)->restrictOnDelete();
+            });
+
+            return;
+        }
+
+        if (! Schema::hasForeignKey($tableName, [$columnName])) {
+            Schema::table($tableName, function (Blueprint $table) use ($columnName, $foreignTable): void {
+                $table->foreign($columnName)->references('id')->on($foreignTable)->restrictOnDelete();
+            });
+        }
+    }
+
+    /**
+     * @param  list<string>  $legacyColumns
+     * @param  list<string>  $businessColumns
+     */
+    private function replaceUserUniqueIndex(string $tableName, array $legacyColumns, array $businessColumns): void
+    {
+        if (Schema::hasForeignKey($tableName, ['user_id'])) {
+            Schema::table($tableName, function (Blueprint $table): void {
+                $table->dropForeign(['user_id']);
+            });
+        }
+
+        if (Schema::hasIndex($tableName, $legacyColumns, 'unique')) {
+            Schema::table($tableName, function (Blueprint $table) use ($legacyColumns): void {
+                $table->dropUnique($legacyColumns);
+            });
+        }
+
+        if (! Schema::hasIndex($tableName, $businessColumns, 'unique')) {
+            Schema::table($tableName, function (Blueprint $table) use ($businessColumns): void {
+                $table->unique($businessColumns);
+            });
+        }
+
+        if (! Schema::hasForeignKey($tableName, ['user_id'])) {
+            Schema::table($tableName, function (Blueprint $table): void {
+                $table->foreign('user_id')->references('id')->on('users')->restrictOnDelete();
             });
         }
     }
