@@ -133,6 +133,7 @@ return new class extends Migration
         }
     }
 
+    /** @param object{id: int, user_id: int, store_id: int|null} $subscription */
     private function resolveOwningBusiness(object $subscription): int
     {
         $businessId = DB::table('business_memberships')
@@ -146,6 +147,7 @@ return new class extends Migration
         }
 
         return DB::transaction(function () use ($subscription): int {
+            /** @var object{id: int, name: string}|null $user */
             $user = DB::table('users')->where('id', $subscription->user_id)->lockForUpdate()->first(['id', 'name']);
             if ($user === null) {
                 throw new RuntimeException("Subscription [{$subscription->id}] has no owning User.");

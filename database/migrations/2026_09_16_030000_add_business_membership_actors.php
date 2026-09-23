@@ -99,13 +99,18 @@ return new class extends Migration
     {
         DB::table($tableName)->whereNotNull($userColumn)->whereNull($membershipColumn)->orderBy('id')
             ->eachById(function (object $row) use ($tableName, $userColumn, $membershipColumn): void {
-                $businessId = DB::table('stores')->where('id', $row->store_id)->value('business_id');
+                /** @var array<string, mixed> $rowData */
+                $rowData = (array) $row;
+                $rowId = (int) $rowData['id'];
+                $storeId = (int) $rowData['store_id'];
+                $actorUserId = (int) $rowData[$userColumn];
+                $businessId = DB::table('stores')->where('id', $storeId)->value('business_id');
                 if ($businessId === null) {
-                    throw new RuntimeException("{$tableName} Store [{$row->store_id}] has no Business.");
+                    throw new RuntimeException("{$tableName} Store [{$storeId}] has no Business.");
                 }
 
-                $membershipId = $this->resolveActorMembership((int) $businessId, (int) $row->{$userColumn});
-                DB::table($tableName)->where('id', $row->id)->update([$membershipColumn => $membershipId]);
+                $membershipId = $this->resolveActorMembership((int) $businessId, $actorUserId);
+                DB::table($tableName)->where('id', $rowId)->update([$membershipColumn => $membershipId]);
             });
     }
 
@@ -162,13 +167,18 @@ return new class extends Migration
     {
         DB::table('audit_logs')->whereNotNull('store_id')->where('actor_type', 'App\\Models\\User')
             ->whereNull('actor_business_membership_id')->orderBy('id')->eachById(function (object $audit): void {
-                $businessId = DB::table('stores')->where('id', $audit->store_id)->value('business_id');
+                /** @var array<string, mixed> $auditData */
+                $auditData = (array) $audit;
+                $auditId = (int) $auditData['id'];
+                $storeId = (int) $auditData['store_id'];
+                $actorUserId = (int) $auditData['actor_id'];
+                $businessId = DB::table('stores')->where('id', $storeId)->value('business_id');
                 if ($businessId === null) {
-                    throw new RuntimeException("Audit [{$audit->id}] Store [{$audit->store_id}] has no Business.");
+                    throw new RuntimeException("Audit [{$auditId}] Store [{$storeId}] has no Business.");
                 }
 
-                $membershipId = $this->resolveActorMembership((int) $businessId, (int) $audit->actor_id);
-                DB::table('audit_logs')->where('id', $audit->id)->update(['actor_business_membership_id' => $membershipId]);
+                $membershipId = $this->resolveActorMembership((int) $businessId, $actorUserId);
+                DB::table('audit_logs')->where('id', $auditId)->update(['actor_business_membership_id' => $membershipId]);
             });
     }
 };
