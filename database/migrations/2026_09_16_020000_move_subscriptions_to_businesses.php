@@ -1,9 +1,13 @@
 <?php
 
+use App\Enums\BusinessRole;
+use App\Enums\BusinessStatus;
+use App\Enums\MembershipStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -25,14 +29,7 @@ return new class extends Migration
         $this->ensureNullableForeignId('subscription_payments', 'purchaser_user_id', 'users', 'business_id');
 
         DB::table('subscriptions')->orderBy('id')->eachById(function (object $subscription): void {
-            $businessId = DB::table('business_memberships')
-                ->where('user_id', $subscription->user_id)
-                ->where('business_role', 'owner')
-                ->orderBy('id')
-                ->value('business_id');
-            if ($businessId === null) {
-                throw new RuntimeException("Subscription [{$subscription->id}] has no owning Business.");
-            }
+            $businessId = $this->resolveOwningBusiness($subscription);
             DB::table('subscriptions')->where('id', $subscription->id)->update(['business_id' => $businessId]);
         });
 
@@ -134,6 +131,69 @@ return new class extends Migration
                 $table->foreign($columnName)->references('id')->on($foreignTable)->restrictOnDelete();
             });
         }
+    }
+
+    private function resolveOwningBusiness(object $subscription): int
+    {
+        $businessId = DB::table('business_memberships')
+            ->where('user_id', $subscription->user_id)
+            ->where('business_role', BusinessRole::Owner->value)
+            ->orderBy('id')
+            ->value('business_id');
+
+        if ($businessId !== null) {
+            return (int) $businessId;
+        }
+
+        return DB::transaction(function () use ($subscription): int {
+            $user = DB::table('users')->where('id', $subscription->user_id)->lockForUpdate()->first(['id', 'name']);
+            if ($user === null) {
+                throw new RuntimeException("Subscription [{$subscription->id}] has no owning User.");
+            }
+
+            $businessId = DB::table('business_memberships')
+                ->where('user_id', $user->id)
+                ->where('business_role', BusinessRole::Owner->value)
+                ->orderBy('id')
+                ->value('business_id');
+
+            if ($businessId !== null) {
+                return (int) $businessId;
+            }
+
+            $storeBusinessId = $subscription->store_id === null
+                ? null
+                : DB::table('stores')
+                    ->where('id', $subscription->store_id)
+                    ->where('owner_user_id', $user->id)
+                    ->value('business_id');
+
+            if ($subscription->store_id !== null && $storeBusinessId === null) {
+                throw new RuntimeException("Subscription [{$subscription->id}] Store ownership is inconsistent.");
+            }
+
+            $businessId = $storeBusinessId ?? DB::table('businesses')->insertGetId([
+                'public_id' => (string) Str::ulid(),
+                'name' => $user->name,
+                'status' => BusinessStatus::Active->value,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('business_memberships')->insert([
+                'public_id' => (string) Str::ulid(),
+                'business_id' => $businessId,
+                'user_id' => $user->id,
+                'display_name' => $user->name,
+                'business_role' => BusinessRole::Owner->value,
+                'status' => MembershipStatus::Active->value,
+                'joined_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return (int) $businessId;
+        }, 3);
     }
 
     /**
