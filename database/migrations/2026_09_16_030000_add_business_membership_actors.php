@@ -1,9 +1,12 @@
 <?php
 
+use App\Enums\BusinessRole;
+use App\Enums\MembershipStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -97,13 +100,46 @@ return new class extends Migration
         DB::table($tableName)->whereNotNull($userColumn)->whereNull($membershipColumn)->orderBy('id')
             ->eachById(function (object $row) use ($tableName, $userColumn, $membershipColumn): void {
                 $businessId = DB::table('stores')->where('id', $row->store_id)->value('business_id');
-                $membershipId = DB::table('business_memberships')
-                    ->where('business_id', $businessId)->where('user_id', $row->{$userColumn})->value('id');
-                if ($membershipId === null) {
-                    throw new RuntimeException("{$tableName} actor [{$row->{$userColumn}}] has no Business Membership for Store [{$row->store_id}].");
+                if ($businessId === null) {
+                    throw new RuntimeException("{$tableName} Store [{$row->store_id}] has no Business.");
                 }
+
+                $membershipId = $this->resolveActorMembership((int) $businessId, (int) $row->{$userColumn});
                 DB::table($tableName)->where('id', $row->id)->update([$membershipColumn => $membershipId]);
             });
+    }
+
+    private function resolveActorMembership(int $businessId, int $userId): int
+    {
+        $membershipId = DB::table('business_memberships')
+            ->where('business_id', $businessId)->where('user_id', $userId)->value('id');
+        if ($membershipId !== null) {
+            return (int) $membershipId;
+        }
+
+        $displayName = DB::table('users')->where('id', $userId)->value('name');
+        if ($displayName === null) {
+            throw new RuntimeException("Historical actor User [{$userId}] does not exist.");
+        }
+
+        DB::table('business_memberships')->insertOrIgnore([
+            'public_id' => (string) Str::ulid(),
+            'business_id' => $businessId,
+            'user_id' => $userId,
+            'display_name' => Str::limit((string) $displayName, 120, ''),
+            'business_role' => BusinessRole::Staff->value,
+            'status' => MembershipStatus::Suspended->value,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $membershipId = DB::table('business_memberships')
+            ->where('business_id', $businessId)->where('user_id', $userId)->value('id');
+        if ($membershipId === null) {
+            throw new RuntimeException("Unable to preserve historical actor User [{$userId}] for Business [{$businessId}].");
+        }
+
+        return (int) $membershipId;
     }
 
     private function ensureMembershipActorColumn(string $tableName, string $column, string $foreignKey): void
@@ -127,11 +163,11 @@ return new class extends Migration
         DB::table('audit_logs')->whereNotNull('store_id')->where('actor_type', 'App\\Models\\User')
             ->whereNull('actor_business_membership_id')->orderBy('id')->eachById(function (object $audit): void {
                 $businessId = DB::table('stores')->where('id', $audit->store_id)->value('business_id');
-                $membershipId = DB::table('business_memberships')->where('business_id', $businessId)
-                    ->where('user_id', $audit->actor_id)->value('id');
-                if ($membershipId === null) {
-                    throw new RuntimeException("Audit [{$audit->id}] has no Business Membership actor.");
+                if ($businessId === null) {
+                    throw new RuntimeException("Audit [{$audit->id}] Store [{$audit->store_id}] has no Business.");
                 }
+
+                $membershipId = $this->resolveActorMembership((int) $businessId, (int) $audit->actor_id);
                 DB::table('audit_logs')->where('id', $audit->id)->update(['actor_business_membership_id' => $membershipId]);
             });
     }

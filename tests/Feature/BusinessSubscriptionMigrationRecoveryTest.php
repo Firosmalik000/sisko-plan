@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\BusinessRole;
+use App\Enums\MembershipStatus;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -119,6 +120,75 @@ class BusinessSubscriptionMigrationRecoveryTest extends TestCase
         $this->assertTrue(Schema::hasColumn('sales', 'cashier_name'));
         $this->assertTrue(Schema::hasColumn('audit_logs', 'actor_business_membership_id'));
         $this->assertTrue(Schema::hasForeignKey('audit_logs', ['actor_business_membership_id']));
+    }
+
+    public function test_business_actor_migration_preserves_a_historical_actor_without_granting_access(): void
+    {
+        foreach ($this->migrationFilesThrough('2026_09_16_020000_move_subscriptions_to_businesses.php') as $migrationFile) {
+            (require $migrationFile)->up();
+        }
+
+        $owner = User::factory()->create(['name' => 'Current Owner']);
+        $historicalActor = User::factory()->create(['name' => 'Former Cashier']);
+        $businessId = DB::table('businesses')->insertGetId([
+            'public_id' => (string) Str::ulid(),
+            'name' => 'Historical Business',
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $storeId = DB::table('stores')->insertGetId([
+            'public_id' => (string) Str::ulid(),
+            'business_id' => $businessId,
+            'owner_user_id' => $owner->id,
+            'name' => 'Historical Store',
+            'status' => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $accountId = DB::table('financial_accounts')->insertGetId([
+            'public_id' => (string) Str::ulid(),
+            'store_id' => $storeId,
+            'name' => 'Cash',
+            'type' => 'cash',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $transactionId = DB::table('cash_transactions')->insertGetId([
+            'public_id' => (string) Str::ulid(),
+            'store_id' => $storeId,
+            'financial_account_id' => $accountId,
+            'direction' => 'in',
+            'reason' => 'opening_balance',
+            'amount' => 100,
+            'balance_after' => 100,
+            'occurred_at' => now(),
+            'created_by_user_id' => $historicalActor->id,
+            'created_at' => now(),
+        ]);
+
+        $migration = require database_path('migrations/2026_09_16_030000_add_business_membership_actors.php');
+
+        $migration->up();
+        $migration->up();
+
+        $membership = DB::table('business_memberships')->where([
+            'business_id' => $businessId,
+            'user_id' => $historicalActor->id,
+        ])->first();
+        $this->assertNotNull($membership);
+        $this->assertSame(BusinessRole::Staff->value, $membership->business_role);
+        $this->assertSame(MembershipStatus::Suspended->value, $membership->status);
+        $this->assertDatabaseCount('business_memberships', 1);
+        $this->assertDatabaseHas('cash_transactions', [
+            'id' => $transactionId,
+            'created_by_business_membership_id' => $membership->id,
+        ]);
+        $this->assertDatabaseMissing('store_memberships', [
+            'store_id' => $storeId,
+            'business_membership_id' => $membership->id,
+        ]);
     }
 
     /** @return list<string> */
