@@ -25,30 +25,36 @@ return new class extends Migration
     public function up(): void
     {
         foreach ($this->createdTables as $tableName) {
-            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+            Schema::table($tableName, function (Blueprint $table): void {
                 $table->foreignId('created_by_user_id')->nullable()->change();
-                $table->foreignId('created_by_business_membership_id')->nullable();
-                $table->foreign('created_by_business_membership_id', "{$tableName}_created_by_member_fk")
-                    ->references('id')->on('business_memberships')->restrictOnDelete();
             });
+
+            $this->ensureMembershipActorColumn(
+                $tableName,
+                'created_by_business_membership_id',
+                "{$tableName}_created_by_member_fk",
+            );
         }
         Schema::table('stock_counts', function (Blueprint $table): void {
             $table->foreignId('created_by_user_id')->nullable()->change();
-            foreach (['created', 'completed', 'posted', 'cancelled'] as $verb) {
-                $column = "{$verb}_by_business_membership_id";
-                $table->foreignId($column)->nullable();
-                $table->foreign($column, "stock_counts_{$verb}_by_member_fk")
-                    ->references('id')->on('business_memberships')->restrictOnDelete();
-            }
         });
-        Schema::table('sales', function (Blueprint $table): void {
-            $table->string('cashier_name', 120)->nullable()->after('external_order_number');
-        });
-        Schema::table('audit_logs', function (Blueprint $table): void {
-            $table->foreignId('actor_business_membership_id')->nullable();
-            $table->foreign('actor_business_membership_id', 'audit_logs_actor_member_fk')
-                ->references('id')->on('business_memberships')->restrictOnDelete();
-        });
+        foreach (['created', 'completed', 'posted', 'cancelled'] as $verb) {
+            $this->ensureMembershipActorColumn(
+                'stock_counts',
+                "{$verb}_by_business_membership_id",
+                "stock_counts_{$verb}_by_member_fk",
+            );
+        }
+        if (! Schema::hasColumn('sales', 'cashier_name')) {
+            Schema::table('sales', function (Blueprint $table): void {
+                $table->string('cashier_name', 120)->nullable()->after('external_order_number');
+            });
+        }
+        $this->ensureMembershipActorColumn(
+            'audit_logs',
+            'actor_business_membership_id',
+            'audit_logs_actor_member_fk',
+        );
 
         foreach ($this->createdTables as $tableName) {
             $this->backfill($tableName, 'created_by_user_id', 'created_by_business_membership_id');
@@ -98,6 +104,22 @@ return new class extends Migration
                 }
                 DB::table($tableName)->where('id', $row->id)->update([$membershipColumn => $membershipId]);
             });
+    }
+
+    private function ensureMembershipActorColumn(string $tableName, string $column, string $foreignKey): void
+    {
+        if (! Schema::hasColumn($tableName, $column)) {
+            Schema::table($tableName, function (Blueprint $table) use ($column): void {
+                $table->foreignId($column)->nullable();
+            });
+        }
+
+        if (! Schema::hasForeignKey($tableName, [$column])) {
+            Schema::table($tableName, function (Blueprint $table) use ($column, $foreignKey): void {
+                $table->foreign($column, $foreignKey)
+                    ->references('id')->on('business_memberships')->restrictOnDelete();
+            });
+        }
     }
 
     private function backfillAudits(): void

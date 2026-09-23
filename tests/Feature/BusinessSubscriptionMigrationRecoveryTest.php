@@ -84,6 +84,43 @@ class BusinessSubscriptionMigrationRecoveryTest extends TestCase
         $this->assertDatabaseHas('subscription_periods', ['id' => $periodId, 'business_id' => $businessId]);
     }
 
+    public function test_business_actor_migration_recovers_from_a_partially_added_actor_column(): void
+    {
+        foreach ($this->migrationFilesThrough('2026_09_16_020000_move_subscriptions_to_businesses.php') as $migrationFile) {
+            (require $migrationFile)->up();
+        }
+
+        Schema::table('stock_adjustments', function (Blueprint $table): void {
+            $table->foreignId('created_by_business_membership_id')->nullable();
+            $table->foreign('created_by_business_membership_id', 'stock_adjustments_created_by_member_fk')
+                ->references('id')->on('business_memberships')->restrictOnDelete();
+        });
+
+        $migration = require database_path('migrations/2026_09_16_030000_add_business_membership_actors.php');
+
+        $migration->up();
+        $migration->up();
+
+        foreach ([
+            'stock_adjustments', 'account_transfers', 'capital_transactions', 'cash_transactions',
+            'stock_movements', 'purchases', 'purchase_payments', 'supplier_payable_transactions',
+            'sales', 'sale_payments', 'sale_returns', 'expenses',
+        ] as $tableName) {
+            $this->assertTrue(Schema::hasColumn($tableName, 'created_by_business_membership_id'));
+            $this->assertTrue(Schema::hasForeignKey($tableName, ['created_by_business_membership_id']));
+        }
+
+        foreach (['created', 'completed', 'posted', 'cancelled'] as $verb) {
+            $column = "{$verb}_by_business_membership_id";
+            $this->assertTrue(Schema::hasColumn('stock_counts', $column));
+            $this->assertTrue(Schema::hasForeignKey('stock_counts', [$column]));
+        }
+
+        $this->assertTrue(Schema::hasColumn('sales', 'cashier_name'));
+        $this->assertTrue(Schema::hasColumn('audit_logs', 'actor_business_membership_id'));
+        $this->assertTrue(Schema::hasForeignKey('audit_logs', ['actor_business_membership_id']));
+    }
+
     /** @return list<string> */
     private function migrationFilesThrough(string $lastMigration): array
     {
