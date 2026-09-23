@@ -29,8 +29,15 @@ return new class extends Migration
         $this->ensureNullableForeignId('subscription_payments', 'purchaser_user_id', 'users', 'business_id');
 
         DB::table('subscriptions')->orderBy('id')->eachById(function (object $subscription): void {
-            $businessId = $this->resolveOwningBusiness($subscription);
-            DB::table('subscriptions')->where('id', $subscription->id)->update(['business_id' => $businessId]);
+            /** @var array<string, mixed> $subscriptionData */
+            $subscriptionData = (array) $subscription;
+            $subscriptionId = (int) $subscriptionData['id'];
+            $businessId = $this->resolveOwningBusiness(
+                $subscriptionId,
+                (int) $subscriptionData['user_id'],
+                $subscriptionData['store_id'] === null ? null : (int) $subscriptionData['store_id'],
+            );
+            DB::table('subscriptions')->where('id', $subscriptionId)->update(['business_id' => $businessId]);
         });
 
         foreach (['subscription_periods', 'subscription_addons', 'subscription_payments'] as $tableName) {
@@ -133,11 +140,10 @@ return new class extends Migration
         }
     }
 
-    /** @param object{id: int, user_id: int, store_id: int|null} $subscription */
-    private function resolveOwningBusiness(object $subscription): int
+    private function resolveOwningBusiness(int $subscriptionId, int $userId, ?int $storeId): int
     {
         $businessId = DB::table('business_memberships')
-            ->where('user_id', $subscription->user_id)
+            ->where('user_id', $userId)
             ->where('business_role', BusinessRole::Owner->value)
             ->orderBy('id')
             ->value('business_id');
@@ -146,11 +152,11 @@ return new class extends Migration
             return (int) $businessId;
         }
 
-        return DB::transaction(function () use ($subscription): int {
+        return DB::transaction(function () use ($subscriptionId, $userId, $storeId): int {
             /** @var object{id: int, name: string}|null $user */
-            $user = DB::table('users')->where('id', $subscription->user_id)->lockForUpdate()->first(['id', 'name']);
+            $user = DB::table('users')->where('id', $userId)->lockForUpdate()->first(['id', 'name']);
             if ($user === null) {
-                throw new RuntimeException("Subscription [{$subscription->id}] has no owning User.");
+                throw new RuntimeException("Subscription [{$subscriptionId}] has no owning User.");
             }
 
             $businessId = DB::table('business_memberships')
@@ -163,15 +169,15 @@ return new class extends Migration
                 return (int) $businessId;
             }
 
-            $storeBusinessId = $subscription->store_id === null
+            $storeBusinessId = $storeId === null
                 ? null
                 : DB::table('stores')
-                    ->where('id', $subscription->store_id)
+                    ->where('id', $storeId)
                     ->where('owner_user_id', $user->id)
                     ->value('business_id');
 
-            if ($subscription->store_id !== null && $storeBusinessId === null) {
-                throw new RuntimeException("Subscription [{$subscription->id}] Store ownership is inconsistent.");
+            if ($storeId !== null && $storeBusinessId === null) {
+                throw new RuntimeException("Subscription [{$subscriptionId}] Store ownership is inconsistent.");
             }
 
             $businessId = $storeBusinessId ?? DB::table('businesses')->insertGetId([
