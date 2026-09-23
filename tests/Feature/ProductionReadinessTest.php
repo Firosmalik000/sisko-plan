@@ -323,7 +323,7 @@ class ProductionReadinessTest extends TestCase
             $entrypoint,
         );
 
-        $migrationPosition = strpos($entrypoint, 'php artisan migrate --force --no-interaction');
+        $migrationPosition = strpos($entrypoint, 'php artisan migrate --isolated --force --no-interaction');
         $optimizationPosition = strpos($entrypoint, 'php artisan optimize --no-interaction');
 
         $this->assertNotFalse($migrationPosition);

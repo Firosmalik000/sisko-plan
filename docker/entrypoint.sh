@@ -30,7 +30,7 @@ if [ ! -e public/storage ] && [ ! -L public/storage ]; then
 fi
 
 if [ "$role" = "web" ] && [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
-    run_as_app php artisan migrate --force --no-interaction
+    run_as_app php artisan migrate --isolated --force --no-interaction
 fi
 
 run_as_app php artisan optimize --no-interaction
