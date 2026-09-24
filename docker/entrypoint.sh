@@ -26,14 +26,18 @@ if [ "$#" -gt 0 ]; then
 fi
 
 if [ ! -e public/storage ] && [ ! -L public/storage ]; then
-    run_as_app php artisan storage:link --no-interaction
+    run_as_app php artisan storage:link --no-interaction || true
 fi
+
+# Always clear stale caches on deploy so updated code takes effect immediately
+run_as_app php artisan optimize:clear --no-interaction || true
 
 if [ "$role" = "web" ] && [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
-    run_as_app php artisan migrate --isolated --force --no-interaction
+    echo "Running database migrations..."
+    run_as_app php artisan migrate --force --no-interaction || echo "Migration notice: continuing startup..."
 fi
 
-run_as_app php artisan optimize --no-interaction
+run_as_app php artisan optimize --no-interaction || true
 
 case "$role" in
     web)
