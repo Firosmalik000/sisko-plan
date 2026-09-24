@@ -2,10 +2,19 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Actions\Businesses\ProvisionBusinessOwner;
+use App\Enums\BusinessRole;
+use App\Enums\BusinessStatus;
+use App\Enums\MembershipStatus;
+use App\Enums\SubscriptionStatus;
 use App\Enums\UserStatus;
+use App\Models\Business;
+use App\Models\BusinessMembership;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Support\Referrals\ReferralIntent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as GoogleUser;
@@ -82,6 +91,29 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertNotNull($user->email_verified_at);
         $this->assertNotNull($user->last_login_at);
         $this->assertNull($user->platform_role);
+        $this->assertFalse(Hash::needsRehash($user->password));
+        $this->assertProvisionedOwner($user);
+
+        $this->get(route('dashboard'))
+            ->assertRedirect(route('stores.create'));
+        $this->get(route('stores.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('customer/stores/create'));
+    }
+
+    public function test_existing_google_linked_user_logs_in_without_creating_a_duplicate(): void
+    {
+        $existing = User::factory()->create([
+            'email' => 'owner@example.com',
+            'google_id' => 'google-user-1',
+        ]);
+        app(ProvisionBusinessOwner::class)->handle($existing);
+        Socialite::fake('google', $this->googleUser());
+
+        $this->get(route('auth.google.callback'))->assertRedirect(route('dashboard'));
+
+        $this->assertSame(1, User::query()->where('email', 'owner@example.com')->count());
+        $this->assertAuthenticatedAs($existing);
     }
 
     public function test_new_google_user_receives_pending_referral_and_own_code(): void
@@ -117,6 +149,7 @@ class GoogleAuthenticationTest extends TestCase
     public function test_google_login_links_existing_account_by_verified_email(): void
     {
         $existing = User::factory()->unverified()->create(['email' => 'owner@example.com']);
+        $password = $existing->password;
         Socialite::fake('google', $this->googleUser());
 
         $this->get(route('auth.google.callback'))->assertRedirect(route('dashboard'));
@@ -124,7 +157,68 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertSame(1, User::query()->where('email', 'owner@example.com')->count());
         $this->assertSame('google-user-1', $existing->refresh()->google_id);
         $this->assertNotNull($existing->email_verified_at);
+        $this->assertSame($password, $existing->password);
+        $this->assertProvisionedOwner($existing);
         $this->assertAuthenticatedAs($existing);
+    }
+
+    public function test_repeated_google_callback_does_not_duplicate_account_or_provisioning(): void
+    {
+        Socialite::fake('google', $this->googleUser());
+
+        $this->get(route('auth.google.callback'))->assertRedirect(route('dashboard'));
+        auth()->logout();
+        $this->get(route('auth.google.callback'))->assertRedirect(route('dashboard'));
+
+        $this->assertSame(1, User::query()->where('email', 'owner@example.com')->count());
+        $this->assertSame(1, Business::query()->count());
+        $this->assertSame(1, BusinessMembership::query()->count());
+        $this->assertSame(1, Subscription::query()->count());
+    }
+
+    public function test_provisioning_failure_rolls_back_new_google_user(): void
+    {
+        $businesses = new class extends ProvisionBusinessOwner
+        {
+            public function __construct() {}
+
+            public function handle(User $user): BusinessMembership
+            {
+                Business::create([
+                    'name' => $user->name,
+                    'status' => BusinessStatus::Active,
+                ]);
+
+                throw new RuntimeException('provisioning failed');
+            }
+        };
+        $this->app->instance(ProvisionBusinessOwner::class, $businesses);
+        Socialite::fake('google', $this->googleUser());
+
+        $this->get(route('auth.google.callback'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('oauth_error', 'Google sign-in could not be completed. Please try again.');
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['email' => 'owner@example.com']);
+        $this->assertDatabaseCount('businesses', 0);
+        $this->assertDatabaseCount('referral_codes', 0);
+    }
+
+    public function test_missing_optional_google_profile_data_does_not_block_signup(): void
+    {
+        Socialite::fake('google', $this->googleUser([
+            'name' => null,
+            'nickname' => null,
+            'avatar' => null,
+        ]));
+
+        $this->get(route('auth.google.callback'))->assertRedirect(route('dashboard'));
+
+        $user = User::query()->where('email', 'owner@example.com')->sole();
+        $this->assertSame('owner', $user->name);
+        $this->assertAuthenticatedAs($user);
+        $this->assertProvisionedOwner($user);
     }
 
     public function test_existing_google_linked_account_is_not_retroactively_attributed(): void
@@ -228,5 +322,16 @@ class GoogleAuthenticationTest extends TestCase
             'email_verified' => true,
             ...$attributes,
         ]);
+    }
+
+    private function assertProvisionedOwner(User $user): void
+    {
+        $membership = $user->businessMemberships()->with('business.subscription.plan')->sole();
+
+        $this->assertSame(BusinessRole::Owner, $membership->business_role);
+        $this->assertSame(MembershipStatus::Active, $membership->status);
+        $this->assertSame(BusinessStatus::Active, $membership->business->status);
+        $this->assertSame(SubscriptionStatus::Active, $membership->business->subscription->status);
+        $this->assertTrue($membership->business->subscription->plan->is_default);
     }
 }

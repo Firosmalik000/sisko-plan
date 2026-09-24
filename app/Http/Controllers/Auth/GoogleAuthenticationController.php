@@ -12,6 +12,7 @@ use App\Support\Referrals\ReferralIntent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Events\TwoFactorAuthenticationChallenged;
@@ -54,7 +55,10 @@ class GoogleAuthenticationController extends Controller
         } catch (GoogleAuthenticationException $exception) {
             return to_route('login')->with('oauth_error', $exception->getMessage());
         } catch (Throwable $exception) {
-            report($exception);
+            Log::error('Google OAuth callback failed', [
+                'exception' => $exception->getMessage(),
+                'exception_class' => $exception::class,
+            ]);
 
             return to_route('login')->with('oauth_error', __('Google sign-in could not be completed. Please try again.'));
         }
