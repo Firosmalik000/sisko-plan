@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Events\TwoFactorAuthenticationChallenged;
 use Laravel\Socialite\AbstractUser as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
@@ -44,6 +43,15 @@ class GoogleAuthenticationController extends Controller
             return to_route('login')->with('oauth_error', __('Google sign-in has not been configured.'));
         }
 
+        if ($request->has('error')) {
+            Log::warning('Google OAuth callback returned an error parameter', [
+                'error' => $request->query('error'),
+                'error_description' => $request->query('error_description'),
+            ]);
+
+            return to_route('login')->with('oauth_error', __('Google sign-in could not be completed. Please try again.'));
+        }
+
         $pendingCode = $this->referralIntent->resolve($request);
 
         try {
@@ -58,6 +66,7 @@ class GoogleAuthenticationController extends Controller
             Log::error('Google OAuth callback failed', [
                 'exception' => $exception->getMessage(),
                 'exception_class' => $exception::class,
+                'trace' => $exception->getTraceAsString(),
             ]);
 
             return to_route('login')->with('oauth_error', __('Google sign-in could not be completed. Please try again.'));
@@ -145,8 +154,12 @@ class GoogleAuthenticationController extends Controller
             if ($referralCode !== null) {
                 try {
                     $this->attributeReferral->handle($user, $referralCode);
-                } catch (ValidationException) {
-                    // A stale referral must not block a valid Google account.
+                } catch (Throwable $exception) {
+                    // A stale referral or attribution failure must not block a valid Google account.
+                    Log::warning('Referral attribution failed during Google signup', [
+                        'user_id' => $user->id,
+                        'exception' => $exception->getMessage(),
+                    ]);
                 }
             }
 
