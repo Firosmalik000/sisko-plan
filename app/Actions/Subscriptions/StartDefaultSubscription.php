@@ -28,7 +28,7 @@ class StartDefaultSubscription
                 ? null
                 : $periodStart->addMonthsNoOverflow($plan->duration_months)->subDay());
 
-        $subscription = Subscription::firstOrCreate(['business_id' => $business->id], [
+        $subscriptionAttributes = [
             'store_id' => $store?->id,
             'plan_id' => $plan->id,
             'status' => $plan->is_trial ? SubscriptionStatus::Trialing : SubscriptionStatus::Active,
@@ -37,7 +37,13 @@ class StartDefaultSubscription
             'trial_used_at' => $plan->is_trial ? $now : null,
             'current_period_start' => $plan->is_trial ? null : $periodStart,
             'current_period_end' => $plan->is_trial ? null : $periodEnd,
-        ]);
+        ];
+
+        if (Schema::hasColumn('subscriptions', 'user_id')) {
+            $subscriptionAttributes['user_id'] = $owner->id;
+        }
+
+        $subscription = Subscription::firstOrCreate(['business_id' => $business->id], $subscriptionAttributes);
 
         if (! $subscription->wasRecentlyCreated && $subscription->store_id === null && $store !== null) {
             $subscription->update(['store_id' => $store->id]);

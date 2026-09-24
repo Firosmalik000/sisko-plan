@@ -25,7 +25,7 @@ use Illuminate\Support\Carbon;
  * @property-read Store|null $store
  * @property-read Plan $plan
  */
-#[Fillable(['business_id', 'store_id', 'plan_id', 'status', 'starts_at', 'trial_ends_at', 'trial_used_at', 'current_period_start', 'current_period_end', 'cancelled_at', 'notes', 'created_by_user_id'])]
+#[Fillable(['business_id', 'user_id', 'store_id', 'plan_id', 'status', 'starts_at', 'trial_ends_at', 'trial_used_at', 'current_period_start', 'current_period_end', 'cancelled_at', 'notes', 'created_by_user_id'])]
 class Subscription extends Model
 {
     use HasPublicId;

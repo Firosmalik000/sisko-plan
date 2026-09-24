@@ -47,7 +47,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, ReferralCommission> $referralCommissionsEarned
  * @property-read Collection<int, CommissionPayout> $commissionPayouts
  */
-#[Fillable(['name', 'email', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at'])]
+#[Fillable(['name', 'email', 'google_id', 'email_verified_at', 'avatar_path', 'password', 'status', 'platform_role', 'last_login_at'])]
 #[Hidden(['avatar_path', 'google_id', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
