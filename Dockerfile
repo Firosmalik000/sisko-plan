@@ -7,6 +7,18 @@ FROM composer:2 AS composer
 
 FROM ${FRANKENPHP_IMAGE} AS build
 
+RUN install-php-extensions \
+        bcmath \
+        curl \
+        gd \
+        intl \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo_mysql \
+        redis \
+        zip
+
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
@@ -21,7 +33,6 @@ RUN composer install \
         --no-interaction \
         --no-progress \
         --no-scripts \
-        --ignore-platform-reqs \
         --prefer-dist
 
 COPY package.json package-lock.json ./
@@ -32,7 +43,6 @@ COPY . .
 RUN composer dump-autoload \
         --no-dev \
         --classmap-authoritative \
-        --ignore-platform-reqs \
         --no-interaction \
     && npm run build \
     && rm -rf node_modules \
