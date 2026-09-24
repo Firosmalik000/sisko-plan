@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -118,6 +119,8 @@ return new class extends Migration
 
     private function assertCompleteBackfill(): void
     {
+        $this->ensureTenancyBackfilled();
+
         $this->assertNoNulls('stores', 'business_id');
         $this->assertNoNulls('store_memberships', 'business_membership_id');
         foreach ($this->subscriptionTables as $tableName) {
@@ -135,6 +138,83 @@ return new class extends Migration
             if ($missing) {
                 throw new RuntimeException("stock_counts.{$verb}_by_business_membership_id backfill is incomplete.");
             }
+        }
+    }
+
+    private function ensureTenancyBackfilled(): void
+    {
+        if (Schema::hasColumn('stores', 'business_id')) {
+            DB::table('stores')->whereNull('business_id')->orderBy('id')->each(function (object $store): void {
+                $ownerUserId = property_exists($store, 'owner_user_id') ? $store->owner_user_id : null;
+                $businessId = null;
+                if ($ownerUserId !== null) {
+                    $businessId = DB::table('business_memberships')
+                        ->where('user_id', $ownerUserId)
+                        ->where('business_role', 'owner')
+                        ->value('business_id');
+                }
+                if ($businessId === null) {
+                    $owner = $ownerUserId !== null ? DB::table('users')->where('id', $ownerUserId)->first() : DB::table('users')->oldest('id')->first();
+                    if ($owner !== null) {
+                        $businessId = DB::table('businesses')->insertGetId([
+                            'public_id' => (string) Str::ulid(),
+                            'name' => $store->name ?: $owner->name,
+                            'status' => 'active',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        DB::table('business_memberships')->insert([
+                            'business_id' => $businessId,
+                            'user_id' => $owner->id,
+                            'display_name' => $owner->name,
+                            'business_role' => 'owner',
+                            'status' => 'active',
+                            'joined_at' => now(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+                if ($businessId !== null) {
+                    DB::table('stores')->where('id', $store->id)->update(['business_id' => $businessId]);
+                }
+            });
+        }
+
+        if (Schema::hasColumn('store_memberships', 'business_membership_id')) {
+            DB::table('store_memberships')->whereNull('business_membership_id')->orderBy('id')->each(function (object $assignment): void {
+                if ($assignment->role === 'owner') {
+                    DB::table('store_memberships')->where('id', $assignment->id)->delete();
+
+                    return;
+                }
+                $store = DB::table('stores')->where('id', $assignment->store_id)->first();
+                $userId = property_exists($assignment, 'user_id') ? $assignment->user_id : null;
+                if ($store && $store->business_id && $userId) {
+                    $bmId = DB::table('business_memberships')
+                        ->where('business_id', $store->business_id)
+                        ->where('user_id', $userId)
+                        ->value('id');
+                    if (! $bmId) {
+                        $user = DB::table('users')->where('id', $userId)->first();
+                        if ($user) {
+                            $bmId = DB::table('business_memberships')->insertGetId([
+                                'business_id' => $store->business_id,
+                                'user_id' => $user->id,
+                                'display_name' => $user->name,
+                                'business_role' => 'staff',
+                                'status' => 'active',
+                                'joined_at' => now(),
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    }
+                    if ($bmId) {
+                        DB::table('store_memberships')->where('id', $assignment->id)->update(['business_membership_id' => $bmId]);
+                    }
+                }
+            });
         }
     }
 

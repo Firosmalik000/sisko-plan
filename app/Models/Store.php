@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $public_id
  * @property int $business_id
+ * @property int|null $owner_user_id
  * @property string $name
  * @property StoreStatus $status
  * @property int|null $active_members_count
@@ -28,7 +29,7 @@ use Illuminate\Support\Str;
  * @property-read StoreSetting|null $settings
  * @property-read StoreMembership $pivot
  */
-#[Fillable(['business_id', 'country_id', 'name', 'status'])]
+#[Fillable(['business_id', 'owner_user_id', 'country_id', 'name', 'status'])]
 class Store extends Model
 {
     /** @use HasFactory<StoreFactory> */

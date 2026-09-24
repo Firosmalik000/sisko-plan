@@ -10,6 +10,7 @@ use App\Models\Country;
 use App\Models\Store;
 use App\Services\Subscriptions\SubscriptionAccess;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class CreateStore
@@ -45,11 +46,17 @@ class CreateStore
                 ]);
             }
 
-            $store = Store::create([
+            $storeAttributes = [
                 'business_id' => $business->id,
                 'country_id' => $country->id,
                 'name' => $name,
-            ]);
+            ];
+
+            if (Schema::hasColumn('stores', 'owner_user_id')) {
+                $storeAttributes['owner_user_id'] = $actor->user->id;
+            }
+
+            $store = Store::create($storeAttributes);
 
             $store->settings()->create([
                 'currency' => $country->currency_code,
