@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\BusinessRole;
+use App\Enums\BusinessStatus;
 use App\Enums\MembershipStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -104,14 +105,81 @@ return new class extends Migration
                 $rowId = (int) $rowData['id'];
                 $storeId = (int) $rowData['store_id'];
                 $actorUserId = (int) $rowData[$userColumn];
-                $businessId = DB::table('stores')->where('id', $storeId)->value('business_id');
-                if ($businessId === null) {
-                    throw new RuntimeException("{$tableName} Store [{$storeId}] has no Business.");
-                }
+                $businessId = $this->resolveStoreBusinessId($storeId);
 
-                $membershipId = $this->resolveActorMembership((int) $businessId, $actorUserId);
+                $membershipId = $this->resolveActorMembership($businessId, $actorUserId);
                 DB::table($tableName)->where('id', $rowId)->update([$membershipColumn => $membershipId]);
             });
+    }
+
+    private function resolveStoreBusinessId(int $storeId): int
+    {
+        $businessId = DB::table('stores')->where('id', $storeId)->value('business_id');
+        if ($businessId !== null) {
+            return (int) $businessId;
+        }
+
+        $store = DB::table('stores')->where('id', $storeId)->first(['id', 'name', 'owner_user_id']);
+        if ($store !== null && $store->owner_user_id !== null) {
+            $owner = DB::table('users')->where('id', $store->owner_user_id)->first(['id', 'name']);
+            if ($owner !== null) {
+                $businessId = DB::table('business_memberships')
+                    ->where('user_id', $owner->id)
+                    ->where('business_role', BusinessRole::Owner->value)
+                    ->orderBy('id')
+                    ->value('business_id');
+
+                if ($businessId === null) {
+                    $businessId = DB::table('businesses')->insertGetId([
+                        'public_id' => (string) Str::ulid(),
+                        'name' => $store->name ?: $owner->name,
+                        'status' => BusinessStatus::Active->value,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    DB::table('business_memberships')->insert([
+                        'public_id' => (string) Str::ulid(),
+                        'business_id' => $businessId,
+                        'user_id' => $owner->id,
+                        'display_name' => $owner->name,
+                        'business_role' => BusinessRole::Owner->value,
+                        'status' => MembershipStatus::Active->value,
+                        'joined_at' => now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                DB::table('stores')->where('id', $storeId)->update(['business_id' => $businessId]);
+
+                return (int) $businessId;
+            }
+        }
+
+        $storeName = $store?->name ?: "Toko {$storeId}";
+        $businessId = DB::table('businesses')->insertGetId([
+            'public_id' => (string) Str::ulid(),
+            'name' => $storeName,
+            'status' => BusinessStatus::Active->value,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        if ($store !== null) {
+            DB::table('stores')->where('id', $storeId)->update(['business_id' => $businessId]);
+        } else {
+            DB::table('stores')->insert([
+                'id' => $storeId,
+                'public_id' => (string) Str::ulid(),
+                'business_id' => $businessId,
+                'name' => $storeName,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return (int) $businessId;
     }
 
     private function resolveActorMembership(int $businessId, int $userId): int
@@ -122,10 +190,7 @@ return new class extends Migration
             return (int) $membershipId;
         }
 
-        $displayName = DB::table('users')->where('id', $userId)->value('name');
-        if ($displayName === null) {
-            throw new RuntimeException("Historical actor User [{$userId}] does not exist.");
-        }
+        $displayName = DB::table('users')->where('id', $userId)->value('name') ?? "Pengguna {$userId}";
 
         DB::table('business_memberships')->insertOrIgnore([
             'public_id' => (string) Str::ulid(),
@@ -139,10 +204,8 @@ return new class extends Migration
         ]);
 
         $membershipId = DB::table('business_memberships')
-            ->where('business_id', $businessId)->where('user_id', $userId)->value('id');
-        if ($membershipId === null) {
-            throw new RuntimeException("Unable to preserve historical actor User [{$userId}] for Business [{$businessId}].");
-        }
+            ->where('business_id', $businessId)->where('user_id', $userId)->value('id')
+            ?? DB::table('business_memberships')->where('business_id', $businessId)->value('id');
 
         return (int) $membershipId;
     }
@@ -172,12 +235,9 @@ return new class extends Migration
                 $auditId = (int) $auditData['id'];
                 $storeId = (int) $auditData['store_id'];
                 $actorUserId = (int) $auditData['actor_id'];
-                $businessId = DB::table('stores')->where('id', $storeId)->value('business_id');
-                if ($businessId === null) {
-                    throw new RuntimeException("Audit [{$auditId}] Store [{$storeId}] has no Business.");
-                }
+                $businessId = $this->resolveStoreBusinessId($storeId);
 
-                $membershipId = $this->resolveActorMembership((int) $businessId, $actorUserId);
+                $membershipId = $this->resolveActorMembership($businessId, $actorUserId);
                 DB::table('audit_logs')->where('id', $auditId)->update(['actor_business_membership_id' => $membershipId]);
             });
     }
