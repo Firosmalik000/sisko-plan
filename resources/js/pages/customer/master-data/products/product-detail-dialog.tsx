@@ -284,10 +284,10 @@ export default function ProductDetailDialog({ product, open, onOpenChange, canMa
                         </div>
                     </div>
 
-                    {product.variants.length > 0 && (
+                    {(product.variants?.length ?? 0) > 0 && (
                         <div className="space-y-2">
                             <h4 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                {translate('variants')} ({product.variants.length})
+                                {translate('variants')} ({product.variants?.length ?? 0})
                             </h4>
                             <div className="overflow-hidden rounded-xl border border-border">
                                 <table className="w-full text-left text-xs">
@@ -300,7 +300,7 @@ export default function ProductDetailDialog({ product, open, onOpenChange, canMa
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
-                                        {product.variants.map((v) => (
+                                        {product.variants?.map((v) => (
                                             <tr key={v.public_id ?? v.name} className="hover:bg-muted/30">
                                                 <td className="p-2.5 font-medium text-foreground">{v.name}</td>
                                                 <td className="p-2.5 font-mono text-muted-foreground">{v.sku || '-'}</td>

@@ -357,6 +357,54 @@ class ProductSerialNumberTrackingTest extends TestCase
         );
     }
 
+    public function test_products_index_serializes_serial_numbers_and_agent_info_for_detail_and_edit(): void
+    {
+        [$owner, $store, $unit, $category] = $this->setupStoreAndUnits();
+
+        $payload = [
+            'idempotency_key' => (string) Str::uuid(),
+            'name' => 'SIM Card Halo Telco',
+            'sku' => 'HALO-001',
+            'category_public_id' => $category->public_id,
+            'retail_unit_public_id' => $unit->public_id,
+            'large_unit_public_id' => $unit->public_id,
+            'variant_mode' => 'none',
+            'purchase_price' => '10000',
+            'selling_price' => '20000',
+            'current_stock' => '0',
+            'minimum_stock' => '0',
+            'variants' => [],
+            'is_active' => true,
+            'tracking_mode' => 'serial',
+            'serial_agent_number' => 'AG123456',
+            'serial_agent_name' => 'Outlet Roxy',
+            'serial_agent_position' => 'prefix',
+            'serial_range_start' => '01441400',
+            'serial_range_end' => '01441405',
+        ];
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->post(route('master-data.products.store'), $payload)
+            ->assertRedirect();
+
+        $response = $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('master-data.products.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('customer/master-data/products/index')
+            ->has('storeAgents', 1)
+            ->where('storeAgents.0.agent_number', 'AG123456')
+            ->where('storeAgents.0.agent_name', 'Outlet Roxy')
+            ->has('products.data', 1)
+            ->where('products.data.0.serial_agent_number', 'AG123456')
+            ->where('products.data.0.serial_agent_name', 'Outlet Roxy')
+            ->where('products.data.0.serial_agent_position', 'prefix')
+            ->has('products.data.0.serial_numbers', 6)
+            ->where('products.data.0.serial_numbers.0.status', 'available')
+        );
+    }
+
     private function setupStoreAndUnits(): array
     {
         $owner = User::factory()->create();
