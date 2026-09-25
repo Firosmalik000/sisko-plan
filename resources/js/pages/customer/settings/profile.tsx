@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
+import BrandMark from '@/components/brand-mark';
 import DeleteUser from '@/components/delete-user';
 import InputError from '@/components/input-error';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -771,8 +772,10 @@ function ReceiptPreview({
                     <span>51.000</span>
                 </div>
                 {footer && <p className="mt-4 text-center text-xs">{footer}</p>}
-                <div className="mt-3 border-t border-dashed border-slate-300 pt-2 text-center text-[10px] text-slate-400">
-                    Powered by <span className="font-semibold text-slate-600">XSISTEN</span>
+                <div className="mt-3 flex items-center justify-center gap-1 border-t border-dashed border-slate-300 pt-2 text-center text-[10px] text-slate-400">
+                    <span>Powered by</span>
+                    <BrandMark className="size-3 object-contain" alt="XSISTEN" />
+                    <span className="font-semibold text-slate-600">XSISTEN</span>
                 </div>
             </div>
             <div className="mt-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-500">

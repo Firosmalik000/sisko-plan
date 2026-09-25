@@ -753,4 +753,9 @@ export const msCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'Nombor siri tidak dijumpai atau sudah ada dalam troli.',
     'Scan or enter serial number': 'Imbas atau masukkan nombor siri',
     'Available cards / serials': 'Kad / siri tersedia',
+    'Filter agent': 'Tapis ejen',
+    'All agents': 'Semua ejen',
+    'Search or scan serial number': 'Cari atau imbas nombor siri',
+    'Search serial or scan barcode…': 'Cari nombor siri atau imbas kod bar…',
+    'Remove serial': 'Buang nombor siri',
 };

@@ -41,6 +41,7 @@ export type ReceiptImageProps = {
         unit_price: string;
         net_total: string;
         returned_quantity: string;
+        serial_numbers?: string[];
     }>;
     payment: {
         amount: string;
@@ -123,6 +124,7 @@ export function drawReceiptToContext(
     width = 480,
     margin = 32,
     logoImage?: CanvasImageSource | null,
+    brandIconImage?: CanvasImageSource | null,
 ): number {
     const t = props.translate ?? ((key: string) => key);
     const contentWidth = width - margin * 2;
@@ -337,6 +339,22 @@ export function drawReceiptToContext(
 
         y += 18;
 
+        if (item.serial_numbers && item.serial_numbers.length > 0) {
+            const snText = `SN: ${item.serial_numbers.join(', ')}`;
+            const snLines = wrapCanvasText((line) => measure(line, itemSubFont), snText, nameMaxWidth);
+
+            for (const snLine of snLines) {
+                if (ctx) {
+                    ctx.font = itemSubFont;
+                    ctx.fillStyle = '#0284c7';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(snLine, margin, y);
+                }
+
+                y += 16;
+            }
+        }
+
         if (ctx) {
             ctx.font = itemPriceFont;
             ctx.fillStyle = '#111827';
@@ -467,11 +485,36 @@ export function drawReceiptToContext(
 
     y += 18;
 
+    const brandPrefix = 'Powered by ';
+    const brandSuffix = ' XSISTEN · xsisten.com';
+    const brandFont = `11px ${fontFamily}`;
+    const brandBoldFont = `bold 11px ${fontFamily}`;
+
     if (ctx) {
-        ctx.font = `bold 11px ${fontFamily}`;
+        ctx.font = brandFont;
+        const prefixWidth = ctx.measureText(brandPrefix).width;
+        ctx.font = brandBoldFont;
+        const suffixWidth = ctx.measureText(brandSuffix).width;
+        const iconSize = 13;
+        const iconGap = 2;
+        const totalBrandWidth = prefixWidth + (brandIconImage ? iconSize + iconGap : 0) + suffixWidth;
+        const startX = (width - totalBrandWidth) / 2;
+
+        ctx.textAlign = 'left';
+        ctx.font = brandFont;
         ctx.fillStyle = '#9ca3af';
-        ctx.textAlign = 'center';
-        ctx.fillText('Powered by XSISTEN · xsisten.com', width / 2, y);
+        ctx.fillText(brandPrefix, startX, y);
+
+        let currentX = startX + prefixWidth;
+
+        if (brandIconImage) {
+            ctx.drawImage(brandIconImage, currentX, y - iconSize + 2, iconSize, iconSize);
+            currentX += iconSize + iconGap;
+        }
+
+        ctx.font = brandBoldFont;
+        ctx.fillStyle = '#9ca3af';
+        ctx.fillText(brandSuffix, currentX, y);
     }
 
     y += 30;
@@ -494,7 +537,9 @@ export async function generateReceiptBlob(props: ReceiptImageProps): Promise<Blo
         logoImage = await loadReceiptLogo(props.receipt.logo_url);
     }
 
-    const calculatedHeight = drawReceiptToContext(null, props, width, margin, logoImage);
+    const brandIconImage = await loadReceiptLogo('/icons/icon-192.png');
+
+    const calculatedHeight = drawReceiptToContext(null, props, width, margin, logoImage, brandIconImage);
 
     const canvas = document.createElement('canvas');
     canvas.width = width * scale;
@@ -515,7 +560,7 @@ export async function generateReceiptBlob(props: ReceiptImageProps): Promise<Blo
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, width - 1, calculatedHeight - 1);
 
-    drawReceiptToContext(ctx, props, width, margin, logoImage);
+    drawReceiptToContext(ctx, props, width, margin, logoImage, brandIconImage);
 
     return new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {

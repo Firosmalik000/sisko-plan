@@ -750,4 +750,9 @@ export const thCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'ไม่พบหมายเลขซีเรียลหรืออยู่ในตะกร้าแล้ว',
     'Scan or enter serial number': 'สแกนหรือระบุหมายเลขซีเรียล',
     'Available cards / serials': 'บัตร / ซีเรียลที่พร้อมใช้งาน',
+    'Filter agent': 'กรองตัวแทน',
+    'All agents': 'ตัวแทนทั้งหมด',
+    'Search or scan serial number': 'ค้นหาหรือสแกนหมายเลขซีเรียล',
+    'Search serial or scan barcode…': 'ค้นหาซีเรียลหรือสแกนบาร์โค้ด…',
+    'Remove serial': 'ลบหมายเลขซีเรียล',
 };

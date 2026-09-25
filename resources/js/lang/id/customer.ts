@@ -752,4 +752,9 @@ export const idCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'Nomor seri tidak ditemukan atau sudah ada di keranjang.',
     'Scan or enter serial number': 'Pindai atau masukkan nomor seri',
     'Available cards / serials': 'Kartu / serial tersedia',
+    'Filter agent': 'Filter agen',
+    'All agents': 'Semua agen',
+    'Search or scan serial number': 'Cari atau scan nomor seri',
+    'Search serial or scan barcode…': 'Cari nomor seri atau scan barcode…',
+    'Remove serial': 'Hapus nomor seri',
 };

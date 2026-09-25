@@ -1,5 +1,5 @@
 import { useForm, usePage } from '@inertiajs/react';
-import { Camera, ChevronDown, CreditCard, FileCheck2, Plus, ShoppingCart, ShoppingBag, Store, Upload, UserRound, X } from 'lucide-react';
+import { Camera, ChevronDown, CreditCard, FileCheck2, Plus, Search, ShoppingCart, ShoppingBag, Store, Upload, UserRound, X } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { CommerceBrandMark } from '@/components/commerce-brand-mark';
@@ -84,6 +84,7 @@ export default function PosIndex({
         product: ProductOption;
         serials: AvailableSerial[];
     } | null>(null);
+    const [serialPickAgent, setSerialPickAgent] = useState('');
     const [serialPickInput, setSerialPickInput] = useState('');
     const [serialPickError, setSerialPickError] = useState('');
     const searchRef = useRef<HTMLInputElement>(null);
@@ -248,6 +249,81 @@ export default function PosIndex({
         setSearch('');
         focusEntry();
     };
+
+    const serialAgents = useMemo(() => {
+        if (!serialPickModal) {
+            return [];
+        }
+
+        const seen = new Set<string>();
+        const list: { agent_number: string; agent_name: string | null }[] = [];
+
+        for (const s of serialPickModal.serials) {
+            if (s.agent_number && !seen.has(s.agent_number)) {
+                seen.add(s.agent_number);
+                list.push({ agent_number: s.agent_number, agent_name: s.agent_name });
+            }
+        }
+
+        return list;
+    }, [serialPickModal]);
+
+    const filteredSerials = useMemo(() => {
+        if (!serialPickModal) {
+            return [];
+        }
+
+        let list = serialPickModal.serials;
+
+        if (serialPickAgent) {
+            list = list.filter((s) => s.agent_number === serialPickAgent);
+        }
+
+        const query = serialPickInput.trim().toLowerCase();
+        const cleanQuery = query.replace(/^(?:s\/?n\s*[:#-]?\s*)/i, '').trim().toLowerCase();
+
+        if (query) {
+            list = list.filter((s) => {
+                const sn = s.serial_number.toLowerCase();
+                const fsn = (s.full_serial_number || '').toLowerCase();
+
+                return sn.includes(query) || fsn.includes(query) || (cleanQuery !== '' && (sn.includes(cleanQuery) || fsn.includes(cleanQuery)));
+            });
+        }
+
+        return list;
+    }, [serialPickModal, serialPickAgent, serialPickInput]);
+
+    const handleRemoveSerial = (itemIndex: number, serialPublicId: string) => {
+        const item = sale.data.items[itemIndex];
+        if (!item) {
+            return;
+        }
+
+        const remaining = (item.selected_serials || []).filter((s) => s.public_id !== serialPublicId);
+
+        if (remaining.length === 0) {
+            sale.setData(
+                'items',
+                sale.data.items.filter((_, idx) => idx !== itemIndex),
+            );
+        } else {
+            sale.setData(
+                'items',
+                sale.data.items.map((it, idx) =>
+                    idx === itemIndex
+                        ? {
+                              ...it,
+                              quantity: String(remaining.length),
+                              selected_serials: remaining,
+                              serial_number_ids: remaining.map((s) => s.public_id),
+                          }
+                        : it,
+                ),
+            );
+        }
+    };
+
     const addProduct = (product: ProductOption) => {
         if (available(product) <= 0) {
             return;
@@ -267,6 +343,7 @@ export default function PosIndex({
 
             setSelectedProduct(null);
             setSerialPickModal({ product, serials: availableForProd });
+            setSerialPickAgent(activeAgentNumber || '');
             setSerialPickInput('');
             setSerialPickError('');
 
@@ -397,6 +474,7 @@ export default function PosIndex({
     const addScannerSelections = (selections: ScannerSelection[]): ScannerApplyResult => {
         const result: ScannerApplyResult = { applied: [], failures: [] };
         const items = [...sale.data.items];
+        const pendingSerialProducts: ProductOption[] = [];
 
         for (const selection of selections) {
             const identity = { captureId: selection.captureId, itemIndex: selection.itemIndex };
@@ -412,6 +490,12 @@ export default function PosIndex({
                 continue;
             }
 
+            if (option.tracking_mode === 'serial') {
+                pendingSerialProducts.push(option);
+                result.applied.push(identity);
+                continue;
+            }
+
             if (index >= 0) {
                 items[index] = { ...items[index], quantity: String(quantity) };
             } else {
@@ -422,6 +506,25 @@ export default function PosIndex({
         }
 
         sale.setData('items', items);
+        setScannerOpen(false);
+
+        if (pendingSerialProducts.length > 0) {
+            const first = pendingSerialProducts[0];
+            const inCartIds = new Set(items.flatMap((item) => item.serial_number_ids || []));
+            const availableForProd = (availableSerials || []).filter(
+                (s) => s.product_id === first.product_id && !inCartIds.has(s.public_id),
+            );
+
+            if (availableForProd.length > 0) {
+                setSerialPickModal({ product: first, serials: availableForProd });
+                setSerialPickAgent(activeAgentNumber || '');
+                setSerialPickInput('');
+                setSerialPickError('');
+            } else {
+                setSearchError(translate('Stock product out of stock.'));
+            }
+        }
+
         setScannerSummary(
             result.failures.length > 0
                 ? `${result.applied.length} ${translate('products added')}, ${result.failures.length} ${translate('skipped because they are unavailable or out of stock.')}`
@@ -802,6 +905,8 @@ export default function PosIndex({
                                     )
                                 }
                                 onUpdate={updateItem}
+                                onRemoveSerial={handleRemoveSerial}
+                                onAddSerial={(item) => addProduct(item)}
                             />
                             <ResponsiveDialog
                                 open={paymentOpen}
@@ -1358,6 +1463,7 @@ export default function PosIndex({
                 onOpenChange={(open) => {
                     if (!open) {
                         setSerialPickModal(null);
+                        setSerialPickAgent('');
                         setSerialPickInput('');
                         setSerialPickError('');
                         restoreEntry();
@@ -1372,6 +1478,27 @@ export default function PosIndex({
                 size="md"
                 bodyClassName="space-y-4"
             >
+                {serialAgents.length > 0 && (
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-foreground">{translate('Filter agent')}</Label>
+                        <select
+                            value={serialPickAgent}
+                            onChange={(e) => {
+                                setSerialPickAgent(e.target.value);
+                                setSerialPickError('');
+                            }}
+                            className="h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        >
+                            <option value="">{translate('All agents')}</option>
+                            {serialAgents.map((agent) => (
+                                <option key={agent.agent_number} value={agent.agent_number}>
+                                    {agent.agent_name ? `${agent.agent_name} (${agent.agent_number})` : agent.agent_number}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
@@ -1387,14 +1514,15 @@ export default function PosIndex({
                             return;
                         }
 
-                        const matched = serialPickModal.serials.find((s) => {
-                            const sn = s.serial_number.toLowerCase();
-                            const fsn = (s.full_serial_number || '').toLowerCase();
-                            const q1 = query.toLowerCase();
-                            const q2 = cleanQuery.toLowerCase();
+                        const matched =
+                            filteredSerials.find((s) => {
+                                const sn = s.serial_number.toLowerCase();
+                                const fsn = (s.full_serial_number || '').toLowerCase();
+                                const q1 = query.toLowerCase();
+                                const q2 = cleanQuery.toLowerCase();
 
-                            return sn === q1 || fsn === q1 || (cleanQuery !== '' && (sn === q2 || fsn === q2));
-                        });
+                                return sn === q1 || fsn === q1 || (cleanQuery !== '' && (sn === q2 || fsn === q2));
+                            }) ?? (filteredSerials.length === 1 ? filteredSerials[0] : null);
 
                         if (!matched) {
                             setSerialPickError(translate('Serial number not found or already in cart.'));
@@ -1404,13 +1532,15 @@ export default function PosIndex({
 
                         addProductWithSerial(serialPickModal.product, matched);
                         setSerialPickModal(null);
+                        setSerialPickAgent('');
                         setSerialPickInput('');
                         setSerialPickError('');
                     }}
-                    className="space-y-2"
+                    className="space-y-1.5"
                 >
-                    <Label className="text-xs font-semibold text-foreground">{translate('Scan or enter serial number')}</Label>
-                    <div className="flex gap-2">
+                    <Label className="text-xs font-semibold text-foreground">{translate('Search or scan serial number')}</Label>
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             type="text"
                             value={serialPickInput}
@@ -1418,52 +1548,55 @@ export default function PosIndex({
                                 setSerialPickInput(e.target.value);
                                 setSerialPickError('');
                             }}
-                            placeholder={translate('Example: 001')}
+                            placeholder={translate('Search serial or scan barcode…')}
                             autoFocus
-                            className="flex-1 font-mono text-sm"
+                            className="pl-9 font-mono text-sm"
                         />
-                        <Button type="submit">
-                            <Plus className="mr-1 size-4" />
-                            {translate('Add')}
-                        </Button>
                     </div>
                     {serialPickError && <p className="text-xs font-semibold text-destructive">{serialPickError}</p>}
                 </form>
 
                 <div className="space-y-2">
                     <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                        {translate('Available cards / serials')} ({serialPickModal?.serials.length ?? 0})
+                        {translate('Available cards / serials')} ({filteredSerials.length})
                     </p>
                     <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-xl border border-border p-2">
-                        {serialPickModal?.serials.map((s) => (
-                            <button
-                                key={s.public_id}
-                                type="button"
-                                onClick={() => {
-                                    if (!serialPickModal) {
-                                        return;
-                                    }
+                        {filteredSerials.length === 0 ? (
+                            <p className="py-6 text-center text-xs text-muted-foreground">
+                                {translate('No serial numbers match the filter.')}
+                            </p>
+                        ) : (
+                            filteredSerials.map((s) => (
+                                <button
+                                    key={s.public_id}
+                                    type="button"
+                                    onClick={() => {
+                                        if (!serialPickModal) {
+                                            return;
+                                        }
 
-                                    addProductWithSerial(serialPickModal.product, s);
-                                    setSerialPickModal(null);
-                                    setSerialPickInput('');
-                                    setSerialPickError('');
-                                }}
-                                className="flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-card p-2.5 text-left transition hover:border-[var(--app-primary)] hover:bg-[var(--app-soft)]/40 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
-                            >
-                                <div className="min-w-0">
-                                    <p className="font-mono text-sm font-bold text-foreground">{s.serial_number}</p>
-                                    {(s.agent_number || s.agent_name) && (
-                                        <p className="text-xs text-muted-foreground">
-                                            {s.agent_name ? `${s.agent_name} (${s.agent_number})` : s.agent_number}
-                                        </p>
-                                    )}
-                                </div>
-                                <span className="grid size-7 place-items-center rounded-lg bg-[var(--app-soft)] text-[var(--app-primary)]">
-                                    <Plus className="size-3.5" />
-                                </span>
-                            </button>
-                        ))}
+                                        addProductWithSerial(serialPickModal.product, s);
+                                        setSerialPickModal(null);
+                                        setSerialPickAgent('');
+                                        setSerialPickInput('');
+                                        setSerialPickError('');
+                                    }}
+                                    className="flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-card p-2.5 text-left transition hover:border-[var(--app-primary)] hover:bg-[var(--app-soft)]/40 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="font-mono text-sm font-bold text-foreground">{s.serial_number}</p>
+                                        {(s.agent_number || s.agent_name) && (
+                                            <p className="text-xs text-muted-foreground">
+                                                {s.agent_name ? `${s.agent_name} (${s.agent_number})` : s.agent_number}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <span className="grid size-7 place-items-center rounded-lg bg-[var(--app-soft)] text-[var(--app-primary)]">
+                                        <Plus className="size-3.5" />
+                                    </span>
+                                </button>
+                            ))
+                        )}
                     </div>
                 </div>
             </ResponsiveDialog>

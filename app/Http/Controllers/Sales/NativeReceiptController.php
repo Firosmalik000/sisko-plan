@@ -27,9 +27,17 @@ final class NativeReceiptController extends Controller
         $cashierName = $sale->cashier_name ?? __('Unknown cashier');
         $items = SaleItem::query()
             ->where(['store_id' => $store->id, 'sale_id' => $sale->id])
+            ->with(['serialNumbers'])
             ->orderBy('id')
-            ->get(['product_name', 'unit_symbol', 'quantity', 'unit_price', 'net_total'])
-            ->map->only(['product_name', 'unit_symbol', 'quantity', 'unit_price', 'net_total']);
+            ->get(['id', 'product_name', 'unit_symbol', 'quantity', 'unit_price', 'net_total'])
+            ->map(fn (SaleItem $item): array => [
+                'product_name' => $item->product_name,
+                'unit_symbol' => $item->unit_symbol,
+                'quantity' => $item->quantity,
+                'unit_price' => $item->unit_price,
+                'net_total' => $item->net_total,
+                'serial_numbers' => $item->serialNumbers->pluck('serial_number')->values()->all(),
+            ]);
         $payment = DB::table('sale_payments')
             ->where(['sale_payments.store_id' => $store->id, 'sale_payments.sale_id' => $sale->id])
             ->join('financial_accounts', 'financial_accounts.id', '=', 'sale_payments.financial_account_id')

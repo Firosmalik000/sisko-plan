@@ -750,4 +750,9 @@ export const viCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'Không tìm thấy số seri hoặc số này đã có trong giỏ hàng.',
     'Scan or enter serial number': 'Quét hoặc nhập số seri',
     'Available cards / serials': 'Thẻ / seri có sẵn',
+    'Filter agent': 'Lọc đại lý',
+    'All agents': 'Tất cả đại lý',
+    'Search or scan serial number': 'Tìm kiếm hoặc quét số sê-ri',
+    'Search serial or scan barcode…': 'Tìm số sê-ri hoặc quét mã vạch…',
+    'Remove serial': 'Xóa số sê-ri',
 };

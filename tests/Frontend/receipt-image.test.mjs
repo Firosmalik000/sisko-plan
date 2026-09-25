@@ -100,9 +100,11 @@ test('drawReceiptToContext measures total height without context', () => {
     assert.equal(documentTextCalls.length, 1);
     assert.equal(documentTextCalls[0].x, 240); // 480 / 2 (centered)
 
-    const brandingCalls = calls.filter((c) => c.text === 'Powered by XSISTEN · xsisten.com');
-    assert.equal(brandingCalls.length, 1);
-    assert.equal(brandingCalls[0].x, 240); // centered
+    const brandPrefixCalls = calls.filter((c) => c.text === 'Powered by ');
+    assert.equal(brandPrefixCalls.length, 1);
+
+    const brandSuffixCalls = calls.filter((c) => c.text === ' XSISTEN · xsisten.com');
+    assert.equal(brandSuffixCalls.length, 1);
 });
 
 test('drawReceiptToContext renders logo when provided and show_logo is true', () => {
@@ -187,3 +189,78 @@ test('drawReceiptToContext renders logo when provided and show_logo is true', ()
     assert.equal(drawnHeight, withLogoHeight);
     assert.ok(drawImageCalled);
 });
+
+test('drawReceiptToContext renders brand icon before XSISTEN when provided', () => {
+    const mockProps = {
+        receipt: {
+            store_name: 'Toko Kopi',
+            address: null,
+            header: 'Nota',
+            footer: 'Terima kasih',
+            paper_size: '58mm',
+            show_address: false,
+            show_cashier: false,
+        },
+        sale: {
+            public_id: 'sale-1',
+            document_number: 'SL-001',
+            customer_name: null,
+            customer_phone: null,
+            customer_email: null,
+            sales_channel: 'in_store',
+            marketplace_code: null,
+            marketplace_label: null,
+            external_order_number: null,
+            subtotal: '10000',
+            item_discount_amount: '0',
+            transaction_discount_amount: '0',
+            total_amount: '10000',
+            paid_amount: '10000',
+            change_amount: '0',
+            occurred_at: '2026-09-25T08:00:00Z',
+            notes: null,
+            cashier_name: 'Kasir',
+        },
+        items: [],
+        payment: {
+            amount: '10000',
+            tendered_amount: '10000',
+            change_amount: '0',
+            account_name: 'Kas',
+        },
+        timezone: 'Asia/Jakarta',
+    };
+
+    const mockBrandIcon = { width: 192, height: 192 };
+    let brandIconDrawn = false;
+    const mockCtx = {
+        font: '',
+        fillStyle: '',
+        strokeStyle: '',
+        lineWidth: 1,
+        textAlign: '',
+        measureText: (text) => ({ width: text.length * 7 }),
+        fillText: () => {},
+        drawImage: (img, x, y, w, h) => {
+            if (img === mockBrandIcon) {
+                brandIconDrawn = true;
+                assert.equal(w, 13);
+                assert.equal(h, 13);
+            }
+        },
+        save: () => {},
+        restore: () => {},
+        setLineDash: () => {},
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        stroke: () => {},
+        fill: () => {},
+        rect: () => {},
+        roundRect: () => {},
+    };
+
+    drawReceiptToContext(mockCtx, mockProps, 480, 32, null, mockBrandIcon);
+    assert.ok(brandIconDrawn);
+});
+

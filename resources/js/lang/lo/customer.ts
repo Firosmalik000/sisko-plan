@@ -749,4 +749,9 @@ export const loCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'ບໍ່ພົບເລກຊີຣຽວ ຫຼື ມີຢູ່ໃນກະຕ່າແລ້ວ.',
     'Scan or enter serial number': 'ສະແກນ ຫຼື ປ້ອນເລກຊີຣຽວ',
     'Available cards / serials': 'ບັດ / ຊີຣຽວທີ່ພ້ອມໃຊ້ງານ',
+    'Filter agent': 'ກັ່ນຕອງຕົວແທນ',
+    'All agents': 'ຕົວແທນທັງໝົດ',
+    'Search or scan serial number': 'ຊອກຫາ ຫຼື ສະແກນເລກຊີຣຽວ',
+    'Search serial or scan barcode…': 'ຊອກຫາເລກຊີຣຽວ ຫຼື ສະແກນບາໂຄດ…',
+    'Remove serial': 'ລຶບເລກຊີຣຽວ',
 };

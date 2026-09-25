@@ -754,4 +754,10 @@ export const enCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'Serial number not found or already in cart.',
     'Scan or enter serial number': 'Scan or enter serial number',
     'Available cards / serials': 'Available cards / serials',
+    'Filter agent': 'Filter agent',
+    'All agents': 'All agents',
+    'Search or scan serial number': 'Search or scan serial number',
+    'Search serial or scan barcode…': 'Search serial or scan barcode…',
+    'Remove serial': 'Remove serial',
+    'Powered by': 'Powered by',
 };

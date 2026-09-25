@@ -753,4 +753,9 @@ export const tetCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'Númeru seriál la hetan ka iha ona karrinyu laran.',
     'Scan or enter serial number': 'Scan ka hatama númeru seriál',
     'Available cards / serials': 'Kartun / seriál disponivel',
+    'Filter agent': 'Filtra ajente',
+    'All agents': 'Ajente hotu',
+    'Search or scan serial number': 'Buka ka scan númeru séri',
+    'Search serial or scan barcode…': 'Buka númeru séri ka scan barcode…',
+    'Remove serial': 'Hasai númeru séri',
 };

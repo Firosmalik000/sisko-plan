@@ -756,4 +756,9 @@ export const myCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'အမှတ်စဉ် မတွေ့ပါ သို့မဟုတ် တွန်းလှည်းထဲတွင် ရှိပြီးဖြစ်သည်။',
     'Scan or enter serial number': 'အမှတ်စဉ် စကင်ဖတ်ပါ သို့မဟုတ် ထည့်ပါ',
     'Available cards / serials': 'ရနိုင်သော ကတ်များ / အမှတ်စဉ်များ',
+    'Filter agent': 'ကိုယ်စားလှယ် စစ်ထုတ်ရန်',
+    'All agents': 'ကိုယ်စားလှယ် အားလုံး',
+    'Search or scan serial number': 'စီရီယယ်နံပါတ် ရှာဖွေပါ သို့မဟုတ် စကင်ဖတ်ပါ',
+    'Search serial or scan barcode…': 'စီရီယယ် ရှာဖွေပါ သို့မဟုတ် ဘားကုဒ် စကင်ဖတ်ပါ…',
+    'Remove serial': 'စီရီယယ်နံပါတ် ဖယ်ရှားပါ',
 };

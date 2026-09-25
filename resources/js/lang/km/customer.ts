@@ -750,4 +750,9 @@ export const kmCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'រកមិនឃើញលេខស៊េរី ឬមានក្នុងរទេះរួចហើយ។',
     'Scan or enter serial number': 'ស្កេន ឬបញ្ចូលលេខស៊េរី',
     'Available cards / serials': 'កាត / ស៊េរីដែលមាន',
+    'Filter agent': 'ត្រងភ្នាក់ងារ',
+    'All agents': 'ភ្នាក់ងារទាំងអស់',
+    'Search or scan serial number': 'ស្វែងរក ឬស្កេនលេខស៊េរី',
+    'Search serial or scan barcode…': 'ស្វែងរកលេខស៊េរី ឬស្កេនបាកូដ…',
+    'Remove serial': 'លុបលេខស៊េរី',
 };

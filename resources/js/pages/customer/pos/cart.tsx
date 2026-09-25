@@ -1,4 +1,4 @@
-import { Minus, PackageOpen, Plus, Trash2 } from 'lucide-react';
+import { Minus, PackageOpen, Plus, Trash2, X } from 'lucide-react';
 import { FormCurrencyInput } from '@/components/forms';
 import { formatMoney, formatQuantity } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
@@ -8,12 +8,14 @@ type PosCartItemsProps = {
     items: CartItem[];
     onRemove: (index: number) => void;
     onUpdate: (index: number, changes: Partial<CartItem>) => void;
+    onRemoveSerial?: (itemIndex: number, serialPublicId: string) => void;
+    onAddSerial?: (item: CartItem) => void;
 };
 
 const available = (item: CartItem) => Number(item.stock_quantity) / Number(item.conversion_factor);
 const isCritical = (item: CartItem) => available(item) <= Number(item.minimum_quantity) / Number(item.conversion_factor);
 
-export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
+export function PosCartItems({ items, onRemove, onUpdate, onRemoveSerial, onAddSerial }: PosCartItemsProps) {
     if (items.length === 0) {
         return (
             <div className="grid place-items-center rounded-2xl border border-dashed border-input px-4 py-9 text-center">
@@ -25,6 +27,7 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
 
     return items.map((item, index) => {
         const lineTotal = Math.max(0, Number(item.quantity) * Number(item.selling_price) - Number(item.discount_amount || 0));
+        const isSerial = item.tracking_mode === 'serial' || ((item.selected_serials?.length ?? 0) > 0);
 
         return (
             <article key={`${item.product_id}:${item.unit_id}`} className="rounded-xl bg-muted/35 p-3.5 ring-1 ring-border">
@@ -46,7 +49,7 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
                                 {item.selected_serials.map((serial) => (
                                     <span
                                         key={serial.public_id}
-                                        className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary ring-1 ring-primary/20"
+                                        className="inline-flex items-center gap-1 rounded bg-primary/10 py-0.5 pr-1 pl-2 font-mono text-[11px] font-semibold text-primary ring-1 ring-primary/20"
                                     >
                                         <span>SN: {serial.serial_number}</span>
                                         {serial.agent_name ? (
@@ -54,6 +57,32 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
                                         ) : serial.agent_number ? (
                                             <span className="font-sans text-muted-foreground">({serial.agent_number})</span>
                                         ) : null}
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onRemoveSerial) {
+                                                    onRemoveSerial(index, serial.public_id);
+                                                } else {
+                                                    const remaining = (item.selected_serials || []).filter(
+                                                        (s) => s.public_id !== serial.public_id,
+                                                    );
+                                                    if (remaining.length === 0) {
+                                                        onRemove(index);
+                                                    } else {
+                                                        onUpdate(index, {
+                                                            quantity: String(remaining.length),
+                                                            selected_serials: remaining,
+                                                            serial_number_ids: remaining.map((s) => s.public_id),
+                                                        });
+                                                    }
+                                                }
+                                            }}
+                                            aria-label={`${translate('Remove serial')} ${serial.serial_number}`}
+                                            className="ml-0.5 grid size-4 place-items-center rounded-full text-primary/70 transition hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none"
+                                        >
+                                            <X className="size-2.5" />
+                                        </button>
                                     </span>
                                 ))}
                             </div>
@@ -80,25 +109,59 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
                                 type="button"
                                 aria-label={`${translate('Reduce')} ${item.catalog_product_name}`}
                                 className="grid size-11 shrink-0 place-items-center transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
-                                onClick={() => onUpdate(index, { quantity: String(Math.max(0.000001, Number(item.quantity) - 1)) })}
+                                onClick={() => {
+                                    if (isSerial) {
+                                        const serials = item.selected_serials || [];
+                                        if (serials.length <= 1) {
+                                            onRemove(index);
+                                        } else {
+                                            const lastSerial = serials[serials.length - 1];
+                                            if (onRemoveSerial) {
+                                                onRemoveSerial(index, lastSerial.public_id);
+                                            } else {
+                                                const remaining = serials.slice(0, -1);
+                                                onUpdate(index, {
+                                                    quantity: String(remaining.length),
+                                                    selected_serials: remaining,
+                                                    serial_number_ids: remaining.map((s) => s.public_id),
+                                                });
+                                            }
+                                        }
+                                    } else {
+                                        onUpdate(index, { quantity: String(Math.max(0.000001, Number(item.quantity) - 1)) });
+                                    }
+                                }}
                             >
                                 <Minus className="size-4" aria-hidden="true" />
                             </button>
                             <input
                                 aria-label={`${translate('Amount')} ${item.catalog_product_name}`}
-                                className="h-11 min-w-0 flex-1 border-x border-border bg-card px-1 text-center text-base outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:w-16 sm:flex-none sm:text-sm"
+                                className={`h-11 min-w-0 flex-1 border-x border-border bg-card px-1 text-center text-base outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:w-16 sm:flex-none sm:text-sm ${
+                                    isSerial ? 'cursor-default select-none bg-muted/20' : ''
+                                }`}
                                 type="number"
-                                min="0.000001"
+                                min={isSerial ? '1' : '0.000001'}
                                 max={available(item)}
-                                step="0.000001"
+                                step={isSerial ? '1' : '0.000001'}
+                                readOnly={isSerial}
                                 value={item.quantity}
-                                onChange={(event) => onUpdate(index, { quantity: event.target.value })}
+                                onChange={(event) => {
+                                    if (!isSerial) {
+                                        onUpdate(index, { quantity: event.target.value });
+                                    }
+                                }}
                             />
                             <button
                                 type="button"
                                 aria-label={`${translate('Add')} ${item.catalog_product_name}`}
                                 className="grid size-11 shrink-0 place-items-center transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
-                                onClick={() => onUpdate(index, { quantity: String(Math.min(available(item), Number(item.quantity) + 1)) })}
+                                onClick={() => {
+                                    if (isSerial) {
+                                        onAddSerial?.(item);
+                                    } else {
+                                        onUpdate(index, { quantity: String(Math.min(available(item), Number(item.quantity) + 1)) });
+                                    }
+                                }}
                             >
                                 <Plus className="size-4" aria-hidden="true" />
                             </button>

@@ -758,4 +758,9 @@ export const filCustomerCatalog: Record<string, string> = {
     'Serial number not found or already in cart.': 'Hindi nahanap ang serial number o nasa cart na.',
     'Scan or enter serial number': 'I-scan o ipasok ang serial number',
     'Available cards / serials': 'Magagamit na mga card / serial',
+    'Filter agent': 'I-filter ang ahente',
+    'All agents': 'Lahat ng ahente',
+    'Search or scan serial number': 'Maghanap o mag-scan ng serial number',
+    'Search serial or scan barcode…': 'Maghanap ng serial o mag-scan ng barcode…',
+    'Remove serial': 'Alisin ang serial',
 };

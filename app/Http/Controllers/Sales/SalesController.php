@@ -257,11 +257,13 @@ class SalesController extends Controller
         $returned = DB::table('sale_return_items')->select('sale_item_id')->selectRaw('SUM(quantity) as returned_quantity, SUM(refund_amount) as refunded_amount, SUM(cogs_reversed) as cogs_reversed')->where('store_id', $store->id)->groupBy('sale_item_id');
         $items = SaleItem::query()->where(['sale_items.store_id' => $store->id, 'sale_items.sale_id' => $sale->id])
             ->leftJoinSub($returned, 'returned', 'returned.sale_item_id', '=', 'sale_items.id')
+            ->with(['serialNumbers'])
             ->orderBy('sale_items.id')->get(['sale_items.*', DB::raw('COALESCE(returned.returned_quantity, 0) as returned_quantity'), DB::raw('COALESCE(returned.refunded_amount, 0) as refunded_amount')])
             ->map(fn (SaleItem $item): array => [
                 ...$item->only(['public_id', 'product_name', 'sku', 'unit_name', 'unit_symbol', 'quantity', 'unit_price', 'gross_subtotal', 'item_discount_amount', 'allocated_transaction_discount', 'net_total', 'cogs_amount', 'gross_profit']),
                 'returned_quantity' => (string) ($item->returned_quantity ?? '0'),
                 'returnable_quantity' => Decimal::subtract($item->quantity, (string) ($item->returned_quantity ?? '0'), Decimal::QUANTITY_SCALE),
+                'serial_numbers' => $item->serialNumbers->pluck('serial_number')->values()->all(),
             ]);
         $payment = DB::table('sale_payments')->where(['sale_payments.store_id' => $store->id, 'sale_payments.sale_id' => $sale->id])
             ->join('financial_accounts', 'financial_accounts.id', '=', 'sale_payments.financial_account_id')

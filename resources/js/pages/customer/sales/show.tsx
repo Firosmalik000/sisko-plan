@@ -3,6 +3,7 @@ import { Copy, Download, FileCheck2, Loader2, Printer, ReceiptText, RotateCcw, S
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { toast } from 'sonner';
+import BrandMark from '@/components/brand-mark';
 import { AppPage } from '@/components/page/app-page';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -51,6 +52,7 @@ type Item = {
     returnable_quantity: string;
     cogs_amount?: string;
     gross_profit?: string;
+    serial_numbers?: string[];
 };
 type Payment = {
     amount: string;
@@ -338,6 +340,11 @@ export default function SaleShow({
                                                 {quantity(item.quantity)} {item.unit_symbol} × {money(item.unit_price)}
                                                 {Number(item.returned_quantity) > 0 ? `· returned${quantity(item.returned_quantity)}` : ''}
                                             </p>
+                                            {item.serial_numbers && item.serial_numbers.length > 0 && (
+                                                <p className="mt-0.5 font-mono text-[11px] font-semibold text-primary">
+                                                    SN: {item.serial_numbers.join(', ')}
+                                                </p>
+                                            )}
                                         </div>
                                         <p className="font-semibold">{money(item.net_total)}</p>
                                     </div>
@@ -386,10 +393,10 @@ export default function SaleShow({
                                     href="https://xsisten.com"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    title="XSISTEN - Aplikasi Kasir & POS"
                                     className="inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground print:text-foreground print:no-underline"
                                 >
                                     <span>Powered by</span>
+                                    <BrandMark className="size-3.5 object-contain" alt="XSISTEN" />
                                     <span className="font-bold tracking-wider text-foreground uppercase">XSISTEN</span>
                                 </a>
                             </div>

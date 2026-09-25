@@ -6,6 +6,7 @@ use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\ImmutableLedgerRecord;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -31,5 +32,11 @@ class SaleItem extends Model
             'allocated_transaction_discount' => 'decimal:4', 'net_total' => 'decimal:4',
             'unit_cost_snapshot' => 'decimal:4', 'cogs_amount' => 'decimal:4', 'gross_profit' => 'decimal:4',
         ];
+    }
+
+    /** @return HasMany<ProductSerialNumber, $this> */
+    public function serialNumbers(): HasMany
+    {
+        return $this->hasMany(ProductSerialNumber::class, 'sale_item_id');
     }
 }
