@@ -55,11 +55,13 @@ function modeLabel(mode: VariantMode) {
 export function ProductRow({
     product,
     canManage,
+    onViewDetails,
     onEdit,
     onDelete,
 }: {
     product: Product;
     canManage: boolean;
+    onViewDetails?: (product: Product) => void;
     onEdit: (product: Product) => void;
     onDelete: (product: Product) => void;
 }) {
@@ -68,17 +70,27 @@ export function ProductRow({
     return (
         <RecordListRow className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 md:grid-cols-[minmax(15rem,1fr)_9rem_7rem_9rem_3rem] md:gap-4">
             <div className="flex min-w-0 items-start gap-3 md:items-center">
-                <div className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-secondary md:size-14">
+                <button
+                    type="button"
+                    onClick={() => onViewDetails?.(product)}
+                    className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-secondary transition-opacity hover:opacity-80 md:size-14"
+                >
                     <ProductPhoto
                         src={product.photo_url}
                         alt=""
                         className="size-full object-cover"
                         fallbackClassName="grid size-full place-items-center"
                     />
-                </div>
+                </button>
                 <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-2">
-                        <h2 className="truncate font-bold text-foreground">{product.name}</h2>
+                        <button
+                            type="button"
+                            onClick={() => onViewDetails?.(product)}
+                            className="truncate text-left font-bold text-foreground transition-colors hover:text-primary hover:underline"
+                        >
+                            {product.name}
+                        </button>
                         {product.tracking_mode === 'serial' && (
                             <Badge variant="secondary" className="border-primary/20 bg-primary/10 text-primary">
                                 {translate('Serial / SIM Card')}
@@ -124,27 +136,30 @@ export function ProductRow({
                 {translate(product.category?.name ?? 'Uncategorized')}
             </span>
 
-            {canManage && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            className="size-11 justify-self-end"
-                            aria-label={`${translate('Actions')} ${product.name}`}
-                        >
-                            <MoreHorizontal className="size-5" aria-hidden="true" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="min-w-40">
-                        <DropdownMenuItem onSelect={() => onEdit(product)}>{translate('Edit')}</DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onSelect={() => onDelete(product)}>
-                            {translate('Delete product')}
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )}
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="size-11 justify-self-end"
+                        aria-label={`${translate('Actions')} ${product.name}`}
+                    >
+                        <MoreHorizontal className="size-5" aria-hidden="true" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-40">
+                    <DropdownMenuItem onSelect={() => onViewDetails?.(product)}>{translate('View details')}</DropdownMenuItem>
+                    {canManage && (
+                        <>
+                            <DropdownMenuItem onSelect={() => onEdit(product)}>{translate('Edit')}</DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onSelect={() => onDelete(product)}>
+                                {translate('Delete product')}
+                            </DropdownMenuItem>
+                        </>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
         </RecordListRow>
     );
 }

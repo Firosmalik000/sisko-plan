@@ -80,6 +80,12 @@ export default function PosIndex({
     } | null>(null);
     const [agentInput, setAgentInput] = useState('');
     const [agentInputError, setAgentInputError] = useState('');
+    const [serialPickModal, setSerialPickModal] = useState<{
+        product: ProductOption;
+        serials: AvailableSerial[];
+    } | null>(null);
+    const [serialPickInput, setSerialPickInput] = useState('');
+    const [serialPickError, setSerialPickError] = useState('');
     const searchRef = useRef<HTMLInputElement>(null);
     const isMobile = useIsMobile();
     const defaultPaymentMethod = paymentMethods.find((method) => method.method === 'cash') ?? paymentMethods[0];
@@ -244,6 +250,26 @@ export default function PosIndex({
     };
     const addProduct = (product: ProductOption) => {
         if (available(product) <= 0) {
+            return;
+        }
+
+        if (product.tracking_mode === 'serial') {
+            const inCartIds = new Set(sale.data.items.flatMap((item) => item.serial_number_ids || []));
+            const availableForProd = (availableSerials || []).filter(
+                (s) => s.product_id === product.product_id && !inCartIds.has(s.public_id),
+            );
+
+            if (availableForProd.length === 0) {
+                setSearchError(translate('Stock product out of stock.'));
+
+                return;
+            }
+
+            setSelectedProduct(null);
+            setSerialPickModal({ product, serials: availableForProd });
+            setSerialPickInput('');
+            setSerialPickError('');
+
             return;
         }
 
@@ -452,8 +478,15 @@ export default function PosIndex({
             return;
         }
 
+        const trimmedSearch = search.trim();
+        const cleanSerialSearch = trimmedSearch.replace(/^(?:s\/?n\s*[:#-]?\s*)/i, '').trim();
+
         const exactMatches = products.filter(
-            (product) => product.barcode === search || product.sku?.toLocaleLowerCase(localeTag()) === normalizedSearch,
+            (product) =>
+                product.barcode === search ||
+                product.barcode === trimmedSearch ||
+                (cleanSerialSearch !== '' && product.barcode === cleanSerialSearch) ||
+                product.sku?.toLocaleLowerCase(localeTag()) === normalizedSearch,
         );
         const exact = exactMatches.find((product) => Boolean(product.is_base_unit)) ?? exactMatches[0];
 
@@ -467,10 +500,16 @@ export default function PosIndex({
             return;
         }
 
-        const trimmedSearch = search.trim();
-        const serialMatches = (availableSerials || []).filter(
-            (s) => s.serial_number === trimmedSearch || s.full_serial_number === trimmedSearch,
-        );
+        const isSerialMatch = (s: AvailableSerial) => {
+            const sn = s.serial_number.toLowerCase();
+            const fsn = (s.full_serial_number || '').toLowerCase();
+            const q1 = trimmedSearch.toLowerCase();
+            const q2 = cleanSerialSearch.toLowerCase();
+
+            return sn === q1 || fsn === q1 || (cleanSerialSearch !== '' && (sn === q2 || fsn === q2));
+        };
+
+        const serialMatches = (availableSerials || []).filter(isSerialMatch);
 
         if (serialMatches.length > 0) {
             if (activeAgentNumber) {
@@ -1312,6 +1351,121 @@ export default function PosIndex({
                         </button>
                     );
                 })}
+            </ResponsiveDialog>
+
+            <ResponsiveDialog
+                open={serialPickModal !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSerialPickModal(null);
+                        setSerialPickInput('');
+                        setSerialPickError('');
+                        restoreEntry();
+                    }
+                }}
+                title={translate('Select serial number')}
+                description={
+                    serialPickModal
+                        ? `${serialPickModal.product.product_name} ${serialPickModal.product.variant_name ? `(${serialPickModal.product.variant_name})` : ''}`
+                        : undefined
+                }
+                size="md"
+                bodyClassName="space-y-4"
+            >
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+
+                        if (!serialPickModal) {
+                            return;
+                        }
+
+                        const query = serialPickInput.trim();
+                        const cleanQuery = query.replace(/^(?:s\/?n\s*[:#-]?\s*)/i, '').trim();
+
+                        if (!query) {
+                            return;
+                        }
+
+                        const matched = serialPickModal.serials.find((s) => {
+                            const sn = s.serial_number.toLowerCase();
+                            const fsn = (s.full_serial_number || '').toLowerCase();
+                            const q1 = query.toLowerCase();
+                            const q2 = cleanQuery.toLowerCase();
+
+                            return sn === q1 || fsn === q1 || (cleanQuery !== '' && (sn === q2 || fsn === q2));
+                        });
+
+                        if (!matched) {
+                            setSerialPickError(translate('Serial number not found or already in cart.'));
+
+                            return;
+                        }
+
+                        addProductWithSerial(serialPickModal.product, matched);
+                        setSerialPickModal(null);
+                        setSerialPickInput('');
+                        setSerialPickError('');
+                    }}
+                    className="space-y-2"
+                >
+                    <Label className="text-xs font-semibold text-foreground">{translate('Scan or enter serial number')}</Label>
+                    <div className="flex gap-2">
+                        <Input
+                            type="text"
+                            value={serialPickInput}
+                            onChange={(e) => {
+                                setSerialPickInput(e.target.value);
+                                setSerialPickError('');
+                            }}
+                            placeholder={translate('Example: 001')}
+                            autoFocus
+                            className="flex-1 font-mono text-sm"
+                        />
+                        <Button type="submit">
+                            <Plus className="mr-1 size-4" />
+                            {translate('Add')}
+                        </Button>
+                    </div>
+                    {serialPickError && <p className="text-xs font-semibold text-destructive">{serialPickError}</p>}
+                </form>
+
+                <div className="space-y-2">
+                    <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                        {translate('Available cards / serials')} ({serialPickModal?.serials.length ?? 0})
+                    </p>
+                    <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-xl border border-border p-2">
+                        {serialPickModal?.serials.map((s) => (
+                            <button
+                                key={s.public_id}
+                                type="button"
+                                onClick={() => {
+                                    if (!serialPickModal) {
+                                        return;
+                                    }
+
+                                    addProductWithSerial(serialPickModal.product, s);
+                                    setSerialPickModal(null);
+                                    setSerialPickInput('');
+                                    setSerialPickError('');
+                                }}
+                                className="flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-card p-2.5 text-left transition hover:border-[var(--app-primary)] hover:bg-[var(--app-soft)]/40 focus-visible:ring-2 focus-visible:ring-[var(--app-primary)] focus-visible:outline-none"
+                            >
+                                <div className="min-w-0">
+                                    <p className="font-mono text-sm font-bold text-foreground">{s.serial_number}</p>
+                                    {(s.agent_number || s.agent_name) && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {s.agent_name ? `${s.agent_name} (${s.agent_number})` : s.agent_number}
+                                        </p>
+                                    )}
+                                </div>
+                                <span className="grid size-7 place-items-center rounded-lg bg-[var(--app-soft)] text-[var(--app-primary)]">
+                                    <Plus className="size-3.5" />
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </ResponsiveDialog>
 
             <ResponsiveDialog

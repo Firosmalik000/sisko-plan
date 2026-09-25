@@ -42,6 +42,7 @@ class ProductController extends Controller
                     'productUnits' => fn ($units) => $units->where('is_active', true)->with('unit:id,public_id,name,symbol,reference_code,name_is_custom'),
                 ]),
                 'inventoryBalances',
+                'serialNumbers',
             ])
             ->when($search !== '', fn ($query) => $query->where(fn ($nested) => $nested
                 ->where('name', 'like', "%{$search}%")
@@ -178,6 +179,8 @@ class ProductController extends Controller
         $variantBalances = $balances->whereNotNull('product_variant_id')->keyBy('product_variant_id');
         $parentBalance = $balances->firstWhere('product_variant_id', null);
         $defaultUnit = $product->productUnits->first(fn ($unit) => $unit->product_variant_id === null && $unit->unit_id === $product->base_unit_id);
+        $serials = $product->tracking_mode === 'serial' ? ($product->serialNumbers ?? collect()) : collect();
+        $latestSerial = $serials->sortByDesc('id')->first();
 
         return [
             ...$product->only(['public_id', 'name', 'description', 'is_active']),
@@ -189,6 +192,19 @@ class ProductController extends Controller
             'variant_mode' => $product->variant_mode,
             'quantity_mode' => $product->quantity_mode,
             'tracking_mode' => $product->tracking_mode ?? 'standard',
+            'serial_agent_number' => $latestSerial?->agent_number,
+            'serial_agent_name' => $latestSerial?->agent_name,
+            'serial_agent_position' => $latestSerial?->agent_position ?? 'prefix',
+            'serial_numbers' => $serials->sortBy('serial_number')->values()->map(fn (ProductSerialNumber $s) => [
+                'public_id' => $s->public_id,
+                'serial_number' => $s->serial_number,
+                'full_serial_number' => $s->full_serial_number,
+                'agent_number' => $s->agent_number,
+                'agent_name' => $s->agent_name,
+                'agent_position' => $s->agent_position,
+                'status' => $s->status,
+                'sold_at' => $s->sold_at?->toIso8601String(),
+            ])->all(),
             'purchase_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->purchase_price,
             'selling_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->selling_price,
             'current_stock' => $parentBalance === null ? '0.000000' : $parentBalance->quantity,

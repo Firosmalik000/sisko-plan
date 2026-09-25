@@ -51,6 +51,7 @@ import {
 } from '@/routes/master-data/products';
 import { index as unitsIndex } from '@/routes/master-data/units';
 import { lookup as lookupCatalogItem } from '@/routes/scanner/catalog-items';
+import ProductDetailDialog from './product-detail-dialog';
 import {
     calculateSerialRange,
     createBlankProductForm,
@@ -245,6 +246,7 @@ export default function ProductsIndex({
     );
     const [editing, setEditing] = useState<Product | null>(null);
     const [deleting, setDeleting] = useState<Product | null>(null);
+    const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
     const [deleteProcessing, setDeleteProcessing] = useState(false);
     const [deleteError, setDeleteError] = useState('');
     const [productLimitOpen, setProductLimitOpen] = useState(false);
@@ -1032,6 +1034,7 @@ export default function ProductsIndex({
                                     key={product.public_id}
                                     product={product}
                                     canManage={canManage}
+                                    onViewDetails={(prod) => setViewingProduct(prod)}
                                     onEdit={openEdit}
                                     onDelete={requestDelete}
                                 />
@@ -2165,6 +2168,20 @@ export default function ProductsIndex({
                 </p>
             </ResponsiveDialog>
             <SubscriptionLimitContactDialog kind="product" open={productLimitOpen} onOpenChange={setProductLimitOpen} />
+            <ProductDetailDialog
+                product={viewingProduct}
+                open={viewingProduct !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setViewingProduct(null);
+                    }
+                }}
+                canManage={canManage}
+                onEdit={(prod) => {
+                    setViewingProduct(null);
+                    openEdit(prod);
+                }}
+            />
             {barcodeTarget && (
                 <BarcodeScannerDialog
                     open

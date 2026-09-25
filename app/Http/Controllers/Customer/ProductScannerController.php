@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Scanner\DiscoverCatalogItemRequest;
 use App\Http\Requests\Scanner\LookupCatalogItemRequest;
 use App\Http\Requests\Scanner\RecognizeCatalogItemsRequest;
+use App\Models\ProductSerialNumber;
 use App\Models\ProductUnit;
 use App\Services\Intelligence\CatalogIntelligenceClient;
 use App\Services\Subscriptions\ScanQuota;
@@ -23,15 +24,48 @@ class ProductScannerController extends Controller
     public function lookup(LookupCatalogItemRequest $request, CurrentStore $currentStore, RecognizeCatalogItems $recognizer): JsonResponse
     {
         $type = $request->validated('type');
+        $identifier = trim($request->validated('identifier'));
+        $cleanIdentifier = (string) preg_replace('/^(?:s\/?n\s*[:#-]?\s*)/i', '', $identifier);
+
         $unit = ProductUnit::query()
             ->where('store_id', $currentStore->id())
-            ->where($type, trim($request->validated('identifier')))
+            ->where(function ($query) use ($type, $identifier, $cleanIdentifier) {
+                $query->where($type, $identifier)
+                    ->when($cleanIdentifier !== '' && $cleanIdentifier !== $identifier, fn ($q) => $q->orWhere($type, $cleanIdentifier));
+            })
             ->where('is_active', true)
             ->whereHas('product', fn ($query) => $query->where('is_active', true))
             ->whereHas('unit', fn ($query) => $query->where('is_active', true))
             ->where(fn ($query) => $query->whereNull('product_variant_id')->orWhereHas('productVariant', fn ($variant) => $variant->where('is_active', true)))
             ->with(['product', 'productVariant', 'unit'])
             ->first();
+
+        if ($unit === null && $type === 'barcode') {
+            $serial = ProductSerialNumber::query()
+                ->where('store_id', $currentStore->id())
+                ->where('status', 'available')
+                ->where(function ($query) use ($identifier, $cleanIdentifier) {
+                    $query->where('serial_number', $identifier)
+                        ->orWhere('full_serial_number', $identifier)
+                        ->when($cleanIdentifier !== '' && $cleanIdentifier !== $identifier, function ($q) use ($cleanIdentifier) {
+                            $q->orWhere('serial_number', $cleanIdentifier)
+                                ->orWhere('full_serial_number', $cleanIdentifier);
+                        });
+                })
+                ->first();
+
+            if ($serial !== null) {
+                $unit = ProductUnit::query()
+                    ->where('store_id', $currentStore->id())
+                    ->where('product_id', $serial->product_id)
+                    ->when($serial->product_variant_id, fn ($q) => $q->where('product_variant_id', $serial->product_variant_id))
+                    ->where('is_active', true)
+                    ->whereHas('product', fn ($query) => $query->where('is_active', true))
+                    ->whereHas('unit', fn ($query) => $query->where('is_active', true))
+                    ->with(['product', 'productVariant', 'unit'])
+                    ->first();
+            }
+        }
 
         if ($unit === null) {
             return response()->json(['status' => 'success', 'data' => [[

@@ -15,6 +15,7 @@ export type UnitOption = ProductOption & {
 
 export type VariantMode = 'none' | 'separate' | 'shared';
 export type TrackingMode = 'standard' | 'serial';
+export type AgentPosition = 'prefix' | 'suffix' | 'none';
 
 export type ProductVariant = {
     client_id?: string;
@@ -32,6 +33,17 @@ export type ProductVariant = {
     remove_photo: boolean;
 };
 
+export type ProductSerialNumberItem = {
+    public_id: string;
+    serial_number: string;
+    full_serial_number: string | null;
+    agent_number: string | null;
+    agent_name: string | null;
+    agent_position: AgentPosition;
+    status: 'available' | 'sold';
+    sold_at: string | null;
+};
+
 export type Product = {
     public_id: string;
     name: string;
@@ -43,6 +55,10 @@ export type Product = {
     variant_mode: VariantMode;
     quantity_mode: 'fixed' | 'variable';
     tracking_mode: TrackingMode;
+    serial_agent_number?: string | null;
+    serial_agent_name?: string | null;
+    serial_agent_position?: AgentPosition;
+    serial_numbers?: ProductSerialNumberItem[];
     purchase_price: string;
     selling_price: string;
     current_stock: string;
@@ -246,9 +262,9 @@ export function mapProductToForm(product: Product): ProductForm {
         variant_mode: product.variant_mode,
         quantity_mode: product.quantity_mode,
         tracking_mode: product.tracking_mode ?? 'standard',
-        serial_agent_number: '',
-        serial_agent_name: '',
-        serial_agent_position: 'prefix',
+        serial_agent_number: product.serial_agent_number ?? '',
+        serial_agent_name: product.serial_agent_name ?? '',
+        serial_agent_position: product.serial_agent_position ?? 'prefix',
         serial_range_start: '',
         serial_range_end: '',
         purchase_price: formatProductDecimal(product.purchase_price),
