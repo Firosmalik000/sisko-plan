@@ -270,9 +270,18 @@ export function useProductDrafts() {
         (id: string) => update((current) => current.map((draft) => (draft.id === id ? { ...draft, applied: true } : draft))),
         [update],
     );
+    const clear = useCallback(() => {
+        controllerRef.current?.abort();
+        draftsRef.current.forEach((draft) => {
+            if (draft.previewUrl) {
+                URL.revokeObjectURL(draft.previewUrl);
+            }
+        });
+        update(() => []);
+    }, [update]);
     const pendingPhotos = drafts
         .filter((draft) => ['waiting', 'analyzing', 'retry_wait'].includes(draft.status))
         .reduce((sum, draft) => sum + (draft.file ? 1 : 0), 0);
 
-    return { drafts, pendingPhotos, addPhoto, remove, retry, markApplied };
+    return { drafts, pendingPhotos, addPhoto, remove, retry, markApplied, clear };
 }

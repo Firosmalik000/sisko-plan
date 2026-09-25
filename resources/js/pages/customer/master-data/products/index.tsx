@@ -402,24 +402,19 @@ export default function ProductsIndex({
     }, [form.data.variants.length]);
 
     const closeForm = () => {
-        if (activeDraftId) {
-            draftForms.current.set(activeDraftId, form.data);
-        }
-
         setFormOpen(false);
         form.clearErrors();
+        form.setData(createBlankProductForm());
+        setActiveDraftId(null);
+        productDrafts.clear();
+        draftForms.current.clear();
+        draftDirty.current.clear();
+        setEditing(null);
     };
     const openManualCreate = (barcode = '') => {
-        if (activeDraftId) {
-            draftForms.current.set(activeDraftId, form.data);
-        }
-
-        if (!barcode && productDrafts.drafts.length) {
-            openDraft(productDrafts.drafts.find((draft) => draft.id === activeDraftId) ?? productDrafts.drafts[0]);
-
-            return;
-        }
-
+        productDrafts.clear();
+        draftForms.current.clear();
+        draftDirty.current.clear();
         setActiveDraftId(null);
         setDiscoveryPrefill(false);
         setEditing(null);
@@ -429,6 +424,12 @@ export default function ProductsIndex({
     };
     const openCreate = () => {
         prepareScannerTone();
+        productDrafts.clear();
+        draftForms.current.clear();
+        draftDirty.current.clear();
+        setActiveDraftId(null);
+        form.setData(createBlankProductForm());
+        form.clearErrors();
         setScannerFlow('create');
         setScannerOpen(true);
     };
@@ -642,13 +643,22 @@ export default function ProductsIndex({
     const handleScannerOpenChange = (open: boolean) => {
         setScannerOpen(open);
 
-        if (!open && scannerFlow !== 'create') {
-            setFormOpen(true);
-            requestAnimationFrame(() => {
-                if (formBodyRef.current) {
-                    formBodyRef.current.scrollTop = cameraFormScroll.current;
-                }
-            });
+        if (!open) {
+            if (scannerFlow !== 'create') {
+                setFormOpen(true);
+                requestAnimationFrame(() => {
+                    if (formBodyRef.current) {
+                        formBodyRef.current.scrollTop = cameraFormScroll.current;
+                    }
+                });
+            } else if (activeDraftId && productDrafts.drafts.length > 0) {
+                setFormOpen(true);
+            } else {
+                productDrafts.clear();
+                draftForms.current.clear();
+                draftDirty.current.clear();
+                setActiveDraftId(null);
+            }
         }
     };
 
@@ -813,7 +823,6 @@ export default function ProductsIndex({
                     openDraft(remaining[0]);
                 } else {
                     closeForm();
-                    setActiveDraftId(null);
                 }
             },
         });

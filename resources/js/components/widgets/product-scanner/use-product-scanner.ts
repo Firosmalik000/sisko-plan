@@ -278,6 +278,28 @@ export function useProductScanner(purpose: ScannerPurpose, config: ScannerConfig
                     );
                 }
 
+                const existingIndex = current.findIndex((item) =>
+                    item.results.some(
+                        (entry) =>
+                            entry.selectedOption?.id && result.selectedOption?.id && entry.selectedOption.id === result.selectedOption.id,
+                    ),
+                );
+
+                if (existingIndex >= 0) {
+                    return current.map((item, index) =>
+                        index !== existingIndex
+                            ? item
+                            : {
+                                  ...item,
+                                  results: item.results.map((entry) =>
+                                      entry.selectedOption?.id === result.selectedOption?.id
+                                          ? { ...entry, quantity: (entry.quantity ?? 1) + 1 }
+                                          : entry,
+                                  ),
+                              },
+                    );
+                }
+
                 return [
                     ...current,
                     {

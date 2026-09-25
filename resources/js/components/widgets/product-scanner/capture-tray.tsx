@@ -1,9 +1,17 @@
-import { AlertCircle, Check, LoaderCircle, X } from 'lucide-react';
+import { AlertCircle, Check, LoaderCircle, ScanBarcode, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { ScannerCapture } from '@/components/widgets/product-scanner/types';
 import { translate } from '@/lib/i18n';
 
-export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]; onRemove: (id: string) => void }) {
+export function CaptureTray({
+    captures,
+    onRemove,
+    onReview,
+}: {
+    captures: ScannerCapture[];
+    onRemove: (id: string) => void;
+    onReview?: (id: string) => void;
+}) {
     const tray = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (tray.current) {
@@ -27,16 +35,26 @@ export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]
                     key={capture.id}
                     className={`relative size-16 shrink-0 overflow-hidden rounded-xl bg-white/10 ring-2 ${capture.status === 'recognized' && capture.results.some((result) => result.match !== null) ? 'ring-[var(--workspace-400)]' : capture.status === 'failed' || capture.status === 'recognized' ? 'ring-[#f0a35d]' : 'ring-white/20'}`}
                 >
-                    {capture.previewUrl ? (
-                        <img
-                            src={capture.previewUrl}
-                            alt={translate('Photo :number', { number: index + 1 })}
-                            className="size-full object-cover"
-                        />
-                    ) : (
-                        <div className="size-full bg-[var(--app-ink)]" />
-                    )}
-                    <span className="absolute bottom-1 left-1 grid size-5 place-items-center rounded-md bg-[var(--app-ink)]/85 text-[10px] font-black text-white">
+                    <button
+                        type="button"
+                        onClick={() => onReview?.(capture.id)}
+                        disabled={!onReview}
+                        className="size-full text-left focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none disabled:cursor-default"
+                        aria-label={translate('View results')}
+                    >
+                        {capture.previewUrl ? (
+                            <img
+                                src={capture.previewUrl}
+                                alt={translate('Photo :number', { number: index + 1 })}
+                                className="size-full object-cover"
+                            />
+                        ) : (
+                            <div className="grid size-full place-items-center bg-[var(--app-ink)] text-white/70">
+                                <ScanBarcode className="size-6" />
+                            </div>
+                        )}
+                    </button>
+                    <span className="pointer-events-none absolute bottom-1 left-1 grid size-5 place-items-center rounded-md bg-[var(--app-ink)]/85 text-[10px] font-black text-white">
                         {['queued', 'recognizing', 'retry_wait'].includes(capture.status) ? (
                             <LoaderCircle className="size-3 animate-spin" />
                         ) : capture.status === 'recognized' && capture.results.some((result) => result.match !== null) ? (
@@ -48,14 +66,14 @@ export function CaptureTray({ captures, onRemove }: { captures: ScannerCapture[]
                         )}
                     </span>
                     {capture.results[0]?.quantity && capture.results[0].quantity > 1 && (
-                        <span className="absolute right-1 bottom-1 rounded-md bg-[#e2793c] px-1.5 py-0.5 text-[10px] font-black text-white">
+                        <span className="pointer-events-none absolute right-1 bottom-1 rounded-md bg-[#e2793c] px-1.5 py-0.5 text-[10px] font-black text-white">
                             x{capture.results[0].quantity}
                         </span>
                     )}
                     <button
                         type="button"
                         onClick={() => onRemove(capture.id)}
-                        className="absolute top-1 right-1 grid size-7 place-items-center rounded-full bg-[var(--app-ink)]/80 text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        className="absolute top-1 right-1 z-10 grid size-7 place-items-center rounded-full bg-[var(--app-ink)]/80 text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                         aria-label={translate('Delete photo :number', { number: index + 1 })}
                     >
                         <X className="size-3.5" />

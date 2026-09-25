@@ -17,6 +17,7 @@ export function CameraViewport({
     autoCaptureProgress,
     onToggleAuto,
     onReviewPhoto,
+    onReviewCapture,
     canCapture,
     pendingCount,
     productPhotos,
@@ -55,6 +56,7 @@ export function CameraViewport({
     autoCaptureProgress: number;
     onToggleAuto: () => void;
     onReviewPhoto: (id: string) => void;
+    onReviewCapture?: (id: string) => void;
     canCapture: boolean;
     pendingCount: number;
     productPhotos: Array<{ id: string; previewUrl: string; status?: string }>;
@@ -259,7 +261,7 @@ export function CameraViewport({
             </div>
 
             <div className="relative z-10 shrink-0 bg-gradient-to-t from-black/65 to-transparent pt-3">
-                <CaptureTray captures={captures} onRemove={onRemove} />
+                <CaptureTray captures={captures} onRemove={onRemove} onReview={onReviewCapture} />
                 {productPhotos.length > 0 && (
                     <div
                         ref={tray}

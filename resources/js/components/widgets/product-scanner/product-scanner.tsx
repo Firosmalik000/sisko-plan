@@ -182,16 +182,6 @@ export default function ProductScanner({
                 .then((found) => {
                     setBarcodeStatus(found ? 'success' : 'not_found');
 
-                    if (typeof found === 'object' && onConfirm && !barcodeTarget && (purpose === 'sale' || purpose === 'purchase')) {
-                        const outcome = onConfirm([found]);
-                        outcome.applied.forEach((item) => scanner.removeResult(item.captureId, item.itemIndex));
-
-                        if (outcome.failures.length) {
-                            setApplyErrors(outcome.failures);
-                            setBarcodeError(outcome.failures[0].message);
-                        }
-                    }
-
                     if (found) {
                         if (barcodeTarget) {
                             setBarcodeTarget(null);
@@ -211,7 +201,7 @@ export default function ProductScanner({
 
             return true;
         },
-        [barcodeTarget, lookupBarcode, scanner, onConfirm, purpose],
+        [barcodeTarget, lookupBarcode, scanner],
     );
     const camera = useCamera(open && !scanner.reviewing && !pendingPhoto, handleBarcode, scanMode === 'barcode');
 
@@ -658,6 +648,7 @@ export default function ProductScanner({
                                 onReviewProducts?.(id);
                                 onOpenChange(false);
                             }}
+                            onReviewCapture={() => scanner.setReviewing(true)}
                             videoRef={camera.videoRef}
                             captures={cameraCaptures}
                             canCapture={
