@@ -1,5 +1,18 @@
 import { useForm, usePage } from '@inertiajs/react';
-import { Camera, ChevronDown, CreditCard, FileCheck2, Plus, Search, ShoppingCart, ShoppingBag, Store, Upload, UserRound, X } from 'lucide-react';
+import {
+    Camera,
+    ChevronDown,
+    CreditCard,
+    FileCheck2,
+    Plus,
+    Search,
+    ShoppingCart,
+    ShoppingBag,
+    Store,
+    Upload,
+    UserRound,
+    X,
+} from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { CommerceBrandMark } from '@/components/commerce-brand-mark';
@@ -280,14 +293,21 @@ export default function PosIndex({
         }
 
         const query = serialPickInput.trim().toLowerCase();
-        const cleanQuery = query.replace(/^(?:s\/?n\s*[:#-]?\s*)/i, '').trim().toLowerCase();
+        const cleanQuery = query
+            .replace(/^(?:s\/?n\s*[:#-]?\s*)/i, '')
+            .trim()
+            .toLowerCase();
 
         if (query) {
             list = list.filter((s) => {
                 const sn = s.serial_number.toLowerCase();
                 const fsn = (s.full_serial_number || '').toLowerCase();
 
-                return sn.includes(query) || fsn.includes(query) || (cleanQuery !== '' && (sn.includes(cleanQuery) || fsn.includes(cleanQuery)));
+                return (
+                    sn.includes(query) ||
+                    fsn.includes(query) ||
+                    (cleanQuery !== '' && (sn.includes(cleanQuery) || fsn.includes(cleanQuery)))
+                );
             });
         }
 
@@ -296,6 +316,7 @@ export default function PosIndex({
 
     const handleRemoveSerial = (itemIndex: number, serialPublicId: string) => {
         const item = sale.data.items[itemIndex];
+
         if (!item) {
             return;
         }

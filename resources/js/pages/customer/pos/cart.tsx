@@ -27,7 +27,7 @@ export function PosCartItems({ items, onRemove, onUpdate, onRemoveSerial, onAddS
 
     return items.map((item, index) => {
         const lineTotal = Math.max(0, Number(item.quantity) * Number(item.selling_price) - Number(item.discount_amount || 0));
-        const isSerial = item.tracking_mode === 'serial' || ((item.selected_serials?.length ?? 0) > 0);
+        const isSerial = item.tracking_mode === 'serial' || (item.selected_serials?.length ?? 0) > 0;
 
         return (
             <article key={`${item.product_id}:${item.unit_id}`} className="rounded-xl bg-muted/35 p-3.5 ring-1 ring-border">
@@ -61,12 +61,14 @@ export function PosCartItems({ items, onRemove, onUpdate, onRemoveSerial, onAddS
                                             type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation();
+
                                                 if (onRemoveSerial) {
                                                     onRemoveSerial(index, serial.public_id);
                                                 } else {
                                                     const remaining = (item.selected_serials || []).filter(
                                                         (s) => s.public_id !== serial.public_id,
                                                     );
+
                                                     if (remaining.length === 0) {
                                                         onRemove(index);
                                                     } else {
@@ -112,10 +114,12 @@ export function PosCartItems({ items, onRemove, onUpdate, onRemoveSerial, onAddS
                                 onClick={() => {
                                     if (isSerial) {
                                         const serials = item.selected_serials || [];
+
                                         if (serials.length <= 1) {
                                             onRemove(index);
                                         } else {
                                             const lastSerial = serials[serials.length - 1];
+
                                             if (onRemoveSerial) {
                                                 onRemoveSerial(index, lastSerial.public_id);
                                             } else {
@@ -137,7 +141,7 @@ export function PosCartItems({ items, onRemove, onUpdate, onRemoveSerial, onAddS
                             <input
                                 aria-label={`${translate('Amount')} ${item.catalog_product_name}`}
                                 className={`h-11 min-w-0 flex-1 border-x border-border bg-card px-1 text-center text-base outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:w-16 sm:flex-none sm:text-sm ${
-                                    isSerial ? 'cursor-default select-none bg-muted/20' : ''
+                                    isSerial ? 'cursor-default bg-muted/20 select-none' : ''
                                 }`}
                                 type="number"
                                 min={isSerial ? '1' : '0.000001'}
