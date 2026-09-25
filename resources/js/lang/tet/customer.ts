@@ -758,4 +758,5 @@ export const tetCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'Buka ka scan númeru séri',
     'Search serial or scan barcode…': 'Buka númeru séri ka scan barcode…',
     'Remove serial': 'Hasai númeru séri',
+    'Powered by': 'Apoia husi',
 };

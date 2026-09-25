@@ -755,4 +755,5 @@ export const viCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'Tìm kiếm hoặc quét số sê-ri',
     'Search serial or scan barcode…': 'Tìm số sê-ri hoặc quét mã vạch…',
     'Remove serial': 'Xóa số sê-ri',
+    'Powered by': 'Cung cấp bởi',
 };

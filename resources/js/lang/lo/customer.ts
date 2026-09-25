@@ -754,4 +754,5 @@ export const loCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'ຊອກຫາ ຫຼື ສະແກນເລກຊີຣຽວ',
     'Search serial or scan barcode…': 'ຊອກຫາເລກຊີຣຽວ ຫຼື ສະແກນບາໂຄດ…',
     'Remove serial': 'ລຶບເລກຊີຣຽວ',
+    'Powered by': 'ຂັບເຄື່ອນໂດຍ',
 };

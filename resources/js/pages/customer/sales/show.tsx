@@ -395,7 +395,7 @@ export default function SaleShow({
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground print:text-foreground print:no-underline"
                                 >
-                                    <span>Powered by</span>
+                                    <span>{translate('Powered by')}</span>
                                     <BrandMark className="size-3.5 object-contain" alt="XSISTEN" />
                                     <span className="font-bold tracking-wider text-foreground uppercase">XSISTEN</span>
                                 </a>

@@ -758,4 +758,5 @@ export const msCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'Cari atau imbas nombor siri',
     'Search serial or scan barcode…': 'Cari nombor siri atau imbas kod bar…',
     'Remove serial': 'Buang nombor siri',
+    'Powered by': 'Dikuasakan oleh',
 };

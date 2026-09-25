@@ -757,4 +757,5 @@ export const idCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'Cari atau scan nomor seri',
     'Search serial or scan barcode…': 'Cari nomor seri atau scan barcode…',
     'Remove serial': 'Hapus nomor seri',
+    'Powered by': 'Didukung oleh',
 };

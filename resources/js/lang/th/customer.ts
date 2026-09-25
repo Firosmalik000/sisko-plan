@@ -755,4 +755,5 @@ export const thCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'ค้นหาหรือสแกนหมายเลขซีเรียล',
     'Search serial or scan barcode…': 'ค้นหาซีเรียลหรือสแกนบาร์โค้ด…',
     'Remove serial': 'ลบหมายเลขซีเรียล',
+    'Powered by': 'ขับเคลื่อนโดย',
 };

@@ -773,7 +773,7 @@ function ReceiptPreview({
                 </div>
                 {footer && <p className="mt-4 text-center text-xs">{footer}</p>}
                 <div className="mt-3 flex items-center justify-center gap-1 border-t border-dashed border-slate-300 pt-2 text-center text-[10px] text-slate-400">
-                    <span>Powered by</span>
+                    <span>{translate('Powered by')}</span>
                     <BrandMark className="size-3 object-contain" alt="XSISTEN" />
                     <span className="font-semibold text-slate-600">XSISTEN</span>
                 </div>

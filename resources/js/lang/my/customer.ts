@@ -761,4 +761,5 @@ export const myCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'စီရီယယ်နံပါတ် ရှာဖွေပါ သို့မဟုတ် စကင်ဖတ်ပါ',
     'Search serial or scan barcode…': 'စီရီယယ် ရှာဖွေပါ သို့မဟုတ် ဘားကုဒ် စကင်ဖတ်ပါ…',
     'Remove serial': 'စီရီယယ်နံပါတ် ဖယ်ရှားပါ',
+    'Powered by': 'ပံ့ပိုးပေးသည်',
 };

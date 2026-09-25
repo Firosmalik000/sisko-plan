@@ -763,4 +763,5 @@ export const filCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'Maghanap o mag-scan ng serial number',
     'Search serial or scan barcode…': 'Maghanap ng serial o mag-scan ng barcode…',
     'Remove serial': 'Alisin ang serial',
+    'Powered by': 'Pinapagana ng',
 };

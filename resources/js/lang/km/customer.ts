@@ -755,4 +755,5 @@ export const kmCustomerCatalog: Record<string, string> = {
     'Search or scan serial number': 'ស្វែងរក ឬស្កេនលេខស៊េរី',
     'Search serial or scan barcode…': 'ស្វែងរកលេខស៊េរី ឬស្កេនបាកូដ…',
     'Remove serial': 'លុបលេខស៊េរី',
+    'Powered by': 'ដំណើរការដោយ',
 };

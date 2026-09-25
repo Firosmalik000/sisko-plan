@@ -15,6 +15,7 @@ use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -403,6 +404,63 @@ class ProductSerialNumberTrackingTest extends TestCase
             ->has('products.data.0.serial_numbers', 6)
             ->where('products.data.0.serial_numbers.0.status', 'available')
         );
+    }
+
+    public function test_sale_receipt_and_native_receipt_contain_sold_serial_numbers(): void
+    {
+        [$owner, $store, $unit, $category, $cash] = $this->setupStoreAndUnitsWithCash();
+
+        $product = Product::factory()->for($store)->create([
+            'base_unit_id' => $unit->id,
+            'tracking_mode' => 'serial',
+        ]);
+        $productUnit = $product->productUnits()->sole();
+        $productUnit->update(['selling_price' => '25000']);
+
+        $serials = collect(['SN-001', 'SN-002'])->map(fn ($sn) => ProductSerialNumber::create([
+            'store_id' => $store->id,
+            'product_id' => $product->id,
+            'serial_number' => $sn,
+            'full_serial_number' => $sn,
+            'status' => 'available',
+        ]));
+
+        app(PostStockAdjustment::class)->handle($store, $owner, 'opening', [[
+            'product_id' => $product->id,
+            'product_variant_id' => null,
+            'quantity' => '2',
+            'unit_cost' => '15000',
+        ]], '2026-09-25T08:00:00Z', null, 'stock-adjustment-receipt-test');
+
+        $sale = app(PostSale::class)->handle(
+            $store,
+            $owner,
+            $cash->id,
+            [[
+                'product_unit_id' => $productUnit->id,
+                'quantity' => '2',
+                'item_discount' => '0',
+                'serial_number_ids' => $serials->pluck('public_id')->all(),
+            ]],
+            '0',
+            '50000',
+            '2026-09-25T10:00:00Z',
+            null,
+            'sale-receipt-test'
+        );
+
+        $this->actingAs($owner)->withSession(['active_store_id' => $store->id])
+            ->get(route('sales.show', $sale))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('customer/sales/show')
+                ->where('items.0.serial_numbers', ['SN-001', 'SN-002'])
+            );
+
+        $signedUrl = URL::signedRoute('sales.native-print', ['sale' => $sale]);
+        $this->getJson($signedUrl)
+            ->assertOk()
+            ->assertJsonPath('items.0.serial_numbers', ['SN-001', 'SN-002']);
     }
 
     private function setupStoreAndUnits(): array
