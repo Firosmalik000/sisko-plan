@@ -8,6 +8,7 @@ use App\Http\Requests\MasterData\ProductRequest;
 use App\Models\Category;
 use App\Models\CategoryReference;
 use App\Models\Product;
+use App\Models\ProductSerialNumber;
 use App\Models\ProductVariant;
 use App\Models\Unit;
 use App\Models\UnitReference;
