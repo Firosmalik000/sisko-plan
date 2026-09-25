@@ -99,6 +99,10 @@ test('drawReceiptToContext measures total height without context', () => {
     const documentTextCalls = calls.filter((c) => c.text === 'SL-20260925-001');
     assert.equal(documentTextCalls.length, 1);
     assert.equal(documentTextCalls[0].x, 240); // 480 / 2 (centered)
+
+    const brandingCalls = calls.filter((c) => c.text === 'Powered by XSISTEN · xsisten.com');
+    assert.equal(brandingCalls.length, 1);
+    assert.equal(brandingCalls[0].x, 240); // centered
 });
 
 test('drawReceiptToContext renders logo when provided and show_logo is true', () => {

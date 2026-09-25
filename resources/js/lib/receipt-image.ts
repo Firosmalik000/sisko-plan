@@ -451,7 +451,30 @@ export function drawReceiptToContext(
         }
     }
 
-    y += 36;
+    // 12. Branding: Powered by XSISTEN
+    y += 14;
+
+    if (ctx) {
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(margin + 40, y);
+        ctx.lineTo(width - margin - 40, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    y += 18;
+
+    if (ctx) {
+        ctx.font = `bold 11px ${fontFamily}`;
+        ctx.fillStyle = '#9ca3af';
+        ctx.textAlign = 'center';
+        ctx.fillText('Powered by XSISTEN · xsisten.com', width / 2, y);
+    }
+
+    y += 30;
 
     return y;
 }

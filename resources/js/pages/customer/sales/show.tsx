@@ -381,6 +381,18 @@ export default function SaleShow({
                                 </Button>
                             )}
                             <p className="mt-7 text-center text-xs text-muted-foreground">{receipt.footer}</p>
+                            <div className="mt-4 border-t border-dashed border-border/80 pt-3 text-center">
+                                <a
+                                    href="https://xsisten.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="XSISTEN - Aplikasi Kasir & POS"
+                                    className="inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground print:text-foreground print:no-underline"
+                                >
+                                    <span>Powered by</span>
+                                    <span className="font-bold tracking-wider text-foreground uppercase">XSISTEN</span>
+                                </a>
+                            </div>
                         </section>
                         {canViewProfit && (
                             <section className="grid gap-3 sm:grid-cols-2 print:hidden">
