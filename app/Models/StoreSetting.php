@@ -15,9 +15,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read Store $store
  */
 #[Fillable([
-    'store_id', 'timezone', 'currency', 'locale', 'phone', 'email', 'address',
+    'store_id', 'timezone', 'currency', 'locale', 'phone', 'email', 'logo_path', 'address',
     'receipt_header', 'receipt_footer', 'receipt_paper_size', 'receipt_show_address',
-    'receipt_show_cashier', 'theme_color',
+    'receipt_show_cashier', 'receipt_show_logo', 'theme_color',
 ])]
 class StoreSetting extends Model
 {
@@ -32,6 +32,7 @@ class StoreSetting extends Model
         return [
             'receipt_show_address' => 'boolean',
             'receipt_show_cashier' => 'boolean',
+            'receipt_show_logo' => 'boolean',
         ];
     }
 }

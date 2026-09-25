@@ -14,6 +14,7 @@ export type UnitOption = ProductOption & {
 };
 
 export type VariantMode = 'none' | 'separate' | 'shared';
+export type TrackingMode = 'standard' | 'serial';
 
 export type ProductVariant = {
     client_id?: string;
@@ -41,6 +42,7 @@ export type Product = {
     large_unit_public_id: string | null;
     variant_mode: VariantMode;
     quantity_mode: 'fixed' | 'variable';
+    tracking_mode: TrackingMode;
     purchase_price: string;
     selling_price: string;
     current_stock: string;
@@ -49,6 +51,11 @@ export type Product = {
     sku: string | null;
     barcode: string | null;
     variants: ProductVariant[];
+};
+
+export type StoreAgent = {
+    agent_number: string;
+    agent_name: string | null;
 };
 
 export type ProductForm = {
@@ -63,6 +70,12 @@ export type ProductForm = {
     large_unit_public_id: string;
     variant_mode: VariantMode;
     quantity_mode: 'fixed' | 'variable';
+    tracking_mode: TrackingMode;
+    serial_agent_number: string;
+    serial_agent_name: string;
+    serial_agent_position: 'prefix' | 'suffix' | 'none';
+    serial_range_start: string;
+    serial_range_end: string;
     purchase_price: string;
     selling_price: string;
     current_stock: string;
@@ -131,6 +144,54 @@ export function createBlankVariant(): ProductVariant {
     };
 }
 
+export function calculateSerialRange(start: string, end: string): { valid: boolean; count: number; items: string[]; error?: string } {
+    const trimmedStart = start.trim();
+    const trimmedEnd = end.trim();
+
+    if (!trimmedStart) {
+        return { valid: false, count: 0, items: [] };
+    }
+
+    // Single item when end is empty
+    if (!trimmedEnd) {
+        return { valid: true, count: 1, items: [trimmedStart] };
+    }
+
+    const startMatch = trimmedStart.match(/^(.*?)(\d+)$/);
+    const endMatch = trimmedEnd.match(/^(.*?)(\d+)$/);
+
+    if (!startMatch || !endMatch) {
+        return { valid: false, count: 0, items: [], error: 'Format must end with numeric digits (e.g. 001)' };
+    }
+
+    if (startMatch[1] !== endMatch[1]) {
+        return { valid: false, count: 0, items: [], error: 'Prefix must match' };
+    }
+
+    const prefix = startMatch[1];
+    const numStart = parseInt(startMatch[2], 10);
+    const numEnd = parseInt(endMatch[2], 10);
+    const padding = Math.max(startMatch[2].length, endMatch[2].length);
+
+    if (numStart > numEnd) {
+        return { valid: false, count: 0, items: [], error: 'Start number must be less than or equal to end number' };
+    }
+
+    const count = numEnd - numStart + 1;
+
+    if (count > 1000) {
+        return { valid: false, count, items: [], error: 'Maximum batch range is 1,000 items' };
+    }
+
+    const items: string[] = [];
+
+    for (let i = numStart; i <= Math.min(numEnd, numStart + 9); i++) {
+        items.push(prefix + String(i).padStart(padding, '0'));
+    }
+
+    return { valid: true, count, items };
+}
+
 export function createBlankProductForm(): ProductForm {
     return {
         _method: '',
@@ -144,6 +205,12 @@ export function createBlankProductForm(): ProductForm {
         large_unit_public_id: '',
         variant_mode: 'none',
         quantity_mode: 'variable',
+        tracking_mode: 'standard',
+        serial_agent_number: '',
+        serial_agent_name: '',
+        serial_agent_position: 'prefix',
+        serial_range_start: '',
+        serial_range_end: '',
         purchase_price: '',
         selling_price: '',
         current_stock: '',
@@ -178,6 +245,12 @@ export function mapProductToForm(product: Product): ProductForm {
         large_unit_public_id: product.large_unit_public_id ?? '',
         variant_mode: product.variant_mode,
         quantity_mode: product.quantity_mode,
+        tracking_mode: product.tracking_mode ?? 'standard',
+        serial_agent_number: '',
+        serial_agent_name: '',
+        serial_agent_position: 'prefix',
+        serial_range_start: '',
+        serial_range_end: '',
         purchase_price: formatProductDecimal(product.purchase_price),
         selling_price: formatProductDecimal(product.selling_price),
         current_stock: formatProductDecimal(product.current_stock),

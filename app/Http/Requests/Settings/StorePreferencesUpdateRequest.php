@@ -25,6 +25,7 @@ class StorePreferencesUpdateRequest extends FormRequest
             'receipt_paper_size' => ['required', 'in:58mm,80mm'],
             'receipt_show_address' => ['required', 'boolean'],
             'receipt_show_cashier' => ['required', 'boolean'],
+            'receipt_show_logo' => ['required', 'boolean'],
             'theme_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ];
     }

@@ -53,6 +53,10 @@ final class NativeReceiptController extends Controller
             'timezone' => $timezone,
             'receipt' => [
                 'store_name' => $store->name,
+                'logo_url' => ($settings->receipt_show_logo ?? true) && $settings->logo_path
+                    ? route('stores.logo', $store)
+                    : null,
+                'show_logo' => $settings->receipt_show_logo ?? true,
                 'address' => $settings->address,
                 'header' => $settings->receipt_header ?? __('Sales receipt'),
                 'footer' => $settings->receipt_footer ?? __('Thank you. Keep this receipt as a reference for returns.'),

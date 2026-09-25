@@ -103,6 +103,8 @@ class StoreSaleRequest extends SaleRequest
             'items.*.unit_id' => ['required', Rule::exists('units', 'public_id')->where(fn ($query) => $query->where('store_id', $storeId)->where('is_active', true))],
             'items.*.quantity' => ['required', 'decimal:0,6', 'gt:0', 'lte:999999999999.999999'],
             'items.*.discount_amount' => ['required', ...$money],
+            'items.*.serial_number_ids' => ['sometimes', 'nullable', 'array'],
+            'items.*.serial_number_ids.*' => ['string', 'size:26'],
         ];
     }
 

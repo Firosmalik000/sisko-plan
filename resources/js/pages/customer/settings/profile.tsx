@@ -1,4 +1,4 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Building2,
     Camera,
@@ -15,6 +15,7 @@ import {
     ReceiptText,
     Save,
     Store as StoreIcon,
+    Trash2,
     UserRound,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -50,6 +51,8 @@ type StoreSettings = {
     receipt_paper_size: '58mm' | '80mm';
     receipt_show_address: boolean;
     receipt_show_cashier: boolean;
+    receipt_show_logo: boolean;
+    logo_url: string | null;
     theme_color: string;
 };
 type Store = {
@@ -91,6 +94,11 @@ export default function Profile({
     const [receiptHeader, setReceiptHeader] = useState(settings?.receipt_header ?? translate('Thank you for shopping with us'));
     const [receiptFooter, setReceiptFooter] = useState(settings?.receipt_footer ?? translate('Purchased items cannot be returned.'));
     const storeId = store?.public_id ?? 'no-store';
+    const [logoPreview, setLogoPreview] = useState<string | null>(settings?.logo_url ?? null);
+    const [showLogo, setShowLogo] = useState<boolean>(settings?.receipt_show_logo ?? true);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isDeletingLogo, setIsDeletingLogo] = useState(false);
+    const [logoError, setLogoError] = useState<string | null>(null);
     const [printPreferences, setPrintPreferences] = useState(() =>
         readReceiptPrintPreferences(storeId, typeof window === 'undefined' ? undefined : window.localStorage),
     );
@@ -112,6 +120,56 @@ export default function Profile({
     const updatePrintPreferences = (next: typeof printPreferences) => {
         setPrintPreferences(next);
         writeReceiptPrintPreferences(storeId, next, typeof window === 'undefined' ? undefined : window.localStorage);
+    };
+
+    const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        setLogoError(null);
+        setLogoPreview(URL.createObjectURL(file));
+        setIsUploadingLogo(true);
+
+        const formData = new FormData();
+        formData.append('logo', file);
+
+        router.post(ProfileController.updateStoreLogo.url(), formData, {
+            preserveScroll: true,
+            forceFormData: true,
+            onError: (errors) => {
+                setLogoError(errors.logo ?? null);
+                setLogoPreview(settings?.logo_url ?? null);
+            },
+            onFinish: () => {
+                setIsUploadingLogo(false);
+                event.target.value = '';
+            },
+        });
+    };
+
+    const handleLogoDelete = () => {
+        if (isDeletingLogo) {
+            return;
+        }
+
+        setLogoError(null);
+        setIsDeletingLogo(true);
+
+        router.delete(ProfileController.deleteStoreLogo.url(), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setLogoPreview(null);
+            },
+            onError: (errors) => {
+                setLogoError(errors.logo ?? null);
+            },
+            onFinish: () => {
+                setIsDeletingLogo(false);
+            },
+        });
     };
 
     return (
@@ -231,6 +289,51 @@ export default function Profile({
                                         title="Store details"
                                         badge={store.can_manage ? undefined : translate('View only')}
                                     >
+                                        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+                                            <div className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-border bg-muted/40">
+                                                {logoPreview ? (
+                                                    <img src={logoPreview} alt={storeName} className="size-full object-contain p-1" />
+                                                ) : (
+                                                    <StoreIcon className="size-8 text-muted-foreground/60" />
+                                                )}
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-sm font-semibold">{translate('Store logo')}</Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {translate('PNG, JPG, or WebP, maximum 2 MB.')}
+                                                </p>
+                                                {store.can_manage && (
+                                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                        <label className="inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-input bg-background px-3 text-xs font-semibold shadow-xs transition hover:bg-muted/80">
+                                                            <Camera className="size-3.5" />
+                                                            <span>{logoPreview ? translate('Change logo') : translate('Upload logo')}</span>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/jpeg,image/png,image/webp"
+                                                                className="sr-only"
+                                                                disabled={isUploadingLogo}
+                                                                onChange={handleLogoChange}
+                                                            />
+                                                        </label>
+                                                        {logoPreview && (
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="min-h-9 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                                disabled={isDeletingLogo}
+                                                                onClick={handleLogoDelete}
+                                                            >
+                                                                <Trash2 className="size-3.5" />
+                                                                {translate('Delete logo')}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {logoError && <p className="text-xs text-destructive">{logoError}</p>}
+                                            </div>
+                                        </div>
+
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <Field label="Store name" icon={StoreIcon} className="sm:col-span-2">
                                                 <Input
@@ -327,6 +430,13 @@ export default function Profile({
                                                         defaultChecked={settings?.receipt_show_cashier ?? true}
                                                         disabled={!store.can_manage}
                                                     />
+                                                    <CheckSetting
+                                                        name="receipt_show_logo"
+                                                        label="Show logo on receipt"
+                                                        defaultChecked={showLogo}
+                                                        onChange={(checked) => setShowLogo(checked)}
+                                                        disabled={!store.can_manage}
+                                                    />
                                                 </div>
                                             </div>
                                             <ReceiptPreview
@@ -335,6 +445,7 @@ export default function Profile({
                                                 header={receiptHeader}
                                                 footer={receiptFooter}
                                                 paperSize={paperSize}
+                                                logoUrl={showLogo ? logoPreview : null}
                                             />
                                         </div>
                                     </SettingsCard>
@@ -590,11 +701,13 @@ function CheckSetting({
     label,
     defaultChecked,
     disabled,
+    onChange,
 }: {
     name: string;
     label: string;
     defaultChecked: boolean;
     disabled: boolean;
+    onChange?: (checked: boolean) => void;
 }) {
     return (
         <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium">
@@ -605,6 +718,7 @@ function CheckSetting({
                 value="1"
                 defaultChecked={defaultChecked}
                 disabled={disabled}
+                onChange={(event) => onChange?.(event.target.checked)}
                 className="size-4 accent-[var(--app-primary)]"
             />
             {translate(label)}
@@ -617,12 +731,14 @@ function ReceiptPreview({
     header,
     footer,
     paperSize,
+    logoUrl,
 }: {
     storeName: string;
     address?: string | null;
     header: string;
     footer: string;
     paperSize: '58mm' | '80mm';
+    logoUrl?: string | null;
 }) {
     return (
         <div className="rounded-2xl bg-slate-100 p-3">
@@ -631,6 +747,11 @@ function ReceiptPreview({
                 className={`mx-auto bg-white p-4 font-mono text-xs leading-4 text-slate-800 shadow-md transition-all ${paperSize === '58mm' ? 'max-w-48' : 'max-w-60'}`}
             >
                 <div className="text-center">
+                    {logoUrl && (
+                        <div className="mb-2 flex justify-center">
+                            <img src={logoUrl} alt={storeName} className="max-h-10 max-w-[100px] object-contain" />
+                        </div>
+                    )}
                     <p className="font-black">{storeName}</p>
                     {address && <p className="mt-0.5 text-xs">{address}</p>}
                     {header && <p className="mt-1 text-xs">{header}</p>}

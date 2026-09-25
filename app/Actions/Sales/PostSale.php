@@ -13,6 +13,7 @@ use App\Models\BusinessMembership;
 use App\Models\CashTransaction;
 use App\Models\FinancialAccount;
 use App\Models\PosDevice;
+use App\Models\ProductSerialNumber;
 use App\Models\ProductUnit;
 use App\Models\RegisterSession;
 use App\Models\Sale;
@@ -115,6 +116,18 @@ class PostSale
                     if ($productUnit->product->quantity_mode === 'fixed' && Decimal::compare($item['quantity'], Decimal::add($item['quantity'], '0', 0), Decimal::QUANTITY_SCALE) !== 0) {
                         throw ValidationException::withMessages(['items' => __('Fixed quantity products require whole quantities.')]);
                     }
+                    $serialIds = array_values(array_filter($item['serial_number_ids'] ?? [], fn ($id) => is_string($id) && $id !== ''));
+                    if (! empty($serialIds)) {
+                        $availableCount = ProductSerialNumber::query()
+                            ->where('store_id', $store->id)
+                            ->where('product_id', $productUnit->product_id)
+                            ->whereIn('public_id', $serialIds)
+                            ->where('status', 'available')
+                            ->count();
+                        if ($availableCount !== count($serialIds)) {
+                            throw ValidationException::withMessages(['items' => __('One or more selected serial numbers are no longer available.')]);
+                        }
+                    }
                     $resolvedItems[] = [
                         'product_id' => $productUnit->product_id, 'product_variant_id' => $productUnit->product_variant_id, 'product_unit_id' => $productUnit->id,
                         'stock_variant_id' => $productUnit->product->variant_mode === 'separate' ? $productUnit->product_variant_id : null,
@@ -124,6 +137,7 @@ class PostSale
                         'unit_name' => $productUnit->unit->name, 'unit_symbol' => $productUnit->unit->symbol,
                         'quantity' => $item['quantity'], 'conversion_factor' => (string) $productUnit->conversion_factor,
                         'unit_price' => (string) $productUnit->selling_price, 'item_discount' => $item['item_discount'],
+                        'serial_number_ids' => $serialIds,
                     ];
                 }
                 if ($alignWithLatestLedger) {
@@ -177,7 +191,7 @@ class PostSale
                         null, 'sale', $sale, $date, $actor, $notes, false, null, $stockVariantId,
                     );
                     $cogs = Decimal::absolute($movement->value_change, Decimal::MONEY_SCALE);
-                    SaleItem::create([
+                    $saleItem = SaleItem::create([
                         'store_id' => $store->id, 'sale_id' => $sale->id,
                         'product_id' => $item['product_id'], 'product_variant_id' => $item['product_variant_id'], 'product_unit_id' => $item['product_unit_id'],
                         'product_name' => $item['product_name'], 'sku' => $item['sku'], 'barcode' => $item['barcode'],
@@ -188,6 +202,19 @@ class PostSale
                         'net_total' => $item['net_total'], 'unit_cost_snapshot' => $movement->unit_cost,
                         'cogs_amount' => $cogs, 'gross_profit' => Decimal::subtract((string) $item['net_total'], $cogs, Decimal::MONEY_SCALE),
                     ]);
+                    if (! empty($item['serial_number_ids'])) {
+                        ProductSerialNumber::query()
+                            ->where('store_id', $store->id)
+                            ->where('product_id', $item['product_id'])
+                            ->whereIn('public_id', $item['serial_number_ids'])
+                            ->where('status', 'available')
+                            ->update([
+                                'status' => 'sold',
+                                'sale_id' => $sale->id,
+                                'sale_item_id' => $saleItem->id,
+                                'sold_at' => $date,
+                            ]);
+                    }
                 }
                 $payment = SalePayment::create([
                     'store_id' => $store->id, 'sale_id' => $sale->id, 'financial_account_id' => $accountId,

@@ -51,7 +51,12 @@ class PosController extends Controller
                     'units.public_id' => $item['unit_id'], 'units.is_active' => true,
                     'product_units.is_active' => true,
                 ])->valueOrFail('product_units.id');
-            $items[] = ['product_unit_id' => $productUnitId, 'quantity' => $item['quantity'], 'item_discount' => $item['discount_amount']];
+            $items[] = [
+                'product_unit_id' => $productUnitId,
+                'quantity' => $item['quantity'],
+                'item_discount' => $item['discount_amount'],
+                'serial_number_ids' => $item['serial_number_ids'] ?? [],
+            ];
         }
         $actor = $this->actor($request, $store);
         $terminalDevice = $request->attributes->get('pos_actor') instanceof BusinessMembership

@@ -70,6 +70,14 @@ class ProductController extends Controller
             'status' => $status,
             'category' => $category,
             'canManage' => Gate::allows('manageMasterData', $currentStore->get()),
+            'storeAgents' => ProductSerialNumber::query()
+                ->where('store_id', $currentStore->id())
+                ->whereNotNull('agent_number')
+                ->where('agent_number', '!=', '')
+                ->select('agent_number', 'agent_name')
+                ->distinct()
+                ->orderBy('agent_name')
+                ->get(),
         ]);
     }
 
@@ -179,6 +187,7 @@ class ProductController extends Controller
             'large_unit_public_id' => $product->largeUnit?->public_id,
             'variant_mode' => $product->variant_mode,
             'quantity_mode' => $product->quantity_mode,
+            'tracking_mode' => $product->tracking_mode ?? 'standard',
             'purchase_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->purchase_price,
             'selling_price' => $defaultUnit === null ? '0.0000' : $defaultUnit->selling_price,
             'current_stock' => $parentBalance === null ? '0.000000' : $parentBalance->quantity,

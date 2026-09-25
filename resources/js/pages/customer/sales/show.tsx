@@ -1,14 +1,17 @@
 import { useForm, usePage } from '@inertiajs/react';
-import { FileCheck2, Printer, ReceiptText, RotateCcw } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Copy, Download, FileCheck2, Loader2, Printer, ReceiptText, RotateCcw, Share2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { toast } from 'sonner';
 import { AppPage } from '@/components/page/app-page';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatMoney as money, formatQuantity as quantity } from '@/lib/currency';
 import { currentLocale } from '@/lib/currency';
 import { currentDateTime, ledgerDateTime } from '@/lib/date-time';
 import { translate } from '@/lib/i18n';
 import { postingToken } from '@/lib/posting-token';
+import { copyReceiptImage, downloadReceiptImage, shareReceiptImage } from '@/lib/receipt-image';
 import { buildAndroidPrinterIntent, readReceiptPrintPreferences, receiptPrintStyles } from '@/lib/receipt-printing';
 import { index as salesIndex } from '@/routes/sales';
 import { store as storeReturn } from '@/routes/sales/returns';
@@ -83,6 +86,8 @@ type ReceiptSettings = {
     paper_size: '58mm' | '80mm';
     show_address: boolean;
     show_cashier: boolean;
+    show_logo?: boolean;
+    logo_url?: string | null;
 };
 const fieldClass =
     'h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/15';
@@ -177,6 +182,69 @@ export default function SaleShow({
         }
     }, [openPrintDialog, printPreferences.autoPrint, printReceipt, sale.public_id]);
 
+    const [sharingAction, setSharingAction] = useState<boolean>(false);
+
+    const receiptImageProps = useMemo(
+        () => ({
+            receipt,
+            sale,
+            items,
+            payment,
+            timezone,
+            formattedDate: ledgerDateTime(sale.occurred_at, timezone),
+            translate,
+        }),
+        [items, payment, receipt, sale, timezone],
+    );
+
+    const handleShareImage = async () => {
+        setSharingAction(true);
+
+        try {
+            const result = await shareReceiptImage(receiptImageProps);
+
+            if (result === 'downloaded') {
+                toast.success(translate('Receipt image downloaded'));
+            }
+        } catch {
+            toast.error(translate('Failed to process receipt image'));
+        } finally {
+            setSharingAction(false);
+        }
+    };
+
+    const handleDownloadImage = async () => {
+        setSharingAction(true);
+
+        try {
+            await downloadReceiptImage(receiptImageProps);
+            toast.success(translate('Receipt image downloaded'));
+        } catch {
+            toast.error(translate('Failed to process receipt image'));
+        } finally {
+            setSharingAction(false);
+        }
+    };
+
+    const handleCopyImage = async () => {
+        setSharingAction(true);
+
+        try {
+            const copied = await copyReceiptImage(receiptImageProps);
+
+            if (copied) {
+                toast.success(translate('Receipt image copied to clipboard'));
+            } else {
+                await downloadReceiptImage(receiptImageProps);
+                toast.success(translate('Receipt image downloaded'));
+            }
+        } catch {
+            toast.error(translate('Failed to process receipt image'));
+        } finally {
+            setSharingAction(false);
+        }
+    };
+
     return (
         <>
             <style>{receiptPrintStyles(receipt.paper_size)}</style>
@@ -189,6 +257,28 @@ export default function SaleShow({
                 className="print:bg-card print:p-0 [&>div>header]:print:hidden"
                 actions={
                     <>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button type="button" size="touch" variant="outline" disabled={sharingAction}>
+                                    {sharingAction ? <Loader2 className="size-4 animate-spin" /> : <Share2 className="size-4" />}
+                                    {translate('Share receipt')}
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={handleShareImage}>
+                                    <Share2 className="mr-2 size-4" />
+                                    {translate('Share image')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleDownloadImage}>
+                                    <Download className="mr-2 size-4" />
+                                    {translate('Download image')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleCopyImage}>
+                                    <Copy className="mr-2 size-4" />
+                                    {translate('Copy image')}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         {printPreferences.mode === 'android-direct' && (
                             <Button type="button" size="touch" variant="outline" onClick={() => window.print()}>
                                 {translate('System print')}
@@ -205,6 +295,15 @@ export default function SaleShow({
                     <div className="space-y-5">
                         <section data-print-receipt className="rounded-2xl bg-card p-6 shadow-xl shadow-black/8 md:p-9">
                             <header className="border-b-2 border-dashed border-border pb-6 text-center">
+                                {receipt.show_logo !== false && receipt.logo_url && (
+                                    <div className="mb-3 flex justify-center">
+                                        <img
+                                            src={receipt.logo_url}
+                                            alt={receipt.store_name}
+                                            className="max-h-16 max-w-[160px] object-contain print:max-h-14 print:max-w-[120px]"
+                                        />
+                                    </div>
+                                )}
                                 <p className="font-bold tracking-wide text-foreground uppercase">{receipt.store_name}</p>
                                 {receipt.show_address && receipt.address && (
                                     <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">{receipt.address}</p>

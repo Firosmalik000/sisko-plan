@@ -41,6 +41,23 @@ export function PosCartItems({ items, onRemove, onUpdate }: PosCartItemsProps) {
                                 {translate('Stock')} {formatQuantity(available(item))}
                             </span>
                         </div>
+                        {item.selected_serials && item.selected_serials.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                                {item.selected_serials.map((serial) => (
+                                    <span
+                                        key={serial.public_id}
+                                        className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary ring-1 ring-primary/20"
+                                    >
+                                        <span>SN: {serial.serial_number}</span>
+                                        {serial.agent_name ? (
+                                            <span className="font-sans text-muted-foreground">• {serial.agent_name}</span>
+                                        ) : serial.agent_number ? (
+                                            <span className="font-sans text-muted-foreground">({serial.agent_number})</span>
+                                        ) : null}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="flex shrink-0 items-start gap-2">
                         <strong className="pt-1 text-sm text-foreground">{formatMoney(lineTotal)}</strong>

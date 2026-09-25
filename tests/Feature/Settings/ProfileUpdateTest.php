@@ -68,6 +68,7 @@ class ProfileUpdateTest extends TestCase
                 'receipt_paper_size' => '80mm',
                 'receipt_show_address' => true,
                 'receipt_show_cashier' => false,
+                'receipt_show_logo' => false,
                 'theme_color' => '#176b87',
             ])
             ->assertSessionHasNoErrors();
@@ -76,9 +77,38 @@ class ProfileUpdateTest extends TestCase
         $this->assertDatabaseHas('store_settings', [
             'store_id' => $store->id,
             'receipt_paper_size' => '80mm',
+            'receipt_show_logo' => false,
             'theme_color' => '#176b87',
         ]);
         $this->assertFalse(Schema::hasColumns('store_settings', ['printer_name', 'auto_print_receipt', 'receipt_copies']));
+    }
+
+    public function test_owner_can_upload_and_stream_and_delete_store_logo(): void
+    {
+        Storage::fake('local');
+        $owner = User::factory()->create();
+        $store = Store::factory()->ownedBy($owner)->create();
+
+        $this->actingAs($owner)
+            ->withSession(['active_store_id' => $store->id])
+            ->post(route('settings.store.logo.update'), [
+                'logo' => UploadedFile::fake()->image('store_logo.png', 200, 200),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $settings = $store->settings()->first();
+        $this->assertNotNull($settings->logo_path);
+        Storage::disk('local')->assertExists($settings->logo_path);
+
+        $this->get(route('stores.logo', $store))->assertOk();
+
+        $this->actingAs($owner)
+            ->withSession(['active_store_id' => $store->id])
+            ->delete(route('settings.store.logo.delete'))
+            ->assertSessionHasNoErrors();
+
+        $settings->refresh();
+        $this->assertNull($settings->logo_path);
     }
 
     public function test_non_owner_cannot_update_store_preferences(): void

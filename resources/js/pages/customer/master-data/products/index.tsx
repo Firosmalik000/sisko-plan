@@ -52,6 +52,7 @@ import {
 import { index as unitsIndex } from '@/routes/master-data/units';
 import { lookup as lookupCatalogItem } from '@/routes/scanner/catalog-items';
 import {
+    calculateSerialRange,
     createBlankProductForm,
     createBlankVariant,
     formatProductDecimal,
@@ -59,7 +60,16 @@ import {
     generateProductSku,
     mapProductToForm,
 } from './product-model';
-import type { Product, ProductForm, ProductOption, ProductVariant, SubscriptionState, UnitOption, VariantMode } from './product-model';
+import type {
+    Product,
+    ProductForm,
+    ProductOption,
+    ProductVariant,
+    StoreAgent,
+    SubscriptionState,
+    UnitOption,
+    VariantMode,
+} from './product-model';
 import { ProductPhoto, ProductRow } from './product-presentation';
 
 type ScannerFlow = 'create' | 'form-photo' | 'variant-photo';
@@ -212,6 +222,7 @@ export default function ProductsIndex({
     status: initialStatus,
     category: initialCategory,
     canManage,
+    storeAgents = [],
 }: {
     products: { data: Product[]; links: PaginationLink[]; total: number };
     categories: ProductOption[];
@@ -220,6 +231,7 @@ export default function ProductsIndex({
     status: string;
     category: string;
     canManage: boolean;
+    storeAgents?: StoreAgent[];
 }) {
     const { subscriptionState, scanner: scannerConfig } = usePage<{
         subscriptionState: SubscriptionState | null;
@@ -1544,57 +1556,274 @@ export default function ProductsIndex({
                         </button>
 
                         {form.data.variant_mode === 'none' ? (
-                            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                                <FormCurrencyInput
-                                    id="purchase_price"
-                                    name="purchase_price"
-                                    label={translate(discoveryPrefill ? 'Estimated cost price' : 'Cost price')}
-                                    value={form.data.purchase_price}
-                                    onValueChange={(value) => {
-                                        setDiscoveryPrefill(false);
-                                        form.setData('purchase_price', value);
-                                    }}
-                                    error={form.errors.purchase_price}
-                                    min="0"
-                                    className="h-11"
-                                />
-                                <FormCurrencyInput
-                                    id="selling_price"
-                                    name="selling_price"
-                                    label={translate(discoveryPrefill ? 'Rekomendasi price sell' : 'Selling price')}
-                                    value={form.data.selling_price}
-                                    onValueChange={(value) => {
-                                        setDiscoveryPrefill(false);
-                                        form.setData('selling_price', value);
-                                    }}
-                                    error={form.errors.selling_price}
-                                    min="0"
-                                    className="h-11"
-                                />
-                                <Field label="Initial stock" error={form.errors.current_stock}>
-                                    <Input
-                                        inputMode="decimal"
-                                        step="0.01"
+                            <div className="mt-4 space-y-4">
+                                <div>
+                                    <Label className="mb-2 block text-sm font-semibold text-foreground">
+                                        {translate('Inventory tracking mode')}
+                                    </Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => form.setData('tracking_mode', 'standard')}
+                                            className={cn(
+                                                'flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-semibold transition',
+                                                form.data.tracking_mode === 'standard'
+                                                    ? 'border-primary bg-secondary text-primary'
+                                                    : 'border-input bg-card text-muted-foreground hover:bg-accent',
+                                            )}
+                                        >
+                                            <Boxes className="size-4" />
+                                            {translate('Standard quantity')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => form.setData('tracking_mode', 'serial')}
+                                            className={cn(
+                                                'flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-semibold transition',
+                                                form.data.tracking_mode === 'serial'
+                                                    ? 'border-primary bg-secondary text-primary'
+                                                    : 'border-input bg-card text-muted-foreground hover:bg-accent',
+                                            )}
+                                        >
+                                            <Barcode className="size-4" />
+                                            {translate('Serial / SIM Card')}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {form.data.tracking_mode === 'serial' && (
+                                    <div className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+                                                <Barcode className="size-4" />
+                                            </span>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-foreground">
+                                                    {editing
+                                                        ? translate('Add new batch of serial numbers')
+                                                        : translate('Batch serial range generator')}
+                                                </h4>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {editing
+                                                        ? translate('New serials entered here will be added to existing stock.')
+                                                        : translate('Automatically generate serial numbers and stock for this product.')}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {storeAgents.length > 0 && (
+                                            <div>
+                                                <FormSelect
+                                                    id="serial-agent-preset"
+                                                    name="serial_agent_preset"
+                                                    label={translate('Choose registered agent')}
+                                                    value={form.data.serial_agent_number}
+                                                    onChange={(event) => {
+                                                        const selectedVal = event.target.value;
+                                                        const matched = storeAgents.find((a) => a.agent_number === selectedVal);
+                                                        form.setData({
+                                                            ...form.data,
+                                                            serial_agent_number: selectedVal,
+                                                            serial_agent_name: matched?.agent_name ?? form.data.serial_agent_name,
+                                                        });
+                                                    }}
+                                                    className="h-11 bg-card text-base sm:text-sm"
+                                                >
+                                                    <option value="">{translate('-- Select agent or enter manually below --')}</option>
+                                                    {storeAgents.map((ag) => (
+                                                        <option key={ag.agent_number} value={ag.agent_number}>
+                                                            {ag.agent_name ? `${ag.agent_name} (${ag.agent_number})` : ag.agent_number}
+                                                        </option>
+                                                    ))}
+                                                </FormSelect>
+                                            </div>
+                                        )}
+
+                                        <div className="grid gap-4 sm:grid-cols-3">
+                                            <FormInput
+                                                id="serial-agent-number"
+                                                name="serial_agent_number"
+                                                label={translate('Agent number')}
+                                                value={form.data.serial_agent_number}
+                                                onChange={(event) => form.setData('serial_agent_number', event.target.value)}
+                                                placeholder={translate('Example: AG88812345')}
+                                                className="h-11 bg-card"
+                                            />
+                                            <FormInput
+                                                id="serial-agent-name"
+                                                name="serial_agent_name"
+                                                label={translate('Agent name')}
+                                                value={form.data.serial_agent_name}
+                                                onChange={(event) => form.setData('serial_agent_name', event.target.value)}
+                                                placeholder={translate('Example: Outlet Roxy')}
+                                                className="h-11 bg-card"
+                                            />
+                                            <FormSelect
+                                                id="serial-agent-position"
+                                                name="serial_agent_position"
+                                                label={translate('Agent number position')}
+                                                value={form.data.serial_agent_position}
+                                                onChange={(event) =>
+                                                    form.setData(
+                                                        'serial_agent_position',
+                                                        event.target.value as 'prefix' | 'suffix' | 'none',
+                                                    )
+                                                }
+                                                className="h-11 bg-card text-base sm:text-sm"
+                                            >
+                                                <option value="prefix">{translate('Prefix (at front)')}</option>
+                                                <option value="suffix">{translate('Suffix (at back)')}</option>
+                                                <option value="none">{translate('No agent number')}</option>
+                                            </FormSelect>
+                                        </div>
+
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <FormInput
+                                                id="serial-range-start"
+                                                name="serial_range_start"
+                                                label={translate('Start serial number')}
+                                                value={form.data.serial_range_start}
+                                                onChange={(event) => {
+                                                    const startVal = event.target.value;
+                                                    const range = calculateSerialRange(startVal, form.data.serial_range_end);
+                                                    form.setData({
+                                                        ...form.data,
+                                                        serial_range_start: startVal,
+                                                        current_stock: range.valid ? String(range.count) : form.data.current_stock,
+                                                    });
+                                                }}
+                                                placeholder={translate('Example: 001')}
+                                                className="h-11 bg-card font-mono"
+                                            />
+                                            <FormInput
+                                                id="serial-range-end"
+                                                name="serial_range_end"
+                                                label={translate('End serial number (optional)')}
+                                                value={form.data.serial_range_end}
+                                                onChange={(event) => {
+                                                    const endVal = event.target.value;
+                                                    const range = calculateSerialRange(form.data.serial_range_start, endVal);
+                                                    form.setData({
+                                                        ...form.data,
+                                                        serial_range_end: endVal,
+                                                        current_stock: range.valid ? String(range.count) : form.data.current_stock,
+                                                    });
+                                                }}
+                                                placeholder={translate('Leave empty for single item')}
+                                                className="h-11 bg-card font-mono"
+                                            />
+                                        </div>
+
+                                        {(() => {
+                                            const range = calculateSerialRange(form.data.serial_range_start, form.data.serial_range_end);
+
+                                            if (!form.data.serial_range_start && !form.data.serial_range_end) {
+                                                return null;
+                                            }
+
+                                            if (range.valid) {
+                                                return (
+                                                    <div className="space-y-2 rounded-lg border border-border bg-card p-3 text-xs">
+                                                        <div className="flex items-center justify-between font-bold text-primary">
+                                                            <span>
+                                                                ✓ {range.count} {translate('serials will be generated')}
+                                                            </span>
+                                                            <span>
+                                                                {editing
+                                                                    ? translate('Stock will increase by')
+                                                                    : translate('Initial stock set to')}
+                                                                : {range.count}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {range.items.map((item, idx) => {
+                                                                const full =
+                                                                    form.data.serial_agent_position === 'suffix'
+                                                                        ? `${item}${form.data.serial_agent_number}`
+                                                                        : form.data.serial_agent_position === 'none'
+                                                                          ? item
+                                                                          : `${form.data.serial_agent_number}${item}`;
+
+                                                                return (
+                                                                    <span
+                                                                        key={idx}
+                                                                        className="rounded bg-secondary px-2 py-0.5 font-mono text-[11px] text-foreground"
+                                                                    >
+                                                                        {full}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                            {range.count > 10 && (
+                                                                <span className="rounded bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                                                                    +{range.count - 10} {translate('more')}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (range.error) {
+                                                return <p className="text-xs font-semibold text-destructive">{range.error}</p>;
+                                            }
+
+                                            return null;
+                                        })()}
+                                    </div>
+                                )}
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <FormCurrencyInput
+                                        id="purchase_price"
+                                        name="purchase_price"
+                                        label={translate(discoveryPrefill ? 'Estimated cost price' : 'Cost price')}
+                                        value={form.data.purchase_price}
+                                        onValueChange={(value) => {
+                                            setDiscoveryPrefill(false);
+                                            form.setData('purchase_price', value);
+                                        }}
+                                        error={form.errors.purchase_price}
                                         min="0"
-                                        value={form.data.current_stock}
-                                        placeholder="0"
-                                        onChange={(event) => form.setData('current_stock', event.target.value)}
-                                        onBlur={() => form.setData('current_stock', formatProductDecimal(form.data.current_stock))}
-                                        className="h-11 border-input bg-card"
+                                        className="h-11"
                                     />
-                                </Field>
-                                <Field label="Minimum stock level" error={form.errors.minimum_stock}>
-                                    <Input
-                                        inputMode="decimal"
-                                        step="0.01"
+                                    <FormCurrencyInput
+                                        id="selling_price"
+                                        name="selling_price"
+                                        label={translate(discoveryPrefill ? 'Rekomendasi price sell' : 'Selling price')}
+                                        value={form.data.selling_price}
+                                        onValueChange={(value) => {
+                                            setDiscoveryPrefill(false);
+                                            form.setData('selling_price', value);
+                                        }}
+                                        error={form.errors.selling_price}
                                         min="0"
-                                        value={form.data.minimum_stock}
-                                        placeholder="0"
-                                        onChange={(event) => form.setData('minimum_stock', event.target.value)}
-                                        onBlur={() => form.setData('minimum_stock', formatProductDecimal(form.data.minimum_stock))}
-                                        className="h-11 border-input bg-card"
+                                        className="h-11"
                                     />
-                                </Field>
+                                    <Field label="Initial stock" error={form.errors.current_stock}>
+                                        <Input
+                                            inputMode="decimal"
+                                            step="0.01"
+                                            min="0"
+                                            value={form.data.current_stock}
+                                            placeholder="0"
+                                            onChange={(event) => form.setData('current_stock', event.target.value)}
+                                            onBlur={() => form.setData('current_stock', formatProductDecimal(form.data.current_stock))}
+                                            className="h-11 border-input bg-card"
+                                        />
+                                    </Field>
+                                    <Field label="Minimum stock level" error={form.errors.minimum_stock}>
+                                        <Input
+                                            inputMode="decimal"
+                                            step="0.01"
+                                            min="0"
+                                            value={form.data.minimum_stock}
+                                            placeholder="0"
+                                            onChange={(event) => form.setData('minimum_stock', event.target.value)}
+                                            onBlur={() => form.setData('minimum_stock', formatProductDecimal(form.data.minimum_stock))}
+                                            className="h-11 border-input bg-card"
+                                        />
+                                    </Field>
+                                </div>
                             </div>
                         ) : (
                             <div className="mt-4 space-y-4">

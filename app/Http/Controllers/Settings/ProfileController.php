@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfilePhotoUpdateRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Http\Requests\Settings\StoreLogoUpdateRequest;
 use App\Http\Requests\Settings\StorePreferencesUpdateRequest;
 use App\Models\Store;
 use App\Services\Subscriptions\SubscriptionAccess;
@@ -43,11 +44,14 @@ class ProfileController extends Controller
                 'public_id' => $store->public_id,
                 'name' => $store->name,
                 'can_manage' => Gate::forUser($user)->allows('update', $store),
-                'settings' => $store->settings?->only([
-                    'phone', 'email', 'address', 'receipt_header', 'receipt_footer',
-                    'receipt_paper_size', 'receipt_show_address', 'receipt_show_cashier',
-                    'theme_color',
-                ]),
+                'settings' => $store->settings === null ? null : [
+                    ...$store->settings->only([
+                        'phone', 'email', 'address', 'receipt_header', 'receipt_footer',
+                        'receipt_paper_size', 'receipt_show_address', 'receipt_show_cashier',
+                        'receipt_show_logo', 'theme_color',
+                    ]),
+                    'logo_url' => $store->settings->logo_path ? route('stores.logo', $store) : null,
+                ],
             ],
             'subscription' => $store === null ? null : $subscriptionAccess->summary($store),
         ]);
@@ -116,6 +120,58 @@ class ProfileController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Store settings saved successfully.')]);
 
         return back();
+    }
+
+    public function updateStoreLogo(
+        StoreLogoUpdateRequest $request,
+        CurrentStore $currentStore,
+        SubscriptionAccess $subscriptionAccess,
+    ): RedirectResponse {
+        $store = Store::query()->lockForUpdate()->findOrFail($currentStore->id());
+        $subscriptionAccess->assertCanWrite($store);
+
+        $settings = $store->settings()->firstOrCreate(['store_id' => $store->id]);
+        $oldPath = $settings->logo_path;
+        $path = $request->file('logo')->store("stores/{$store->id}/logo", 'local');
+        $settings->update(['logo_path' => $path]);
+
+        if ($oldPath !== null) {
+            Storage::disk('local')->delete($oldPath);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Store logo updated successfully.')]);
+
+        return back();
+    }
+
+    public function deleteStoreLogo(
+        CurrentStore $currentStore,
+        SubscriptionAccess $subscriptionAccess,
+    ): RedirectResponse {
+        $store = Store::query()->lockForUpdate()->findOrFail($currentStore->id());
+        Gate::authorize('update', $store);
+        $subscriptionAccess->assertCanWrite($store);
+
+        $settings = $store->settings;
+
+        if ($settings !== null && $settings->logo_path !== null) {
+            Storage::disk('local')->delete($settings->logo_path);
+            $settings->update(['logo_path' => null]);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Store logo deleted successfully.')]);
+
+        return back();
+    }
+
+    public function storeLogo(Store $store): StreamedResponse
+    {
+        $path = $store->settings?->logo_path;
+        abort_unless(is_string($path) && Storage::disk('local')->exists($path), 404);
+
+        return Storage::disk('local')->response($path, null, [
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
     }
 
     /**

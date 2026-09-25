@@ -14,6 +14,7 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('profile.photo.update');
     Route::get('settings/profile/photo', [ProfileController::class, 'photo'])->name('profile.photo');
+    Route::get('stores/{store}/logo', [ProfileController::class, 'storeLogo'])->name('stores.logo');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -32,6 +33,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('settings/store', [ProfileController::class, 'updateStore'])
         ->middleware(['active.business', 'active.store', 'throttle:store-writes'])
         ->name('settings.store.update');
+
+    Route::post('settings/store/logo', [ProfileController::class, 'updateStoreLogo'])
+        ->middleware(['active.business', 'active.store', 'throttle:store-writes'])
+        ->name('settings.store.logo.update');
+
+    Route::delete('settings/store/logo', [ProfileController::class, 'deleteStoreLogo'])
+        ->middleware(['active.business', 'active.store', 'throttle:store-writes'])
+        ->name('settings.store.logo.delete');
 });
 
 Route::get('.well-known/passkey-endpoints', function () {

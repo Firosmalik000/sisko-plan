@@ -7,7 +7,9 @@ import { FormCurrencyInput, FormInput, FormPhoneInput, FormSelect } from '@/comp
 import { ResponsiveDialog } from '@/components/overlays';
 import { AppPage } from '@/components/page/app-page';
 import { Button } from '@/components/ui/button';
-import { prepareScannerTone } from '@/components/widgets/product-scanner/scanner-feedback';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { playScannerSuccessTone, prepareScannerTone } from '@/components/widgets/product-scanner/scanner-feedback';
 import type { ScannerApplyResult, ScannerProductCandidate, ScannerSelection } from '@/components/widgets/product-scanner/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatMoney as money, formatQuantity as quantity } from '@/lib/currency';
@@ -19,11 +21,21 @@ import { store as storeSale } from '@/routes/pos/sales';
 import type { StoreSummary } from '@/types';
 import { PosCartItems } from './cart';
 import { PosCatalog } from './catalog';
-import type { ActiveRegisterSession, CatalogProduct, CartItem, Marketplace, PaymentMethod, ProductOption, SaleForm } from './types';
+import type {
+    ActiveRegisterSession,
+    AvailableSerial,
+    CatalogProduct,
+    CartItem,
+    Marketplace,
+    PaymentMethod,
+    ProductOption,
+    SaleForm,
+} from './types';
 const ProductScanner = lazy(() => import('@/components/widgets/product-scanner/product-scanner'));
 
 export default function PosIndex({
     products,
+    availableSerials = [],
     paymentMethods,
     marketplaces,
     timezone,
@@ -32,6 +44,7 @@ export default function PosIndex({
     terminalContext,
 }: {
     products: ProductOption[];
+    availableSerials?: AvailableSerial[];
     paymentMethods: PaymentMethod[];
     marketplaces: Marketplace[];
     timezone: string;
@@ -58,6 +71,15 @@ export default function PosIndex({
     );
     const [otherPaymentsOpen, setOtherPaymentsOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
+    const [activeAgentNumber, setActiveAgentNumber] = useState<string | null>(null);
+    const [activeAgentLabel, setActiveAgentLabel] = useState<string | null>(null);
+    const [agentModalOpen, setAgentModalOpen] = useState(false);
+    const [pendingSerialMatch, setPendingSerialMatch] = useState<{
+        serialNumber: string;
+        candidateSerials: AvailableSerial[];
+    } | null>(null);
+    const [agentInput, setAgentInput] = useState('');
+    const [agentInputError, setAgentInputError] = useState('');
     const searchRef = useRef<HTMLInputElement>(null);
     const isMobile = useIsMobile();
     const defaultPaymentMethod = paymentMethods.find((method) => method.method === 'cash') ?? paymentMethods[0];
@@ -247,6 +269,105 @@ export default function PosIndex({
         setSearchError('');
         restoreEntry();
     };
+    const addProductWithSerial = (product: ProductOption, serial: AvailableSerial) => {
+        if (available(product) <= 0) {
+            setSearchError(translate('Stock product out of stock.'));
+
+            return;
+        }
+
+        const alreadyInCart = sale.data.items.some((item) => item.serial_number_ids?.includes(serial.public_id));
+
+        if (alreadyInCart) {
+            setSearchError(translate('This serial number is already in the cart.'));
+
+            return;
+        }
+
+        const existing = sale.data.items.find((item) => item.product_id === product.product_id && item.unit_id === product.unit_id);
+
+        if (existing) {
+            const currentQty = Number(existing.quantity);
+
+            if (currentQty >= available(product)) {
+                setSearchError(translate('Stock product out of stock.'));
+
+                return;
+            }
+
+            sale.setData(
+                'items',
+                sale.data.items.map((item) =>
+                    item === existing
+                        ? {
+                              ...item,
+                              quantity: String(currentQty + 1),
+                              serial_number_ids: [...(item.serial_number_ids || []), serial.public_id],
+                              selected_serials: [...(item.selected_serials || []), serial],
+                          }
+                        : item,
+                ),
+            );
+        } else {
+            sale.setData('items', [
+                ...sale.data.items,
+                {
+                    ...product,
+                    quantity: '1',
+                    discount_amount: '0',
+                    serial_number_ids: [serial.public_id],
+                    selected_serials: [serial],
+                },
+            ]);
+        }
+
+        playScannerSuccessTone();
+        setSelectedProduct(null);
+        setSearchError('');
+        restoreEntry();
+    };
+    const confirmAgent = (agentToUse: string) => {
+        const normalizedAgent = agentToUse.trim();
+
+        if (pendingSerialMatch) {
+            const matched = pendingSerialMatch.candidateSerials.find(
+                (s) => !s.agent_number || s.agent_number.toLowerCase() === normalizedAgent.toLowerCase(),
+            );
+
+            if (!matched) {
+                setAgentInputError(translate('Serial number does not match this agent number.'));
+
+                return;
+            }
+
+            const prod = products.find((p) => p.product_id === matched.product_id);
+
+            if (!prod) {
+                setAgentInputError(translate('Product not found for this serial.'));
+
+                return;
+            }
+
+            if (normalizedAgent) {
+                setActiveAgentNumber(normalizedAgent);
+                const label = matched.agent_name ? `${matched.agent_name} (${normalizedAgent})` : normalizedAgent;
+                setActiveAgentLabel(label);
+            }
+
+            addProductWithSerial(prod, matched);
+            setAgentModalOpen(false);
+            setPendingSerialMatch(null);
+            setAgentInput('');
+            setAgentInputError('');
+        } else {
+            setActiveAgentNumber(normalizedAgent || null);
+            setActiveAgentLabel(normalizedAgent || null);
+            setAgentModalOpen(false);
+            setAgentInput('');
+            setAgentInputError('');
+            focusEntry();
+        }
+    };
     const addScannerSelections = (selections: ScannerSelection[]): ScannerApplyResult => {
         const result: ScannerApplyResult = { applied: [], failures: [] };
         const items = [...sale.data.items];
@@ -286,11 +407,39 @@ export default function PosIndex({
     const chooseProduct = (product: CatalogProduct) => {
         setSelectedProduct(product);
     };
-    const updateItem = (index: number, changes: Partial<CartItem>) =>
+    const updateItem = (index: number, changes: Partial<CartItem>) => {
+        const currentItem = sale.data.items[index];
+
+        if (!currentItem) {
+            return;
+        }
+
+        let newSerials = currentItem.selected_serials;
+        let newSerialIds = currentItem.serial_number_ids;
+
+        if (changes.quantity !== undefined && currentItem.selected_serials?.length) {
+            const targetQty = Math.floor(Number(changes.quantity));
+
+            if (targetQty < currentItem.selected_serials.length) {
+                newSerials = currentItem.selected_serials.slice(0, targetQty);
+                newSerialIds = newSerials.map((s) => s.public_id);
+            }
+        }
+
         sale.setData(
             'items',
-            sale.data.items.map((item, itemIndex) => (itemIndex === index ? { ...item, ...changes } : item)),
+            sale.data.items.map((item, itemIndex) =>
+                itemIndex === index
+                    ? {
+                          ...item,
+                          ...changes,
+                          selected_serials: newSerials,
+                          serial_number_ids: newSerialIds,
+                      }
+                    : item,
+            ),
         );
+    };
     const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key !== 'Enter') {
             return;
@@ -310,9 +459,79 @@ export default function PosIndex({
 
         if (exact && available(exact) <= 0) {
             setSearchError(translate('Stock product out of stock.'));
+
+            return;
         } else if (exact) {
             addProduct(exact);
-        } else if (visibleProducts.length === 1) {
+
+            return;
+        }
+
+        const trimmedSearch = search.trim();
+        const serialMatches = (availableSerials || []).filter(
+            (s) => s.serial_number === trimmedSearch || s.full_serial_number === trimmedSearch,
+        );
+
+        if (serialMatches.length > 0) {
+            if (activeAgentNumber) {
+                const matchedWithAgent = serialMatches.find(
+                    (s) => !s.agent_number || s.agent_number.toLowerCase() === activeAgentNumber.toLowerCase(),
+                );
+
+                if (matchedWithAgent) {
+                    const prod = products.find((p) => p.product_id === matchedWithAgent.product_id);
+
+                    if (prod) {
+                        addProductWithSerial(prod, matchedWithAgent);
+
+                        return;
+                    }
+                } else {
+                    setPendingSerialMatch({
+                        serialNumber: trimmedSearch,
+                        candidateSerials: serialMatches,
+                    });
+                    setAgentInput(serialMatches[0].agent_number || '');
+                    setAgentInputError(translate('Serial number belongs to a different agent. Choose or switch agent:'));
+                    setAgentModalOpen(true);
+
+                    return;
+                }
+            }
+
+            const exactFullMatch = serialMatches.find((s) => s.full_serial_number === trimmedSearch);
+
+            if (exactFullMatch) {
+                if (exactFullMatch.agent_number && !activeAgentNumber) {
+                    setActiveAgentNumber(exactFullMatch.agent_number);
+                    const label = exactFullMatch.agent_name
+                        ? `${exactFullMatch.agent_name} (${exactFullMatch.agent_number})`
+                        : exactFullMatch.agent_number;
+                    setActiveAgentLabel(label);
+                }
+
+                const prod = products.find((p) => p.product_id === exactFullMatch.product_id);
+
+                if (prod) {
+                    addProductWithSerial(prod, exactFullMatch);
+
+                    return;
+                }
+            }
+
+            setPendingSerialMatch({
+                serialNumber: trimmedSearch,
+                candidateSerials: serialMatches,
+            });
+            const candidateAgents = Array.from(new Set(serialMatches.map((s) => s.agent_number).filter(Boolean))) as string[];
+            setAgentInput(candidateAgents.length === 1 ? candidateAgents[0] : activeAgentNumber || '');
+            setAgentInputError('');
+            setAgentModalOpen(true);
+
+            return;
+        }
+
+        if (visibleProducts.length === 1) {
             chooseProduct(visibleProducts[0]);
         } else if (visibleProducts.length === 0) {
             setSearchError(translate('Barcode or product not found.'));
@@ -448,6 +667,18 @@ export default function PosIndex({
                         search={search}
                         searchError={searchError}
                         searchRef={searchRef}
+                        activeAgentNumber={activeAgentNumber}
+                        activeAgentLabel={activeAgentLabel}
+                        onChangeActiveAgent={() => {
+                            setAgentInput(activeAgentNumber || '');
+                            setAgentInputError('');
+                            setAgentModalOpen(true);
+                        }}
+                        onClearActiveAgent={() => {
+                            setActiveAgentNumber(null);
+                            setActiveAgentLabel(null);
+                            focusEntry();
+                        }}
                         onCategoryChange={setActiveCategory}
                         onChooseProduct={chooseProduct}
                         onDiscardScan={() => {
@@ -1081,6 +1312,119 @@ export default function PosIndex({
                         </button>
                     );
                 })}
+            </ResponsiveDialog>
+
+            <ResponsiveDialog
+                open={agentModalOpen}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setAgentModalOpen(false);
+                        setPendingSerialMatch(null);
+                        setAgentInput('');
+                        setAgentInputError('');
+                        restoreEntry();
+                    }
+                }}
+                title={translate('Verify agent number')}
+                description={
+                    pendingSerialMatch
+                        ? `${translate('Serial number')}: ${pendingSerialMatch.serialNumber}`
+                        : translate('Enter or select agent number to continue scanning.')
+                }
+                size="sm"
+                bodyClassName="space-y-4"
+                footer={
+                    <div className="grid w-full grid-cols-2 gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setAgentModalOpen(false);
+                                setPendingSerialMatch(null);
+                                setAgentInput('');
+                                setAgentInputError('');
+                                restoreEntry();
+                            }}
+                        >
+                            {translate('Cancel')}
+                        </Button>
+                        <Button type="button" onClick={() => confirmAgent(agentInput)}>
+                            {translate('Confirm & Lock Agent')}
+                        </Button>
+                    </div>
+                }
+            >
+                <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground">
+                        {translate(
+                            'This agent number will be locked as the active agent for subsequent scans so you don’t need to enter it again.',
+                        )}
+                    </p>
+
+                    {pendingSerialMatch && pendingSerialMatch.candidateSerials.length > 0 && (
+                        <div>
+                            <span className="mb-2 block text-xs font-semibold text-muted-foreground">
+                                {translate('Registered agents for this serial')}:
+                            </span>
+                            <div className="grid gap-2">
+                                {pendingSerialMatch.candidateSerials.map((s) => {
+                                    const prod = products.find((p) => p.product_id === s.product_id);
+                                    const displayLabel = s.agent_name
+                                        ? `${s.agent_name} (${s.agent_number})`
+                                        : s.agent_number || translate('No agent number');
+
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={s.public_id}
+                                            onClick={() => {
+                                                setAgentInput(s.agent_number ?? '');
+                                                confirmAgent(s.agent_number ?? '');
+                                            }}
+                                            className="flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 p-3 text-left transition hover:bg-primary/10"
+                                        >
+                                            <div>
+                                                <div className="text-xs font-bold text-foreground">{displayLabel}</div>
+                                                {prod && (
+                                                    <div className="text-[11px] text-muted-foreground">
+                                                        {prod.catalog_product_name || prod.variant_name}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">
+                                                {translate('Select')}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-1">
+                        <Label htmlFor="agent-number-input" className="text-xs font-semibold text-foreground">
+                            {translate('Agent number')}
+                        </Label>
+                        <Input
+                            id="agent-number-input"
+                            autoFocus
+                            value={agentInput}
+                            onChange={(e) => {
+                                setAgentInput(e.target.value);
+                                setAgentInputError('');
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    confirmAgent(agentInput);
+                                }
+                            }}
+                            placeholder={translate('Example: AG88812345')}
+                            className="h-11 bg-card font-mono"
+                        />
+                        {agentInputError && <p className="text-xs font-semibold text-destructive">{agentInputError}</p>}
+                    </div>
+                </div>
             </ResponsiveDialog>
         </>
     );

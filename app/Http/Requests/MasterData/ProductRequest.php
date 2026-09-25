@@ -35,6 +35,12 @@ class ProductRequest extends MasterDataRequest
             'retail_unit_public_id' => ['required', Rule::exists('units', 'public_id')->where($unitReference)],
             'large_unit_public_id' => ['required_if:variant_mode,shared', 'nullable', Rule::exists('units', 'public_id')->where($unitReference)],
             'quantity_mode' => ['sometimes', 'required', Rule::in(['fixed', 'variable'])],
+            'tracking_mode' => ['sometimes', 'required', Rule::in(['standard', 'serial'])],
+            'serial_agent_number' => ['nullable', 'string', 'max:80'],
+            'serial_agent_name' => ['nullable', 'string', 'max:120'],
+            'serial_agent_position' => ['sometimes', 'nullable', Rule::in(['prefix', 'suffix', 'none'])],
+            'serial_range_start' => ['nullable', 'string', 'max:50'],
+            'serial_range_end' => ['nullable', 'string', 'max:50'],
             'variant_mode' => ['required', Rule::enum(ProductVariantMode::class)],
             'sku' => ['nullable', 'string', 'max:80'],
             'barcode' => ['nullable', 'string', 'max:120'],
@@ -65,6 +71,7 @@ class ProductRequest extends MasterDataRequest
     {
         return [function (Validator $validator): void {
             $this->validateCodes($validator);
+            $this->validateSerialRange($validator);
 
             $types = Unit::query()->where('store_id', app(CurrentStore::class)->id())
                 ->whereIn('public_id', array_filter([$this->input('retail_unit_public_id'), $this->input('large_unit_public_id')]))
@@ -78,6 +85,54 @@ class ProductRequest extends MasterDataRequest
                 $validator->errors()->add('large_unit_public_id', __('Select a unit from the wholesale group.'));
             }
         }];
+    }
+
+    private function validateSerialRange(Validator $validator): void
+    {
+        if ($this->input('tracking_mode') !== 'serial') {
+            return;
+        }
+
+        $start = $this->input('serial_range_start');
+        $end = $this->input('serial_range_end');
+
+        if (blank($start) && filled($end)) {
+            $validator->errors()->add('serial_range_start', __('Start serial number is required when specifying end serial number.'));
+
+            return;
+        }
+
+        if (filled($start) && filled($end)) {
+            $start = trim((string) $start);
+            $end = trim((string) $end);
+
+            if (! preg_match('/^(.*?)(\d+)$/', $start, $sm) || ! preg_match('/^(.*?)(\d+)$/', $end, $em)) {
+                $validator->errors()->add('serial_range_start', __('Serial numbers must end with numeric digits.'));
+
+                return;
+            }
+
+            if ($sm[1] !== $em[1]) {
+                $validator->errors()->add('serial_range_end', __('Serial number prefix must match.'));
+
+                return;
+            }
+
+            $numStart = (int) $sm[2];
+            $numEnd = (int) $em[2];
+
+            if ($numStart > $numEnd) {
+                $validator->errors()->add('serial_range_end', __('End serial number must be greater than or equal to start serial number.'));
+
+                return;
+            }
+
+            if (($numEnd - $numStart + 1) > 1000) {
+                $validator->errors()->add('serial_range_end', __('Maximum batch generation is 1,000 serial numbers.'));
+
+                return;
+            }
+        }
     }
 
     private function validateCodes(Validator $validator): void

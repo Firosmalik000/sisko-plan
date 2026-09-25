@@ -17,6 +17,17 @@ export type ProductOption = {
     stock_quantity: string;
     minimum_quantity: string;
     is_base_unit: boolean | number;
+    tracking_mode?: 'standard' | 'serial';
+};
+
+export type AvailableSerial = {
+    public_id: string;
+    product_id: string;
+    agent_number: string | null;
+    agent_name: string | null;
+    agent_position: 'prefix' | 'suffix' | 'none';
+    serial_number: string;
+    full_serial_number: string | null;
 };
 
 export type CatalogProduct = {
@@ -45,6 +56,8 @@ export type Marketplace = {
 export type CartItem = ProductOption & {
     quantity: string;
     discount_amount: string;
+    serial_number_ids?: string[];
+    selected_serials?: AvailableSerial[];
 };
 
 export type SaleForm = {

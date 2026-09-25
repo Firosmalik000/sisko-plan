@@ -1317,6 +1317,8 @@ class SalesPosTest extends TestCase
             ->assertJsonPath('currency_format.decimal_places', 0)
             ->assertJsonPath('currency_format.symbol_position', 'before')
             ->assertJsonPath('receipt.store_name', $store->name)
+            ->assertJsonPath('receipt.show_logo', true)
+            ->assertJsonPath('receipt.logo_url', null)
             ->assertJsonPath('sale.document_number', $sale->document_number)
             ->assertJsonPath('sale.sales_channel', 'in_store')
             ->assertJsonPath('sale.marketplace_label', null)
@@ -1354,6 +1356,8 @@ class SalesPosTest extends TestCase
         $store->settings()->update([
             'receipt_header' => 'My Store Receipt',
             'receipt_footer' => 'Custom footer',
+            'receipt_show_logo' => true,
+            'logo_path' => 'store-logos/dummy.png',
         ]);
 
         $this->actingAs($owner)
@@ -1361,7 +1365,9 @@ class SalesPosTest extends TestCase
             ->get(route('sales.show', $sale))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('receipt.header', 'My Store Receipt')
-                ->where('receipt.footer', 'Custom footer'));
+                ->where('receipt.footer', 'Custom footer')
+                ->where('receipt.show_logo', true)
+                ->where('receipt.logo_url', route('stores.logo', $store)));
     }
 
     public function test_sale_documents_are_immutable_and_non_cash_overpayment_is_rejected(): void

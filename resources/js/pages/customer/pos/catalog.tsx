@@ -16,6 +16,10 @@ type PosCatalogProps = {
     search: string;
     searchError: string;
     searchRef: RefObject<HTMLInputElement | null>;
+    activeAgentNumber?: string | null;
+    activeAgentLabel?: string | null;
+    onChangeActiveAgent?: () => void;
+    onClearActiveAgent?: () => void;
     onCategoryChange: (category: string) => void;
     onChooseProduct: (product: CatalogProduct) => void;
     onDiscardScan: () => void;
@@ -37,6 +41,10 @@ export function PosCatalog({
     search,
     searchError,
     searchRef,
+    activeAgentNumber,
+    activeAgentLabel,
+    onChangeActiveAgent,
+    onClearActiveAgent,
     onCategoryChange,
     onChooseProduct,
     onDiscardScan,
@@ -48,6 +56,33 @@ export function PosCatalog({
     return (
         <section className="min-w-0 space-y-4">
             <section className="sticky top-[calc(4.75rem+env(safe-area-inset-top))] z-20 rounded-2xl bg-card p-3 text-card-foreground sm:static sm:p-4">
+                {activeAgentNumber && (
+                    <div className="mb-3 flex items-center justify-between rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary">
+                        <div className="flex items-center gap-2">
+                            <span className="size-2 animate-pulse rounded-full bg-primary" />
+                            <span>
+                                {translate('Active Agent')}:{' '}
+                                <strong className="font-mono text-sm">{activeAgentLabel ?? activeAgentNumber}</strong>
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                onClick={onChangeActiveAgent}
+                                className="rounded-lg px-2 py-1 text-xs text-primary underline transition hover:bg-primary/20"
+                            >
+                                {translate('Change agent')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onClearActiveAgent}
+                                className="rounded-lg px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted"
+                            >
+                                {translate('Clear')}
+                            </button>
+                        </div>
+                    </div>
+                )}
                 {scannerCount > 0 && (
                     <div className="flex flex-wrap gap-2">
                         <Button type="button" size="touch" variant="outline" onClick={onReviewScan}>

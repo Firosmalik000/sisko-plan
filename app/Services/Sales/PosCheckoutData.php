@@ -6,6 +6,7 @@ use App\Enums\FinancialAccountType;
 use App\Models\BusinessMembership;
 use App\Models\FinancialAccount;
 use App\Models\PaymentMethod;
+use App\Models\ProductSerialNumber;
 use App\Models\ProductUnit;
 use App\Models\Register;
 use App\Models\RegisterSession;
@@ -44,6 +45,7 @@ class PosCheckoutData
                 'product_units.sku', 'product_units.barcode',
                 'units.public_id as unit_id', 'units.name as unit_name', 'units.symbol as unit_symbol',
                 'product_units.conversion_factor', 'product_units.selling_price',
+                DB::raw("COALESCE(products.tracking_mode, 'standard') as tracking_mode"),
                 DB::raw('CASE WHEN product_units.unit_id = products.base_unit_id THEN 1 ELSE 0 END as is_base_unit'),
                 DB::raw('COALESCE(inventory_balances.quantity, 0) as stock_quantity'),
                 DB::raw('COALESCE(inventory_balances.minimum_quantity, 0) as minimum_quantity'),
@@ -60,6 +62,21 @@ class PosCheckoutData
                     ]) : null,
                 ];
             });
+        $availableSerials = ProductSerialNumber::query()
+            ->where('product_serial_numbers.store_id', $store->id)
+            ->where('product_serial_numbers.status', 'available')
+            ->join('products', 'products.id', '=', 'product_serial_numbers.product_id')
+            ->leftJoin('product_variants', 'product_variants.id', '=', 'product_serial_numbers.product_variant_id')
+            ->where('products.is_active', true)
+            ->get([
+                'product_serial_numbers.public_id',
+                DB::raw('COALESCE(product_variants.public_id, products.public_id) as product_id'),
+                'product_serial_numbers.agent_number',
+                'product_serial_numbers.agent_name',
+                'product_serial_numbers.agent_position',
+                'product_serial_numbers.serial_number',
+                'product_serial_numbers.full_serial_number',
+            ]);
         $activeAccounts = FinancialAccount::query()->where(['store_id' => $store->id, 'is_active' => true])->whereNull('marketplace_code');
         $cash = (clone $activeAccounts)->where('type', FinancialAccountType::Cash->value)->orderBy('name')->first(['id', 'public_id', 'name']);
         $qrPayment = PaymentMethodCatalog::qrForCountry($store->country?->code);
@@ -78,6 +95,7 @@ class PosCheckoutData
 
         return [
             'products' => $products,
+            'availableSerials' => $availableSerials,
             'paymentMethods' => collect([
                 $cash ? ['method' => 'cash', 'label' => __('Cash'), 'account_id' => $cash->public_id, 'brand' => 'cash'] : null,
                 $qrAccount ? ['method' => $qrPayment['method'], 'label' => $qrPayment['label'], 'account_id' => $qrAccount->public_id, 'brand' => $qrPayment['code']] : null,

@@ -8,6 +8,7 @@ use App\Enums\ProductVariantMode;
 use App\Models\Category;
 use App\Models\InventoryBalance;
 use App\Models\Product;
+use App\Models\ProductSerialNumber;
 use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\Unit;
@@ -86,6 +87,7 @@ class SaveProduct
                     'large_unit_id' => $largeUnitId,
                     'variant_mode' => $mode->value,
                     'quantity_mode' => $data['quantity_mode'] ?? ($locked === null ? 'variable' : $locked->quantity_mode),
+                    'tracking_mode' => $data['tracking_mode'] ?? ($locked === null ? 'standard' : $locked->tracking_mode),
                     'name' => $data['name'],
                     'description' => filled($data['description'] ?? null) ? $data['description'] : null,
                     'photo_path' => $photoPath,
@@ -120,7 +122,14 @@ class SaveProduct
                         'selling_price' => $data['selling_price'],
                         'is_active' => true,
                     ]);
-                    $this->setStock($store, $actor, $locked, null, $data['current_stock'], $data['minimum_stock'], $data['purchase_price']);
+                    $targetStock = $data['current_stock'];
+                    if (($productData['tracking_mode'] ?? 'standard') === 'serial') {
+                        $availableSerials = $this->syncSerialNumbers($store, $locked, $data);
+                        if (filled($data['serial_range_start'] ?? null)) {
+                            $targetStock = (string) $availableSerials;
+                        }
+                    }
+                    $this->setStock($store, $actor, $locked, null, $targetStock, $data['minimum_stock'], $data['purchase_price']);
                 } else {
                     foreach ($data['variants'] as $variant) {
                         $child = $this->saveVariant($store, $locked, $variant, $mode, $retailUnitId, $largeUnitId, $newVariantPhotoPaths);
@@ -286,5 +295,104 @@ class SaveProduct
             );
         }
         $balance->update(['minimum_quantity' => $minimum]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function syncSerialNumbers(Store $store, Product $product, array $data): int
+    {
+        $start = trim((string) ($data['serial_range_start'] ?? ''));
+        $end = trim((string) ($data['serial_range_end'] ?? ''));
+        $agentNumber = filled($data['serial_agent_number'] ?? null) ? trim((string) $data['serial_agent_number']) : null;
+        $agentName = filled($data['serial_agent_name'] ?? null) ? trim((string) $data['serial_agent_name']) : null;
+        $agentPosition = in_array($data['serial_agent_position'] ?? '', ['prefix', 'suffix', 'none'], true) ? $data['serial_agent_position'] : 'prefix';
+
+        if ($start === '') {
+            return $product->serialNumbers()->where('status', 'available')->count();
+        }
+
+        // Single item serial number when end is empty
+        if ($end === '') {
+            $fullSerial = ProductSerialNumber::formatFullSerial($agentNumber, $start, $agentPosition);
+
+            $exists = ProductSerialNumber::query()
+                ->where('store_id', $store->id)
+                ->where('product_id', $product->id)
+                ->where('serial_number', $start)
+                ->when($agentNumber !== null, fn ($q) => $q->where('agent_number', $agentNumber))
+                ->exists();
+
+            if (! $exists) {
+                ProductSerialNumber::create([
+                    'store_id' => $store->id,
+                    'product_id' => $product->id,
+                    'product_variant_id' => null,
+                    'agent_number' => $agentNumber,
+                    'agent_name' => $agentName,
+                    'agent_position' => $agentPosition,
+                    'serial_number' => $start,
+                    'full_serial_number' => $fullSerial,
+                    'status' => 'available',
+                ]);
+            }
+
+            return $product->serialNumbers()->where('status', 'available')->count();
+        }
+
+        if (! preg_match('/^(.*?)(\d+)$/', $start, $startMatch) || ! preg_match('/^(.*?)(\d+)$/', $end, $endMatch)) {
+            return $product->serialNumbers()->where('status', 'available')->count();
+        }
+
+        $prefix = $startMatch[1];
+        if ($prefix !== $endMatch[1]) {
+            return $product->serialNumbers()->where('status', 'available')->count();
+        }
+
+        $numStart = (int) $startMatch[2];
+        $numEnd = (int) $endMatch[2];
+        $padding = max(strlen($startMatch[2]), strlen($endMatch[2]));
+
+        if ($numStart > $numEnd || ($numEnd - $numStart + 1) > 1000) {
+            return $product->serialNumbers()->where('status', 'available')->count();
+        }
+
+        $records = [];
+        $now = now();
+
+        for ($i = $numStart; $i <= $numEnd; $i++) {
+            $serial = $prefix.str_pad((string) $i, $padding, '0', STR_PAD_LEFT);
+            $fullSerial = ProductSerialNumber::formatFullSerial($agentNumber, $serial, $agentPosition);
+
+            $exists = ProductSerialNumber::query()
+                ->where('store_id', $store->id)
+                ->where('product_id', $product->id)
+                ->where('serial_number', $serial)
+                ->when($agentNumber !== null, fn ($q) => $q->where('agent_number', $agentNumber))
+                ->exists();
+
+            if (! $exists) {
+                $records[] = [
+                    'public_id' => (string) Str::ulid(),
+                    'store_id' => $store->id,
+                    'product_id' => $product->id,
+                    'product_variant_id' => null,
+                    'agent_number' => $agentNumber,
+                    'agent_name' => $agentName,
+                    'agent_position' => $agentPosition,
+                    'serial_number' => $serial,
+                    'full_serial_number' => $fullSerial,
+                    'status' => 'available',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        if (! empty($records)) {
+            ProductSerialNumber::insert($records);
+        }
+
+        return $product->serialNumbers()->where('status', 'available')->count();
     }
 }

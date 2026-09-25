@@ -79,6 +79,11 @@ export function ProductRow({
                 <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-2">
                         <h2 className="truncate font-bold text-foreground">{product.name}</h2>
+                        {product.tracking_mode === 'serial' && (
+                            <Badge variant="secondary" className="border-primary/20 bg-primary/10 text-primary">
+                                {translate('Serial / SIM Card')}
+                            </Badge>
+                        )}
                         {!product.is_active && <Badge variant="outline">{translate('Inactive')}</Badge>}
                         {lowStock && <Badge variant="destructive">{translate('Critical')}</Badge>}
                     </div>
