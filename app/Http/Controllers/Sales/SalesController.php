@@ -310,10 +310,10 @@ class SalesController extends Controller
             'timezone' => $storeSettings->timezone ?? 'Asia/Jakarta',
             'receipt' => [
                 'store_name' => $store->name,
-                'logo_url' => ($storeSettings?->receipt_show_logo ?? true) && $storeSettings?->logo_path
+                'logo_url' => ($storeSettings->receipt_show_logo ?? true) && $storeSettings?->logo_path
                     ? route('stores.logo', $store)
                     : null,
-                'show_logo' => $storeSettings?->receipt_show_logo ?? true,
+                'show_logo' => $storeSettings->receipt_show_logo ?? true,
                 'address' => $storeSettings?->address,
                 'header' => $storeSettings->receipt_header ?? __('Sales receipt'),
                 'footer' => $storeSettings->receipt_footer ?? __('Thank you. Keep this receipt as a reference for returns.'),

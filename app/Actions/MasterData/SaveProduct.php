@@ -123,7 +123,7 @@ class SaveProduct
                         'is_active' => true,
                     ]);
                     $targetStock = $data['current_stock'];
-                    if (($productData['tracking_mode'] ?? 'standard') === 'serial') {
+                    if ($productData['tracking_mode'] === 'serial') {
                         $availableSerials = $this->syncSerialNumbers($store, $locked, $data);
                         if (filled($data['serial_range_start'] ?? null)) {
                             $targetStock = (string) $availableSerials;

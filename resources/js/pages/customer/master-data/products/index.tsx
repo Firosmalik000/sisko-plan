@@ -978,7 +978,8 @@ export default function ProductsIndex({
                                         const activeItem = categories.find((item) => item.public_id === category);
 
                                         return activeItem ? referenceLabel(activeItem, 'categories', translate) : translate('Category');
-                                    })()} ×
+                                    })()}{' '}
+                                    ×
                                 </button>
                             )}
                             {status && (

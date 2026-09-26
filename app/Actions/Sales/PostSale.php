@@ -38,7 +38,7 @@ class PostSale
 {
     public function __construct(private NextDocumentNumber $numbers, private ApplyStockMovement $stock, private ApplyCashTransaction $cash, private SaleCalculator $calculator, private RecordAudit $audit, private IdempotencyGuard $idempotency, private LedgerTimestamp $timestamps, private UpsertSaleCustomer $customers) {}
 
-    /** @param array<int, array{product_unit_id:int, quantity:string, item_discount:string}> $items */
+    /** @param array<int, array{product_unit_id:int, quantity:string, item_discount:string, serial_number_ids?:list<string>}> $items */
     public function handle(Store $store, BusinessMembership|User $actor, int $accountId, array $items, string $transactionDiscount, string $paidAmount, string $occurredAt, ?string $notes, string $idempotencyKey, ?string $ipAddress = null, ?UploadedFile $paymentProof = null, ?string $customerName = null, ?string $customerPhone = null, ?string $customerEmail = null, string $salesChannel = 'in_store', ?string $paymentMethod = null, ?string $marketplaceCode = null, ?string $externalOrderNumber = null, bool $alignWithLatestLedger = false, ?RegisterSession $registerSession = null, ?PosDevice $device = null, bool $requireRegisterSession = false): Sale
     {
         $actor = BusinessMembership::operational($store, $actor);
@@ -116,7 +116,7 @@ class PostSale
                     if ($productUnit->product->quantity_mode === 'fixed' && Decimal::compare($item['quantity'], Decimal::add($item['quantity'], '0', 0), Decimal::QUANTITY_SCALE) !== 0) {
                         throw ValidationException::withMessages(['items' => __('Fixed quantity products require whole quantities.')]);
                     }
-                    $serialIds = array_values(array_filter($item['serial_number_ids'] ?? [], fn ($id) => is_string($id) && $id !== ''));
+                    $serialIds = array_values(array_filter($item['serial_number_ids'] ?? [], fn (string $id) => $id !== ''));
                     if (! empty($serialIds)) {
                         $availableCount = ProductSerialNumber::query()
                             ->where('store_id', $store->id)

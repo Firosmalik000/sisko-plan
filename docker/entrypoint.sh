@@ -34,7 +34,7 @@ run_as_app php artisan optimize:clear --no-interaction || true
 
 if [ "$role" = "web" ] && [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     echo "Running database migrations..."
-    run_as_app php artisan migrate --force --no-interaction || echo "Migration notice: continuing startup..."
+    run_as_app php artisan migrate --isolated --force --no-interaction || echo "Migration notice: continuing startup..."
 fi
 
 run_as_app php artisan optimize --no-interaction || true

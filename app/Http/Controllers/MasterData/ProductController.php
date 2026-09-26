@@ -194,7 +194,7 @@ class ProductController extends Controller
             'tracking_mode' => $product->tracking_mode ?? 'standard',
             'serial_agent_number' => $latestSerial?->agent_number,
             'serial_agent_name' => $latestSerial?->agent_name,
-            'serial_agent_position' => $latestSerial?->agent_position ?? 'prefix',
+            'serial_agent_position' => $latestSerial->agent_position ?? 'prefix',
             'serial_numbers' => $serials->sortBy('serial_number')->values()->map(fn (ProductSerialNumber $s) => [
                 'public_id' => $s->public_id,
                 'serial_number' => $s->serial_number,
