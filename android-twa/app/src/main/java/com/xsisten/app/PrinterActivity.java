@@ -398,7 +398,7 @@ public final class PrinterActivity extends Activity {
     private boolean validPayloadUrl(String value) {
         try {
             URL url = new URL(value);
-            return "https".equals(url.getProtocol()) && "xsisten.com".equals(url.getHost()) && url.getPath().startsWith("/native-print/sales/");
+            return "https".equals(url.getProtocol()) && ("xbayar.com".equals(url.getHost()) || "xsisten.com".equals(url.getHost())) && url.getPath().startsWith("/native-print/sales/");
         } catch (Exception exception) {
             return false;
         }

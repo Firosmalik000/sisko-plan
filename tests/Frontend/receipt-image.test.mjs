@@ -103,7 +103,7 @@ test('drawReceiptToContext measures total height without context', () => {
     const brandPrefixCalls = calls.filter((c) => c.text === 'Powered by ');
     assert.equal(brandPrefixCalls.length, 1);
 
-    const brandSuffixCalls = calls.filter((c) => c.text === ' XSISTEN · xsisten.com');
+    const brandSuffixCalls = calls.filter((c) => c.text === ' XSISTEN · xbayar.com');
     assert.equal(brandSuffixCalls.length, 1);
 });
 

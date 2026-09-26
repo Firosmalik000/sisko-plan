@@ -1,6 +1,6 @@
 {
   "packageId": "com.xsisten.app",
-  "host": "xsisten.com",
+  "host": "xbayar.com",
   "name": "XSISTEN",
   "launcherName": "XSISTEN",
   "display": "standalone",
@@ -13,8 +13,8 @@
   "backgroundColor": "#FFF8F5",
   "enableNotifications": false,
   "startUrl": "/dashboard",
-  "iconUrl": "https://xsisten.com/icons/icon-512.png",
-  "maskableIconUrl": "https://xsisten.com/icons/icon-maskable-512.png",
+  "iconUrl": "https://xbayar.com/icons/icon-512.png",
+  "maskableIconUrl": "https://xbayar.com/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "xsisten-upload.keystore",
@@ -24,7 +24,7 @@
   "appVersionCode": 4,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://xsisten.com/manifest.webmanifest",
+  "webManifestUrl": "https://xbayar.com/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -33,7 +33,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://xsisten.com/",
+  "fullScopeUrl": "https://xbayar.com/",
   "minSdkVersion": 21,
   "orientation": "default",
   "fingerprints": [],

@@ -106,7 +106,7 @@ public final class ReceiptBitmapEncoder {
         lines.add(new ReceiptLine("", null, false, false, false));
         addWrapped(lines, receipt.footer, paint, availableWidth, true, false);
         lines.add(new ReceiptLine("", null, false, false, false));
-        addWrapped(lines, "Powered by XSISTEN · xsisten.com", paint, availableWidth, true, false);
+        addWrapped(lines, "Powered by XSISTEN · xbayar.com", paint, availableWidth, true, false);
         return lines;
     }
 

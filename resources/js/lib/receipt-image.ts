@@ -486,7 +486,7 @@ export function drawReceiptToContext(
     y += 18;
 
     const brandPrefix = `${t('Powered by')} `;
-    const brandSuffix = ' XSISTEN · xsisten.com';
+    const brandSuffix = ' XSISTEN · xbayar.com';
     const brandFont = `11px ${fontFamily}`;
     const brandBoldFont = `bold 11px ${fontFamily}`;
 

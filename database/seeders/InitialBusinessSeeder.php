@@ -74,7 +74,7 @@ class InitialBusinessSeeder extends Seeder
                     ],
                     'members' => [
                         ['public_id' => '01J00000000000000000000OID', 'name' => 'Owner Indonesia', 'email' => 'test@example.com', 'role' => 'owner', 'password' => 'Local-XBoss-Owner-2026!'],
-                        ['public_id' => '01J00000000000000000000AID', 'name' => 'Genta', 'email' => 'genta@xsisten.com', 'role' => 'admin', 'password' => 'Local-XBoss-Admin-2026!'],
+                        ['public_id' => '01J00000000000000000000AID', 'name' => 'Genta', 'email' => 'genta@xbayar.com', 'role' => 'admin', 'password' => 'Local-XBoss-Admin-2026!'],
                         ['public_id' => '01J00000000000000000000MID', 'name' => 'Manager Indonesia', 'email' => 'manager.id@example.test', 'role' => 'manager', 'password' => 'Local-XBoss-Manager-2026!', 'pin' => '482951'],
                         ['public_id' => '01J00000000000000000000CID', 'name' => 'Cashier Indonesia', 'email' => 'cashier.id@example.test', 'role' => 'cashier', 'status' => 'suspended', 'password' => 'Local-XBoss-Cashier-2026!', 'pin' => '593074'],
                     ],

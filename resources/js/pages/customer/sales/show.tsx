@@ -390,7 +390,7 @@ export default function SaleShow({
                             <p className="mt-7 text-center text-xs text-muted-foreground">{receipt.footer}</p>
                             <div className="mt-4 border-t border-dashed border-border/80 pt-3 text-center">
                                 <a
-                                    href="https://xsisten.com"
+                                    href="https://xbayar.com"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground print:text-foreground print:no-underline"
