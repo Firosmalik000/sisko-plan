@@ -16,9 +16,12 @@ const moreDestinations: ReadonlyMap<string, string> = new Map([
     ['/settings/security', 'Security'],
     ['/settings/appearance', 'Appearance'],
     ['/referral', 'Referrals & Commissions'],
+    ['/team', 'Staff & checkout'],
+    ['/registers', 'Staff & checkout'],
+    ['/team/activity', 'Staff & checkout'],
 ] as const);
 
-export type CustomerParentDestination = 'more' | 'sales' | 'stockCounts' | 'stores';
+export type CustomerParentDestination = 'more' | 'sales' | 'stockCounts' | 'stores' | 'team';
 
 export function customerPageParent(pathname: string): { destination: CustomerParentDestination; label: string; title: string } | null {
     const title = moreDestinations.get(pathname);
@@ -45,6 +48,10 @@ export function customerPageParent(pathname: string): { destination: CustomerPar
 
     if (/^\/stores\/[^/]+$/.test(pathname)) {
         return { destination: 'stores', label: 'Stores & team', title: 'Store details' };
+    }
+
+    if (/^\/team\/[^/]+$/.test(pathname)) {
+        return { destination: 'team', label: 'Staff & checkout', title: 'Staff' };
     }
 
     return null;

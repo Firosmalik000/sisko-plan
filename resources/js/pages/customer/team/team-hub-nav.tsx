@@ -5,9 +5,15 @@ import { cn } from '@/lib/utils';
 import registersRoutes from '@/routes/registers';
 import teamRoutes from '@/routes/team';
 
-type TeamHubSection = 'staff' | 'devices' | 'registers' | 'activity';
+export type TeamHubSection = 'staff' | 'devices' | 'registers' | 'activity';
 
-export function TeamHubNav({ active }: { active: TeamHubSection }) {
+export function TeamHubNav({
+    active,
+    onSectionChange,
+}: {
+    active: TeamHubSection;
+    onSectionChange?: (section: 'staff' | 'devices') => void;
+}) {
     const { t } = useTranslation();
     const items = [
         { key: 'staff', label: t('Staff'), href: teamRoutes.index.url(), icon: UsersRound },
@@ -29,6 +35,11 @@ export function TeamHubNav({ active }: { active: TeamHubSection }) {
                         <Link
                             key={item.key}
                             href={item.href}
+                            onClick={() => {
+                                if (item.key === 'staff' || item.key === 'devices') {
+                                    onSectionChange?.(item.key);
+                                }
+                            }}
                             aria-current={active === item.key ? 'page' : undefined}
                             className={cn(
                                 'flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',

@@ -47,12 +47,14 @@ import salesRoutes from '@/routes/sales';
 import { edit as editSecurity } from '@/routes/security';
 import storesRoutes from '@/routes/stores';
 import subscriptionRoutes from '@/routes/subscription';
+import teamRoutes from '@/routes/team';
 
 const parentDestinationHrefs: Record<CustomerParentDestination, string> = {
     more: moreRoute.url(),
     sales: salesRoutes.index.url(),
     stockCounts: stockOpnameRoutes.index.url(),
     stores: storesRoutes.index.url(),
+    team: teamRoutes.index.url(),
 };
 
 export function CustomerHeader() {

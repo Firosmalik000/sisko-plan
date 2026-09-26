@@ -25,7 +25,12 @@ export default function TeamShow({
     const { t } = useTranslation();
 
     return (
-        <AppPage title={member.display_name} description={t('Staff access and operational history.')} icon={UserRound} headerSurface>
+        <AppPage
+            title={member.display_name}
+            back={{ href: teamRoutes.index.url(), label: t('Staff & checkout') }}
+            icon={UserRound}
+            headerSurface
+        >
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.55fr)]">
                 <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
                     <h2 className="flex items-center gap-2 font-bold">

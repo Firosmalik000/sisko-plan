@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { MonitorDot, Plus } from 'lucide-react';
+import { CreditCard, MonitorDot, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { FormInput, FormSelect } from '@/components/forms';
 import { ResponsiveDialog } from '@/components/overlays';
@@ -28,7 +28,6 @@ export default function RegistersIndex({ registers, cashAccounts }: { registers:
     return (
         <AppPage
             title={t('Staff & checkout')}
-            description={t('Manage staff access, store assignments, and cashier devices.')}
             icon={MonitorDot}
             headerSurface
             actions={
@@ -43,24 +42,23 @@ export default function RegistersIndex({ registers, cashAccounts }: { registers:
                     <h2 id="registers-heading" className="font-bold">
                         {t('Registers')}
                     </h2>
-                    <p className="text-sm text-muted-foreground">{t('Connect each checkout counter to one cash account.')}</p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {registers.map((register) => (
                         <article key={register.public_id} className="rounded-2xl border border-border bg-card p-4">
                             <div className="flex items-start justify-between gap-3">
-                                <h2 className="font-bold">{register.name}</h2>
+                                <h3 className="font-bold">{register.name}</h3>
                                 <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold">{t(register.status)}</span>
                             </div>
-                            <p className="mt-3 text-sm text-muted-foreground">{register.cash_account.name}</p>
+                            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                                <CreditCard className="size-4 shrink-0 text-primary" />
+                                <span className="truncate">{register.cash_account.name}</span>
+                            </div>
                         </article>
                     ))}
                     {registers.length === 0 && (
-                        <div className="rounded-2xl border border-dashed p-6 sm:col-span-2">
+                        <div className="rounded-2xl border border-dashed p-6 text-center sm:col-span-2 xl:col-span-3">
                             <p className="font-semibold">{t('No register configured yet.')}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                {t('Registers are optional until you activate a shared cashier device.')}
-                            </p>
                             <Button className="mt-4" variant="outline" onClick={() => setOpen(true)} disabled={cashAccounts.length === 0}>
                                 <Plus className="size-4" /> {t('Create first register')}
                             </Button>
@@ -68,14 +66,7 @@ export default function RegistersIndex({ registers, cashAccounts }: { registers:
                     )}
                 </div>
             </section>
-            <ResponsiveDialog
-                open={open}
-                onOpenChange={setOpen}
-                title={t('Add register')}
-                description={t('Choose the cash account used by this counter.')}
-                size="sm"
-                bodyClassName="space-y-4"
-            >
+            <ResponsiveDialog open={open} onOpenChange={setOpen} title={t('Add register')} size="sm" bodyClassName="space-y-4">
                 <FormInput
                     id="register-name"
                     name="name"

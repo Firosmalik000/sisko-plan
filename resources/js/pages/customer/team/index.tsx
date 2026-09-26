@@ -1,11 +1,12 @@
 import { Link, router, useForm } from '@inertiajs/react';
 import { KeyRound, MonitorSmartphone, Plus, UsersRound } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FormInput, FormSelect } from '@/components/forms';
 import { ResponsiveDialog } from '@/components/overlays';
 import { AppPage } from '@/components/page/app-page';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 import businessesRoutes from '@/routes/businesses';
 import posDevicesRoutes from '@/routes/pos-devices';
 import teamRoutes from '@/routes/team';
@@ -45,6 +46,40 @@ export default function TeamIndex({
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [deviceOpen, setDeviceOpen] = useState(false);
+    const [activeSection, setActiveSection] = useState<'staff' | 'devices'>('staff');
+
+    useEffect(() => {
+        const updateFromHash = () => {
+            if (typeof window !== 'undefined' && window.location.hash === '#cashier-devices') {
+                setActiveSection('devices');
+            } else {
+                setActiveSection('staff');
+            }
+        };
+        updateFromHash();
+        window.addEventListener('hashchange', updateFromHash);
+
+        return () => window.removeEventListener('hashchange', updateFromHash);
+    }, []);
+
+    const handleSectionChange = (section: 'staff' | 'devices') => {
+        setActiveSection(section);
+
+        if (section === 'devices') {
+            if (window.location.hash !== '#cashier-devices') {
+                window.location.hash = '#cashier-devices';
+            }
+
+            document.getElementById('cashier-devices')?.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            if (window.location.hash) {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
     const form = useForm({
         display_name: '',
         role: 'cashier',
@@ -71,29 +106,23 @@ export default function TeamIndex({
     return (
         <AppPage
             title={t('Staff & checkout')}
-            description={t('Manage staff access, store assignments, and cashier devices.')}
             icon={UsersRound}
             headerSurface
             actions={
-                <>
-                    {canManage && (
-                        <Button onClick={() => setOpen(true)}>
-                            <Plus className="size-4" /> {t('Add staff')}
-                        </Button>
-                    )}
-                </>
+                canManage && (
+                    <Button onClick={() => (activeSection === 'devices' ? setDeviceOpen(true) : setOpen(true))}>
+                        <Plus className="size-4" /> {activeSection === 'devices' ? t('Activate device') : t('Add staff')}
+                    </Button>
+                )
             }
         >
-            <TeamHubNav active="staff" />
+            <TeamHubNav active={activeSection} onSectionChange={handleSectionChange} />
 
-            <section aria-labelledby="staff-heading">
-                <div className="mb-3 flex items-end justify-between gap-3">
-                    <div>
-                        <h2 id="staff-heading" className="font-bold">
-                            {t('Staff')}
-                        </h2>
-                        <p className="text-sm text-muted-foreground">{t('Staff access and operational history.')}</p>
-                    </div>
+            <section id="staff-section" aria-labelledby="staff-heading">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                    <h2 id="staff-heading" className="font-bold">
+                        {t('Staff')}
+                    </h2>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {members.map((member) => (
@@ -116,11 +145,8 @@ export default function TeamIndex({
                         </Link>
                     ))}
                     {members.length === 0 && (
-                        <div className="rounded-2xl border border-dashed p-6 sm:col-span-2">
+                        <div className="rounded-2xl border border-dashed p-6 text-center sm:col-span-2 xl:col-span-3">
                             <p className="font-semibold">{t('No staff yet.')}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                {t('Add a cashier or manager when you are ready to share access.')}
-                            </p>
                             {canManage && (
                                 <Button className="mt-4" variant="outline" onClick={() => setOpen(true)}>
                                     <Plus className="size-4" /> {t('Add staff')}
@@ -131,67 +157,75 @@ export default function TeamIndex({
                 </div>
             </section>
 
-            <section
-                id="cashier-devices"
-                aria-labelledby="devices-heading"
-                className="scroll-mt-24 rounded-2xl border border-border bg-card p-4 sm:p-5"
-            >
-                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                    <MonitorSmartphone className="size-5 text-primary" />
-                    <div>
+            <section id="cashier-devices" aria-labelledby="devices-heading" className="scroll-mt-24 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <MonitorSmartphone className="size-5 text-primary" />
                         <h2 id="devices-heading" className="font-bold">
                             {t('Cashier devices')}
                         </h2>
-                        <p className="text-sm text-muted-foreground">{t('Activated devices stay tied to one Store until revoked.')}</p>
                     </div>
                     {canManage && (
-                        <Button className="sm:ml-auto" variant="outline" onClick={() => setDeviceOpen(true)}>
-                            {t('Activate device')}
+                        <Button variant="outline" size="sm" onClick={() => setDeviceOpen(true)}>
+                            <Plus className="size-4" /> {t('Activate device')}
                         </Button>
                     )}
                 </div>
-                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {devices.map((device) => (
-                        <div key={device.public_id} className="rounded-xl border border-border p-3">
-                            <p className="font-semibold">{device.name}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                {device.store?.name} · {t(device.status)}
-                            </p>
+                        <div
+                            key={device.public_id}
+                            className="flex flex-col justify-between rounded-2xl border border-border bg-card p-4 transition focus-within:ring-2 focus-within:ring-ring hover:border-primary/40"
+                        >
+                            <div>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate font-bold">{device.name}</p>
+                                        <p className="mt-1 text-xs text-muted-foreground">{device.store?.name ?? t('All stores')}</p>
+                                    </div>
+                                    <span
+                                        className={cn(
+                                            'rounded-full px-2.5 py-1 text-xs font-semibold',
+                                            device.status === 'active' ? 'bg-secondary text-primary' : 'bg-muted text-muted-foreground',
+                                        )}
+                                    >
+                                        {t(device.status)}
+                                    </span>
+                                </div>
+                            </div>
                             {canManage && device.status === 'active' && device.store && (
-                                <button
-                                    type="button"
-                                    className="mt-3 min-h-11 text-xs font-bold text-destructive"
-                                    onClick={() =>
-                                        router.delete(
-                                            posDevicesRoutes.destroy.url({ store: device.store!.public_id, device: device.public_id }),
-                                            { preserveScroll: true },
-                                        )
-                                    }
-                                >
-                                    {t('Revoke device')}
-                                </button>
+                                <div className="mt-4 flex justify-end border-t border-border pt-3">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={() =>
+                                            router.delete(
+                                                posDevicesRoutes.destroy.url({ store: device.store!.public_id, device: device.public_id }),
+                                                { preserveScroll: true },
+                                            )
+                                        }
+                                    >
+                                        {t('Revoke device')}
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     ))}
                     {devices.length === 0 && (
-                        <div className="py-2">
+                        <div className="rounded-2xl border border-dashed p-6 text-center sm:col-span-2 xl:col-span-3">
                             <p className="font-semibold">{t('No cashier device has been activated.')}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                {t('You can keep selling normally, or activate this device for staff PIN login.')}
-                            </p>
+                            {canManage && (
+                                <Button className="mt-4" variant="outline" onClick={() => setDeviceOpen(true)}>
+                                    <Plus className="size-4" /> {t('Activate device')}
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>
             </section>
 
-            <ResponsiveDialog
-                open={open}
-                onOpenChange={setOpen}
-                title={t('Add staff')}
-                description={t('Start with the access needed for daily work. You can change it later.')}
-                size="md"
-                bodyClassName="space-y-5"
-            >
+            <ResponsiveDialog open={open} onOpenChange={setOpen} title={t('Add staff')} size="md" bodyClassName="space-y-5">
                 <FormInput
                     id="staff-name"
                     name="display_name"
@@ -262,7 +296,6 @@ export default function TeamIndex({
                     pattern="[0-9]*"
                     maxLength={6}
                     label={t('Six-digit cashier PIN')}
-                    description={t('Used only on activated cashier devices. The PIN is never displayed again.')}
                     value={form.data.pin}
                     onChange={(event) => form.setData('pin', event.target.value.replace(/\D/g, '').slice(0, 6))}
                     error={form.errors.pin}
@@ -276,7 +309,6 @@ export default function TeamIndex({
                 open={deviceOpen}
                 onOpenChange={setDeviceOpen}
                 title={t('Activate cashier device')}
-                description={t('Continue only on the physical device that will stay at this Store.')}
                 size="sm"
                 bodyClassName="space-y-4"
             >

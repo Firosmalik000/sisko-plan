@@ -34,6 +34,9 @@ test('top-level destinations have no back button while more destinations return 
     assert.deepEqual(customerPageParent('/operations/inventory'), { destination: 'more', label: 'More', title: 'Inventory' });
     assert.deepEqual(customerPageParent('/master-data/categories'), { destination: 'more', label: 'More', title: 'Category' });
     assert.deepEqual(customerPageParent('/reports'), { destination: 'more', label: 'More', title: 'Business reports' });
+    assert.deepEqual(customerPageParent('/team'), { destination: 'more', label: 'More', title: 'Staff & checkout' });
+    assert.deepEqual(customerPageParent('/registers'), { destination: 'more', label: 'More', title: 'Staff & checkout' });
+    assert.deepEqual(customerPageParent('/team/activity'), { destination: 'more', label: 'More', title: 'Staff & checkout' });
 });
 
 test('compact detail pages return to their owning list from the top bar', () => {
@@ -56,6 +59,11 @@ test('compact detail pages return to their owning list from the top bar', () => 
         destination: 'stores',
         label: 'Stores & team',
         title: 'Store details',
+    });
+    assert.deepEqual(customerPageParent('/team/member-123'), {
+        destination: 'team',
+        label: 'Staff & checkout',
+        title: 'Staff',
     });
 });
 
