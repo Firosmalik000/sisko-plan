@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             CountryPaymentMethodSeeder::class,
             CountryMarketplaceSeeder::class,
             BusinessPermissionSeeder::class,
+            CatalogReferenceSeeder::class,
             InitialBusinessSeeder::class,
         ]);
     }

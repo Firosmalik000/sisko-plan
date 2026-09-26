@@ -186,7 +186,7 @@ class ProductController extends Controller
             ...$product->only(['public_id', 'name', 'description', 'is_active']),
             'sku' => $defaultUnit?->sku,
             'barcode' => $defaultUnit?->barcode,
-            'category' => $product->category?->only(['public_id', 'name']),
+            'category' => $product->category?->only(['public_id', 'name', 'reference_code', 'name_is_custom']),
             'retail_unit_public_id' => $product->baseUnit->public_id,
             'large_unit_public_id' => $product->largeUnit?->public_id,
             'variant_mode' => $product->variant_mode,

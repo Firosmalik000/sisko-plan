@@ -49,7 +49,12 @@ export type Product = {
     name: string;
     description: string | null;
     is_active: boolean;
-    category: { public_id: string; name: string } | null;
+    category: {
+        public_id: string;
+        name: string;
+        reference_code?: string | null;
+        name_is_custom?: boolean;
+    } | null;
     retail_unit_public_id: string;
     large_unit_public_id: string | null;
     variant_mode: VariantMode;

@@ -39,7 +39,7 @@ import { useProductDrafts } from '@/hooks/use-product-drafts';
 import type { DiscoverySuggestion, ProductDraft } from '@/hooks/use-product-drafts';
 import { apiClient } from '@/lib/api-client';
 import { translate } from '@/lib/i18n';
-import { resolveCategory, resolveUnit } from '@/lib/unit-references';
+import { referenceLabel, resolveCategory, resolveUnit } from '@/lib/unit-references';
 import { cn } from '@/lib/utils';
 import { index as categoriesIndex } from '@/routes/master-data/categories';
 import {
@@ -921,7 +921,7 @@ export default function ProductsIndex({
                                     <option value="">{translate('All category')}</option>
                                     {categories.map((item) => (
                                         <option key={item.public_id} value={item.public_id}>
-                                            {item.name}
+                                            {referenceLabel(item, 'categories', translate)}
                                         </option>
                                     ))}
                                 </select>
@@ -974,7 +974,11 @@ export default function ProductsIndex({
                                     }}
                                     className="min-h-9 rounded-full bg-secondary px-3 text-xs font-semibold text-secondary-foreground"
                                 >
-                                    {categories.find((item) => item.public_id === category)?.name ?? translate('Category')} ×
+                                    {(() => {
+                                        const activeItem = categories.find((item) => item.public_id === category);
+
+                                        return activeItem ? referenceLabel(activeItem, 'categories', translate) : translate('Category');
+                                    })()} ×
                                 </button>
                             )}
                             {status && (
@@ -1152,7 +1156,9 @@ export default function ProductsIndex({
                                     onChange={() => setFilterDraft((draft) => ({ ...draft, category: item.public_id }))}
                                     className="size-4 accent-primary"
                                 />
-                                <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
+                                <span className="min-w-0 flex-1 truncate text-sm">
+                                    {item.public_id ? referenceLabel(item, 'categories', translate) : item.name}
+                                </span>
                             </label>
                         ))}
                     </div>
@@ -1420,7 +1426,7 @@ export default function ProductsIndex({
                                         <option value="">{translate('Select category')}</option>
                                         {categories.map((category) => (
                                             <option key={category.public_id} value={category.public_id} disabled={!category.is_active}>
-                                                {translate(category.name)}
+                                                {referenceLabel(category, 'categories', translate)}
                                             </option>
                                         ))}
                                     </FormSelect>
@@ -1460,7 +1466,7 @@ export default function ProductsIndex({
                                 </option>
                                 {largeUnits.map((unit) => (
                                     <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
-                                        {translate(unit.name)} ({unit.symbol})
+                                        {referenceLabel(unit, 'units', translate)} ({unit.symbol})
                                     </option>
                                 ))}
                             </FormSelect>
@@ -1477,7 +1483,7 @@ export default function ProductsIndex({
                                 <option value="">{translate('Select retail unit')}</option>
                                 {retailUnits.map((unit) => (
                                     <option key={unit.public_id} value={unit.public_id} disabled={!unit.is_active}>
-                                        {translate(unit.name)} ({unit.symbol})
+                                        {referenceLabel(unit, 'units', translate)} ({unit.symbol})
                                     </option>
                                 ))}
                             </FormSelect>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatMoney, formatQuantity } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
+import { referenceLabel } from '@/lib/unit-references';
 import type { Product } from './product-model';
 import { ProductPhoto } from './product-presentation';
 
@@ -63,7 +64,9 @@ export default function ProductDetailDialog({ product, open, onOpenChange, canMa
             open={open}
             onOpenChange={onOpenChange}
             title={product.name}
-            description={product.category?.name ? `${translate('Category')}: ${product.category.name}` : undefined}
+            description={
+                product.category ? `${translate('Category')}: ${referenceLabel(product.category, 'categories', translate)}` : undefined
+            }
             size="lg"
             bodyClassName="space-y-5"
             footer={

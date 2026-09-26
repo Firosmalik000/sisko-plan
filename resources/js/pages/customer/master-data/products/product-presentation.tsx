@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatMoney, formatQuantity } from '@/lib/currency';
 import { translate } from '@/lib/i18n';
+import { referenceLabel } from '@/lib/unit-references';
 import { cn } from '@/lib/utils';
 import type { Product, VariantMode } from './product-model';
 
@@ -133,7 +134,7 @@ export function ProductRow({
                     : formatQuantity(product.current_stock)}
             </span>
             <span className="hidden truncate text-sm text-muted-foreground md:block">
-                {translate(product.category?.name ?? 'Uncategorized')}
+                {product.category ? referenceLabel(product.category, 'categories', translate) : translate('Uncategorized')}
             </span>
 
             <DropdownMenu>
