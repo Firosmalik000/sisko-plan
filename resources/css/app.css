@@ -134,10 +134,22 @@
 @layer base {
     * {
         @apply border-border;
+        -webkit-tap-highlight-color: transparent;
     }
 
     body {
         @apply bg-background text-foreground;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    button,
+    [role='button'],
+    a,
+    nav,
+    [role='tab'] {
+        user-select: none;
+        -webkit-user-select: none;
     }
 }
 
@@ -282,19 +294,29 @@
     --color-lime-950: var(--workspace-950);
 }
 
-/* Customer surfaces keep native-feeling touch scroll while desktop retains a subtle affordance. */
+.customer-workspace,
+.platform-shell {
+    overflow-x: clip;
+}
+
+/* Customer surfaces keep native-feeling touch scroll with subtle indicators. */
 @media (max-width: 1023px) {
     html:has(.customer-workspace),
-    .customer-workspace,
-    .customer-workspace * {
-        scrollbar-width: none;
+    .customer-workspace {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent) transparent;
     }
 
     html:has(.customer-workspace)::-webkit-scrollbar,
-    .customer-workspace::-webkit-scrollbar,
-    .customer-workspace *::-webkit-scrollbar {
-        width: 0;
-        height: 0;
+    .customer-workspace::-webkit-scrollbar {
+        width: 0.35rem;
+        height: 0.35rem;
+    }
+
+    html:has(.customer-workspace)::-webkit-scrollbar-thumb,
+    .customer-workspace::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
     }
 
     html:has(.customer-workspace) #nprogress .bar {

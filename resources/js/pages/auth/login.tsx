@@ -30,13 +30,6 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
 
             {oauthError && <InputError message={t(oauthError)} className="mb-4 text-center" />}
 
-            {googleAuthEnabled && (
-                <>
-                    <GoogleAuthButton label={t('Sign in with Google')} />
-                    <AuthDivider />
-                </>
-            )}
-
             <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-5">
                 {({ processing, errors }) => (
                     <>
@@ -94,6 +87,13 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                 {t('Sign in')}
                             </Button>
                         </div>
+
+                        {googleAuthEnabled && (
+                            <div className="flex flex-col gap-4 pt-1">
+                                <AuthDivider />
+                                <GoogleAuthButton label={t('Sign in with Google')} />
+                            </div>
+                        )}
 
                         <div className="text-center text-sm text-muted-foreground">
                             {t("Don't have an account yet?")}{' '}

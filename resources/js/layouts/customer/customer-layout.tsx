@@ -44,9 +44,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             <ImpersonationBanner />
             <CustomerHeader />
             <SubscriptionBanner />
-            <main className="min-h-[calc(100svh-4rem)] overflow-x-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-20">
-                {children}
-            </main>
+            <main className="min-h-[calc(100svh-4rem)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-12 lg:pl-20">{children}</main>
             <CustomerNavigation />
         </div>
     );

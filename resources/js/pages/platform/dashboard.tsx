@@ -117,27 +117,27 @@ export default function SuperAdminDashboard({
     return (
         <div className="platform-enter">
             <Head title="Platform Dashboards" />
-            <section className="relative overflow-hidden rounded-2xl bg-[#d83f22] p-6 text-white shadow-xl shadow-[#3b211b]/15 sm:p-8">
+            <section className="relative overflow-hidden rounded-2xl bg-[#d83f22] p-4 text-white shadow-xl shadow-[#3b211b]/15 sm:p-6 lg:p-8">
                 <div className="absolute -top-24 -right-20 size-72 rounded-full border border-white/10" />
                 <div className="absolute -right-8 -bottom-24 size-52 rounded-full bg-white/10" />
                 <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                     <div>
                         <p className="text-[11px] font-black tracking-[0.2em] text-[#ffd5ca] uppercase">Command center platform</p>
-                        <h1 className="mt-3 max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
+                        <h1 className="mt-3 max-w-2xl text-2xl font-black tracking-tight sm:text-3xl lg:text-4xl">
                             Your business condition in one view.
                         </h1>
                         <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
                             Monitor tenant growth, subscription readiness, payments, and platform security.
                         </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:flex">
+                    <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:flex">
                         <HeroMetric label="Payments this month" value={formatMoney(metrics.payments_this_month)} />
                         <HeroMetric label="2FA admin" value={`${securityCoverage}%`} />
                     </div>
                 </div>
             </section>
 
-            <section className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <section className="mt-5 grid grid-cols-1 gap-3 min-[440px]:grid-cols-2 xl:grid-cols-4">
                 {cards.map((card) => (
                     <Link
                         key={card.label}
@@ -291,7 +291,7 @@ export default function SuperAdminDashboard({
 
 function HeroMetric({ label, value }: { label: string; value: string }) {
     return (
-        <div className="min-w-36 rounded-xl border border-white/10 bg-white/8 p-4">
+        <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/8 p-3.5 sm:min-w-36 sm:p-4">
             <p className="text-[10px] font-bold text-slate-400 uppercase">{translate(label)}</p>
             <p className="mt-2 text-xl font-black text-white">{value}</p>
         </div>

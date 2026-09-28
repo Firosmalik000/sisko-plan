@@ -64,7 +64,7 @@
                     background: #fff8f5;
                     color: #2d2928;
                     opacity: 1;
-                    transition: opacity 180ms ease-out;
+                    transition: opacity 220ms cubic-bezier(0.4, 0, 0.2, 1);
                 }
 
                 #app-boot[data-state='ready'] {
@@ -76,15 +76,81 @@
                     display: flex;
                     align-items: center;
                     flex-direction: column;
-                    gap: 18px;
+                    gap: 16px;
                     padding: 24px;
                     text-align: center;
                 }
 
+                .app-boot__logo-wrapper {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 96px;
+                    height: 96px;
+                    border-radius: 1.5rem;
+                    background: #ffffff;
+                    box-shadow: 0 12px 32px -8px rgba(238, 77, 45, 0.18), 0 2px 8px rgba(0, 0, 0, 0.04);
+                    animation: app-boot-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                }
+
+                @keyframes app-boot-pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.04); }
+                }
+
                 .app-boot__logo {
-                    width: 88px;
-                    height: 88px;
-                    border-radius: 0.5rem;
+                    width: 72px;
+                    height: 72px;
+                    border-radius: 1rem;
+                    object-fit: contain;
+                }
+
+                .app-boot__title {
+                    font-family: ui-sans-serif, system-ui, sans-serif;
+                    font-size: 20px;
+                    font-weight: 800;
+                    letter-spacing: -0.02em;
+                    color: #2d2928;
+                }
+
+                .app-boot__loader {
+                    width: 28px;
+                    height: 28px;
+                    margin-top: 4px;
+                }
+
+                .app-boot__circular {
+                    animation: app-boot-rotate 2s linear infinite;
+                    height: 100%;
+                    transform-origin: center center;
+                    width: 100%;
+                }
+
+                .app-boot__path {
+                    stroke-dasharray: 1, 200;
+                    stroke-dashoffset: 0;
+                    animation: app-boot-dash 1.5s ease-in-out infinite;
+                    stroke-linecap: round;
+                    stroke: #ee4d2d;
+                }
+
+                @keyframes app-boot-rotate {
+                    100% { transform: rotate(360deg); }
+                }
+
+                @keyframes app-boot-dash {
+                    0% {
+                        stroke-dasharray: 1, 200;
+                        stroke-dashoffset: 0;
+                    }
+                    50% {
+                        stroke-dasharray: 89, 200;
+                        stroke-dashoffset: -35px;
+                    }
+                    100% {
+                        stroke-dasharray: 89, 200;
+                        stroke-dashoffset: -124px;
+                    }
                 }
 
                 .app-boot__status,
@@ -94,8 +160,9 @@
                 }
 
                 .app-boot__status {
-                    color: #6f6764;
-                    font-size: 14px;
+                    color: #8c827e;
+                    font-size: 13px;
+                    font-weight: 500;
                     opacity: 0;
                     transition: opacity 160ms ease-out;
                 }
@@ -125,9 +192,9 @@
                 .app-boot__retry {
                     min-height: 44px;
                     border: 0;
-                    border-radius: 0.45rem;
+                    border-radius: 0.75rem;
                     background: #ee4d2d;
-                    padding: 0 18px;
+                    padding: 0 20px;
                     color: #fff;
                     font: inherit;
                     font-weight: 700;
@@ -141,7 +208,11 @@
 
             @media (display-mode: standalone) and (prefers-reduced-motion: reduce) {
                 #app-boot,
-                .app-boot__status {
+                .app-boot__status,
+                .app-boot__logo-wrapper,
+                .app-boot__circular,
+                .app-boot__path {
+                    animation: none !important;
                     transition: none;
                 }
             }
@@ -168,7 +239,15 @@
         <!-- THESIS: Sisko Plan is a calm operational ledger for Indonesian retail teams, not a generic SaaS brochure. OWN-WORLD: Ivory paper, forest ink, ruled records, compact operational tables, and one orange action color. STORY: Daily transactions flow visibly through stock and cash into business reports. FIRST VIEWPORT: A decisive editorial promise sits beside a working Kasir-to-Laporan board built from believable example data. FORM: Canon direction selected from the attended concept round; AsistenToko is the sole category benchmark; approved reference .impeccable/mocks/decision/store-ledger-reference.png; seed b2d4ef92. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
         <div id="app-boot" data-state="loading" aria-live="polite">
             <div class="app-boot__content">
-                <img class="app-boot__logo" src="/icons/icon-192.png" alt="" width="88" height="88">
+                <div class="app-boot__logo-wrapper">
+                    <img class="app-boot__logo" src="{{ $brandLogoUrl ?: '/icons/icon-192.png' }}" alt="" width="72" height="72">
+                </div>
+                <div class="app-boot__title">{{ $brandName }}</div>
+                <div class="app-boot__loader" aria-hidden="true">
+                    <svg class="app-boot__circular" viewBox="25 25 50 50">
+                        <circle class="app-boot__path" cx="50" cy="50" r="20" fill="none" stroke-width="4" stroke-miterlimit="10"/>
+                    </svg>
+                </div>
                 <p class="app-boot__status">{{ __('Setting up the application…') }}</p>
                 <div class="app-boot__error" role="alert">
                     <span>{{ __('Connection problem') }}</span>

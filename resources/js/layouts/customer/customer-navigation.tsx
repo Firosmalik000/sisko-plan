@@ -21,9 +21,9 @@ export function CustomerNavigation() {
         <>
             <nav
                 aria-label="Main navigation"
-                className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:inset-y-[75px] lg:right-auto lg:w-20 lg:border-t-0 lg:border-r lg:pb-0"
+                className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:inset-x-auto lg:top-[73px] lg:bottom-0 lg:w-20 lg:border-t-0 lg:border-r lg:pb-0"
             >
-                <div className="mx-auto grid h-16 max-w-2xl grid-cols-5 items-stretch px-1 lg:flex lg:h-full lg:flex-col lg:gap-1 lg:px-2 lg:py-3">
+                <div className="mx-auto grid h-16 max-w-2xl grid-cols-5 items-stretch px-1 lg:flex lg:h-full lg:flex-col lg:gap-1 lg:overflow-y-auto lg:px-2 lg:py-3">
                     {visibleDestinations.map((item) =>
                         item.kind === 'launcher' ? (
                             <CashierTrigger key={item.key} item={item} disabled={disabled} onClick={() => setCashierOpen(true)} />
@@ -60,14 +60,19 @@ function Destination({ item, active, disabled }: { item: DestinationItem; active
             href={disabled ? storesRoutes.index.url() : item.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-                'group flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-xs font-semibold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none lg:min-h-14 lg:flex-none',
+                'group flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-xs font-semibold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-95 lg:min-h-14 lg:flex-none lg:active:scale-100',
                 active ? 'text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
         >
-            <span className={cn('grid h-7 w-10 place-items-center rounded-xl transition', active && 'bg-secondary')}>
+            <span
+                className={cn(
+                    'grid h-8 w-12 place-items-center rounded-full transition-all duration-200 lg:h-7 lg:w-10 lg:rounded-xl',
+                    active ? 'bg-secondary text-primary' : 'group-hover:bg-accent',
+                )}
+            >
                 <Icon className="size-5" strokeWidth={active ? 2.5 : 2} />
             </span>
-            <span className="max-w-full truncate">{t(item.title)}</span>
+            <span className={cn('max-w-full truncate text-[11px]', active && 'font-bold')}>{t(item.title)}</span>
         </Link>
     );
 }
@@ -82,12 +87,12 @@ function CashierTrigger({ item, disabled, onClick }: { item: CashierDestination;
             aria-haspopup="dialog"
             disabled={disabled}
             onClick={onClick}
-            className="group flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-xs font-bold text-primary transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 lg:order-first lg:mb-2 lg:min-h-16 lg:flex-none lg:bg-secondary"
+            className="group flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-xs font-bold text-primary transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-95 disabled:opacity-50 lg:order-first lg:mb-2 lg:min-h-16 lg:flex-none lg:bg-secondary lg:active:scale-100"
         >
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-[0_10px_22px_-14px_var(--app-shadow)] transition group-hover:bg-primary/90 dark:shadow-none">
+            <span className="grid size-10 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_4px_14px_-2px_var(--app-shadow)] transition group-hover:bg-primary/90 lg:size-9 lg:rounded-xl dark:shadow-none">
                 <Icon className="size-5" aria-hidden="true" />
             </span>
-            <span className="max-w-full truncate">{t(item.title)}</span>
+            <span className="max-w-full truncate text-[11px]">{t(item.title)}</span>
         </button>
     );
 }

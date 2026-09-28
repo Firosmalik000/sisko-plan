@@ -18,7 +18,7 @@ export function MetricItem({ label, value, detail }: { label: ReactNode; value: 
     return (
         <div className="min-w-0 border-[var(--app-ink)]/8 px-3.5 py-4 sm:px-5 sm:py-5">
             <div className="text-xs font-medium text-[var(--muted-foreground)]">{label}</div>
-            <div className="mt-1.5 truncate text-xl font-bold tracking-[-0.035em] text-[var(--app-ink)] tabular-nums sm:text-2xl">
+            <div className="mt-1.5 truncate text-lg font-bold tracking-[-0.035em] text-[var(--app-ink)] tabular-nums min-[360px]:text-xl sm:text-2xl">
                 {value}
             </div>
             {detail && <div className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">{detail}</div>}

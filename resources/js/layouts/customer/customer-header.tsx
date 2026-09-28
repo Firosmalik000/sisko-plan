@@ -110,7 +110,7 @@ export function CustomerHeader() {
             onClick={isMobile ? () => handleStockNoticeOpen(true) : undefined}
             aria-label={unreadCount > 0 ? `${unreadCount} ${t('unread notifications')}` : t('Open notifications')}
             className={cn(
-                'relative ml-auto grid size-11 shrink-0 place-items-center rounded-full transition focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none',
+                'relative ml-auto grid size-11 shrink-0 place-items-center rounded-full transition focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none active:scale-95',
                 unreadCount > 0 ? 'bg-destructive/10 text-destructive hover:bg-destructive/15' : 'text-primary hover:bg-secondary',
             )}
         >
@@ -225,7 +225,7 @@ export function CustomerHeader() {
                             <button
                                 type="button"
                                 aria-label="Open account menu"
-                                className="grid size-11 shrink-0 place-items-center rounded-full ring-[var(--app-primary)]/30 transition outline-none focus-visible:ring-4"
+                                className="grid size-11 shrink-0 place-items-center rounded-full ring-[var(--app-primary)]/30 transition outline-none focus-visible:ring-4 active:scale-95"
                             >
                                 <Avatar className="size-9">
                                     <AvatarImage src={auth.user.avatar} alt={auth.user.name} />

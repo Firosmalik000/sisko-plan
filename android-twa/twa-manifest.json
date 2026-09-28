@@ -35,8 +35,14 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://xbayar.com/",
   "minSdkVersion": 21,
-  "orientation": "default",
-  "fingerprints": [],
+  "fingerprints": [
+    {
+      "value": "9A:F5:AA:67:14:7D:1A:87:28:FB:EE:A7:EF:C0:70:BC:63:8A:17:6C:91:DE:B8:4A:E9:C9:72:8D:72:12:26:2D"
+    },
+    {
+      "value": "16:03:DB:8C:09:1F:A4:FB:64:E9:96:C6:D0:0C:41:F6:89:F7:EA:F0:6D:2F:4F:F7:F9:60:BC:8B:71:23:83:E8"
+    }
+  ],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "protocolHandlers": [],

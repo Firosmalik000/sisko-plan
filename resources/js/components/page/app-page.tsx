@@ -79,7 +79,7 @@ export function AppPage({
                             </div>
                         </div>
                         {actions && (
-                            <div className="grid w-full auto-cols-fr grid-flow-col items-center gap-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:justify-end">
+                            <div className="flex w-full flex-col gap-2 min-[420px]:flex-row min-[420px]:items-center sm:w-auto sm:shrink-0 sm:flex-wrap sm:justify-end">
                                 {actions}
                             </div>
                         )}

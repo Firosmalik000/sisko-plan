@@ -104,7 +104,7 @@ export function GlobalSearch() {
                 type="button"
                 onClick={() => setOpen(true)}
                 aria-label={t('Search all customer data')}
-                className="grid size-11 shrink-0 place-items-center rounded-full text-primary transition hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none md:flex md:h-11 md:w-[min(22rem,28vw)] md:justify-start md:gap-2 md:rounded-xl md:border md:border-input md:bg-background md:px-3 md:text-muted-foreground"
+                className="grid size-11 shrink-0 place-items-center rounded-full text-primary transition hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none active:scale-95 md:flex md:h-11 md:w-[min(22rem,28vw)] md:justify-start md:gap-2 md:rounded-xl md:border md:border-input md:bg-background md:px-3 md:text-muted-foreground md:active:scale-100"
             >
                 <Search className="size-[18px] shrink-0" aria-hidden="true" />
                 <span className="hidden min-w-0 flex-1 truncate text-left text-sm md:block">{t('Search products, sales, and more')}</span>

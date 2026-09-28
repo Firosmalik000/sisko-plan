@@ -19,7 +19,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
     const brandLogo = branding?.logo_url;
 
     return (
-        <div className="relative min-h-svh overflow-hidden bg-[linear-gradient(116deg,#ee4d2d_0%,#fb5b41_50%,#ffe8df_80%,#fff8f5_100%)] font-sans text-[#2d2928]">
+        <div className="relative min-h-svh overflow-x-clip bg-[linear-gradient(116deg,#ee4d2d_0%,#fb5b41_50%,#ffe8df_80%,#fff8f5_100%)] font-sans text-[#2d2928]">
             <div className="absolute -top-36 -left-32 size-[30rem] rounded-full bg-white/10 blur-3xl" />
             <div className="absolute -right-32 -bottom-40 size-[34rem] rounded-full bg-[#ffb6a5]/25 blur-3xl" />
 
@@ -81,7 +81,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                     </div>
                 </aside>
 
-                <main className="relative flex items-center justify-center overflow-hidden bg-transparent px-5 py-8 sm:px-10 lg:px-12">
+                <main className="relative flex min-h-svh items-center justify-center overflow-y-auto bg-transparent px-5 py-8 sm:px-10 lg:px-12">
                     <div className="absolute -top-28 -right-24 size-80 rounded-full border-[56px] border-white/[0.06]" />
                     <div className="absolute -bottom-36 left-1/4 size-96 rounded-full bg-[#ffd4c7]/45 blur-3xl" />
 
