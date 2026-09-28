@@ -25,13 +25,16 @@ export default function VerifyEmail({ status }: { status?: string }) {
                     <>
                         <Button
                             disabled={processing}
-                            className="h-11 w-full rounded-xl bg-[#ee4d2d] text-xs font-bold text-white shadow-md shadow-[#ee4d2d]/20 transition-all hover:bg-[#d83f22] active:scale-[0.99] sm:h-12 sm:text-sm"
+                            className="h-9.5 w-full rounded-xl bg-[#ee4d2d] text-xs font-bold text-white shadow-md shadow-[#ee4d2d]/20 transition-all hover:bg-[#d83f22] active:scale-[0.99] sm:h-10"
                         >
                             {processing && <Spinner />}
                             {t('Resend verification email')}
                         </Button>
 
-                        <TextLink href={logout()} className="mx-auto block text-xs font-semibold text-[#ee4d2d] hover:underline sm:text-sm">
+                        <TextLink
+                            href={logout()}
+                            className="mx-auto block text-[11px] font-semibold text-[#ee4d2d] hover:underline sm:text-xs"
+                        >
                             {t('Sign out')}
                         </TextLink>
                     </>

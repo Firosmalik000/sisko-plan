@@ -28,13 +28,13 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
-                className="flex flex-col gap-3 sm:gap-3.5"
+                className="flex flex-col gap-2 sm:gap-2.5"
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-3 sm:gap-3.5">
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="name" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                        <div className="grid gap-2 sm:gap-2.5">
+                            <div className="grid gap-1">
+                                <Label htmlFor="name" className="text-[11px] font-semibold text-[#3b211b] sm:text-xs">
                                     {t('Full name')}
                                 </Label>
                                 <Input
@@ -46,13 +46,13 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                     autoComplete="name"
                                     name="name"
                                     placeholder={t('Full name')}
-                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
+                                    className="h-9.5 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-10 sm:px-3.5 sm:text-xs"
                                 />
                                 <InputError message={errors.name} />
                             </div>
 
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="email" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                            <div className="grid gap-1">
+                                <Label htmlFor="email" className="text-[11px] font-semibold text-[#3b211b] sm:text-xs">
                                     {t('Email address')}
                                 </Label>
                                 <Input
@@ -63,13 +63,13 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
-                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
+                                    className="h-9.5 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-10 sm:px-3.5 sm:text-xs"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="password" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                            <div className="grid gap-1">
+                                <Label htmlFor="password" className="text-[11px] font-semibold text-[#3b211b] sm:text-xs">
                                     {t('Password')}
                                 </Label>
                                 <PasswordInput
@@ -80,13 +80,13 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                     name="password"
                                     placeholder={t('Password')}
                                     passwordrules={passwordRules}
-                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
+                                    className="h-9.5 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-10 sm:px-3.5 sm:text-xs"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="password_confirmation" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                            <div className="grid gap-1">
+                                <Label htmlFor="password_confirmation" className="text-[11px] font-semibold text-[#3b211b] sm:text-xs">
                                     {t('Confirm password')}
                                 </Label>
                                 <PasswordInput
@@ -97,14 +97,14 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                                     name="password_confirmation"
                                     placeholder={t('Confirm password')}
                                     passwordrules={passwordRules}
-                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
+                                    className="h-9.5 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-10 sm:px-3.5 sm:text-xs"
                                 />
                                 <InputError message={errors.password_confirmation} />
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-1 h-11 w-full rounded-xl bg-[#ee4d2d] text-xs font-bold text-white shadow-md shadow-[#ee4d2d]/20 transition-all hover:bg-[#d83f22] active:scale-[0.99] sm:h-12 sm:text-sm"
+                                className="mt-0.5 h-9.5 w-full rounded-xl bg-[#ee4d2d] text-xs font-bold text-white shadow-md shadow-[#ee4d2d]/20 transition-all hover:bg-[#d83f22] active:scale-[0.99] sm:h-10"
                                 tabIndex={5}
                                 disabled={processing}
                                 data-test="register-user-button"
@@ -115,13 +115,13 @@ export default function Register({ passwordRules, googleAuthEnabled }: Props) {
                         </div>
 
                         {googleAuthEnabled && (
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-0.5">
                                 <AuthDivider />
                                 <GoogleAuthButton label={t('Register with Google')} />
                             </div>
                         )}
 
-                        <div className="mt-1 text-center text-xs text-[#765f59] sm:text-sm">
+                        <div className="text-center text-[11px] text-[#765f59] sm:text-xs">
                             {t('Already have an account?')}{' '}
                             <TextLink href={login()} className="font-semibold text-[#ee4d2d] hover:underline" tabIndex={6}>
                                 {t('Sign in')}

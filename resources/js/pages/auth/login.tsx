@@ -30,12 +30,12 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
 
             {oauthError && <InputError message={t(oauthError)} className="mb-4 text-center" />}
 
-            <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-3.5 sm:gap-4">
+            <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-2.5 sm:gap-3">
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-3.5 sm:gap-4">
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="email" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                        <div className="grid gap-2.5 sm:gap-3">
+                            <div className="grid gap-1">
+                                <Label htmlFor="email" className="text-[11px] font-semibold text-[#3b211b] sm:text-xs">
                                     {t('Email address')}
                                 </Label>
                                 <Input
@@ -47,20 +47,20 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
-                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
+                                    className="h-9.5 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-10 sm:px-3.5 sm:text-xs"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="grid gap-1.5">
+                            <div className="grid gap-1">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                                    <Label htmlFor="password" className="text-[11px] font-semibold text-[#3b211b] sm:text-xs">
                                         {t('Password')}
                                     </Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="text-xs font-medium text-[#ee4d2d] hover:underline"
+                                            className="text-[11px] font-medium text-[#ee4d2d] hover:underline"
                                             tabIndex={5}
                                         >
                                             {t('Forgot password?')}
@@ -74,26 +74,26 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder={t('Password')}
-                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
+                                    className="h-9.5 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-10 sm:px-3.5 sm:text-xs"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-2 pt-0.5">
+                            <div className="flex items-center space-x-2">
                                 <Checkbox
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
-                                    className="rounded-md border-[#e8c8be] data-[state=checked]:border-[#ee4d2d] data-[state=checked]:bg-[#ee4d2d]"
+                                    className="size-3.5 rounded border-[#e8c8be] data-[state=checked]:border-[#ee4d2d] data-[state=checked]:bg-[#ee4d2d]"
                                 />
-                                <Label htmlFor="remember" className="cursor-pointer text-xs font-normal text-[#5a4843] sm:text-sm">
+                                <Label htmlFor="remember" className="cursor-pointer text-[11px] font-normal text-[#5a4843] sm:text-xs">
                                     {t('Remember me')}
                                 </Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-1 h-11 w-full rounded-xl bg-[#ee4d2d] text-xs font-bold text-white shadow-md shadow-[#ee4d2d]/20 transition-all hover:bg-[#d83f22] active:scale-[0.99] sm:h-12 sm:text-sm"
+                                className="mt-0.5 h-9.5 w-full rounded-xl bg-[#ee4d2d] text-xs font-bold text-white shadow-md shadow-[#ee4d2d]/20 transition-all hover:bg-[#d83f22] active:scale-[0.99] sm:h-10"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -104,13 +104,13 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                         </div>
 
                         {googleAuthEnabled && (
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-0.5">
                                 <AuthDivider />
                                 <GoogleAuthButton label={t('Sign in with Google')} />
                             </div>
                         )}
 
-                        <div className="mt-1 text-center text-xs text-[#765f59] sm:text-sm">
+                        <div className="text-center text-[11px] text-[#765f59] sm:text-xs">
                             {t("Don't have an account yet?")}{' '}
                             <TextLink href={register()} className="font-semibold text-[#ee4d2d] hover:underline" tabIndex={5}>
                                 {t('Register')}

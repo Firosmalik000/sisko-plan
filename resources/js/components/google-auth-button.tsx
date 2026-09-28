@@ -10,7 +10,7 @@ export default function GoogleAuthButton({ label }: Props) {
         <Button
             asChild
             variant="outline"
-            className="h-11 w-full rounded-xl border-[#e8c8be] bg-[#fffdfc] text-xs font-medium text-[#2d2928] transition-all hover:bg-[#fff5f2] hover:text-[#b83219] active:scale-[0.99] sm:h-12 sm:text-sm"
+            className="h-9.5 w-full rounded-xl border-[#e8c8be] bg-[#fffdfc] text-xs font-medium text-[#2d2928] transition-all hover:bg-[#fff5f2] hover:text-[#b83219] active:scale-[0.99] sm:h-10 sm:text-xs"
         >
             <a href={redirect.url()}>
                 <GoogleIcon />
