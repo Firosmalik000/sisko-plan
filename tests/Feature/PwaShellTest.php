@@ -20,7 +20,7 @@ class PwaShellTest extends TestCase
             flags: JSON_THROW_ON_ERROR,
         );
 
-        $this->assertSame('XSISTEN', $manifest['name']);
+        $this->assertSame('XBAYAR', $manifest['name']);
         $this->assertSame('/dashboard', $manifest['start_url']);
         $this->assertSame('/dashboard', $androidManifest['startUrl']);
         $this->assertSame('/dashboard', $bundledManifest['start_url']);

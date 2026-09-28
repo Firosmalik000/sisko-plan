@@ -25,8 +25,8 @@ def twaManifest = [
     applicationId: 'com.xsisten.app',
     hostName: 'xbayar.com', // The domain being opened in the TWA.
     launchUrl: '/dashboard', // The start path for the TWA. Must be relative to the domain.
-    name: 'XSISTEN', // The application name.
-    launcherName: 'XSISTEN', // The name shown on the Android Launcher.
+    name: 'XBAYAR', // The application name.
+    launcherName: 'XBAYAR', // The name shown on the Android Launcher.
     themeColor: '#FFF8F5', // The color used for the status bar.
     themeColorDark: '#000000', // The color used for the dark status bar.
     navigationColor: '#000000', // The color used for the navigation bar.

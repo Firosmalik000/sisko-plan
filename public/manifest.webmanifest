@@ -1,6 +1,6 @@
 {
-    "name": "XSISTEN",
-    "short_name": "XSISTEN",
+    "name": "XBAYAR",
+    "short_name": "XBAYAR",
     "description": "Kelola operasional toko dari satu aplikasi.",
     "start_url": "/dashboard",
     "scope": "/",

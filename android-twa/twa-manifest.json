@@ -1,8 +1,8 @@
 {
   "packageId": "com.xsisten.app",
   "host": "xbayar.com",
-  "name": "XSISTEN",
-  "launcherName": "XSISTEN",
+  "name": "XBAYAR",
+  "launcherName": "XBAYAR",
   "display": "standalone",
   "themeColor": "#FFF8F5",
   "themeColorDark": "#000000",
