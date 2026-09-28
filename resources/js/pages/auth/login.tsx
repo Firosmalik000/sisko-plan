@@ -30,12 +30,14 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
 
             {oauthError && <InputError message={t(oauthError)} className="mb-4 text-center" />}
 
-            <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-5">
+            <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-3.5 sm:gap-4">
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-5">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">{t('Email address')}</Label>
+                        <div className="grid gap-3.5 sm:gap-4">
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="email" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                                    {t('Email address')}
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -45,16 +47,22 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
-                                    className="h-12 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-4 shadow-none focus:border-[#ee4d2d] focus:ring-[#ee4d2d]/20"
+                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="grid gap-2">
-                                <div className="flex items-center">
-                                    <Label htmlFor="password">{t('Password')}</Label>
+                            <div className="grid gap-1.5">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                                        {t('Password')}
+                                    </Label>
                                     {canResetPassword && (
-                                        <TextLink href={request()} className="ml-auto text-sm" tabIndex={5}>
+                                        <TextLink
+                                            href={request()}
+                                            className="text-xs font-medium text-[#ee4d2d] hover:underline"
+                                            tabIndex={5}
+                                        >
                                             {t('Forgot password?')}
                                         </TextLink>
                                     )}
@@ -66,19 +74,26 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder={t('Password')}
-                                    className="h-12 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-4 shadow-none focus:border-[#ee4d2d] focus:ring-[#ee4d2d]/20"
+                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-3">
-                                <Checkbox id="remember" name="remember" tabIndex={3} />
-                                <Label htmlFor="remember">{t('Remember me')}</Label>
+                            <div className="flex items-center space-x-2 pt-0.5">
+                                <Checkbox
+                                    id="remember"
+                                    name="remember"
+                                    tabIndex={3}
+                                    className="rounded-md border-[#e8c8be] data-[state=checked]:border-[#ee4d2d] data-[state=checked]:bg-[#ee4d2d]"
+                                />
+                                <Label htmlFor="remember" className="cursor-pointer text-xs font-normal text-[#5a4843] sm:text-sm">
+                                    {t('Remember me')}
+                                </Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-2 h-12 w-full rounded-xl bg-[#ee4d2d] font-bold text-white shadow-[0_14px_24px_-14px_rgba(238,77,45,0.85)] hover:bg-[#d83f22]"
+                                className="mt-1 h-11 w-full rounded-xl bg-[#ee4d2d] text-xs font-bold text-white shadow-md shadow-[#ee4d2d]/20 transition-all hover:bg-[#d83f22] active:scale-[0.99] sm:h-12 sm:text-sm"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -89,15 +104,15 @@ export default function Login({ status, canResetPassword, googleAuthEnabled, oau
                         </div>
 
                         {googleAuthEnabled && (
-                            <div className="flex flex-col gap-4 pt-1">
+                            <div className="flex flex-col gap-1">
                                 <AuthDivider />
                                 <GoogleAuthButton label={t('Sign in with Google')} />
                             </div>
                         )}
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="mt-1 text-center text-xs text-[#765f59] sm:text-sm">
                             {t("Don't have an account yet?")}{' '}
-                            <TextLink href={register()} tabIndex={5}>
+                            <TextLink href={register()} className="font-semibold text-[#ee4d2d] hover:underline" tabIndex={5}>
                                 {t('Register')}
                             </TextLink>
                         </div>

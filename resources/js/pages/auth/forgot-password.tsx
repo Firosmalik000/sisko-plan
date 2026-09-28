@@ -19,19 +19,32 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
             {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{t(status)}</div>}
 
-            <div className="space-y-6">
+            <div className="space-y-4">
                 <Form {...email.form()}>
                     {({ processing, errors }) => (
                         <>
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">{t('Email address')}</Label>
-                                <Input id="email" type="email" name="email" autoComplete="off" autoFocus placeholder="email@example.com" />
-
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="email" className="text-xs font-semibold text-[#3b211b] sm:text-sm">
+                                    {t('Email address')}
+                                </Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    name="email"
+                                    autoComplete="off"
+                                    autoFocus
+                                    placeholder="email@example.com"
+                                    className="h-11 rounded-xl border-[#e8c8be] bg-[#fffdfc] px-3.5 text-xs shadow-none transition-all placeholder:text-[#a89088] focus:border-[#ee4d2d] focus:ring-2 focus:ring-[#ee4d2d]/20 sm:h-12 sm:px-4 sm:text-sm"
+                                />
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="my-6 flex items-center justify-start">
-                                <Button className="w-full" disabled={processing} data-test="email-password-reset-link-button">
+                            <div className="pt-2">
+                                <Button
+                                    className="h-11 w-full rounded-xl bg-[#ee4d2d] text-xs font-bold text-white shadow-md shadow-[#ee4d2d]/20 transition-all hover:bg-[#d83f22] active:scale-[0.99] sm:h-12 sm:text-sm"
+                                    disabled={processing}
+                                    data-test="email-password-reset-link-button"
+                                >
                                     {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                                     {t('Send password reset link')}
                                 </Button>
@@ -40,9 +53,11 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     )}
                 </Form>
 
-                <div className="space-x-1 text-center text-sm text-muted-foreground">
+                <div className="space-x-1 text-center text-xs text-[#765f59] sm:text-sm">
                     <span>{t('Or return to')}</span>
-                    <TextLink href={login()}>{t('sign in')}</TextLink>
+                    <TextLink href={login()} className="font-semibold text-[#ee4d2d] hover:underline">
+                        {t('sign in')}
+                    </TextLink>
                 </div>
             </div>
         </>
