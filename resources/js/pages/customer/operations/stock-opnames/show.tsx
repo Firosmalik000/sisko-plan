@@ -166,7 +166,7 @@ export default function StockOpnameShow({
                 result.failures.push({
                     captureId: selection.captureId,
                     itemIndex: selection.itemIndex,
-                    message: 'This product is not part of the current stock count.',
+                    message: translate('This product is not part of the current stock count.'),
                 });
 
                 return;
@@ -217,7 +217,7 @@ export default function StockOpnameShow({
             confirmation &&
             !(await confirm({
                 title: confirmation,
-                confirmLabel: action === 'cancel' ? 'Cancel stock count' : 'Continue',
+                confirmLabel: action === 'cancel' ? translate('Cancel stock count') : translate('Continue'),
                 variant: action === 'cancel' ? 'destructive' : 'default',
             }))
         ) {
@@ -293,24 +293,24 @@ export default function StockOpnameShow({
                 <section className="rounded-2xl border border-border bg-card p-2.5 shadow-sm sm:p-3">
                     <div className="flex flex-wrap gap-2">
                         <label className="relative flex-1">
-                            <span className="sr-only">Search product</span>
+                            <span className="sr-only">{translate('Search product')}</span>
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
                                 className={`${fieldClass} pl-9`}
-                                placeholder="Search product, SKU, or barcode"
+                                placeholder={translate('Search product, SKU, or barcode')}
                             />
                         </label>
                         <select
                             value={filter}
                             onChange={(event) => setFilter(event.target.value as typeof filter)}
-                            aria-label="Filter product stock count"
+                            aria-label={translate('Filter product stock count')}
                             className={`${fieldClass} w-32 shrink-0 px-2 text-xs font-bold sm:w-44 sm:px-3 sm:text-sm`}
                         >
-                            <option value="all">All products</option>
-                            <option value="pending">Not counted</option>
-                            <option value="difference">Difference found</option>
+                            <option value="all">{translate('All products')}</option>
+                            <option value="pending">{translate('Not counted')}</option>
+                            <option value="difference">{translate('Difference found')}</option>
                         </select>
                         {editable && (
                             <Button
@@ -321,7 +321,7 @@ export default function StockOpnameShow({
                                     setScannerOpen(true);
                                 }}
                             >
-                                <Camera className="size-4" /> Scan product
+                                <Camera className="size-4" /> {translate('Scan product')}
                             </Button>
                         )}
                     </div>
@@ -354,13 +354,13 @@ export default function StockOpnameShow({
                                                 <p className="truncate text-xs font-bold text-[var(--app-primary)]">{item.parent_name}</p>
                                             )}
                                             <p className="text-[10px] text-muted-foreground">
-                                                {item.sku || item.barcode || 'No SKU'} · {item.unit}
+                                                {item.sku || item.barcode || translate('No SKU')} · {item.unit}
                                             </p>
                                         </div>
                                         <div className="grid grid-cols-3 gap-1.5 sm:contents">
                                             <div className="rounded-lg bg-white/70 px-2 py-1.5 text-right sm:bg-transparent sm:p-0">
                                                 <span className="block text-[9px] font-bold tracking-wide text-muted-foreground uppercase">
-                                                    System
+                                                    {translate('System')}
                                                 </span>
                                                 <p className="text-sm font-bold text-foreground tabular-nums">
                                                     {quantity(item.system_quantity)}
@@ -368,7 +368,7 @@ export default function StockOpnameShow({
                                             </div>
                                             <label>
                                                 <span className="block text-right text-[9px] font-bold tracking-wide text-muted-foreground uppercase">
-                                                    Physical
+                                                    {translate('Physical')}
                                                 </span>
                                                 <input
                                                     value={value}
@@ -390,7 +390,7 @@ export default function StockOpnameShow({
                                             </label>
                                             <div className="rounded-lg bg-white/70 px-2 py-1.5 text-right sm:bg-transparent sm:p-0">
                                                 <span className="block text-[9px] font-bold tracking-wide text-muted-foreground uppercase">
-                                                    Difference
+                                                    {translate('Difference')}
                                                 </span>
                                                 <p
                                                     className={`text-sm font-bold tabular-nums ${difference === null || difference === 0 ? 'text-muted-foreground' : difference > 0 ? 'text-emerald-700' : 'text-destructive'}`}
@@ -404,14 +404,14 @@ export default function StockOpnameShow({
                                         <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1 border-t border-current/5 pt-1.5 text-[10px] font-bold">
                                             {moved ? (
                                                 <span className="flex items-center gap-1 text-sky-700">
-                                                    <AlertTriangle className="size-3" /> Stock current {quantity(item.current_quantity)}{' '}
+                                                    <AlertTriangle className="size-3" /> {translate('Stock current')} {quantity(item.current_quantity)}{' '}
                                                     {item.unit}
                                                 </span>
                                             ) : (
                                                 <span />
                                             )}
                                             {estimatedLoss > 0 && (
-                                                <span className="font-bold text-destructive">Loss {money(estimatedLoss)}</span>
+                                                <span className="font-bold text-destructive">{translate('Loss')} {money(estimatedLoss)}</span>
                                             )}
                                         </div>
                                     )}
@@ -419,7 +419,7 @@ export default function StockOpnameShow({
                             );
                         })}
                         {visibleItems.length === 0 && (
-                            <div className="py-8 text-center text-sm font-bold text-muted-foreground">Product not found</div>
+                            <div className="py-8 text-center text-sm font-bold text-muted-foreground">{translate('Product not found')}</div>
                         )}
                     </div>
                 </section>
@@ -428,7 +428,7 @@ export default function StockOpnameShow({
                     {stockCount.status === 'draft' && editable && (
                         <div>
                             <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground sm:text-right sm:text-xs">
-                                Save for continue later · Completed counting locks results
+                                {translate('Save for continue later · Completed counting locks results')}
                             </p>
                             <div className={`grid gap-1.5 ${canManage ? 'grid-cols-3' : 'grid-cols-2'} sm:flex sm:justify-end`}>
                                 {canManage && (
@@ -437,10 +437,10 @@ export default function StockOpnameShow({
                                         size="touch"
                                         variant="destructive"
                                         disabled={processing}
-                                        onClick={() => workflow('cancel', 'Cancel this stock count session?')}
+                                        onClick={() => workflow('cancel', translate('Cancel this stock count session?'))}
                                         className="px-2 text-xs sm:px-4 sm:text-sm"
                                     >
-                                        <X className="hidden size-4 sm:block" /> Cancel
+                                        <X className="hidden size-4 sm:block" /> {translate('Cancel')}
                                     </Button>
                                 )}
                                 <Button
@@ -451,7 +451,7 @@ export default function StockOpnameShow({
                                     onClick={save}
                                     className="px-2 text-xs sm:px-4 sm:text-sm"
                                 >
-                                    <Save className="hidden size-4 sm:block" /> Save
+                                    <Save className="hidden size-4 sm:block" /> {translate('Save')}
                                     {dirty.size > 0 && ` (${dirty.size})`}
                                 </Button>
                                 <Button
@@ -461,7 +461,7 @@ export default function StockOpnameShow({
                                     onClick={() => workflow('complete', translate('Complete counting and lock the results for review?'))}
                                     className="px-2 text-xs sm:px-4 sm:text-sm"
                                 >
-                                    <ClipboardCheck className="hidden size-4 sm:block" /> Counting completed
+                                    <ClipboardCheck className="hidden size-4 sm:block" /> {translate('Counting completed')}
                                 </Button>
                             </div>
                         </div>
@@ -475,7 +475,7 @@ export default function StockOpnameShow({
                                 disabled={processing}
                                 onClick={() => workflow('reopen', translate('Reopen the results for recounting?'))}
                             >
-                                <RotateCcw className="size-4" /> Reopen
+                                <RotateCcw className="size-4" /> {translate('Reopen')}
                             </Button>
                             <Button
                                 type="button"
@@ -485,23 +485,23 @@ export default function StockOpnameShow({
                                     workflow('post', translate('Post :count differences to inventory?', { count: stats.differences }))
                                 }
                             >
-                                <Send className="size-4" /> Post results
+                                <Send className="size-4" /> {translate('Post results')}
                             </Button>
                         </div>
                     )}
                     {stockCount.status === 'counted' && !canManage && (
                         <p className="flex items-center justify-center gap-2 py-2 text-sm font-bold text-sky-700">
-                            <Check className="size-4" /> Waiting owner/admin posting results
+                            <Check className="size-4" /> {translate('Waiting owner/admin posting results')}
                         </p>
                     )}
                     {stockCount.status === 'posted' && (
                         <p className="flex items-center justify-center gap-2 py-2 text-sm font-bold text-emerald-700">
-                            <PackageCheck className="size-4" /> The results have been posted to inventory
+                            <PackageCheck className="size-4" /> {translate('The results have been posted to inventory')}
                         </p>
                     )}
                     {stockCount.status === 'cancelled' && (
                         <p className="flex items-center justify-center gap-2 py-2 text-sm font-bold text-muted-foreground">
-                            <X className="size-4" /> Session cancelled
+                            <X className="size-4" /> {translate('Session cancelled')}
                         </p>
                     )}
                 </div>
@@ -509,13 +509,13 @@ export default function StockOpnameShow({
             <Suspense
                 fallback={
                     <div role="status" className="fixed inset-0 z-[90] grid place-items-center bg-black/80 text-white">
-                        Opening camera…
+                        {translate('Opening camera…')}
                     </div>
                 }
             >
                 <ProductScanner
                     purpose="stock_count"
-                    title="Scan product for stock count"
+                    title={translate('Scan product for stock count')}
                     open={scannerOpen}
                     onOpenChange={setScannerOpen}
                     onConfirm={useScannerSelections}

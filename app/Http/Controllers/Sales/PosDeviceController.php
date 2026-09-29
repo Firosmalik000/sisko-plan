@@ -13,6 +13,7 @@ use App\Http\Requests\Sales\UnlockPosDeviceRequest;
 use App\Models\BusinessMembership;
 use App\Models\PosDevice;
 use App\Models\Store;
+use App\Models\User;
 use App\Services\Sales\PosCheckoutData;
 use App\Support\CurrentBusiness;
 use App\Support\CurrentPosDevice;
@@ -20,6 +21,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -68,7 +71,7 @@ class PosDeviceController extends Controller
             ->where(function ($query) use ($device): void {
                 $query->whereIn('business_role', [BusinessRole::Owner->value, BusinessRole::Admin->value])
                     ->orWhereHas('stores', fn ($stores) => $stores->whereKey($device->store_id)
-                        ->wherePivot('status', MembershipStatus::Active->value));
+                        ->where('store_memberships.status', MembershipStatus::Active->value));
             })
             ->orderBy('display_name')->get(['public_id', 'display_name']);
 
@@ -117,5 +120,44 @@ class PosDeviceController extends Controller
         $request->session()->forget(['pos_actor_membership_id', 'pos_actor_last_activity_at']);
 
         return to_route('terminal.lock');
+    }
+
+    public function exit(Request $request, CurrentPosDevice $currentDevice): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        /** @var User|null $user */
+        $user = User::where('email', $validated['email'])->first();
+
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => __('auth.failed'),
+            ]);
+        }
+
+        $device = $currentDevice->get();
+
+        $isOwnerOrAdmin = BusinessMembership::query()
+            ->where('business_id', $device->business_id)
+            ->where('user_id', $user->id)
+            ->where('status', MembershipStatus::Active->value)
+            ->whereIn('business_role', [BusinessRole::Owner->value, BusinessRole::Admin->value])
+            ->exists();
+
+        if (! $isOwnerOrAdmin) {
+            throw ValidationException::withMessages([
+                'email' => __('Only an active business owner or admin can exit terminal mode on this device.'),
+            ]);
+        }
+
+        $request->session()->forget(['pos_actor_membership_id', 'pos_actor_last_activity_at']);
+
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
+
+        return to_route('dashboard');
     }
 }

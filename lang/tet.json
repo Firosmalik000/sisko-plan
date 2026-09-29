@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "Só empreza nia nain ka administradór ativu deʼit mak bele sai husi modu terminál iha aparellu neʼe.",
     "2FA is required in this environment and cannot be disabled.": "2FA presiza iha ambiente ida-ne'e no labele dezativa.",
     ":count active Platform Admin accounts have not confirmed 2FA.": "Konta Admin Plataforma :count ativu sira seidauk konfirma 2FA.",
     ":count migrations have not been run.": "Migrasaun :count seidauk hala'o.",

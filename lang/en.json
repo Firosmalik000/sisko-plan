@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "Only an active business owner or admin can exit terminal mode on this device.",
     "2FA is required in this environment and cannot be disabled.": "2FA is required in this environment and cannot be disabled.",
     ":count active Platform Admin accounts have not confirmed 2FA.": ":count active Platform Admin accounts have not confirmed 2FA.",
     ":count migrations have not been run.": ":count migrations have not been run.",

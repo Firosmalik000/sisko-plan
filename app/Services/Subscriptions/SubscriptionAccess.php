@@ -161,10 +161,13 @@ class SubscriptionAccess
         $used = $business->memberships()->where('business_role', '!=', 'owner')
             ->where('status', MembershipStatus::Active->value)->count();
         if ($limit > 0 && $used >= $limit) {
+            $message = __('The limit of :limit active staff across all stores for the :plan plan has been reached.', [
+                'limit' => $limit, 'plan' => $subscription->plan->name,
+            ]);
+
             throw ValidationException::withMessages([
-                'email' => __('The limit of :limit active staff across all stores for the :plan plan has been reached.', [
-                    'limit' => $limit, 'plan' => $subscription->plan->name,
-                ]),
+                'display_name' => $message,
+                'email' => $message,
             ]);
         }
     }

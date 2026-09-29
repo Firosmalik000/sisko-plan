@@ -13,6 +13,7 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class PosDeviceAuthenticationTest extends TestCase
@@ -164,6 +165,123 @@ class PosDeviceAuthenticationTest extends TestCase
             'pos_actor_last_activity_at' => now()->timestamp,
         ])->post(route('terminal.lock.store'))->assertRedirectToRoute('terminal.lock')
             ->assertSessionMissing('pos_actor_membership_id');
+    }
+
+    public function test_activated_device_can_render_terminal_lock_with_active_members(): void
+    {
+        [$owner, $store] = $this->storeFixture();
+        [, $member] = $this->staffFixture($store, MembershipRole::Cashier, '123456');
+        [, $otherStore] = $this->storeFixture();
+        [, $unassigned] = $this->staffFixture($otherStore, MembershipRole::Cashier, '654321');
+
+        // Staff without PIN -> excluded
+        $noPinUser = User::factory()->create();
+        $noPinMember = BusinessMembership::factory()->create([
+            'business_id' => $store->business_id,
+            'user_id' => $noPinUser->id,
+            'display_name' => 'No PIN Staff',
+            'business_role' => BusinessRole::Staff,
+            'pos_pin_hash' => null,
+        ]);
+        $noPinMember->stores()->attach($store, [
+            'role' => MembershipRole::Cashier,
+            'status' => MembershipStatus::Active,
+        ]);
+
+        // Staff suspended at store level -> excluded
+        $storeSuspendedUser = User::factory()->create();
+        $storeSuspendedMember = BusinessMembership::factory()->create([
+            'business_id' => $store->business_id,
+            'user_id' => $storeSuspendedUser->id,
+            'display_name' => 'Store Suspended Staff',
+            'business_role' => BusinessRole::Staff,
+            'pos_pin_hash' => Hash::make('111111'),
+        ]);
+        $storeSuspendedMember->stores()->attach($store, [
+            'role' => MembershipRole::Cashier,
+            'status' => MembershipStatus::Suspended,
+        ]);
+
+        // Staff suspended at business level -> excluded
+        $businessSuspendedUser = User::factory()->create();
+        $businessSuspendedMember = BusinessMembership::factory()->create([
+            'business_id' => $store->business_id,
+            'user_id' => $businessSuspendedUser->id,
+            'display_name' => 'Business Suspended Staff',
+            'business_role' => BusinessRole::Staff,
+            'status' => MembershipStatus::Suspended,
+            'pos_pin_hash' => Hash::make('222222'),
+        ]);
+        $businessSuspendedMember->stores()->attach($store, [
+            'role' => MembershipRole::Cashier,
+            'status' => MembershipStatus::Active,
+        ]);
+
+        // Owner with PIN -> included
+        $ownerMembership = BusinessMembership::query()
+            ->where('business_id', $store->business_id)
+            ->where('business_role', BusinessRole::Owner->value)
+            ->firstOrFail();
+        $ownerMembership->update(['pos_pin_hash' => Hash::make('999999')]);
+
+        $cookie = $this->activate($owner, $store);
+
+        $this->withCookie('pos_device_token', $cookie)
+            ->get(route('terminal.lock'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('terminal/lock')
+                ->has('members', 2)
+                ->where('members', fn ($membersList) => collect($membersList)->pluck('public_id')->sort()->values()->all() ===
+                    collect([$ownerMembership->public_id, $member->public_id])->sort()->values()->all()
+                )
+            );
+    }
+
+    public function test_owner_can_exit_terminal_mode_with_valid_credentials(): void
+    {
+        [$owner, $store] = $this->storeFixture();
+        $cookie = $this->activate($owner, $store);
+
+        $response = $this->withCookie('pos_device_token', $cookie)
+            ->post(route('terminal.exit'), [
+                'email' => $owner->email,
+                'password' => 'password',
+            ]);
+
+        $response->assertRedirectToRoute('dashboard');
+        $this->assertAuthenticatedAs($owner);
+    }
+
+    public function test_exit_terminal_mode_fails_with_invalid_credentials(): void
+    {
+        [$owner, $store] = $this->storeFixture();
+        $cookie = $this->activate($owner, $store);
+
+        $response = $this->withCookie('pos_device_token', $cookie)
+            ->post(route('terminal.exit'), [
+                'email' => $owner->email,
+                'password' => 'wrong-password',
+            ]);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
+    public function test_exit_terminal_mode_fails_for_staff_user(): void
+    {
+        [$owner, $store] = $this->storeFixture();
+        [$staff] = $this->staffFixture($store, MembershipRole::Cashier);
+        $cookie = $this->activate($owner, $store);
+
+        $response = $this->withCookie('pos_device_token', $cookie)
+            ->post(route('terminal.exit'), [
+                'email' => $staff->email,
+                'password' => 'password',
+            ]);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
     }
 
     /** @return array{User,Store} */

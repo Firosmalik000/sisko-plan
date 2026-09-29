@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "មានតែម្ចាស់អាជីវកម្ម ឬអ្នកគ្រប់គ្រងសកម្មប៉ុណ្ណោះដែលអាចចាកចេញពីមុខងារបញ្ជរលើឧបករណ៍នេះបាន។",
     "2FA is required in this environment and cannot be disabled.": "2FA ត្រូវបានទាមទារនៅក្នុងបរិយាកាសនេះហើយមិនអាចបិទបានទេ។",
     ":count active Platform Admin accounts have not confirmed 2FA.": "គណនីគ្រប់គ្រងវេទិកាសកម្ម :count មិនបានបញ្ជាក់ពី 2FA ទេ។",
     ":count migrations have not been run.": "ការធ្វើចំណាកស្រុក :count មិនត្រូវបានដំណើរការទេ។",

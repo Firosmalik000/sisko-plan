@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "เฉพาะเจ้าของธุรกิจหรือผู้ดูแลระบบที่ยังใช้งานอยู่เท่านั้นที่สามารถออกจากโหมดเครื่องคิดเงินบนอุปกรณ์นี้ได้",
     "2FA is required in this environment and cannot be disabled.": "สภาพแวดล้อมนี้จำเป็นต้องมี 2FA และไม่สามารถปิดใช้งานได้",
     ":count active Platform Admin accounts have not confirmed 2FA.": "บัญชีผู้ดูแลระบบแพลตฟอร์มที่ใช้งาน :count ยังไม่ยืนยัน 2FA",
     ":count migrations have not been run.": "ยังไม่ได้ดำเนินการย้ายข้อมูล :count",

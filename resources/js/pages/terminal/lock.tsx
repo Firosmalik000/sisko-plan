@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
-import { Delete, LockKeyhole } from 'lucide-react';
+import { Delete, LockKeyhole, LogOut } from 'lucide-react';
+import { FormInput } from '@/components/forms';
+import { ResponsiveDialog } from '@/components/overlays';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/lib/i18n';
 import terminalRoutes from '@/routes/terminal';
@@ -16,7 +19,9 @@ export default function TerminalLock({
     members: Member[];
 }) {
     const { t } = useTranslation();
+    const [exitOpen, setExitOpen] = useState(false);
     const form = useForm({ member_id: members[0]?.public_id ?? '', pin: '' });
+    const exitForm = useForm({ email: '', password: '' });
     const append = (digit: string) => form.setData('pin', `${form.data.pin}${digit}`.slice(0, 6));
     const submit = () => form.post(terminalRoutes.unlock.url(), { preserveScroll: true, onError: () => form.setData('pin', '') });
 
@@ -33,22 +38,28 @@ export default function TerminalLock({
                         {device.name} · {t('Choose your name and enter your PIN')}
                     </p>
                 </div>
-                <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {members.map((member) => (
-                        <button
-                            key={member.public_id}
-                            type="button"
-                            aria-pressed={form.data.member_id === member.public_id}
-                            onClick={() => {
-                                form.setData('member_id', member.public_id);
-                                form.setData('pin', '');
-                            }}
-                            className={`min-h-12 rounded-xl border px-3 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${form.data.member_id === member.public_id ? 'border-primary bg-secondary text-primary' : 'border-border'}`}
-                        >
-                            {member.display_name}
-                        </button>
-                    ))}
-                </div>
+                {members.length === 0 ? (
+                    <div className="mt-6 rounded-2xl border border-dashed border-border bg-muted/40 p-4 text-center">
+                        <p className="text-sm font-semibold">{t('No cashier staff with PIN found for this store.')}</p>
+                    </div>
+                ) : (
+                    <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {members.map((member) => (
+                            <button
+                                key={member.public_id}
+                                type="button"
+                                aria-pressed={form.data.member_id === member.public_id}
+                                onClick={() => {
+                                    form.setData('member_id', member.public_id);
+                                    form.setData('pin', '');
+                                }}
+                                className={`min-h-12 rounded-xl border px-3 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${form.data.member_id === member.public_id ? 'border-primary bg-secondary text-primary' : 'border-border'}`}
+                            >
+                                {member.display_name}
+                            </button>
+                        ))}
+                    </div>
+                )}
                 <label htmlFor="terminal-pin" className="mt-6 block text-center text-sm font-semibold">
                     {t('Six-digit PIN')}
                 </label>
@@ -105,7 +116,71 @@ export default function TerminalLock({
                 >
                     {form.processing ? t('Checking...') : t('Enter cashier')}
                 </Button>
+                <div className="mt-4 text-center">
+                    <button
+                        type="button"
+                        onClick={() => setExitOpen(true)}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                        <LogOut className="size-3.5" />
+                        {t('Exit terminal mode')}
+                    </button>
+                </div>
             </div>
+
+            <ResponsiveDialog
+                open={exitOpen}
+                onOpenChange={(open) => {
+                    setExitOpen(open);
+                    if (!open) {
+                        exitForm.reset();
+                        exitForm.clearErrors();
+                    }
+                }}
+                title={t('Exit terminal mode')}
+                description={t('Enter business owner or admin credentials to exit terminal mode on this device.')}
+                size="sm"
+                bodyClassName="space-y-4"
+            >
+                <form
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        exitForm.post(terminalRoutes.exit.url(), {
+                            preserveScroll: true,
+                        });
+                    }}
+                    className="space-y-4"
+                >
+                    <FormInput
+                        id="exit-email"
+                        name="email"
+                        type="email"
+                        label={t('Email')}
+                        value={exitForm.data.email}
+                        onChange={(event) => exitForm.setData('email', event.target.value)}
+                        error={exitForm.errors.email}
+                        required
+                        autoFocus
+                    />
+                    <FormInput
+                        id="exit-password"
+                        name="password"
+                        type="password"
+                        label={t('Password')}
+                        value={exitForm.data.password}
+                        onChange={(event) => exitForm.setData('password', event.target.value)}
+                        error={exitForm.errors.password}
+                        required
+                    />
+                    <Button
+                        type="submit"
+                        className="min-h-11 w-full"
+                        disabled={exitForm.processing || !exitForm.data.email || !exitForm.data.password}
+                    >
+                        {exitForm.processing ? t('Verifying...') : t('Verify and exit')}
+                    </Button>
+                </form>
+            </ResponsiveDialog>
         </div>
     );
 }

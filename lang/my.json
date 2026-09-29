@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "ဤစက်တွင် ငွေရှင်းစက်မုဒ်မှ ထွက်ရန်အတွက် သက်ဝင်နေသော လုပ်ငန်းပိုင်ရှင် သို့မဟုတ် စီမံခန့်ခွဲသူသာ လုပ်ဆောင်နိုင်ပါသည်။",
     "2FA is required in this environment and cannot be disabled.": "ဤပတ်ဝန်းကျင်တွင် 2FA လိုအပ်ပြီး ပိတ်ထား၍မရပါ။",
     ":count active Platform Admin accounts have not confirmed 2FA.": ":count အသုံးပြုနေသော ပလပ်ဖောင်း စီမံခန့်ခွဲသူ အကောင့်များသည် 2FA ကို အတည်မပြုပါ။",
     ":count migrations have not been run.": ":count ရွှေ့ပြောင်းခြင်းများကို မလုပ်ဆောင်ရသေးပါ။",

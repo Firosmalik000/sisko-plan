@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "Tanging ang aktibong may-ari ng negosyo o admin lamang ang maaaring lumabas sa terminal mode sa device na ito.",
     "2FA is required in this environment and cannot be disabled.": "Ang 2FA ay kinakailangan sa kapaligirang ito at hindi maaaring i-disable.",
     ":count active Platform Admin accounts have not confirmed 2FA.": "Ang :count aktibong Platform Admin account ay hindi nakumpirma ang 2FA.",
     ":count migrations have not been run.": "Ang mga paglilipat ng :count ay hindi naisagawa.",

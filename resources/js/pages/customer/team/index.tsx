@@ -47,6 +47,15 @@ export default function TeamIndex({
     const [open, setOpen] = useState(false);
     const [deviceOpen, setDeviceOpen] = useState(false);
     const [activeSection, setActiveSection] = useState<'staff' | 'devices'>('staff');
+    const [deviceFilter, setDeviceFilter] = useState<'active' | 'revoked' | 'all'>('active');
+
+    const activeDevicesCount = devices.filter((d) => d.status === 'active').length;
+    const revokedDevicesCount = devices.filter((d) => d.status === 'revoked').length;
+    const filteredDevices = devices.filter((device) => {
+        if (deviceFilter === 'active') return device.status === 'active';
+        if (deviceFilter === 'revoked') return device.status === 'revoked';
+        return true;
+    });
 
     useEffect(() => {
         const updateFromHash = () => {
@@ -158,24 +167,87 @@ export default function TeamIndex({
             </section>
 
             <section id="cashier-devices" aria-labelledby="devices-heading" className="scroll-mt-24 space-y-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <MonitorSmartphone className="size-5 text-primary" />
                         <h2 id="devices-heading" className="font-bold">
                             {t('Cashier devices')}
                         </h2>
                     </div>
-                    {canManage && (
-                        <Button variant="outline" size="sm" onClick={() => setDeviceOpen(true)}>
-                            <Plus className="size-4" /> {t('Activate device')}
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <a
+                            href="/terminal/lock"
+                            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-muted-foreground transition hover:border-primary/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        >
+                            <KeyRound className="size-3.5" />
+                            {t('Open terminal lock')}
+                        </a>
+                        {canManage && (
+                            <Button variant="outline" size="sm" onClick={() => setDeviceOpen(true)}>
+                                <Plus className="size-4" /> {t('Activate device')}
+                            </Button>
+                        )}
+                    </div>
                 </div>
+
+                {devices.length > 0 && (
+                    <div className="flex w-fit items-center gap-1 rounded-xl bg-muted p-1 text-xs">
+                        <button
+                            type="button"
+                            onClick={() => setDeviceFilter('active')}
+                            className={cn(
+                                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                deviceFilter === 'active'
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            <span>{t('Active')}</span>
+                            <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] text-primary">
+                                {activeDevicesCount}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setDeviceFilter('revoked')}
+                            className={cn(
+                                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                deviceFilter === 'revoked'
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            <span>{t('Revoked')}</span>
+                            <span className="rounded-full bg-muted-foreground/10 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                {revokedDevicesCount}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setDeviceFilter('all')}
+                            className={cn(
+                                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                deviceFilter === 'all'
+                                    ? 'bg-background text-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            <span>{t('All')}</span>
+                            <span className="rounded-full bg-muted-foreground/10 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                {devices.length}
+                            </span>
+                        </button>
+                    </div>
+                )}
+
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {devices.map((device) => (
+                    {filteredDevices.map((device) => (
                         <div
                             key={device.public_id}
-                            className="flex flex-col justify-between rounded-2xl border border-border bg-card p-4 transition focus-within:ring-2 focus-within:ring-ring hover:border-primary/40"
+                            className={cn(
+                                'flex flex-col justify-between rounded-2xl border border-border bg-card p-4 transition focus-within:ring-2 focus-within:ring-ring hover:border-primary/40',
+                                device.status === 'revoked' && 'opacity-65',
+                            )}
                         >
                             <div>
                                 <div className="flex items-start justify-between gap-3">
@@ -189,7 +261,7 @@ export default function TeamIndex({
                                             device.status === 'active' ? 'bg-secondary text-primary' : 'bg-muted text-muted-foreground',
                                         )}
                                     >
-                                        {t(device.status)}
+                                        {t(device.status === 'active' ? 'Active' : 'Revoked')}
                                     </span>
                                 </div>
                             </div>
@@ -212,6 +284,11 @@ export default function TeamIndex({
                             )}
                         </div>
                     ))}
+                    {filteredDevices.length === 0 && devices.length > 0 && (
+                        <div className="rounded-2xl border border-dashed p-6 text-center sm:col-span-2 xl:col-span-3">
+                            <p className="font-semibold text-muted-foreground">{t('No cashier devices match this filter.')}</p>
+                        </div>
+                    )}
                     {devices.length === 0 && (
                         <div className="rounded-2xl border border-dashed p-6 text-center sm:col-span-2 xl:col-span-3">
                             <p className="font-semibold">{t('No cashier device has been activated.')}</p>
@@ -226,6 +303,17 @@ export default function TeamIndex({
             </section>
 
             <ResponsiveDialog open={open} onOpenChange={setOpen} title={t('Add staff')} size="md" bodyClassName="space-y-5">
+                {Object.entries(form.errors)
+                    .filter(
+                        ([key]) =>
+                            (key === 'email' && !form.data.personal_device_access) ||
+                            !['display_name', 'role', 'store_ids', 'personal_device_access', 'pin', 'email'].includes(key),
+                    )
+                    .map(([key, msg]) => (
+                        <div key={key} className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive">
+                            {msg}
+                        </div>
+                    ))}
                 <FormInput
                     id="staff-name"
                     name="display_name"

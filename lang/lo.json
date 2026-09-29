@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "ສະເພາະເຈົ້າຂອງທຸລະກິດ ຫຼື ຜູ້ເບິ່ງແຍງລະບົບທີ່ໃຊ້ງານຢູ່ເທົ່ານັ້ນທີ່ສາມາດອອກຈາກໂໝດເຄົາເຕີໃນອຸປະກອນນີ້ໄດ້.",
     "2FA is required in this environment and cannot be disabled.": "ຕ້ອງໃຊ້ 2FA ໃນສະພາບແວດລ້ອມນີ້ ແລະບໍ່ສາມາດປິດການໃຊ້ງານໄດ້.",
     ":count active Platform Admin accounts have not confirmed 2FA.": ":count ບັນຊີຜູ້ເບິ່ງແຍງລະບົບທີ່ໃຊ້ງານຢູ່ບໍ່ໄດ້ຢືນຢັນ 2FA.",
     ":count migrations have not been run.": "ການເຄື່ອນຍ້າຍ :count ຍັງບໍ່ໄດ້ດໍາເນີນການ.",

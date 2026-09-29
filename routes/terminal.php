@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('terminal')->name('terminal.')->middleware('pos.device')->group(function (): void {
     Route::get('lock', [PosDeviceController::class, 'lock'])->name('lock');
     Route::post('unlock', [PosDeviceController::class, 'unlock'])->name('unlock');
+    Route::post('exit', [PosDeviceController::class, 'exit'])->name('exit');
 
     Route::middleware('pos.actor')->group(function (): void {
         Route::get('/', [PosDeviceController::class, 'home'])->name('home');

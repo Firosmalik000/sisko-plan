@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "Hanya pemilik atau pentadbir perniagaan aktif boleh keluar daripada mod terminal pada peranti ini.",
     "2FA is required in this environment and cannot be disabled.": "2FA mesti digunakan dalam persekitaran ini dan tidak boleh dinyahaktifkan.",
     ":count active Platform Admin accounts have not confirmed 2FA.": ":count Pentadbir Platform aktif belum mengesahkan 2FA.",
     ":count migrations have not been run.": ":count migrasi belum dijalankan.",

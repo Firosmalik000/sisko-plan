@@ -1,4 +1,5 @@
 {
+    "Only an active business owner or admin can exit terminal mode on this device.": "Chỉ chủ sở hữu hoặc quản trị viên doanh nghiệp đang hoạt động mới có thể thoát chế độ quầy trên thiết bị này.",
     "2FA is required in this environment and cannot be disabled.": "2FA là bắt buộc trong môi trường này và không thể tắt được.",
     ":count active Platform Admin accounts have not confirmed 2FA.": "Tài khoản Quản trị viên nền tảng đang hoạt động :count chưa xác nhận 2FA.",
     ":count migrations have not been run.": "Di chuyển :count chưa được chạy.",

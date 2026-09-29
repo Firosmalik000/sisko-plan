@@ -185,7 +185,16 @@ async function bootstrap(): Promise<void> {
     dismissBootScreen();
 }
 
-void bootstrap();
+const isBootstrapped = typeof window !== 'undefined' && Boolean((window as unknown as { __sisko_app_bootstrapped?: boolean }).__sisko_app_bootstrapped);
+
+if (typeof window !== 'undefined') {
+    if (!isBootstrapped) {
+        (window as unknown as { __sisko_app_bootstrapped?: boolean }).__sisko_app_bootstrapped = true;
+        void bootstrap();
+    }
+} else {
+    void bootstrap();
+}
 
 // Keep one visual mode while the product design is being standardized.
 initializeTheme();
