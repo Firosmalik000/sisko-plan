@@ -185,7 +185,8 @@ async function bootstrap(): Promise<void> {
     dismissBootScreen();
 }
 
-const isBootstrapped = typeof window !== 'undefined' && Boolean((window as unknown as { __sisko_app_bootstrapped?: boolean }).__sisko_app_bootstrapped);
+const isBootstrapped =
+    typeof window !== 'undefined' && Boolean((window as unknown as { __sisko_app_bootstrapped?: boolean }).__sisko_app_bootstrapped);
 
 if (typeof window !== 'undefined') {
     if (!isBootstrapped) {

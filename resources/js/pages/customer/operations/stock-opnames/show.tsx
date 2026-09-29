@@ -404,14 +404,16 @@ export default function StockOpnameShow({
                                         <div className="mt-1.5 flex flex-wrap items-center justify-between gap-1 border-t border-current/5 pt-1.5 text-[10px] font-bold">
                                             {moved ? (
                                                 <span className="flex items-center gap-1 text-sky-700">
-                                                    <AlertTriangle className="size-3" /> {translate('Stock current')} {quantity(item.current_quantity)}{' '}
-                                                    {item.unit}
+                                                    <AlertTriangle className="size-3" /> {translate('Stock current')}{' '}
+                                                    {quantity(item.current_quantity)} {item.unit}
                                                 </span>
                                             ) : (
                                                 <span />
                                             )}
                                             {estimatedLoss > 0 && (
-                                                <span className="font-bold text-destructive">{translate('Loss')} {money(estimatedLoss)}</span>
+                                                <span className="font-bold text-destructive">
+                                                    {translate('Loss')} {money(estimatedLoss)}
+                                                </span>
                                             )}
                                         </div>
                                     )}

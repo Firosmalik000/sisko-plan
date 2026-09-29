@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import { Delete, LockKeyhole, LogOut } from 'lucide-react';
+import { useState } from 'react';
 import { FormInput } from '@/components/forms';
 import { ResponsiveDialog } from '@/components/overlays';
 import { Button } from '@/components/ui/button';
@@ -132,6 +132,7 @@ export default function TerminalLock({
                 open={exitOpen}
                 onOpenChange={(open) => {
                     setExitOpen(open);
+
                     if (!open) {
                         exitForm.reset();
                         exitForm.clearErrors();

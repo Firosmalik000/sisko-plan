@@ -52,8 +52,14 @@ export default function TeamIndex({
     const activeDevicesCount = devices.filter((d) => d.status === 'active').length;
     const revokedDevicesCount = devices.filter((d) => d.status === 'revoked').length;
     const filteredDevices = devices.filter((device) => {
-        if (deviceFilter === 'active') return device.status === 'active';
-        if (deviceFilter === 'revoked') return device.status === 'revoked';
+        if (deviceFilter === 'active') {
+            return device.status === 'active';
+        }
+
+        if (deviceFilter === 'revoked') {
+            return device.status === 'revoked';
+        }
+
         return true;
     });
 
@@ -207,9 +213,7 @@ export default function TeamIndex({
                             )}
                         >
                             <span>{t('Active')}</span>
-                            <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] text-primary">
-                                {activeDevicesCount}
-                            </span>
+                            <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] text-primary">{activeDevicesCount}</span>
                         </button>
                         <button
                             type="button"
@@ -314,7 +318,10 @@ export default function TeamIndex({
                             !['display_name', 'role', 'store_ids', 'personal_device_access', 'pin', 'email'].includes(key),
                     )
                     .map(([key, msg]) => (
-                        <div key={key} className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive">
+                        <div
+                            key={key}
+                            className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive"
+                        >
                             {msg}
                         </div>
                     ))}
