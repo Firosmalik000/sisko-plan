@@ -284,6 +284,28 @@ class PosDeviceAuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_visiting_terminal_mode_logs_out_active_web_session(): void
+    {
+        [$owner, $store] = $this->storeFixture();
+        $cookie = $this->activate($owner, $store);
+
+        // Owner is logged into back-office
+        $this->actingAs($owner);
+        $this->assertAuthenticatedAs($owner);
+
+        // Entering terminal mode
+        $this->withCookie('pos_device_token', $cookie)
+            ->get(route('terminal.lock'))
+            ->assertOk();
+
+        // Web session must be logged out
+        $this->assertGuest();
+
+        // Navigating back or requesting back-office (/team) is redirected to login
+        $this->get(route('team.index'))
+            ->assertRedirectToRoute('login');
+    }
+
     /** @return array{User,Store} */
     private function storeFixture(): array
     {

@@ -177,6 +177,10 @@ export default function TeamIndex({
                     <div className="flex items-center gap-2">
                         <a
                             href="/terminal/lock"
+                            onClick={(event) => {
+                                event.preventDefault();
+                                window.location.replace('/terminal/lock');
+                            }}
                             className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-muted-foreground transition hover:border-primary/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         >
                             <KeyRound className="size-3.5" />

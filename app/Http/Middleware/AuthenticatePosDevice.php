@@ -7,6 +7,7 @@ use App\Support\CurrentPosDevice;
 use App\Support\CurrentStore;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticatePosDevice
@@ -22,6 +23,12 @@ class AuthenticatePosDevice
             ->where('token_hash', hash('sha256', $token))->where('status', 'active')->first();
         abort_unless($device !== null && $device->store?->status?->value === 'active' && $device->business?->status?->value === 'active', 403);
 
+        if (Auth::guard('web')->check() && ! $request->routeIs('terminal.exit')) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
         if ((int) $request->session()->get('pos_device_id') !== $device->id) {
             $request->session()->forget(['pos_actor_membership_id', 'pos_actor_last_activity_at']);
             $request->session()->put('pos_device_id', $device->id);
@@ -30,6 +37,13 @@ class AuthenticatePosDevice
         $this->currentDevice->set($device);
         $this->currentStore->set($device->store);
 
-        return $next($request);
+        /** @var Response $response */
+        $response = $next($request);
+
+        $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+
+        return $response;
     }
 }
