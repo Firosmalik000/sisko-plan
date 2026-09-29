@@ -23,6 +23,7 @@ export default function DashboardIndex(props: DashboardProps) {
         <BusinessDashboard
             performance={props.performance}
             position={props.position}
+            channels={props.channels}
             lowStock={props.lowStock ?? []}
             transactions={props.transactions ?? 0}
             salesTrend={props.salesTrend ?? []}

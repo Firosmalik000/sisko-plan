@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { ArrowDownRight, ArrowUpRight, BarChart3, Boxes, Clock3, ShoppingCart } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, BarChart3, Boxes, Clock3, Globe, ShoppingCart, Store } from 'lucide-react';
 import { AppPage } from '@/components/page/app-page';
 import { EmptyState } from '@/components/page/empty-state';
 import { MetricItem, MetricStrip } from '@/components/page/metric-strip';
@@ -14,8 +14,9 @@ import { dashboard } from '@/routes';
 import { inventory } from '@/routes/operations';
 import { index as posIndex } from '@/routes/pos';
 import { index as reportsIndex } from '@/routes/reports';
+import { index as salesIndex } from '@/routes/sales';
 import { CategoryBreakdown, SalesChart } from './dashboard-charts';
-import type { BusinessDashboardProps, PeriodKey, Position, RevenueComparison, TopProduct } from './types';
+import type { BusinessDashboardProps, ChannelMetric, ChannelsData, PeriodKey, Position, RevenueComparison, TopProduct } from './types';
 
 const periodOptions: Array<{ key: PeriodKey; label: string; description: string }> = [
     { key: 'day', label: 'Daily', description: 'Today' },
@@ -28,6 +29,7 @@ const periodOptions: Array<{ key: PeriodKey; label: string; description: string 
 export function BusinessDashboard({
     performance,
     position,
+    channels,
     lowStock,
     transactions,
     salesTrend,
@@ -85,6 +87,13 @@ export function BusinessDashboard({
                 <MetricItem label={translate('Transactions')} value={String(transactions)} />
                 <MetricItem label={translate('Cash & bank')} value={formatCompactMoney(position.cash_balance)} />
             </MetricStrip>
+
+            {channels && (
+                <section className="grid items-stretch gap-5 md:grid-cols-2">
+                    <InStoreChannelCard channel={channels.in_store} />
+                    <MarketplaceChannelCard channel={channels.marketplace} />
+                </section>
+            )}
 
             <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(18rem,.75fr)]">
                 <SalesChart data={salesTrend} periodLabel={periodLabel} />
@@ -208,6 +217,176 @@ function LowStockPanel({ items }: { items: BusinessDashboardProps['lowStock'] })
                     ))}
                 </div>
             )}
+        </PageSection>
+    );
+}
+
+function InStoreChannelCard({ channel }: { channel: ChannelMetric }) {
+    const radius = 34;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (Math.min(100, Math.max(0, channel.share_percentage)) / 100) * circumference;
+
+    return (
+        <PageSection
+            title={
+                <span className="flex items-center gap-2">
+                    <Store className="size-4 text-primary" />
+                    {translate('In-store sales')}
+                </span>
+            }
+            actions={
+                <Button asChild variant="ghost" size="sm">
+                    <Link href={salesIndex.url({ query: { sales_channel: 'in_store' } })}>
+                        {translate('Sales')}
+                        <ArrowUpRight className="size-4" />
+                    </Link>
+                </Button>
+            }
+            contentClassName="p-5"
+        >
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+                <div className="space-y-3">
+                    <div>
+                        <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">{translate('Net sales')}</span>
+                        <p className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                            {formatCompactMoney(channel.net_revenue)}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                            {channel.transactions} {translate('transactions')}
+                        </span>
+                        <span>•</span>
+                        <span>
+                            {translate('Average order')}:{' '}
+                            <strong className="font-medium text-foreground">{formatCompactMoney(channel.aov)}</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3 self-center sm:self-auto">
+                    <div className="relative flex size-24 shrink-0 items-center justify-center">
+                        <svg className="size-full -rotate-90" viewBox="0 0 88 88" aria-hidden="true">
+                            <circle cx="44" cy="44" r={radius} fill="none" stroke="var(--secondary)" strokeWidth="7" />
+                            <circle
+                                cx="44"
+                                cy="44"
+                                r={radius}
+                                fill="none"
+                                stroke="var(--primary)"
+                                strokeWidth="7"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={strokeDashoffset}
+                                strokeLinecap="round"
+                                className="transition-all duration-700 ease-out"
+                            />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                            <span className="text-lg leading-none font-bold text-foreground tabular-nums">{channel.share_percentage}%</span>
+                            <span className="mt-0.5 text-[9px] font-medium tracking-tight text-muted-foreground">
+                                {translate('Contribution')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </PageSection>
+    );
+}
+
+function MarketplaceChannelCard({ channel }: { channel: ChannelsData['marketplace'] }) {
+    const hasPlatforms = channel.platforms.length > 0;
+
+    return (
+        <PageSection
+            title={
+                <span className="flex items-center gap-2">
+                    <Globe className="size-4 text-primary" />
+                    {translate('Marketplace sales')}
+                </span>
+            }
+            actions={
+                <Button asChild variant="ghost" size="sm">
+                    <Link href={salesIndex.url({ query: { sales_channel: 'marketplace' } })}>
+                        {translate('Sales')}
+                        <ArrowUpRight className="size-4" />
+                    </Link>
+                </Button>
+            }
+            contentClassName="p-5"
+        >
+            <div className="space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+                    <div>
+                        <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">{translate('Net sales')}</span>
+                        <p className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                            {formatCompactMoney(channel.net_revenue)}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                        <Badge variant="secondary" className="font-semibold">
+                            {channel.share_percentage}% {translate('Contribution')}
+                        </Badge>
+                        <span>
+                            {channel.transactions} {translate('orders')}
+                        </span>
+                        <span>•</span>
+                        <span>
+                            {translate('Average order')}:{' '}
+                            <strong className="font-medium text-foreground">{formatCompactMoney(channel.aov)}</strong>
+                        </span>
+                    </div>
+                </div>
+
+                {hasPlatforms ? (
+                    <div className="space-y-2.5 pt-1">
+                        <div className="flex h-2 w-full overflow-hidden rounded-full bg-secondary">
+                            {channel.platforms.map((platform, idx) => {
+                                const palette = ['bg-primary', 'bg-chart-2', 'bg-chart-3', 'bg-chart-4', 'bg-chart-5'];
+                                const barColor = palette[idx % palette.length] || 'bg-primary';
+
+                                return (
+                                    <div
+                                        key={platform.code}
+                                        style={{ width: `${Math.max(4, platform.share_percentage)}%` }}
+                                        className={`h-full ${barColor} transition-all duration-500`}
+                                        title={`${platform.label}: ${platform.share_percentage}%`}
+                                    />
+                                );
+                            })}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-2">
+                            {channel.platforms.slice(0, 4).map((platform, idx) => {
+                                const palette = ['bg-primary', 'bg-chart-2', 'bg-chart-3', 'bg-chart-4', 'bg-chart-5'];
+                                const dotColor = palette[idx % palette.length] || 'bg-primary';
+
+                                return (
+                                    <div
+                                        key={platform.code}
+                                        className="flex items-center justify-between gap-2 rounded-lg bg-secondary/50 px-2.5 py-1.5 text-xs"
+                                    >
+                                        <div className="flex items-center gap-1.5 truncate">
+                                            <span className={`size-2 shrink-0 rounded-full ${dotColor}`} />
+                                            <span className="truncate font-medium">{platform.label}</span>
+                                            <span className="text-[11px] text-muted-foreground">({platform.transactions})</span>
+                                        </div>
+                                        <span className="shrink-0 font-semibold tabular-nums">
+                                            {formatCompactMoney(platform.net_revenue)}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="rounded-xl border border-dashed border-border py-4 text-center">
+                        <p className="text-xs text-muted-foreground">{translate('No marketplace sales yet')}</p>
+                    </div>
+                )}
+            </div>
         </PageSection>
     );
 }

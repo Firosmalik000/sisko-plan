@@ -1,16 +1,10 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, BadgeCheck, BarChart3, Boxes, ReceiptText, ShieldCheck, Store } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, ShieldCheck, Store } from 'lucide-react';
 import BrandMark from '@/components/brand-mark';
 import LanguageSwitcher from '@/components/language-switcher';
 import { useTranslation } from '@/lib/i18n';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
-
-const highlights = [
-    { icon: ReceiptText, label: 'Quick actions' },
-    { icon: Boxes, label: 'Real-time stock' },
-    { icon: BarChart3, label: 'Concise reports' },
-];
 
 export default function AuthSimpleLayout({ children, title, description }: AuthLayoutProps) {
     const { branding } = usePage().props;

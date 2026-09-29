@@ -38,7 +38,9 @@ type StockCount = {
     public_id: string;
     document_number: string;
     status: 'draft' | 'counted' | 'posted' | 'cancelled';
+    frequency: 'monthly' | 'quarterly' | 'semi_annual' | 'annual' | null;
     snapshot_at: string;
+    created_at: string;
     completed_at: string | null;
     posted_at: string | null;
     notes: string | null;
@@ -53,6 +55,13 @@ const statusLabels = {
     counted: 'Waiting post',
     posted: 'Posted',
     cancelled: 'Cancelled',
+};
+
+const frequencyLabels: Record<string, string> = {
+    monthly: 'Monthly',
+    quarterly: 'Quarterly',
+    semi_annual: 'Semi-annual',
+    annual: 'Annual',
 };
 const ProductScanner = lazy(() => import('@/components/widgets/product-scanner/product-scanner'));
 
@@ -248,10 +257,20 @@ export default function StockOpnameShow({
                                 {stockCount.created_by}
                                 {stockCount.notes && ` · ${stockCount.notes}`}
                             </p>
+                            <p className="mt-0.5 truncate text-[10px]">
+                                {translate('Created at')}: {ledgerDateTime(stockCount.created_at, timezone)}
+                            </p>
                         </div>
-                        <span className="shrink-0 rounded-lg bg-[var(--app-soft)] px-2 py-1.5 text-[10px] font-bold text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/15 sm:text-xs">
-                            {translate(statusLabels[stockCount.status])}
-                        </span>
+                        <div className="flex shrink-0 flex-col items-end gap-1.5">
+                            <span className="rounded-lg bg-[var(--app-soft)] px-2 py-1.5 text-[10px] font-bold text-[var(--app-primary)] ring-1 ring-[var(--app-primary)]/15 sm:text-xs">
+                                {translate(statusLabels[stockCount.status])}
+                            </span>
+                            {stockCount.frequency && (
+                                <span className="rounded-lg bg-violet-50 px-2 py-1.5 text-[10px] font-bold text-violet-700 ring-1 ring-violet-200 sm:text-xs">
+                                    {translate(frequencyLabels[stockCount.frequency])}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-4 divide-x divide-[var(--app-ink)]/8 py-2.5">

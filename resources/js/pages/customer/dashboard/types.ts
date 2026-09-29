@@ -25,7 +25,33 @@ export type LowStock = {
 export type SalesTrend = {
     date: string;
     net_revenue: string;
+    in_store_net_revenue?: string;
+    marketplace_net_revenue?: string;
     transactions: number;
+    in_store_transactions?: number;
+    marketplace_transactions?: number;
+};
+
+export type MarketplacePlatformMetric = {
+    code: string;
+    label: string;
+    net_revenue: string;
+    transactions: number;
+    share_percentage: number;
+};
+
+export type ChannelMetric = {
+    net_revenue: string;
+    transactions: number;
+    aov: string;
+    share_percentage: number;
+};
+
+export type ChannelsData = {
+    in_store: ChannelMetric;
+    marketplace: ChannelMetric & {
+        platforms: MarketplacePlatformMetric[];
+    };
 };
 
 export type CategorySale = {
@@ -50,6 +76,7 @@ export type DashboardProps = {
     canViewBusinessPosition: boolean;
     performance?: Performance;
     position?: Position;
+    channels?: ChannelsData;
     lowStock?: LowStock[];
     transactions?: number;
     salesTrend?: SalesTrend[];
@@ -63,6 +90,7 @@ export type DashboardProps = {
 export type BusinessDashboardProps = {
     performance: Performance;
     position: Position;
+    channels?: ChannelsData;
     lowStock: LowStock[];
     transactions: number;
     salesTrend: SalesTrend[];

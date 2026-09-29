@@ -4,6 +4,7 @@ namespace App\Actions\Inventory;
 
 use App\Actions\Audit\RecordAudit;
 use App\Actions\Ledgers\NextDocumentNumber;
+use App\Enums\StockCountFrequency;
 use App\Enums\StockCountStatus;
 use App\Models\BusinessMembership;
 use App\Models\InventoryBalance;
@@ -17,11 +18,11 @@ class StartStockCount
 {
     public function __construct(private NextDocumentNumber $numbers, private RecordAudit $audit) {}
 
-    public function handle(Store $store, BusinessMembership|User $actor, ?string $notes, ?string $ipAddress = null): StockCount
+    public function handle(Store $store, BusinessMembership|User $actor, ?string $notes, ?string $ipAddress = null, ?StockCountFrequency $frequency = null): StockCount
     {
         $actor = BusinessMembership::operational($store, $actor);
 
-        return DB::transaction(function () use ($store, $actor, $notes, $ipAddress): StockCount {
+        return DB::transaction(function () use ($store, $actor, $notes, $ipAddress, $frequency): StockCount {
             Store::query()->whereKey($store->id)->lockForUpdate()->firstOrFail();
 
             $active = StockCount::query()
@@ -59,6 +60,7 @@ class StartStockCount
                 'store_id' => $store->id,
                 'document_number' => $this->numbers->handle($store->id, 'opn', $snapshotAt),
                 'status' => StockCountStatus::Draft,
+                'frequency' => $frequency,
                 'snapshot_at' => $snapshotAt,
                 'notes' => $notes,
                 'created_by_business_membership_id' => $actor->id,
@@ -81,6 +83,7 @@ class StartStockCount
             $this->audit->handle($actor, 'stock_count.started', $stockCount, $store, $ipAddress, [
                 'document_number' => $stockCount->document_number,
                 'item_count' => $products->count(),
+                'frequency' => $frequency?->value,
             ]);
 
             return $stockCount;

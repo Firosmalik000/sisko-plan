@@ -9,6 +9,7 @@ use App\Actions\Ledgers\PostStockAdjustment;
 use App\Enums\BusinessRole;
 use App\Enums\MembershipRole;
 use App\Enums\MembershipStatus;
+use App\Enums\StockCountFrequency;
 use App\Enums\StockCountStatus;
 use App\Models\BusinessMembership;
 use App\Models\InventoryBalance;
@@ -193,5 +194,107 @@ class StockCountTest extends TestCase
         ]], now()->toISOString(), null, 'opening-'.$store->id);
 
         return [$owner, $store, $product];
+    }
+
+    public function test_start_stock_count_with_frequency_persists_it(): void
+    {
+        [$owner, $store] = $this->fixtures('5', '1000');
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
+
+        $this->actingAs($owner)->withSession($session)
+            ->post(route('operations.stock-opnames.store'), [
+                'frequency' => 'monthly',
+                'notes' => 'Test bulanan',
+            ])->assertRedirect();
+
+        $this->assertDatabaseHas('stock_counts', [
+            'store_id' => $store->id,
+            'frequency' => 'monthly',
+            'notes' => 'Test bulanan',
+        ]);
+    }
+
+    public function test_invalid_frequency_is_rejected(): void
+    {
+        [$owner, $store] = $this->fixtures('5', '1000');
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
+
+        $this->actingAs($owner)->withSession($session)
+            ->post(route('operations.stock-opnames.store'), [
+                'frequency' => 'weekly', // invalid
+            ])->assertSessionHasErrors('frequency');
+    }
+
+    public function test_index_filter_by_frequency(): void
+    {
+        [$owner, $store] = $this->fixtures('5', '1000');
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
+
+        // Start a monthly stock count
+        app(StartStockCount::class)->handle($store, $owner, 'monthly test', null, StockCountFrequency::Monthly);
+
+        $this->actingAs($owner)->withSession($session)
+            ->get(route('operations.stock-opnames.index', ['frequency' => 'monthly']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('customer/operations/stock-opnames/index')
+                ->where('counts.total', 1)
+                ->where('counts.data.0.frequency', 'monthly'));
+
+        $this->actingAs($owner)->withSession($session)
+            ->get(route('operations.stock-opnames.index', ['frequency' => 'quarterly']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('counts.total', 0));
+    }
+
+    public function test_index_filter_by_month_and_year(): void
+    {
+        [$owner, $store] = $this->fixtures('5', '1000');
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
+
+        app(StartStockCount::class)->handle($store, $owner, null);
+
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+
+        $this->actingAs($owner)->withSession($session)
+            ->get(route('operations.stock-opnames.index', ['month' => $currentMonth, 'year' => $currentYear]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('counts.total', 1));
+
+        $this->actingAs($owner)->withSession($session)
+            ->get(route('operations.stock-opnames.index', ['month' => $currentMonth === 12 ? 1 : $currentMonth + 1]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('counts.total', 0));
+    }
+
+    public function test_show_exposes_frequency_and_created_at(): void
+    {
+        [$owner, $store] = $this->fixtures('5', '1000');
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
+
+        $count = app(StartStockCount::class)->handle($store, $owner, null, null, StockCountFrequency::Annual);
+
+        $this->actingAs($owner)->withSession($session)
+            ->get(route('operations.stock-opnames.show', $count))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('customer/operations/stock-opnames/show')
+                ->where('stockCount.frequency', 'annual')
+                ->has('stockCount.created_at'));
+    }
+
+    public function test_index_exposes_created_at_per_item(): void
+    {
+        [$owner, $store] = $this->fixtures('5', '1000');
+        $session = ['active_business_id' => $store->business_id, 'active_store_id' => $store->id];
+
+        app(StartStockCount::class)->handle($store, $owner, null);
+
+        $this->actingAs($owner)->withSession($session)
+            ->get(route('operations.stock-opnames.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('customer/operations/stock-opnames/index')
+                ->has('counts.data.0.created_at')
+                ->has('filters')
+                ->has('availableYears'));
     }
 }

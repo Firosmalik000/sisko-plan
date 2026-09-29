@@ -4,6 +4,7 @@ namespace App\Services\Reporting;
 
 use App\Models\Store;
 use App\Support\Decimal;
+use App\Support\MarketplaceCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -114,15 +115,19 @@ class BusinessMetrics
         return array_values($rows);
     }
 
-    /** @return list<array{date:string,net_revenue:string,gross_profit:string,expenses:string,estimated_profit:string,transactions:int}> */
+    /** @return list<array{date:string,net_revenue:string,in_store_net_revenue:string,marketplace_net_revenue:string,gross_profit:string,expenses:string,estimated_profit:string,transactions:int,in_store_transactions:int,marketplace_transactions:int}> */
     public function daily(Store $store, CarbonImmutable $start, CarbonImmutable $end): array
     {
         $timezone = (string) ($store->settings()->value('timezone') ?? 'Asia/Jakarta');
         $dates = [];
         $revenueByDate = [];
+        $inStoreRevenueByDate = [];
+        $marketplaceRevenueByDate = [];
         $cogsByDate = [];
         $expensesByDate = [];
         $transactionsByDate = [];
+        $inStoreTransactionsByDate = [];
+        $marketplaceTransactionsByDate = [];
         $cursor = $start->setTimezone($timezone)->startOfDay();
         $last = $end->setTimezone($timezone)->startOfDay();
         while ($cursor->lte($last)) {
@@ -133,28 +138,180 @@ class BusinessMetrics
             $date = CarbonImmutable::parse((string) $row->occurred_at)->setTimezone($timezone)->format('Y-m-d');
             $revenueByDate[$date] = Decimal::add($revenueByDate[$date] ?? '0.0000', (string) $row->total_amount, Decimal::MONEY_SCALE);
             $transactionsByDate[$date] = ($transactionsByDate[$date] ?? 0) + 1;
+            if ($row->sales_channel === 'marketplace') {
+                $marketplaceRevenueByDate[$date] = Decimal::add($marketplaceRevenueByDate[$date] ?? '0.0000', (string) $row->total_amount, Decimal::MONEY_SCALE);
+                $marketplaceTransactionsByDate[$date] = ($marketplaceTransactionsByDate[$date] ?? 0) + 1;
+            } else {
+                $inStoreRevenueByDate[$date] = Decimal::add($inStoreRevenueByDate[$date] ?? '0.0000', (string) $row->total_amount, Decimal::MONEY_SCALE);
+                $inStoreTransactionsByDate[$date] = ($inStoreTransactionsByDate[$date] ?? 0) + 1;
+            }
         }
         foreach (DB::table('sale_items')->join('sales', 'sales.id', '=', 'sale_items.sale_id')->where('sale_items.store_id', $store->id)->whereBetween('sales.occurred_at', [$start, $end])->cursor() as $row) {
             $date = CarbonImmutable::parse((string) $row->occurred_at)->setTimezone($timezone)->format('Y-m-d');
             $cogsByDate[$date] = Decimal::add($cogsByDate[$date] ?? '0.0000', (string) $row->cogs_amount, Decimal::MONEY_SCALE);
         }
-        foreach (DB::table('sale_returns')->where('store_id', $store->id)->whereBetween('occurred_at', [$start, $end])->cursor() as $row) {
+        foreach (DB::table('sale_returns')->join('sales', 'sales.id', '=', 'sale_returns.sale_id')
+            ->where('sale_returns.store_id', $store->id)->whereBetween('sale_returns.occurred_at', [$start, $end])
+            ->select(['sale_returns.occurred_at', 'sale_returns.refund_amount', 'sale_returns.cogs_reversed', 'sales.sales_channel'])
+            ->cursor() as $row) {
             $date = CarbonImmutable::parse((string) $row->occurred_at)->setTimezone($timezone)->format('Y-m-d');
             $revenueByDate[$date] = Decimal::subtract($revenueByDate[$date] ?? '0.0000', (string) $row->refund_amount, Decimal::MONEY_SCALE);
             $cogsByDate[$date] = Decimal::subtract($cogsByDate[$date] ?? '0.0000', (string) $row->cogs_reversed, Decimal::MONEY_SCALE);
+            if ($row->sales_channel === 'marketplace') {
+                $marketplaceRevenueByDate[$date] = Decimal::subtract($marketplaceRevenueByDate[$date] ?? '0.0000', (string) $row->refund_amount, Decimal::MONEY_SCALE);
+            } else {
+                $inStoreRevenueByDate[$date] = Decimal::subtract($inStoreRevenueByDate[$date] ?? '0.0000', (string) $row->refund_amount, Decimal::MONEY_SCALE);
+            }
         }
         foreach (DB::table('expenses')->where('store_id', $store->id)->whereBetween('occurred_at', [$start, $end])->cursor() as $row) {
             $date = CarbonImmutable::parse((string) $row->occurred_at)->setTimezone($timezone)->format('Y-m-d');
             $expensesByDate[$date] = Decimal::add($expensesByDate[$date] ?? '0.0000', (string) $row->amount, Decimal::MONEY_SCALE);
         }
 
-        return array_map(function (string $date) use ($revenueByDate, $cogsByDate, $expensesByDate, $transactionsByDate): array {
+        return array_map(function (string $date) use (
+            $revenueByDate,
+            $inStoreRevenueByDate,
+            $marketplaceRevenueByDate,
+            $cogsByDate,
+            $expensesByDate,
+            $transactionsByDate,
+            $inStoreTransactionsByDate,
+            $marketplaceTransactionsByDate,
+        ): array {
             $revenue = $revenueByDate[$date] ?? '0.0000';
             $expenses = $expensesByDate[$date] ?? '0.0000';
             $grossProfit = Decimal::subtract($revenue, $cogsByDate[$date] ?? '0.0000', Decimal::MONEY_SCALE);
 
-            return ['date' => $date, 'net_revenue' => $revenue, 'gross_profit' => $grossProfit, 'expenses' => $expenses, 'estimated_profit' => Decimal::subtract($grossProfit, $expenses, Decimal::MONEY_SCALE), 'transactions' => $transactionsByDate[$date] ?? 0];
+            return [
+                'date' => $date,
+                'net_revenue' => $revenue,
+                'in_store_net_revenue' => $inStoreRevenueByDate[$date] ?? '0.0000',
+                'marketplace_net_revenue' => $marketplaceRevenueByDate[$date] ?? '0.0000',
+                'gross_profit' => $grossProfit,
+                'expenses' => $expenses,
+                'estimated_profit' => Decimal::subtract($grossProfit, $expenses, Decimal::MONEY_SCALE),
+                'transactions' => $transactionsByDate[$date] ?? 0,
+                'in_store_transactions' => $inStoreTransactionsByDate[$date] ?? 0,
+                'marketplace_transactions' => $marketplaceTransactionsByDate[$date] ?? 0,
+            ];
         }, $dates);
+    }
+
+    /**
+     * @return array{
+     *     in_store: array{net_revenue:string,transactions:int,aov:string,share_percentage:int},
+     *     marketplace: array{
+     *         net_revenue:string,
+     *         transactions:int,
+     *         aov:string,
+     *         share_percentage:int,
+     *         platforms:list<array{code:string,label:string,net_revenue:string,transactions:int,share_percentage:int}>
+     *     }
+     * }
+     */
+    public function channels(Store $store, CarbonImmutable $start, CarbonImmutable $end): array
+    {
+        $inStoreGross = '0.0000';
+        $inStoreRefund = '0.0000';
+        $inStoreTransactions = 0;
+
+        $marketplaceGross = '0.0000';
+        $marketplaceRefund = '0.0000';
+        $marketplaceTransactions = 0;
+
+        /** @var array<string, array{gross:string,transactions:int}> $platformGross */
+        $platformGross = [];
+        /** @var array<string, string> $platformRefund */
+        $platformRefund = [];
+
+        foreach (DB::table('sales')->where('store_id', $store->id)->whereBetween('occurred_at', [$start, $end])->select(['sales_channel', 'marketplace_code', 'total_amount'])->cursor() as $sale) {
+            if ($sale->sales_channel === 'marketplace') {
+                $marketplaceGross = Decimal::add($marketplaceGross, (string) $sale->total_amount, Decimal::MONEY_SCALE);
+                $marketplaceTransactions++;
+                $code = (string) ($sale->marketplace_code ?: 'other');
+                $platformGross[$code] = [
+                    'gross' => Decimal::add($platformGross[$code]['gross'] ?? '0.0000', (string) $sale->total_amount, Decimal::MONEY_SCALE),
+                    'transactions' => ($platformGross[$code]['transactions'] ?? 0) + 1,
+                ];
+            } else {
+                $inStoreGross = Decimal::add($inStoreGross, (string) $sale->total_amount, Decimal::MONEY_SCALE);
+                $inStoreTransactions++;
+            }
+        }
+
+        foreach (DB::table('sale_returns')
+            ->join('sales', 'sales.id', '=', 'sale_returns.sale_id')
+            ->where('sale_returns.store_id', $store->id)
+            ->whereBetween('sale_returns.occurred_at', [$start, $end])
+            ->select(['sales.sales_channel', 'sales.marketplace_code', 'sale_returns.refund_amount'])
+            ->cursor() as $return) {
+            if ($return->sales_channel === 'marketplace') {
+                $marketplaceRefund = Decimal::add($marketplaceRefund, (string) $return->refund_amount, Decimal::MONEY_SCALE);
+                $code = (string) ($return->marketplace_code ?: 'other');
+                $platformRefund[$code] = Decimal::add($platformRefund[$code] ?? '0.0000', (string) $return->refund_amount, Decimal::MONEY_SCALE);
+            } else {
+                $inStoreRefund = Decimal::add($inStoreRefund, (string) $return->refund_amount, Decimal::MONEY_SCALE);
+            }
+        }
+
+        $inStoreNet = Decimal::subtract($inStoreGross, $inStoreRefund, Decimal::MONEY_SCALE);
+        $marketplaceNet = Decimal::subtract($marketplaceGross, $marketplaceRefund, Decimal::MONEY_SCALE);
+        $positiveInStore = Decimal::compare($inStoreNet, '0', Decimal::MONEY_SCALE) > 0 ? $inStoreNet : '0.0000';
+        $positiveMarketplace = Decimal::compare($marketplaceNet, '0', Decimal::MONEY_SCALE) > 0 ? $marketplaceNet : '0.0000';
+        $totalNet = Decimal::add($positiveInStore, $positiveMarketplace, Decimal::MONEY_SCALE);
+
+        $hasTotal = Decimal::compare($totalNet, '0', Decimal::MONEY_SCALE) > 0;
+        $inStoreShare = $hasTotal
+            ? (int) round((float) Decimal::multiply(Decimal::divide($positiveInStore, $totalNet, 6), '100', 2))
+            : 0;
+        $marketplaceShare = $hasTotal
+            ? (int) round((float) Decimal::multiply(Decimal::divide($positiveMarketplace, $totalNet, 6), '100', 2))
+            : 0;
+
+        $inStoreAov = $inStoreTransactions > 0
+            ? Decimal::divide($positiveInStore, (string) $inStoreTransactions, Decimal::MONEY_SCALE)
+            : '0.0000';
+        $marketplaceAov = $marketplaceTransactions > 0
+            ? Decimal::divide($positiveMarketplace, (string) $marketplaceTransactions, Decimal::MONEY_SCALE)
+            : '0.0000';
+
+        $platforms = [];
+        $hasMarketplaceTotal = Decimal::compare($marketplaceNet, '0', Decimal::MONEY_SCALE) > 0;
+        foreach ($platformGross as $code => $data) {
+            $platNet = Decimal::subtract($data['gross'], $platformRefund[$code] ?? '0.0000', Decimal::MONEY_SCALE);
+            $positivePlatNet = Decimal::compare($platNet, '0', Decimal::MONEY_SCALE) > 0 ? $platNet : '0.0000';
+            $platShare = $hasMarketplaceTotal
+                ? (int) round((float) Decimal::multiply(Decimal::divide($positivePlatNet, $marketplaceNet, 6), '100', 2))
+                : 0;
+
+            $label = MarketplaceCatalog::label($store->country?->code, $code) ?? ($code === 'other' ? 'Other Marketplace' : ucfirst($code));
+
+            $platforms[] = [
+                'code' => $code,
+                'label' => $label,
+                'net_revenue' => $platNet,
+                'transactions' => $data['transactions'],
+                'share_percentage' => $platShare,
+            ];
+        }
+
+        usort($platforms, fn (array $a, array $b): int => Decimal::compare($b['net_revenue'], $a['net_revenue'], Decimal::MONEY_SCALE));
+
+        return [
+            'in_store' => [
+                'net_revenue' => $inStoreNet,
+                'transactions' => $inStoreTransactions,
+                'aov' => $inStoreAov,
+                'share_percentage' => $inStoreShare,
+            ],
+            'marketplace' => [
+                'net_revenue' => $marketplaceNet,
+                'transactions' => $marketplaceTransactions,
+                'aov' => $marketplaceAov,
+                'share_percentage' => $marketplaceShare,
+                'platforms' => $platforms,
+            ],
+        ];
     }
 
     /** @return list<array{product_name:string,quantity_sold:string,quantity_returned:string,net_quantity_sold:string,net_revenue:string,net_cogs:string,gross_profit:string}> */

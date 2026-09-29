@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StockCountFrequency;
 use App\Enums\StockCountStatus;
 use App\Models\Concerns\HasPublicId;
 use Carbon\CarbonImmutable;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $store_id
  * @property string $document_number
  * @property StockCountStatus $status
+ * @property StockCountFrequency|null $frequency
  * @property CarbonImmutable $snapshot_at
  * @property CarbonImmutable|null $completed_at
  * @property CarbonImmutable|null $posted_at
@@ -29,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read BusinessMembership|null $poster
  */
 #[Fillable([
-    'store_id', 'document_number', 'status', 'snapshot_at', 'completed_at', 'posted_at',
+    'store_id', 'document_number', 'status', 'frequency', 'snapshot_at', 'completed_at', 'posted_at',
     'cancelled_at', 'notes', 'created_by_business_membership_id',
     'completed_by_business_membership_id', 'posted_by_business_membership_id',
     'cancelled_by_business_membership_id',
@@ -66,6 +68,7 @@ class StockCount extends Model
     {
         return [
             'status' => StockCountStatus::class,
+            'frequency' => StockCountFrequency::class,
             'snapshot_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
             'posted_at' => 'immutable_datetime',

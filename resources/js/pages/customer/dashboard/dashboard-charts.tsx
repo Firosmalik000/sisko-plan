@@ -1,4 +1,5 @@
 import { BarChart3 } from 'lucide-react';
+import { useState } from 'react';
 import { EmptyState } from '@/components/page/empty-state';
 import { PageSection } from '@/components/page/page-section';
 import { formatCompactMoney, formatMoney, formatQuantity, localeTag } from '@/lib/currency';
@@ -6,30 +7,103 @@ import { translate } from '@/lib/i18n';
 import type { CategorySale, SalesTrend } from './types';
 
 export function SalesChart({ data, periodLabel }: { data: SalesTrend[]; periodLabel: string }) {
-    const values = data.map((item) => Number(item.net_revenue));
+    const [activeChannel, setActiveChannel] = useState<'all' | 'in_store' | 'marketplace'>('all');
+
+    const channelValue = (item: SalesTrend) => {
+        if (activeChannel === 'in_store') {
+            return Number(item.in_store_net_revenue ?? '0');
+        }
+
+        if (activeChannel === 'marketplace') {
+            return Number(item.marketplace_net_revenue ?? '0');
+        }
+
+        return Number(item.net_revenue);
+    };
+
+    const channelTransactions = (item: SalesTrend) => {
+        if (activeChannel === 'in_store') {
+            return item.in_store_transactions ?? 0;
+        }
+
+        if (activeChannel === 'marketplace') {
+            return item.marketplace_transactions ?? 0;
+        }
+
+        return item.transactions;
+    };
+
+    const values = data.map(channelValue);
     const maxValue = Math.max(...values, 1);
     const chartWidth = 720;
     const top = 18;
     const bottom = 178;
-    const points = data.map((item, index) => ({
-        ...item,
-        x: data.length > 1 ? (index / (data.length - 1)) * chartWidth : 0,
-        y: bottom - (Number(item.net_revenue) / maxValue) * (bottom - top),
-    }));
+    const points = data.map((item, index) => {
+        const val = channelValue(item);
+        const tx = channelTransactions(item);
+
+        return {
+            date: item.date,
+            value: val,
+            transactions: tx,
+            x: data.length > 1 ? (index / (data.length - 1)) * chartWidth : 0,
+            y: bottom - (Math.max(0, val) / maxValue) * (bottom - top),
+        };
+    });
+
     const linePath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
-    const total = values.reduce((sum, value) => sum + value, 0);
-    const transactions = data.reduce((sum, item) => sum + item.transactions, 0);
+    const areaPath =
+        linePath && points.length > 0 ? `${linePath} L ${points.at(-1)?.x ?? chartWidth} ${bottom} L ${points[0]?.x ?? 0} ${bottom} Z` : '';
+    const total = values.reduce((sum, value) => sum + Math.max(0, value), 0);
+    const transactions = data.reduce((sum, item) => sum + channelTransactions(item), 0);
 
     return (
         <PageSection
             title={translate('Sales Trend')}
             description={periodLabel}
             actions={
-                <div className="text-right">
-                    <p className="text-base font-semibold text-foreground sm:text-lg">{formatCompactMoney(total)}</p>
-                    <p className="text-xs text-muted-foreground">
-                        {transactions} {translate('transactions')}
-                    </p>
+                <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <div className="inline-flex rounded-xl bg-secondary p-1 text-xs font-medium">
+                        <button
+                            type="button"
+                            onClick={() => setActiveChannel('all')}
+                            className={`rounded-lg px-2.5 py-1 transition-all ${
+                                activeChannel === 'all'
+                                    ? 'bg-background font-semibold text-foreground shadow-xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            {translate('All channels')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveChannel('in_store')}
+                            className={`rounded-lg px-2.5 py-1 transition-all ${
+                                activeChannel === 'in_store'
+                                    ? 'bg-background font-semibold text-foreground shadow-xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            {translate('In store')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveChannel('marketplace')}
+                            className={`rounded-lg px-2.5 py-1 transition-all ${
+                                activeChannel === 'marketplace'
+                                    ? 'bg-background font-semibold text-foreground shadow-xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            {translate('Marketplaces')}
+                        </button>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-base font-semibold text-foreground sm:text-lg">{formatCompactMoney(String(total))}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {transactions} {translate('transactions')}
+                        </p>
+                    </div>
                 </div>
             }
             contentClassName="px-4 pb-4 sm:px-6 sm:pb-6"
@@ -46,15 +120,22 @@ export function SalesChart({ data, periodLabel }: { data: SalesTrend[]; periodLa
                             role="img"
                             aria-label={`${translate('Sales Trend')} — ${periodLabel}`}
                         >
+                            <defs>
+                                <linearGradient id="salesAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.2" />
+                                    <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
+                                </linearGradient>
+                            </defs>
                             {[top, (top + bottom) / 2, bottom].map((y) => (
                                 <line key={y} x1="0" x2={chartWidth} y1={y} y2={y} stroke="var(--border)" strokeDasharray="5 8" />
                             ))}
+                            {areaPath && <path d={areaPath} fill="url(#salesAreaGradient)" />}
                             {linePath && (
                                 <path
                                     d={linePath}
                                     fill="none"
                                     stroke="var(--primary)"
-                                    strokeWidth="4"
+                                    strokeWidth="3.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     vectorEffect="non-scaling-stroke"
@@ -72,7 +153,7 @@ export function SalesChart({ data, periodLabel }: { data: SalesTrend[]; periodLa
                                         strokeWidth="3"
                                         vectorEffect="non-scaling-stroke"
                                     >
-                                        <title>{`${dateLabel(point.date)}: ${formatMoney(point.net_revenue)} (${point.transactions} ${translate('transactions')})`}</title>
+                                        <title>{`${dateLabel(point.date)}: ${formatMoney(String(point.value))} (${point.transactions} ${translate('transactions')})`}</title>
                                     </circle>
                                 ))}
                         </svg>

@@ -51,12 +51,17 @@ class DashboardController extends Controller
             $payload['performance'] = $performance;
             $payload['comparison'] = $this->comparison($performance['net_revenue'], $previousPerformance['net_revenue']);
             $payload['position'] = $position;
+            $payload['channels'] = $metrics->channels($store, $selectedPeriod['start'], $selectedPeriod['end']);
             $payload['lowStock'] = $metrics->lowStock($store->id, 6);
             $payload['transactions'] = array_sum(array_column($daily, 'transactions'));
             $payload['salesTrend'] = array_map(fn (array $day): array => [
                 'date' => $day['date'],
                 'net_revenue' => $day['net_revenue'],
+                'in_store_net_revenue' => $day['in_store_net_revenue'],
+                'marketplace_net_revenue' => $day['marketplace_net_revenue'],
                 'transactions' => $day['transactions'],
+                'in_store_transactions' => $day['in_store_transactions'],
+                'marketplace_transactions' => $day['marketplace_transactions'],
             ], $daily);
             $payload['topProducts'] = array_slice($metrics->products($store->id, $selectedPeriod['start'], $selectedPeriod['end']), 0, 3);
             $payload['categorySales'] = $metrics->categories($store->id, $selectedPeriod['start'], $selectedPeriod['end']);

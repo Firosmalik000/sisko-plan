@@ -25,9 +25,19 @@ export function OperationsShell({
     );
 }
 
-export function LedgerCard({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+export function LedgerCard({
+    title,
+    description,
+    actions,
+    children,
+}: {
+    title: string;
+    description?: string;
+    actions?: ReactNode;
+    children: ReactNode;
+}) {
     return (
-        <PageSection title={translate(title)} description={description ? translate(description) : undefined}>
+        <PageSection title={translate(title)} description={description ? translate(description) : undefined} actions={actions}>
             <div className="p-4 sm:p-5">{children}</div>
         </PageSection>
     );

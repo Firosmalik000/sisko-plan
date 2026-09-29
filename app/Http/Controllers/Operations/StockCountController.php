@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Actions\Inventory\PostStockCount;
 use App\Actions\Inventory\StartStockCount;
 use App\Actions\Inventory\UpdateStockCount;
+use App\Enums\StockCountFrequency;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Operations\CompleteStockCountRequest;
 use App\Http\Requests\Operations\ManageStockCountRequest;
@@ -28,36 +29,82 @@ class StockCountController extends Controller
         $store = $currentStore->get();
         Gate::authorize('viewOperations', $store);
 
-        $counts = StockCount::query()
+        $frequency = $request->query('frequency');
+        $month = $request->query('month');
+        $year = $request->query('year');
+
+        $query = StockCount::query()
             ->where('store_id', $store->id)
             ->with('creator:id,display_name')
             ->withCount('items')
             ->withCount(['items as counted_items_count' => fn ($query) => $query->whereNotNull('counted_quantity')])
             ->withCount(['items as discrepancy_items_count' => fn ($query) => $query->where('difference_quantity', '!=', 0)])
-            ->latest('id')
+            ->latest('id');
+
+        if ($frequency !== null && StockCountFrequency::tryFrom($frequency) !== null) {
+            $query->where('frequency', $frequency);
+        }
+
+        if ($month !== null && is_numeric($month) && $month >= 1 && $month <= 12) {
+            $query->whereMonth('created_at', (int) $month);
+        }
+
+        if ($year !== null && is_numeric($year) && strlen($year) === 4) {
+            $query->whereYear('created_at', (int) $year);
+        }
+
+        $counts = $query
             ->paginate(20)
             ->withQueryString()
             ->through(fn (StockCount $count): array => [
                 'public_id' => $count->public_id,
                 'document_number' => $count->document_number,
                 'status' => $count->status->value,
+                'frequency' => $count->frequency?->value,
                 'snapshot_at' => $count->snapshot_at->toISOString(),
+                'created_at' => $count->created_at->toISOString(),
                 'created_by' => $count->creator?->display_name,
                 'items_count' => $count->items_count,
                 'counted_items_count' => $count->counted_items_count,
                 'discrepancy_items_count' => $count->discrepancy_items_count,
             ]);
 
+        // Collect available years from existing records (cross-DB compatible)
+        $availableYears = StockCount::query()
+            ->where('store_id', $store->id)
+            ->orderByDesc('created_at')
+            ->get(['created_at'])
+            ->map(fn (StockCount $sc): int => $sc->created_at->year)
+            ->unique()
+            ->values()
+            ->all();
+
         return Inertia::render('customer/operations/stock-opnames/index', [
             'counts' => $counts,
             'canManage' => Gate::allows('manageStockCounts', $store),
             'timezone' => $store->settings()->value('timezone') ?? 'Asia/Jakarta',
+            'filters' => [
+                'frequency' => $frequency,
+                'month' => $month,
+                'year' => $year,
+            ],
+            'availableYears' => $availableYears,
         ]);
     }
 
     public function store(StartStockCountRequest $request, CurrentStore $currentStore, StartStockCount $action): RedirectResponse
     {
-        $stockCount = $action->handle($currentStore->get(), $this->actor($request), $request->validated('notes'), $request->ip());
+        $frequency = $request->validated('frequency')
+            ? StockCountFrequency::from($request->validated('frequency'))
+            : null;
+
+        $stockCount = $action->handle(
+            $currentStore->get(),
+            $this->actor($request),
+            $request->validated('notes'),
+            $request->ip(),
+            $frequency,
+        );
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Stock count session started successfully.')]);
 
         return to_route('operations.stock-opnames.show', $stockCount);
@@ -107,7 +154,9 @@ class StockCountController extends Controller
                 'public_id' => $stockCount->public_id,
                 'document_number' => $stockCount->document_number,
                 'status' => $stockCount->status->value,
+                'frequency' => $stockCount->frequency?->value,
                 'snapshot_at' => $stockCount->snapshot_at->toISOString(),
+                'created_at' => $stockCount->created_at->toISOString(),
                 'completed_at' => $stockCount->completed_at?->toISOString(),
                 'posted_at' => $stockCount->posted_at?->toISOString(),
                 'notes' => $stockCount->notes,
