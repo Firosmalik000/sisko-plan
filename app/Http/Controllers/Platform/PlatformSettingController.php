@@ -68,6 +68,17 @@ class PlatformSettingController extends Controller
     ): RedirectResponse {
         $this->assertSettingsSchemaReady('logo');
         $admin = AuthenticatedPlatformAdmin::get($request);
+        $variant = $request->input('variant', 'primary');
+        $column = match ($variant) {
+            'dark' => 'logo_dark_path',
+            'dark_contrast', 'contrast' => 'logo_contrast_path',
+            'monochrome' => 'logo_monochrome_path',
+            'mark', 'mark_light' => 'mark_path',
+            'mark_dark' => 'mark_dark_path',
+            'mark_monochrome' => 'mark_monochrome_path',
+            default => 'logo_path',
+        };
+
         $logo = $request->file('logo');
         try {
             $path = $logo->storeAs(
@@ -94,20 +105,20 @@ class PlatformSettingController extends Controller
         $oldPath = null;
 
         try {
-            DB::transaction(function () use ($path, &$oldPath, $admin, $audit, $request): void {
+            DB::transaction(function () use ($path, &$oldPath, $admin, $audit, $request, $column): void {
                 $settings = PlatformSetting::query()
                     ->whereKey(PlatformSetting::SINGLETON_ID)
                     ->lockForUpdate()
                     ->firstOrFail();
-                $oldPath = $settings->logo_path;
-                $settings->update(['logo_path' => $path]);
+                $oldPath = $settings->{$column};
+                $settings->update([$column => $path]);
 
                 $audit->handle(
                     $admin,
                     'platform_settings.logo_updated',
                     $settings,
                     $request->ip(),
-                    ['changed_fields' => ['logo_path']],
+                    ['changed_fields' => [$column]],
                 );
             });
         } catch (Throwable $exception) {
@@ -130,22 +141,33 @@ class PlatformSettingController extends Controller
         abort_unless($request->user()?->can(PlatformPermission::BRANDING_MANAGE), 403);
         $this->assertSettingsSchemaReady('logo');
         $admin = AuthenticatedPlatformAdmin::get($request);
+        $variant = $request->input('variant', $request->query('variant', 'primary'));
+        $column = match ($variant) {
+            'dark' => 'logo_dark_path',
+            'dark_contrast', 'contrast' => 'logo_contrast_path',
+            'monochrome' => 'logo_monochrome_path',
+            'mark', 'mark_light' => 'mark_path',
+            'mark_dark' => 'mark_dark_path',
+            'mark_monochrome' => 'mark_monochrome_path',
+            default => 'logo_path',
+        };
+
         $oldPath = null;
 
-        DB::transaction(function () use (&$oldPath, $admin, $audit, $request): void {
+        DB::transaction(function () use (&$oldPath, $admin, $audit, $request, $column): void {
             $settings = PlatformSetting::query()
                 ->whereKey(PlatformSetting::SINGLETON_ID)
                 ->lockForUpdate()
                 ->firstOrFail();
-            $oldPath = $settings->logo_path;
-            $settings->update(['logo_path' => null]);
+            $oldPath = $settings->{$column};
+            $settings->update([$column => null]);
 
             $audit->handle(
                 $admin,
                 'platform_settings.logo_removed',
                 $settings,
                 $request->ip(),
-                ['changed_fields' => ['logo_path']],
+                ['changed_fields' => [$column]],
             );
         });
 

@@ -262,6 +262,43 @@ class PlatformSettingTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_authorized_platform_admin_can_upload_and_delete_logo_variants(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->platformAdmin()->create();
+
+        // Default payloads return the default brand assets when not custom uploaded
+        $settings = PlatformSetting::current();
+        $payload = $settings->publicPayload();
+        $this->assertSame('/brand/logo-light.png', $payload['logos']['primary']);
+        $this->assertSame('/brand/logo-dark.png', $payload['logos']['dark']);
+        $this->assertSame('/brand/mark-monochrome.png', $payload['logos']['mark_monochrome']);
+        $this->assertNull($payload['custom_logos']['dark']);
+
+        // Upload custom dark logo
+        $this->actingAs($admin)
+            ->post(route('super-admin.brand-seo.logo.update'), [
+                'logo' => $this->pngUpload('dark-logo.png'),
+                'variant' => 'dark',
+            ])
+            ->assertRedirect();
+
+        $updated = PlatformSetting::current();
+        $this->assertNotNull($updated->logo_dark_path);
+        Storage::disk('local')->assertExists($updated->logo_dark_path);
+
+        $this->get(route('platform.logo', ['variant' => 'dark']))->assertOk();
+
+        // Delete custom dark logo
+        $this->actingAs($admin)
+            ->delete(route('super-admin.brand-seo.logo.destroy', ['variant' => 'dark']))
+            ->assertRedirect();
+
+        $cleared = PlatformSetting::current();
+        $this->assertNull($cleared->logo_dark_path);
+        $this->get(route('platform.logo', ['variant' => 'dark']))->assertNotFound();
+    }
+
     private function pngUpload(string $name): UploadedFile
     {
         return UploadedFile::fake()->createWithContent(

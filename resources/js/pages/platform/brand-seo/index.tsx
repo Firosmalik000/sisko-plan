@@ -1,13 +1,16 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { ImageUp, ExternalLink, Globe2, Link2, Mail, MessageCircle, Plus, Search, Share2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import BrandMark from '@/components/brand-mark';
 import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { translate } from '@/lib/i18n';
+
+type LogoVariantKey = 'primary' | 'dark' | 'dark_contrast' | 'monochrome' | 'mark' | 'mark_dark' | 'mark_monochrome';
 
 type SocialLink = {
     platform: string;
@@ -17,6 +20,8 @@ type SocialLink = {
 type Settings = {
     brand_name: string;
     logo_url: string | null;
+    logos?: Record<LogoVariantKey, string>;
+    custom_logos?: Record<LogoVariantKey, string | null>;
     tagline: string | null;
     site_url: string | null;
     support_email: string | null;
@@ -90,18 +95,24 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
         social_image_url: settings.social_image_url ?? '',
         robots_index: settings.robots_index,
     });
-    const logoForm = useForm<{ logo: File | null }>({ logo: null });
     const logoInput = useRef<HTMLInputElement>(null);
-    const [selectedLogoPreview, setSelectedLogoPreview] = useState<string | null>(null);
+    const [activeVariantKey, setActiveVariantKey] = useState<LogoVariantKey>('primary');
+    const [variantPreviews, setVariantPreviews] = useState<Partial<Record<LogoVariantKey, string>>>({});
+    const [variantFiles, setVariantFiles] = useState<Partial<Record<LogoVariantKey, File>>>({});
+    const [isSavingLogo, setIsSavingLogo] = useState(false);
+    const [isDeletingLogo, setIsDeletingLogo] = useState(false);
+    const [logoError, setLogoError] = useState<string | null>(null);
     const errors = form.errors as Record<string, string | undefined>;
 
     useEffect(
         () => () => {
-            if (selectedLogoPreview) {
-                URL.revokeObjectURL(selectedLogoPreview);
-            }
+            Object.values(variantPreviews).forEach((url) => {
+                if (url) {
+                    URL.revokeObjectURL(url);
+                }
+            });
         },
-        [selectedLogoPreview],
+        [variantPreviews],
     );
 
     const submit = (event: FormEvent) => {
@@ -117,36 +128,169 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
 
     const selectLogo = (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0] ?? null;
-        logoForm.setData('logo', file);
-        setSelectedLogoPreview(file ? URL.createObjectURL(file) : null);
+
+        if (!file) {
+            return;
+        }
+
+        if (variantPreviews[activeVariantKey]) {
+            URL.revokeObjectURL(variantPreviews[activeVariantKey]!);
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        setVariantPreviews((prev) => ({ ...prev, [activeVariantKey]: previewUrl }));
+        setVariantFiles((prev) => ({ ...prev, [activeVariantKey]: file }));
+        setLogoError(null);
     };
 
     const saveLogo = () => {
-        logoForm.post('/super-admin/brand-seo/logo', {
-            forceFormData: true,
+        const file = variantFiles[activeVariantKey];
+
+        if (!file) {
+            return;
+        }
+
+        setIsSavingLogo(true);
+        setLogoError(null);
+
+        router.post(
+            '/super-admin/brand-seo/logo',
+            {
+                logo: file,
+                variant: activeVariantKey,
+            },
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (variantPreviews[activeVariantKey]) {
+                        URL.revokeObjectURL(variantPreviews[activeVariantKey]!);
+                    }
+
+                    setVariantPreviews((prev) => {
+                        const copy = { ...prev };
+                        delete copy[activeVariantKey];
+
+                        return copy;
+                    });
+                    setVariantFiles((prev) => {
+                        const copy = { ...prev };
+                        delete copy[activeVariantKey];
+
+                        return copy;
+                    });
+
+                    if (logoInput.current) {
+                        logoInput.current.value = '';
+                    }
+                },
+                onError: (errs) => {
+                    setLogoError(errs.logo ?? null);
+                },
+                onFinish: () => {
+                    setIsSavingLogo(false);
+                },
+            },
+        );
+    };
+
+    const removeLogo = () => {
+        if (!window.confirm(translate('Delete this logo variant and revert to default?'))) {
+            return;
+        }
+
+        setIsDeletingLogo(true);
+        setLogoError(null);
+
+        router.delete(`/super-admin/brand-seo/logo?variant=${activeVariantKey}`, {
             preserveScroll: true,
             onSuccess: () => {
-                logoForm.reset();
+                if (variantPreviews[activeVariantKey]) {
+                    URL.revokeObjectURL(variantPreviews[activeVariantKey]!);
+                }
+
+                setVariantPreviews((prev) => {
+                    const copy = { ...prev };
+                    delete copy[activeVariantKey];
+
+                    return copy;
+                });
+                setVariantFiles((prev) => {
+                    const copy = { ...prev };
+                    delete copy[activeVariantKey];
+
+                    return copy;
+                });
 
                 if (logoInput.current) {
                     logoInput.current.value = '';
                 }
-
-                setSelectedLogoPreview(null);
+            },
+            onFinish: () => {
+                setIsDeletingLogo(false);
             },
         });
     };
 
-    const removeLogo = () => {
-        if (!window.confirm(translate('Delete the platform logo?'))) {
-            return;
-        }
+    const logoVariants: {
+        key: LogoVariantKey;
+        labelKey: string;
+        aspect: 'landscape' | 'square';
+        bgClass: string;
+    }[] = [
+        {
+            key: 'primary',
+            labelKey: 'Horizontal Light',
+            aspect: 'landscape',
+            bgClass: 'bg-white border-slate-200',
+        },
+        {
+            key: 'dark',
+            labelKey: 'Horizontal Dark',
+            aspect: 'landscape',
+            bgClass: 'bg-neutral-950 border-neutral-800',
+        },
+        {
+            key: 'dark_contrast',
+            labelKey: 'Horizontal Contrast',
+            aspect: 'landscape',
+            bgClass: 'bg-neutral-900 border-neutral-700',
+        },
+        {
+            key: 'monochrome',
+            labelKey: 'Horizontal Monochrome',
+            aspect: 'landscape',
+            bgClass: 'bg-white border-slate-200',
+        },
+        {
+            key: 'mark',
+            labelKey: 'Square Mark',
+            aspect: 'square',
+            bgClass: 'bg-white border-slate-200',
+        },
+        {
+            key: 'mark_dark',
+            labelKey: 'Square Mark Dark',
+            aspect: 'square',
+            bgClass: 'bg-neutral-950 border-neutral-800',
+        },
+        {
+            key: 'mark_monochrome',
+            labelKey: 'Square Mark Receipt',
+            aspect: 'square',
+            bgClass: 'bg-white border-slate-200',
+        },
+    ];
 
-        logoForm.delete('/super-admin/brand-seo/logo', {
-            preserveScroll: true,
-            onSuccess: () => setSelectedLogoPreview(null),
-        });
-    };
+    const activeVariant = logoVariants.find((v) => v.key === activeVariantKey) ?? logoVariants[0];
+    const previewUrl =
+        variantPreviews[activeVariantKey] ??
+        settings.custom_logos?.[activeVariantKey] ??
+        settings.logos?.[activeVariantKey] ??
+        (activeVariantKey === 'primary' ? settings.logo_url : null) ??
+        (activeVariant.aspect === 'square' ? '/brand/mark-light.png' : '/brand/logo-light.png');
+    const isCustom = Boolean(settings.custom_logos?.[activeVariantKey] || (activeVariantKey === 'primary' && settings.logo_url));
+    const hasUnsavedFile = Boolean(variantFiles[activeVariantKey]);
 
     const updateSocialLink = (index: number, field: keyof SocialLink, value: string) => {
         form.setData(
@@ -186,66 +330,187 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                             description="Primary name and contact details shown across the platform."
                         />
                         <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6">
-                            <div className="flex flex-col gap-4 rounded-xl bg-slate-50 p-4 sm:col-span-2 sm:flex-row sm:items-center">
-                                <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#ee4d2d] text-white">
-                                    {selectedLogoPreview || settings.logo_url ? (
-                                        <img
-                                            src={selectedLogoPreview ?? settings.logo_url ?? undefined}
-                                            alt="Preview logo"
-                                            className="size-full object-contain"
-                                        />
-                                    ) : (
-                                        <Globe2 className="size-8" />
-                                    )}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                    <Label htmlFor="platform-logo">Logos</Label>
-                                    <p className="mt-1 text-xs text-slate-500">PNG, JPG, or WebP, maximum 2 MB.</p>
-                                    <InputError message={logoForm.errors.logo} className="mt-1" />
-                                </div>
-                                {can_manage && (
-                                    <div className="flex flex-wrap gap-2">
-                                        <input
-                                            ref={logoInput}
-                                            id="platform-logo"
-                                            type="file"
-                                            accept="image/png,image/jpeg,image/webp"
-                                            onChange={selectLogo}
-                                            className="sr-only"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => logoInput.current?.click()}
-                                            disabled={logoForm.processing}
-                                        >
-                                            <ImageUp className="size-4" />
-                                            Select logo
-                                        </Button>
-                                        {logoForm.data.logo && (
-                                            <Button
-                                                type="button"
-                                                onClick={saveLogo}
-                                                disabled={logoForm.processing}
-                                                className="bg-[#d83f22] text-white hover:bg-[#b83219]"
+                            <div className="flex flex-col gap-4 rounded-xl bg-slate-50 p-4 sm:col-span-2 sm:p-5">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                                    <div>
+                                        <Label htmlFor="platform-logo" className="text-sm font-bold text-slate-800">
+                                            {translate('Logos')}
+                                        </Label>
+                                        <p className="mt-0.5 text-xs text-slate-500">{translate('PNG, JPG, or WebP, maximum 2 MB.')}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        {hasUnsavedFile ? (
+                                            <Badge
+                                                variant="outline"
+                                                className="border-amber-300 bg-amber-50 text-xs font-semibold text-amber-800"
                                             >
-                                                {logoForm.processing ? 'Uploading...' : 'Save logo'}
-                                            </Button>
+                                                {translate('Not yet saved')}
+                                            </Badge>
+                                        ) : isCustom ? (
+                                            <Badge
+                                                variant="outline"
+                                                className="border-emerald-300 bg-emerald-50 text-xs font-semibold text-emerald-800"
+                                            >
+                                                {translate('Custom')}
+                                            </Badge>
+                                        ) : (
+                                            <Badge
+                                                variant="outline"
+                                                className="border-slate-300 bg-white text-xs font-semibold text-slate-700"
+                                            >
+                                                {translate('Default')}
+                                            </Badge>
                                         )}
-                                        {settings.logo_url && !logoForm.data.logo && (
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-1.5">
+                                    {logoVariants.map((v) => {
+                                        const isActive = v.key === activeVariantKey;
+                                        const hasCustom = Boolean(
+                                            settings.custom_logos?.[v.key] || (v.key === 'primary' && settings.logo_url),
+                                        );
+                                        const hasPending = Boolean(variantFiles[v.key]);
+
+                                        return (
+                                            <button
+                                                key={v.key}
+                                                type="button"
+                                                onClick={() => {
+                                                    setActiveVariantKey(v.key);
+                                                    setLogoError(null);
+                                                }}
+                                                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                                                    isActive
+                                                        ? 'bg-[#d83f22] text-white shadow-xs'
+                                                        : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                <span>{translate(v.labelKey)}</span>
+                                                {hasPending ? (
+                                                    <span className="size-1.5 rounded-full bg-amber-300" />
+                                                ) : hasCustom ? (
+                                                    <span className={`size-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-emerald-500'}`} />
+                                                ) : null}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center">
+                                    <div
+                                        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl border p-2 ${activeVariant.bgClass} ${
+                                            activeVariant.aspect === 'landscape' ? 'h-20 w-44' : 'size-20'
+                                        }`}
+                                    >
+                                        <img
+                                            src={previewUrl}
+                                            alt={translate(activeVariant.labelKey)}
+                                            className="max-h-full max-w-full object-contain"
+                                        />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-slate-800">{translate(activeVariant.labelKey)}</p>
+                                        {logoError && <p className="mt-1 text-xs font-medium text-rose-600">{logoError}</p>}
+                                    </div>
+
+                                    {can_manage && (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <input
+                                                ref={logoInput}
+                                                id="platform-logo"
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/webp"
+                                                onChange={selectLogo}
+                                                className="sr-only"
+                                            />
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                onClick={removeLogo}
-                                                disabled={logoForm.processing}
-                                                className="text-rose-700"
+                                                size="sm"
+                                                onClick={() => logoInput.current?.click()}
+                                                disabled={isSavingLogo || isDeletingLogo}
                                             >
-                                                <Trash2 className="size-4" />
-                                                Delete
+                                                <ImageUp className="mr-1.5 size-3.5" />
+                                                {hasUnsavedFile || isCustom ? translate('Change logo') : translate('Select logo')}
                                             </Button>
-                                        )}
-                                    </div>
-                                )}
+
+                                            {hasUnsavedFile && (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    onClick={saveLogo}
+                                                    disabled={isSavingLogo || isDeletingLogo}
+                                                    className="bg-[#d83f22] text-white hover:bg-[#b83219]"
+                                                >
+                                                    {isSavingLogo ? 'Saving...' : translate('Save logo')}
+                                                </Button>
+                                            )}
+
+                                            {isCustom && !hasUnsavedFile && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={removeLogo}
+                                                    disabled={isSavingLogo || isDeletingLogo}
+                                                    className="text-rose-700 hover:bg-rose-50"
+                                                >
+                                                    <Trash2 className="mr-1.5 size-3.5" />
+                                                    {translate('Reset to default')}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                                    {logoVariants.map((v) => {
+                                        const isSelected = v.key === activeVariantKey;
+                                        const thumbUrl =
+                                            variantPreviews[v.key] ??
+                                            settings.custom_logos?.[v.key] ??
+                                            settings.logos?.[v.key] ??
+                                            (v.key === 'primary' ? settings.logo_url : null) ??
+                                            (v.aspect === 'square' ? '/brand/mark-light.png' : '/brand/logo-light.png');
+                                        const vCustom = Boolean(
+                                            settings.custom_logos?.[v.key] || (v.key === 'primary' && settings.logo_url),
+                                        );
+
+                                        return (
+                                            <button
+                                                key={v.key}
+                                                type="button"
+                                                onClick={() => {
+                                                    setActiveVariantKey(v.key);
+                                                    setLogoError(null);
+                                                }}
+                                                className={`group flex flex-col items-center rounded-lg border p-2 text-center transition ${
+                                                    isSelected
+                                                        ? 'border-[#ee4d2d] bg-amber-50/40 ring-2 ring-[#ee4d2d]/20'
+                                                        : 'border-slate-200 bg-white hover:border-slate-300'
+                                                }`}
+                                            >
+                                                <div
+                                                    className={`flex h-11 w-full items-center justify-center overflow-hidden rounded-md border p-1 ${v.bgClass}`}
+                                                >
+                                                    <img
+                                                        src={thumbUrl}
+                                                        alt={translate(v.labelKey)}
+                                                        className="max-h-full max-w-full object-contain"
+                                                    />
+                                                </div>
+                                                <span className="mt-1.5 w-full truncate text-[11px] font-semibold text-slate-700">
+                                                    {translate(v.labelKey)}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400">
+                                                    {vCustom ? translate('Custom') : translate('Default')}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
                             <Field label="Brand name" error={errors.brand_name} className="sm:col-span-2">
                                 <Input
@@ -471,7 +736,10 @@ export default function BrandSeoIndex({ settings, can_manage }: { settings: Sett
                         <p className="text-sm font-black text-[#3b211b]">Identity active</p>
                         <div className="mt-4 flex items-center gap-3">
                             <span className="flex size-11 items-center justify-center overflow-hidden rounded-xl bg-[#ee4d2d] text-white">
-                                <BrandMark logoUrl={selectedLogoPreview ?? settings.logo_url} className="size-full object-contain" />
+                                <BrandMark
+                                    logoUrl={variantPreviews.mark ?? variantPreviews.primary ?? settings.logos?.mark ?? settings.logo_url}
+                                    className="size-full object-contain"
+                                />
                             </span>
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-black text-[#3b211b]">{form.data.brand_name || 'Brand name'}</p>

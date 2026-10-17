@@ -17,6 +17,7 @@ class UpdatePlatformLogoRequest extends FormRequest
     {
         return [
             'logo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'variant' => ['sometimes', 'string', 'in:primary,dark,dark_contrast,contrast,monochrome,mark,mark_dark,mark_monochrome'],
         ];
     }
 }
